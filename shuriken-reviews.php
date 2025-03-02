@@ -10,7 +10,15 @@
  */
 
 
-// Exclude author comments from Latest Comments block
+/**
+ * Excludes comments made by post authors from the Latest Comments block in WordPress.
+ * This function helps to filter out author responses from the comment feed,
+ * showing only visitor comments in the Latest Comments block widget.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+
 function exclude_author_comments_from_latest_comments($query) {
     // Only modify queries for Latest Comments block
     if (isset($query->query_vars['number']) && $query->query_vars['number'] > 0) {
@@ -50,7 +58,16 @@ add_action('wp_insert_comment', 'clear_author_comments_transients');
 add_action('edit_comment', 'clear_author_comments_transients');
 add_action('delete_comment', 'clear_author_comments_transients');
 
-// Customize the Latest Comments block
+
+/**
+ * Filter block content before it is rendered.
+ * 
+ * @param string $block_content The block content about to be rendered
+ * @param array $block The full block, including name and attributes
+ * @return string Modified block content
+ * @since 1.0.0
+ */
+
 function customize_latest_comments_block($block_content, $block) {
     // Only modify Latest Comments block
     if ($block['blockName'] !== 'core/latest-comments') {
@@ -70,7 +87,6 @@ function customize_latest_comments_block($block_content, $block) {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
             gap: 20px !important;
-            padding: 20px !important;
         }
         .wp-block-latest-comments .wp-block-latest-comments__comment {
             background: #f5f5f5 !important;
