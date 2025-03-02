@@ -86,12 +86,12 @@ function customize_latest_comments_block($block_content, $block) {
         .wp-block-latest-comments {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 20px !important;
+            gap: 1.2rem !important;
         }
         .wp-block-latest-comments .wp-block-latest-comments__comment {
-            background: #f5f5f5 !important;
+            border: solid 1px #e0e0e0;
             padding: 15px !important;
-            border-radius: 5px !important;
+            border-radius: 8px !important;
             margin: 0 !important;
         }
         .wp-block-latest-comments__comment-author {
