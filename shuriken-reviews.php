@@ -85,7 +85,7 @@ function customize_latest_comments_block($block_content, $block) {
     $style->textContent = '
         .wp-block-latest-comments {
             display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
+            grid-template-columns: 1fr !important; /* Default to single column for mobile */
             gap: 1.2rem !important;
         }
         .wp-block-latest-comments .wp-block-latest-comments__comment {
@@ -108,6 +108,16 @@ function customize_latest_comments_block($block_content, $block) {
         .wp-block-latest-comments__comment-excerpt p {
             margin: 0 !important;
             margin-bottom: 10px !important;
+        }
+        @media (min-width: 768px) {
+            .wp-block-latest-comments {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        @media (min-width: 1024px) {
+            .wp-block-latest-comments {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
         }
     ';
     $dom->appendChild($style);
