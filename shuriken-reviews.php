@@ -5,8 +5,12 @@
  * Version: 1.0.0
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
+ * Text Domain: shuriken-reviews
+ * Domain Path: /languages
  */
 
+
+// Exclude author comments from Latest Comments block
 function exclude_author_comments_from_latest_comments($query) {
     // Only modify queries for Latest Comments block
     if (isset($query->query_vars['number']) && $query->query_vars['number'] > 0) {
@@ -45,3 +49,56 @@ function clear_author_comments_transients($comment_id) {
 add_action('wp_insert_comment', 'clear_author_comments_transients');
 add_action('edit_comment', 'clear_author_comments_transients');
 add_action('delete_comment', 'clear_author_comments_transients');
+
+// Customize the Latest Comments block
+function customize_latest_comments_block($block_content, $block) {
+    // Only modify Latest Comments block
+    if ($block['blockName'] !== 'core/latest-comments') {
+        return $block_content;
+    }
+
+    // Parse the existing comments from the block content
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+
+    // Add CSS for the grid layout
+    $style = $dom->createElement('style');
+    $style->textContent = '
+        .wp-block-latest-comments {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 20px !important;
+            padding: 20px !important;
+        }
+        .wp-block-latest-comments .wp-block-latest-comments__comment {
+            background: #f5f5f5 !important;
+            padding: 15px !important;
+            border-radius: 5px !important;
+            margin: 0 !important;
+        }
+        .wp-block-latest-comments__comment-author {
+            font-weight: bold !important;
+            display: block !important;
+            margin-bottom: 5px !important;
+        }
+        .wp-block-latest-comments__comment-date {
+            color: #666 !important;
+            font-size: 0.9em !important;
+            margin-bottom: 10px !important;
+            display: block !important;
+        }
+        .wp-block-latest-comments__comment-excerpt p {
+            margin: 0 !important;
+            margin-bottom: 10px !important;
+        }
+    ';
+    $dom->appendChild($style);
+
+    // Convert back to HTML string
+    $modified_content = $dom->saveHTML();
+
+    return $modified_content;
+}
+add_filter('render_block', 'customize_latest_comments_block', 10, 2);
