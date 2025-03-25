@@ -47,15 +47,15 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
     </form>
 
     <h2>Existing Ratings</h2>
-    <table class="wp-list-table widefat fixed striped">
+    <table class="wp-list-table widefat fixed striped shuriken-ratings-table">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Shortcode</th>
-                <th>Average Rating</th>
-                <th>Total Votes</th>
-                <th>Actions</th>
+                <th class="column-id">ID</th>
+                <th class="column-name">Name</th>
+                <th class="column-shortcode">Shortcode</th>
+                <th class="column-rating">Average Rating</th>
+                <th class="column-votes">Total Votes</th>
+                <th class="column-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -67,8 +67,7 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
                     <td>
                         <form method="post" action="" style="display:inline;">
                             <input type="hidden" name="rating_id" value="<?php echo $rating->id; ?>">
-                            <input type="text" name="rating_name" value="<?php echo esc_attr($rating->name); ?>" class="regular-text">
-                            <input type="submit" name="update_rating" class="button" value="Update">
+                            <input type="text" name="rating_name" value="<?php echo esc_attr($rating->name); ?>" style="max-width: 100%;" class="regular-text">
                         </form>
                     </td>
                     <td><code>[shuriken_rating id="<?php echo $rating->id; ?>"]</code></td>
@@ -77,6 +76,8 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
                     <td>
                         <form method="post" action="" style="display:inline;">
                             <input type="hidden" name="rating_id" value="<?php echo $rating->id; ?>">
+                            <input type="hidden" name="rating_name" value="<?php echo esc_attr($rating->name); ?>">
+                            <input type="submit" name="update_rating" class="button" value="Update">
                             <input type="submit" name="delete_rating" class="button" value="Delete" onclick="return confirm('Are you sure?');">
                         </form>
                     </td>
