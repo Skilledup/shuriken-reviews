@@ -53,7 +53,11 @@ jQuery(document).ready(function($) {
             },
             error: function(xhr, status, error) {
                 console.error('Rating submission error:', error);
-                alert('Error submitting rating. Please try again.');
+                if (xhr.responseJSON && xhr.responseJSON.data) {
+                    alert(xhr.responseJSON.data);
+                } else {
+                    alert('Error submitting rating. Please login and try again.');
+                }
             },
             complete: function() {
                 // Re-enable stars

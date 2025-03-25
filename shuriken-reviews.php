@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
  * Text Domain: shuriken-reviews
@@ -198,6 +198,9 @@ function shuriken_rating_shortcode($atts) {
             <?php for ($i = 1; $i <= 5; $i++): ?>
                 <span class="star" data-value="<?php echo $i; ?>">★</span>
             <?php endfor; ?>
+            <?php if (!is_user_logged_in()): ?>
+                <div class="login-prompt">Please <a href="<?php echo wp_login_url(get_permalink()); ?>">login</a> to rate</div>
+            <?php endif; ?>
         </div>
         <div class="rating-stats">
             Average: <?php echo $average; ?>/5 (<?php echo $rating->total_votes; ?> votes)
@@ -209,9 +212,14 @@ function shuriken_rating_shortcode($atts) {
 
 // Add AJAX handlers
 add_action('wp_ajax_submit_rating', 'handle_submit_rating');
-add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');
 
 function handle_submit_rating() {
+    // Check if user is logged in
+    if (!is_user_logged_in()) {
+        wp_send_json_error('You must be logged in to rate');
+        return;
+    }
+
     // Check nonce
     if (!check_ajax_referer('shuriken-reviews-nonce', 'nonce', false)) {
         wp_send_json_error('Invalid nonce');
