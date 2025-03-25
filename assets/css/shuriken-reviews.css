@@ -1,0 +1,31 @@
+.shuriken-rating {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.shuriken-rating h4 {
+    margin: 0 0 10px 0;
+}
+
+.stars {
+    font-size: 24px;
+    color: #ddd;
+    cursor: pointer;
+}
+
+.stars .star {
+    transition: color 0.2s;
+}
+
+.stars .star:hover,
+.stars .star.active {
+    color: #ffd700;
+}
+
+.rating-stats {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}

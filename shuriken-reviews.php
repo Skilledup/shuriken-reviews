@@ -128,3 +128,146 @@ function customize_latest_comments_block($block_content, $block) {
     return $modified_content;
 }
 add_filter('render_block', 'customize_latest_comments_block', 10, 2);
+
+// Activation hook
+register_activation_hook(__FILE__, 'shuriken_reviews_activate');
+
+function shuriken_reviews_activate() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        name varchar(255) NOT NULL,
+        total_votes int DEFAULT 0,
+        total_rating int DEFAULT 0,
+        date_created datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id)
+    ) $charset_collate;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+}
+
+// Add admin menu
+add_action('admin_menu', 'shuriken_reviews_menu');
+
+function shuriken_reviews_menu() {
+    add_menu_page(
+        'Shuriken Reviews',
+        'Shuriken Reviews',
+        'manage_options',
+        'shuriken-reviews',
+        'shuriken_reviews_page',
+        'dashicons-star-filled'
+    );
+}
+
+function shuriken_reviews_page() {
+    include plugin_dir_path(__FILE__) . 'admin/settings.php';
+}
+
+// Register shortcode
+add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
+
+function shuriken_rating_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'id' => 0
+    ), $atts);
+
+    if (!$atts['id']) return '';
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    $rating = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE id = %d",
+        $atts['id']
+    ));
+
+    if (!$rating) return '';
+
+    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+    
+    ob_start();
+    ?>
+    <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>">
+        <h4><?php echo esc_html($rating->name); ?></h4>
+        <div class="stars">
+            <?php for ($i = 1; $i <= 5; $i++): ?>
+                <span class="star" data-value="<?php echo $i; ?>">★</span>
+            <?php endfor; ?>
+        </div>
+        <div class="rating-stats">
+            Average: <?php echo $average; ?>/5 (<?php echo $rating->total_votes; ?> votes)
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// Add AJAX handlers
+add_action('wp_ajax_submit_rating', 'handle_submit_rating');
+add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');
+
+function handle_submit_rating() {
+    // Check nonce
+    if (!check_ajax_referer('shuriken-reviews-nonce', 'nonce', false)) {
+        wp_send_json_error('Invalid nonce');
+        return;
+    }
+
+    if (!isset($_POST['rating_id']) || !isset($_POST['rating_value'])) {
+        wp_send_json_error('Missing required fields');
+        return;
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    
+    $result = $wpdb->query($wpdb->prepare(
+        "UPDATE $table_name 
+        SET total_votes = total_votes + 1,
+        total_rating = total_rating + %d 
+        WHERE id = %d",
+        intval($_POST['rating_value']),
+        intval($_POST['rating_id'])
+    ));
+
+    if ($result === false) {
+        wp_send_json_error('Database update failed');
+        return;
+    }
+
+    wp_send_json_success();
+}
+
+// Enqueue scripts and styles
+function shuriken_reviews_scripts() {
+    $plugin_url = plugin_dir_url(__FILE__);
+    $js_path = plugin_dir_path(__FILE__) . 'assets/js/shuriken-reviews.js';
+    
+    wp_enqueue_style(
+        'shuriken-reviews',
+        $plugin_url . 'assets/css/shuriken-reviews.css',
+        array()
+    );
+    
+    wp_enqueue_script('jquery');
+    
+    wp_enqueue_script(
+        'shuriken-reviews',
+        $plugin_url . 'assets/js/shuriken-reviews.js',
+        array('jquery'),
+        '1.0.0',
+        true
+    );
+    
+    wp_localize_script('shuriken-reviews', 'shurikenReviews', array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('shuriken-reviews-nonce')
+    ));
+}
+add_action('wp_enqueue_scripts', 'shuriken_reviews_scripts', 10);
+
