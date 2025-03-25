@@ -130,11 +130,10 @@ function customize_latest_comments_block($block_content, $block) {
 add_filter('render_block', 'customize_latest_comments_block', 10, 2);
 
 // Activation hook
-register_activation_hook(__FILE__, 'shuriken_reviews_activate');
-
 function shuriken_reviews_activate() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'shuriken_ratings';
+    $votes_table_name = $wpdb->prefix . 'shuriken_votes';
     
     $charset_collate = $wpdb->get_charset_collate();
 
@@ -147,9 +146,21 @@ function shuriken_reviews_activate() {
         PRIMARY KEY  (id)
     ) $charset_collate;";
 
+    $sql .= "CREATE TABLE IF NOT EXISTS $votes_table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        rating_id mediumint(9) NOT NULL,
+        user_id bigint(20) NOT NULL,
+        rating_value int NOT NULL,
+        date_created datetime DEFAULT CURRENT_TIMESTAMP,
+        date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        UNIQUE KEY unique_vote (rating_id, user_id)
+    ) $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
 }
+register_activation_hook(__FILE__, 'shuriken_reviews_activate');
 
 // Add admin menu
 add_action('admin_menu', 'shuriken_reviews_menu');
@@ -233,19 +244,65 @@ function handle_submit_rating() {
 
     global $wpdb;
     $table_name = $wpdb->prefix . 'shuriken_ratings';
-    
-    $result = $wpdb->query($wpdb->prepare(
-        "UPDATE $table_name 
-        SET total_votes = total_votes + 1,
-        total_rating = total_rating + %d 
-        WHERE id = %d",
-        intval($_POST['rating_value']),
-        intval($_POST['rating_id'])
+    $votes_table_name = $wpdb->prefix . 'shuriken_votes';
+    $user_id = get_current_user_id();
+    $rating_id = intval($_POST['rating_id']);
+    $rating_value = intval($_POST['rating_value']);
+
+    // Check if the user has already voted
+    $existing_vote = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_id = %d",
+        $rating_id,
+        $user_id
     ));
 
-    if ($result === false) {
-        wp_send_json_error('Database update failed');
-        return;
+    if ($existing_vote) {
+        // Update the existing vote
+        $result = $wpdb->update(
+            $votes_table_name,
+            array('rating_value' => $rating_value),
+            array('id' => $existing_vote->id)
+        );
+
+        if ($result === false) {
+            wp_send_json_error('Database update failed');
+            return;
+        }
+
+        // Update the total rating and total votes
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $table_name 
+            SET total_rating = total_rating - %d + %d 
+            WHERE id = %d",
+            $existing_vote->rating_value,
+            $rating_value,
+            $rating_id
+        ));
+    } else {
+        // Insert a new vote
+        $result = $wpdb->insert(
+            $votes_table_name,
+            array(
+                'rating_id' => $rating_id,
+                'user_id' => $user_id,
+                'rating_value' => $rating_value
+            )
+        );
+
+        if ($result === false) {
+            wp_send_json_error('Database insert failed');
+            return;
+        }
+
+        // Update the total rating and total votes
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $table_name 
+            SET total_votes = total_votes + 1,
+            total_rating = total_rating + %d 
+            WHERE id = %d",
+            $rating_value,
+            $rating_id
+        ));
     }
 
     wp_send_json_success();
