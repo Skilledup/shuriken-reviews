@@ -232,7 +232,7 @@ function shuriken_rating_shortcode($atts) {
                 <span class="star" data-value="<?php echo $i; ?>">★</span>
             <?php endfor; ?>
         </div>
-        <div class="rating-stats">
+        <div class="rating-stats" data-average="<?php echo $average; ?>">
             Average: <?php echo $average; ?>/5 (<?php echo $rating->total_votes; ?> votes)
         </div>
     </div>

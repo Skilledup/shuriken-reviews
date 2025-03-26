@@ -1,4 +1,21 @@
 jQuery(document).ready(function($) {
+    function updateStars($rating, average) {
+        $rating.find('.star').each(function() {
+            if ($(this).data('value') <= average) {
+                $(this).addClass('active');
+            } else {
+                $(this).removeClass('active');
+            }
+        });
+    }
+
+    // Initialize stars based on average rating
+    $('.shuriken-rating').each(function() {
+        var $rating = $(this);
+        var average = parseFloat($rating.find('.rating-stats').data('average'));
+        updateStars($rating, average);
+    });
+
     $('.shuriken-rating .star').hover(
         function() {
             var value = $(this).data('value');
@@ -11,7 +28,9 @@ jQuery(document).ready(function($) {
             });
         },
         function() {
-            $(this).parent().find('.star').removeClass('active');
+            var $rating = $(this).closest('.shuriken-rating');
+            var average = parseFloat($rating.find('.rating-stats').data('average'));
+            updateStars($rating, average);
         }
     );
 
@@ -56,6 +75,7 @@ jQuery(document).ready(function($) {
                     });
                     // Update the original text with new average and total votes
                     originalText = 'Average: ' + response.data.new_average + '/5 (' + response.data.new_total_votes + ' votes)';
+                    $rating.find('.rating-stats').data('average', response.data.new_average);
                 } else {
                     $rating.find('.rating-stats').html('Error: ' + response.data);
                 }
