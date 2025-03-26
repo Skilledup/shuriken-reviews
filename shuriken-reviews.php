@@ -129,7 +129,13 @@ function customize_latest_comments_block($block_content, $block) {
 }
 add_filter('render_block', 'customize_latest_comments_block', 10, 2);
 
-// Activation hook
+/**
+ * Activation hook for the Shuriken Reviews plugin.
+ * Creates the necessary database tables for storing ratings and votes.
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ * @return void
+ */
 function shuriken_reviews_activate() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'shuriken_ratings';
@@ -162,9 +168,11 @@ function shuriken_reviews_activate() {
 }
 register_activation_hook(__FILE__, 'shuriken_reviews_activate');
 
-// Add admin menu
-add_action('admin_menu', 'shuriken_reviews_menu');
-
+/**
+ * Adds the Shuriken Reviews menu to the WordPress admin dashboard.
+ *
+ * @return void
+ */
 function shuriken_reviews_menu() {
     add_menu_page(
         'Shuriken Reviews',
@@ -175,14 +183,24 @@ function shuriken_reviews_menu() {
         'dashicons-star-filled'
     );
 }
+add_action('admin_menu', 'shuriken_reviews_menu');
 
+/**
+ * Displays the Shuriken Reviews admin page.
+ *
+ * @return void
+ */
 function shuriken_reviews_page() {
     include plugin_dir_path(__FILE__) . 'admin/settings.php';
 }
 
-// Register shortcode
-add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
-
+/**
+ * Registers the [shuriken_rating] shortcode.
+ * Displays the rating for a specific item.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string HTML content for the rating.
+ */
 function shuriken_rating_shortcode($atts) {
     $atts = shortcode_atts(array(
         'id' => 0
@@ -220,10 +238,14 @@ function shuriken_rating_shortcode($atts) {
     <?php
     return ob_get_clean();
 }
+add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
 
-// Add AJAX handlers
-add_action('wp_ajax_submit_rating', 'handle_submit_rating');
-
+/**
+ * Handles the AJAX request to submit a rating.
+ * Updates or inserts the user's rating for a specific item.
+ *
+ * @return void
+ */
 function handle_submit_rating() {
     // Check if user is logged in
     if (!is_user_logged_in()) {
@@ -307,8 +329,13 @@ function handle_submit_rating() {
 
     wp_send_json_success();
 }
+add_action('wp_ajax_submit_rating', 'handle_submit_rating');
 
-// Enqueue scripts and styles
+/**
+ * Enqueues the necessary scripts and styles for the Shuriken Reviews plugin.
+ *
+ * @return void
+ */
 function shuriken_reviews_scripts() {
     $plugin_url = plugin_dir_url(__FILE__);
     $js_path = plugin_dir_path(__FILE__) . 'assets/js/shuriken-reviews.js';
