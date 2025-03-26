@@ -329,7 +329,17 @@ function handle_submit_rating() {
         ));
     }
 
-    wp_send_json_success();
+    // Calculate new average rating and total votes
+    $rating = $wpdb->get_row($wpdb->prepare(
+        "SELECT total_rating, total_votes FROM $table_name WHERE id = %d",
+        $rating_id
+    ));
+    $new_average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+
+    wp_send_json_success(array(
+        'new_average' => $new_average,
+        'new_total_votes' => $rating->total_votes
+    ));
 }
 add_action('wp_ajax_submit_rating', 'handle_submit_rating');
 add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');

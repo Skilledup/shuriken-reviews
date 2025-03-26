@@ -21,10 +21,14 @@ jQuery(document).ready(function($) {
         var $stars = $rating.find('.stars');
         var ratingId = $rating.data('id');
         var value = $(this).data('value');
+        var originalText = $rating.find('.rating-stats').html();
 
         if (!shurikenReviews.logged_in) {
             var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             $rating.find('.rating-stats').html('Please <a href="' + loginUrl + '">login</a> to rate.');
+            setTimeout(function() {
+                $rating.find('.rating-stats').html(originalText);
+            }, 4000);
             return;
         }
         
@@ -50,9 +54,14 @@ jQuery(document).ready(function($) {
                             $(this).addClass('active');
                         }
                     });
+                    // Update the original text with new average and total votes
+                    originalText = 'Average: ' + response.data.new_average + '/5 (' + response.data.new_total_votes + ' votes)';
                 } else {
                     $rating.find('.rating-stats').html('Error: ' + response.data);
                 }
+                setTimeout(function() {
+                    $rating.find('.rating-stats').html(originalText);
+                }, 4000);
             },
             error: function(xhr, status, error) {
                 console.error('Rating submission error:', error);
@@ -61,6 +70,9 @@ jQuery(document).ready(function($) {
                 } else {
                     $rating.find('.rating-stats').html('Error submitting rating. Please try again.');
                 }
+                setTimeout(function() {
+                    $rating.find('.rating-stats').html(originalText);
+                }, 4000);
             },
             complete: function() {
                 // Re-enable stars
