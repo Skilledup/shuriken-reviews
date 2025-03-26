@@ -20,12 +20,12 @@ jQuery(document).ready(function($) {
         var average = parseFloat($rating.find('.rating-stats').data('average'));
         updateStars($rating, average);
 
-        // Update stars after 2 seconds
+        // Update stars after 4 seconds
         setInterval(function() {
             if (!$rating.data('hovering')) {
                 resetStars($rating);
             }
-        }, 2000);
+        }, 4000);
     });
 
     $('.shuriken-rating .star').hover(
@@ -94,6 +94,8 @@ jQuery(document).ready(function($) {
                     $stars.find('.star').each(function() {
                         if ($(this).data('value') <= value) {
                             $(this).addClass('active');
+                        } else {
+                            $(this).removeClass('active');
                         }
                     });
                     // Update the original text with new average and total votes
