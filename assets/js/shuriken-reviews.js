@@ -9,15 +9,29 @@ jQuery(document).ready(function($) {
         });
     }
 
+    function resetStars($rating) {
+        var average = parseFloat($rating.find('.rating-stats').data('average'));
+        updateStars($rating, average);
+    }
+
     // Initialize stars based on average rating
     $('.shuriken-rating').each(function() {
         var $rating = $(this);
         var average = parseFloat($rating.find('.rating-stats').data('average'));
         updateStars($rating, average);
+
+        // Update stars after 2 seconds
+        setInterval(function() {
+            if (!$rating.data('hovering')) {
+                resetStars($rating);
+            }
+        }, 2000);
     });
 
     $('.shuriken-rating .star').hover(
         function() {
+            var $rating = $(this).closest('.shuriken-rating');
+            $rating.data('hovering', true);
             var value = $(this).data('value');
             $(this).parent().find('.star').each(function() {
                 if ($(this).data('value') <= value) {
@@ -29,8 +43,8 @@ jQuery(document).ready(function($) {
         },
         function() {
             var $rating = $(this).closest('.shuriken-rating');
-            var average = parseFloat($rating.find('.rating-stats').data('average'));
-            updateStars($rating, average);
+            $rating.data('hovering', false);
+            resetStars($rating);
         }
     );
 
@@ -53,6 +67,15 @@ jQuery(document).ready(function($) {
         
         // Disable stars while processing
         $stars.css('pointer-events', 'none');
+
+        // Display user's vote on stars
+        $stars.find('.star').each(function() {
+            if ($(this).data('value') <= value) {
+                $(this).addClass('active');
+            } else {
+                $(this).removeClass('active');
+            }
+        });
 
         $.ajax({
             url: shurikenReviews.ajaxurl,
