@@ -30,17 +30,6 @@
     color: #666;
 }
 
-.login-prompt {
-    display: none;
-    font-size: 14px;
-    color: #666;
-    margin-top: 5px;
-}
-
-.stars:hover .login-prompt {
-    display: block;
-}
-
 .stars:hover .star {
     cursor: pointer;
 }

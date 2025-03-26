@@ -135,6 +135,7 @@ add_filter('render_block', 'customize_latest_comments_block', 10, 2);
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  * @return void
+ * @since 1.1.0
  */
 function shuriken_reviews_activate() {
     global $wpdb;
@@ -172,6 +173,7 @@ register_activation_hook(__FILE__, 'shuriken_reviews_activate');
  * Adds the Shuriken Reviews menu to the WordPress admin dashboard.
  *
  * @return void
+ * @since 1.1.0
  */
 function shuriken_reviews_menu() {
     add_menu_page(
@@ -189,6 +191,7 @@ add_action('admin_menu', 'shuriken_reviews_menu');
  * Displays the Shuriken Reviews admin page.
  *
  * @return void
+ * @since 1.1.0
  */
 function shuriken_reviews_page() {
     include plugin_dir_path(__FILE__) . 'admin/settings.php';
@@ -200,6 +203,7 @@ function shuriken_reviews_page() {
  *
  * @param array $atts Shortcode attributes.
  * @return string HTML content for the rating.
+ * @since 1.1.0
  */
 function shuriken_rating_shortcode($atts) {
     $atts = shortcode_atts(array(
@@ -227,9 +231,6 @@ function shuriken_rating_shortcode($atts) {
             <?php for ($i = 1; $i <= 5; $i++): ?>
                 <span class="star" data-value="<?php echo $i; ?>">★</span>
             <?php endfor; ?>
-            <?php if (!is_user_logged_in()): ?>
-                <div class="login-prompt">Please <a href="<?php echo wp_login_url(get_permalink()); ?>">login</a> to rate</div>
-            <?php endif; ?>
         </div>
         <div class="rating-stats">
             Average: <?php echo $average; ?>/5 (<?php echo $rating->total_votes; ?> votes)
@@ -245,6 +246,7 @@ add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
  * Updates or inserts the user's rating for a specific item.
  *
  * @return void
+ * @since 1.1.0
  */
 function handle_submit_rating() {
     // Check if user is logged in
@@ -330,16 +332,17 @@ function handle_submit_rating() {
     wp_send_json_success();
 }
 add_action('wp_ajax_submit_rating', 'handle_submit_rating');
+add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');
 
 /**
  * Enqueues the necessary scripts and styles for the Shuriken Reviews plugin.
  *
  * @return void
+ * @since 1.1.0
  */
 function shuriken_reviews_scripts() {
     $plugin_url = plugin_dir_url(__FILE__);
-    $js_path = plugin_dir_path(__FILE__) . 'assets/js/shuriken-reviews.js';
-    
+
     wp_enqueue_style(
         'shuriken-reviews',
         $plugin_url . 'assets/css/shuriken-reviews.css',
@@ -358,7 +361,9 @@ function shuriken_reviews_scripts() {
     
     wp_localize_script('shuriken-reviews', 'shurikenReviews', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('shuriken-reviews-nonce')
+        'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
+        'logged_in' => is_user_logged_in(),
+        'login_url' => wp_login_url()
     ));
 }
 add_action('wp_enqueue_scripts', 'shuriken_reviews_scripts', 10);

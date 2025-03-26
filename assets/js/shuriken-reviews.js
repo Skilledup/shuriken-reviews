@@ -1,7 +1,4 @@
 jQuery(document).ready(function($) {
-    // Debug line to ensure script is loaded
-    console.log('Shuriken Reviews script loaded');
-
     $('.shuriken-rating .star').hover(
         function() {
             var value = $(this).data('value');
@@ -24,6 +21,12 @@ jQuery(document).ready(function($) {
         var $stars = $rating.find('.stars');
         var ratingId = $rating.data('id');
         var value = $(this).data('value');
+
+        if (!shurikenReviews.logged_in) {
+            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            $rating.find('.rating-stats').html('Please <a href="' + loginUrl + '">login</a> to rate.');
+            return;
+        }
         
         // Disable stars while processing
         $stars.css('pointer-events', 'none');
@@ -48,15 +51,15 @@ jQuery(document).ready(function($) {
                         }
                     });
                 } else {
-                    alert('Error submitting rating: ' + response.data);
+                    $rating.find('.rating-stats').html('Error: ' + response.data);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Rating submission error:', error);
                 if (xhr.responseJSON && xhr.responseJSON.data) {
-                    alert(xhr.responseJSON.data);
+                    $rating.find('.rating-stats').html(xhr.responseJSON.data);
                 } else {
-                    alert('Error submitting rating. Please login and try again.');
+                    $rating.find('.rating-stats').html('Error submitting rating. Please try again.');
                 }
             },
             complete: function() {
