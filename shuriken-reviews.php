@@ -10,6 +10,20 @@
  * Domain Path: /languages
  */
 
+ /**
+ * Loads the plugin text domain for translations.
+ * 
+ * @since 1.1.2
+ */
+add_action('plugins_loaded', 'shuriken_reviews_load_textdomain');
+
+function shuriken_reviews_load_textdomain() {
+    load_plugin_textdomain(
+        'shuriken-reviews',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
+}
 
 /**
  * Excludes comments made by post authors from the Latest Comments block in WordPress.
@@ -202,13 +216,14 @@ function shuriken_reviews_page() {
  * Registers the [shuriken_rating] shortcode.
  * Displays the rating for a specific item.
  *
- * @param array $atts Shortcode attributes.
+ * @param array $atts Shortcode attributes (id, tag) for example: [shuriken_rating id="1" tag="h2"]
  * @return string HTML content for the rating.
  * @since 1.1.0
  */
 function shuriken_rating_shortcode($atts) {
     $atts = shortcode_atts(array(
-        'id' => 0
+        'id' => 0,
+        'tag' => 'h2' // Default tag for the rating title
     ), $atts);
 
     if (!$atts['id']) return '';
@@ -227,14 +242,21 @@ function shuriken_rating_shortcode($atts) {
     ob_start();
     ?>
     <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>">
-        <h4><?php echo esc_html($rating->name); ?></h4>
+        <<?php echo tag_escape($atts['tag']); ?>><?php echo esc_html($rating->name); ?></<?php echo tag_escape($atts['tag']); ?>>
         <div class="stars">
             <?php for ($i = 1; $i <= 5; $i++): ?>
                 <span class="star" data-value="<?php echo $i; ?>">★</span>
             <?php endfor; ?>
         </div>
-        <div class="rating-stats" data-average="<?php echo $average; ?>">
-            Average: <?php echo $average; ?>/5 (<?php echo $rating->total_votes; ?> votes)
+        <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
+            <?php 
+            printf(
+            /* translators: 1: Average rating value out of 5, 2: Total number of votes */
+            esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+            esc_html($average),
+            esc_html($rating->total_votes)
+            );
+            ?>
         </div>
     </div>
     <?php
@@ -388,19 +410,3 @@ function shuriken_reviews_scripts() {
     ));
 }
 add_action('wp_enqueue_scripts', 'shuriken_reviews_scripts', 10);
-
-/**
- * Loads the plugin text domain for translations.
- * 
- * @since 1.1.2
- */
-add_action('plugins_loaded', 'shuriken_reviews_load_textdomain');
-
-function shuriken_reviews_load_textdomain() {
-    load_plugin_textdomain(
-        'shuriken-reviews',
-        false,
-        dirname(plugin_basename(__FILE__)) . '/languages'
-    );
-}
-
