@@ -374,8 +374,31 @@ function shuriken_reviews_scripts() {
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
         'logged_in' => is_user_logged_in(),
-        'login_url' => wp_login_url()
+        'login_url' => wp_login_url(),
+        // Add translation strings
+        'i18n' => array(
+            'pleaseLogin' => __('Please <a href="%s">login</a> to rate', 'shuriken-reviews'),
+            'thankYou' => __('Thank you for rating!', 'shuriken-reviews'),
+            'averageRating' => __('Average: %s/5 (%s votes)', 'shuriken-reviews'),
+            'error' => __('Error: %s', 'shuriken-reviews'),
+            'genericError' => __('Error submitting rating. Please try again.', 'shuriken-reviews')
+        )
     ));
 }
 add_action('wp_enqueue_scripts', 'shuriken_reviews_scripts', 10);
+
+/**
+ * Loads the plugin text domain for translations.
+ * 
+ * @since 1.1.2
+ */
+add_action('plugins_loaded', 'shuriken_reviews_load_textdomain');
+
+function shuriken_reviews_load_textdomain() {
+    load_plugin_textdomain(
+        'shuriken-reviews',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
+}
 

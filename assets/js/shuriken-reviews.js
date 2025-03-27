@@ -59,12 +59,12 @@ jQuery(document).ready(function($) {
         if (!shurikenReviews.logged_in) {
             var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             
-            // Add login message as a separate element
+            // Add login message using translated string
             if (!$rating.find('.login-message').length) {
                 $rating.find('.rating-stats').after(
-                    '<div class="login-message">' +
-                    '[Please <a href="' + loginUrl + '">login</a> to rate]' +
-                    '</div>'
+                    '<div class="login-message">[' + 
+                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
+                    ']</div>'
                 );
             }
 
@@ -97,8 +97,8 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    // Show success feedback
-                    $rating.find('.rating-stats').html('Thank you for rating!');
+                    // Show translated success feedback
+                    $rating.find('.rating-stats').html(shurikenReviews.i18n.thankYou);
                     // Highlight selected stars
                     $stars.find('.star').each(function() {
                         if ($(this).data('value') <= value) {
@@ -107,11 +107,15 @@ jQuery(document).ready(function($) {
                             $(this).removeClass('active');
                         }
                     });
-                    // Update the original text with new average and total votes
-                    originalText = 'Average: ' + response.data.new_average + '/5 (' + response.data.new_total_votes + ' votes)';
+                    // Update text with translated string
+                    originalText = shurikenReviews.i18n.averageRating
+                        .replace('%s', response.data.new_average)
+                        .replace('%s', response.data.new_total_votes);
                     $rating.find('.rating-stats').data('average', response.data.new_average);
                 } else {
-                    $rating.find('.rating-stats').html('Error: ' + response.data);
+                    $rating.find('.rating-stats').html(
+                        shurikenReviews.i18n.error.replace('%s', response.data)
+                    );
                 }
                 setTimeout(function() {
                     $rating.find('.rating-stats').html(originalText);
@@ -120,9 +124,11 @@ jQuery(document).ready(function($) {
             error: function(xhr, status, error) {
                 console.error('Rating submission error:', error);
                 if (xhr.responseJSON && xhr.responseJSON.data) {
-                    $rating.find('.rating-stats').html(xhr.responseJSON.data);
+                    $rating.find('.rating-stats').html(
+                        shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
+                    );
                 } else {
-                    $rating.find('.rating-stats').html('Error submitting rating. Please try again.');
+                    $rating.find('.rating-stats').html(shurikenReviews.i18n.genericError);
                 }
                 setTimeout(function() {
                     $rating.find('.rating-stats').html(originalText);
