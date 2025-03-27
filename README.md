@@ -21,7 +21,17 @@ Shuriken Reviews is a WordPress plugin that enhances the comment section with ad
 
 ### Shortcode
 
-Use the `[shuriken_rating id="RATING_ID"]` shortcode to display the rating for a specific item. Replace `RATING_ID` with the ID of the rating you want to display.
+Use the shortcode `[shuriken_rating]` to display ratings anywhere on your site. The shortcode accepts two parameters:
+
+- `id`: The numeric ID of the rating you want to display (required)
+- `tag`: HTML tag to wrap the rating title (optional, defaults to h2)
+
+Example:
+```
+[shuriken_rating id="1" tag="h3"]
+```
+
+This will display rating #1 with its title wrapped in an h3 tag.
 
 ### AJAX Rating Submission
 
