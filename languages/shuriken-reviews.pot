@@ -1,0 +1,131 @@
+# Copyright (C) 2025 Skilledup Hub
+# This file is distributed under the GPL2.
+msgid ""
+msgstr ""
+"Project-Id-Version: Shuriken Reviews 1.1.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-reviews\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-03-27T16:52:38+01:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: shuriken-reviews\n"
+
+#. Plugin Name of the plugin
+#: shuriken-reviews.php
+msgid "Shuriken Reviews"
+msgstr ""
+
+#. Description of the plugin
+#: shuriken-reviews.php
+msgid "Boosts wordpress comments with a added functionalities."
+msgstr ""
+
+#. Author of the plugin
+#: shuriken-reviews.php
+msgid "Skilledup Hub"
+msgstr ""
+
+#. Author URI of the plugin
+#: shuriken-reviews.php
+msgid "https://skilledup.ir"
+msgstr ""
+
+#: admin/settings.php:11
+msgid "Rating created successfully!"
+msgstr ""
+
+#: admin/settings.php:18
+msgid "Rating updated successfully!"
+msgstr ""
+
+#: admin/settings.php:24
+msgid "Rating deleted successfully!"
+msgstr ""
+
+#: admin/settings.php:32
+msgid "Shuriken Reviews Settings"
+msgstr ""
+
+#: admin/settings.php:34
+msgid "Create New Rating"
+msgstr ""
+
+#: admin/settings.php:38
+msgid "Rating Name"
+msgstr ""
+
+#: admin/settings.php:45
+msgid "Create Rating"
+msgstr ""
+
+#: admin/settings.php:49
+msgid "Existing Ratings"
+msgstr ""
+
+#: admin/settings.php:53
+msgid "ID"
+msgstr ""
+
+#: admin/settings.php:54
+msgid "Name"
+msgstr ""
+
+#: admin/settings.php:55
+msgid "Shortcode"
+msgstr ""
+
+#: admin/settings.php:56
+msgid "Average Rating"
+msgstr ""
+
+#: admin/settings.php:57
+msgid "Total Votes"
+msgstr ""
+
+#: admin/settings.php:58
+msgid "Actions"
+msgstr ""
+
+#. translators: %s: Average rating value out of 5
+#: admin/settings.php:76
+msgid "%s/5"
+msgstr ""
+
+#: admin/settings.php:83
+msgid "Update"
+msgstr ""
+
+#: admin/settings.php:84
+msgid "Delete"
+msgstr ""
+
+#: admin/settings.php:85
+msgid "Are you sure?"
+msgstr ""
+
+#. translators: %s: Login URL
+#: shuriken-reviews.php:380
+msgid "Please <a href=\"%s\">login</a> to rate"
+msgstr ""
+
+#: shuriken-reviews.php:381
+msgid "Thank you for rating!"
+msgstr ""
+
+#. translators: 1: Average rating value out of 5, 2: Total number of votes
+#: shuriken-reviews.php:383
+msgid "Average: %1$s/5 (%2$s votes)"
+msgstr ""
+
+#. translators: %s: Error message
+#: shuriken-reviews.php:385
+msgid "Error: %s"
+msgstr ""
+
+#: shuriken-reviews.php:386
+msgid "Error submitting rating. Please try again."
+msgstr ""

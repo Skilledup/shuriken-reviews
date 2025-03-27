@@ -107,10 +107,10 @@ jQuery(document).ready(function($) {
                             $(this).removeClass('active');
                         }
                     });
-                    // Update text with translated string
+                    // Update text with translated string using numbered placeholders
                     originalText = shurikenReviews.i18n.averageRating
-                        .replace('%s', response.data.new_average)
-                        .replace('%s', response.data.new_total_votes);
+                        .replace('%1$s', response.data.new_average)
+                        .replace('%2$s', response.data.new_total_votes);
                     $rating.find('.rating-stats').data('average', response.data.new_average);
                 } else {
                     $rating.find('.rating-stats').html(

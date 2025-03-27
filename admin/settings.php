@@ -71,7 +71,10 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
                         </form>
                     </td>
                     <td><code>[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code></td>
-                    <td><?php printf(esc_html__('%s/5', 'shuriken-reviews'), $average); ?></td>
+                    <td><?php
+                        /* translators: %s: Average rating value out of 5 */
+                        printf(esc_html__('%s/5', 'shuriken-reviews'), $average);
+                    ?></td>
                     <td><?php echo esc_html($rating->total_votes); ?></td>
                     <td>
                         <form method="post" action="" style="display:inline;">

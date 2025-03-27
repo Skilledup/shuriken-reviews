@@ -375,11 +375,13 @@ function shuriken_reviews_scripts() {
         'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
         'logged_in' => is_user_logged_in(),
         'login_url' => wp_login_url(),
-        // Add translation strings
         'i18n' => array(
+            /* translators: %s: Login URL */
             'pleaseLogin' => __('Please <a href="%s">login</a> to rate', 'shuriken-reviews'),
             'thankYou' => __('Thank you for rating!', 'shuriken-reviews'),
-            'averageRating' => __('Average: %s/5 (%s votes)', 'shuriken-reviews'),
+            /* translators: 1: Average rating value out of 5, 2: Total number of votes */
+            'averageRating' => __('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+            /* translators: %s: Error message */
             'error' => __('Error: %s', 'shuriken-reviews'),
             'genericError' => __('Error submitting rating. Please try again.', 'shuriken-reviews')
         )
