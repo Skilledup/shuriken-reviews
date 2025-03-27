@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
  * License: GPL2
