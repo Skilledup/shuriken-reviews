@@ -25,6 +25,7 @@
 }
 
 .rating-stats {
+    display: inline;
     margin-top: 10px;
     font-size: 14px;
     color: #666;
@@ -32,4 +33,26 @@
 
 .stars:hover .star {
     cursor: pointer;
+}
+
+.login-message {
+    display: none;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #888888 !important;
+    margin-left: 10px;
+}
+
+.login-message a {
+    color: #007bff !important;
+    text-decoration: none;
+}
+
+.login-message:dir(rtl) {
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+.shuriken-rating:hover .login-message {
+    display: inline !important;
 }

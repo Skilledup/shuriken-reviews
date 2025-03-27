@@ -58,10 +58,19 @@ jQuery(document).ready(function($) {
 
         if (!shurikenReviews.logged_in) {
             var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
-            $rating.find('.rating-stats').html('Please <a href="' + loginUrl + '">login</a> to rate.');
-            setTimeout(function() {
-                $rating.find('.rating-stats').html(originalText);
-            }, 4000);
+            
+            // Add login message as a separate element
+            if (!$rating.find('.login-message').length) {
+                $rating.find('.rating-stats').after(
+                    '<div class="login-message">' +
+                    '[Please <a href="' + loginUrl + '">login</a> to rate]' +
+                    '</div>'
+                );
+            }
+
+            // Show login message
+            $rating.find('.login-message').show();
+
             return;
         }
         
