@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.3
+ * Version: 1.1.4
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
  * License: GPL2
@@ -159,30 +159,73 @@ function shuriken_reviews_activate() {
     
     $charset_collate = $wpdb->get_charset_collate();
 
-    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        name varchar(255) NOT NULL,
-        total_votes int DEFAULT 0,
-        total_rating int DEFAULT 0,
-        date_created datetime DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY  (id)
-    ) $charset_collate;";
+    // Add error logging since WP_DEBUG is enabled
+    error_log('Creating Shuriken Reviews tables...');
 
-    $sql .= "CREATE TABLE IF NOT EXISTS $votes_table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        rating_id mediumint(9) NOT NULL,
-        user_id bigint(20) NOT NULL,
-        rating_value int NOT NULL,
-        date_created datetime DEFAULT CURRENT_TIMESTAMP,
-        date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY  (id),
-        UNIQUE KEY unique_vote (rating_id, user_id)
-    ) $charset_collate;";
+    try {
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            total_votes int DEFAULT 0,
+            total_rating int DEFAULT 0,
+            date_created datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+
+        dbDelta($sql);
+        
+        $sql = "CREATE TABLE IF NOT EXISTS $votes_table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            rating_id mediumint(9) NOT NULL,
+            user_id bigint(20) NOT NULL,
+            rating_value int NOT NULL,
+            date_created datetime DEFAULT CURRENT_TIMESTAMP,
+            date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY unique_vote (rating_id, user_id)
+        ) $charset_collate;";
+
+        dbDelta($sql);
+
+        // Verify tables were created
+        $ratings_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        $votes_exists = $wpdb->get_var("SHOW TABLES LIKE '$votes_table_name'") === $votes_table_name;
+
+        if (!$ratings_exists || !$votes_exists) {
+            error_log('Failed to create tables. Tables exist check: ratings=' . ($ratings_exists ? 'yes' : 'no') . ', votes=' . ($votes_exists ? 'yes' : 'no'));
+            throw new Exception('Failed to create required database tables');
+        }
+
+        error_log('Shuriken Reviews tables created successfully');
+
+    } catch (Exception $e) {
+        error_log('Error creating Shuriken Reviews tables: ' . $e->getMessage());
+        // Optionally deactivate the plugin
+        deactivate_plugins(plugin_basename(__FILE__));
+        wp_die('Error creating required database tables. Please check the error log for details.');
+    }
 }
 register_activation_hook(__FILE__, 'shuriken_reviews_activate');
+
+/**
+ * Deactivation hook for the Shuriken Reviews plugin.
+ * Cleans up the database tables created by the plugin.
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ * @return void
+ * @since 1.1.3
+ */
+if (!function_exists('shuriken_reviews_manual_install')) {
+    function shuriken_reviews_manual_install() {
+        if (get_option('shuriken_reviews_db_version') !== '1.1.3') {
+            shuriken_reviews_activate();
+            update_option('shuriken_reviews_db_version', '1.1.3');
+        }
+    }
+    add_action('plugins_loaded', 'shuriken_reviews_manual_install');
+}
 
 /**
  * Adds the Shuriken Reviews menu to the WordPress admin dashboard.

@@ -65,25 +65,24 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
                 <tr>
                     <td><?php echo esc_html($rating->id); ?></td>
                     <td>
-                        <form method="post" action="" style="display:inline;">
+                        <form method="post" action="" id="rating-form-<?php echo esc_attr($rating->id); ?>">
                             <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating->id); ?>">
-                            <input type="text" name="rating_name" value="<?php echo esc_attr($rating->name); ?>" style="max-width: 100%;" class="regular-text">
+                            <input type="text" name="rating_name" value="<?php echo esc_attr($rating->name); ?>" style="width: 100%;" class="regular-text">
                         </form>
                     </td>
                     <td><code>[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code></td>
-                    <td><?php
-                        /* translators: %s: Average rating value out of 5 */
-                        printf(esc_html__('%s/5', 'shuriken-reviews'), $average);
-                    ?></td>
+                    <td><?php printf(esc_html__('%s/5', 'shuriken-reviews'), $average); ?></td>
                     <td><?php echo esc_html($rating->total_votes); ?></td>
                     <td>
-                        <form method="post" action="" style="display:inline;">
-                            <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating->id); ?>">
-                            <input type="hidden" name="rating_name" value="<?php echo esc_attr($rating->name); ?>">
-                            <input type="submit" name="update_rating" class="button" value="<?php esc_attr_e('Update', 'shuriken-reviews'); ?>">
-                            <input type="submit" name="delete_rating" class="button" value="<?php esc_attr_e('Delete', 'shuriken-reviews'); ?>" 
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" name="update_rating" class="button" form="rating-form-<?php echo esc_attr($rating->id); ?>">
+                                <?php esc_html_e('Update', 'shuriken-reviews'); ?>
+                            </button>
+                            <button type="submit" name="delete_rating" class="button" form="rating-form-<?php echo esc_attr($rating->id); ?>"
                                 onclick="return confirm('<?php esc_attr_e('Are you sure?', 'shuriken-reviews'); ?>');">
-                        </form>
+                                <?php esc_html_e('Delete', 'shuriken-reviews'); ?>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>
