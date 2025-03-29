@@ -264,7 +264,7 @@ function shuriken_reviews_page() {
  *     
  *     @type int    $id         Required. The ID of the rating to display.
  *     @type string $tag        Optional. HTML tag to wrap the rating title. Default 'h2'.
- *     @type string $anchor_tag  Optional. ID attribute for anchor linking. Default false.
+ *     @type string $anchor_tag  Optional. ID attribute for anchor linking. Default Empty.
  * }
  * @return string HTML content for the rating interface.
  * @since 1.1.0

@@ -10,6 +10,7 @@ Shuriken Reviews is a WordPress plugin that enhances the comment section with ad
 - **AJAX Rating Submission**: Users can submit ratings without reloading the page.
 - **Customizable Latest Comments Block**: Excludes author comments and displays comments in a grid layout.
 - **Responsive Design**: Ensures the rating system looks great on all devices.
+- **Accessibility options**: Keyboard navigation and Sreen reader support.
 
 ## Usage
 
@@ -25,10 +26,11 @@ Use the shortcode `[shuriken_rating]` to display ratings anywhere on your site. 
 
 - `id`: The numeric ID of the rating you want to display (required)
 - `tag`: HTML tag to wrap the rating title (optional, defaults to h2)
+- `anchor_tag`: Anchor Tag Linking Id (optional)
 
 Example:
 ```
-[shuriken_rating id="1" tag="h3"]
+[shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
 ```
 
 This will display rating #1 with its title wrapped in an h3 tag.
