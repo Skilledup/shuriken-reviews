@@ -257,47 +257,85 @@ function shuriken_reviews_page() {
 
 /**
  * Registers the [shuriken_rating] shortcode.
- * Displays the rating for a specific item.
+ * Displays an interactive rating interface for a specific item with stars and vote count.
  *
- * @param array $atts Shortcode attributes (id, tag) for example: [shuriken_rating id="1" tag="h2"]
- * @return string HTML content for the rating.
+ * @param array $atts {
+ *     Shortcode attributes.
+ *     
+ *     @type int    $id         Required. The ID of the rating to display.
+ *     @type string $tag        Optional. HTML tag to wrap the rating title. Default 'h2'.
+ *     @type string $anchor_tag  Optional. ID attribute for anchor linking. Default false.
+ * }
+ * @return string HTML content for the rating interface.
  * @since 1.1.0
+ * 
+ * @example [shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
  */
 function shuriken_rating_shortcode($atts) {
+    // Validate and sanitize attributes with proper defaults and parsing
     $atts = shortcode_atts(array(
         'id' => 0,
-        'tag' => 'h2' // Default tag for the rating title
-    ), $atts);
+        'tag' => 'h2',
+        'anchor_tag' => ''
+    ), $atts, 'shuriken_rating');
 
-    if (!$atts['id']) return '';
+    // Validate ID is numeric and positive
+    $id = absint($atts['id']);
+    if (!$id) {
+        return '';
+    }
 
+    // Validate tag is allowed HTML tag
+    $allowed_tags = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
+    $tag = in_array(strtolower($atts['tag']), $allowed_tags) ? $atts['tag'] : 'h2';
+
+    // Sanitize anchor tag
+    $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
+
+    // Get rating data
     global $wpdb;
     $table_name = $wpdb->prefix . 'shuriken_ratings';
     $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM $table_name WHERE id = %d",
-        $atts['id']
+        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
+        $id
     ));
 
-    if (!$rating) return '';
+    if (!$rating) {
+        return '';
+    }
 
+    // Calculate average rating
     $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
     
+    // Start output buffering
     ob_start();
+
+    // Template
     ?>
-    <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>">
-        <<?php echo tag_escape($atts['tag']); ?>><?php echo esc_html($rating->name); ?></<?php echo tag_escape($atts['tag']); ?>>
-        <div class="stars">
+    <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
+        <<?php echo tag_escape($tag); ?>>
+            <?php echo esc_html($rating->name); ?>
+        </<?php echo tag_escape($tag); ?>>
+        
+        <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
             <?php for ($i = 1; $i <= 5; $i++): ?>
-                <span class="star" data-value="<?php echo $i; ?>">★</span>
+                <span class="star" 
+                      data-value="<?php echo $i; ?>" 
+                      role="button" 
+                      tabindex="0"
+                      aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
+                    ★
+                </span>
             <?php endfor; ?>
         </div>
+
         <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
             <?php 
             printf(
-            /* translators: 1: Average rating value out of 5, 2: Total number of votes */
-            esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-            esc_html($average),
-            esc_html($rating->total_votes)
+                /* translators: 1: Average rating value out of 5, 2: Total number of votes */
+                esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+                esc_html($average),
+                esc_html($rating->total_votes)
             );
             ?>
         </div>

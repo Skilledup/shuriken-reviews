@@ -140,4 +140,12 @@ jQuery(document).ready(function($) {
             }
         });
     });
+
+    $('.shuriken-rating .star').on('keydown', function(e) {
+        // Handle Enter (13) or Space (32) key press
+        if (e.which === 13 || e.which === 32) {
+            e.preventDefault();
+            $(this).click();
+        }
+    });
 });
