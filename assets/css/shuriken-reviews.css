@@ -1,8 +1,6 @@
 .shuriken-rating {
     margin: 20px 0;
     padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
 }
 
 .shuriken-rating h4 {
@@ -13,6 +11,7 @@
     font-size: 24px;
     color: #ddd;
     cursor: pointer;
+    flex: 0 0 auto;
 }
 
 .stars .star {
@@ -29,6 +28,7 @@
     margin-top: 10px;
     font-size: 14px;
     color: #666;
+    flex: 0 0 auto;
 }
 
 .stars:hover .star {
@@ -55,4 +55,29 @@
 
 .shuriken-rating:hover .login-message {
     display: inline !important;
+}
+
+.shuriken-rating-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.rating-title {
+    margin: 0 !important;
+    flex: 0 0 auto;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .shuriken-rating-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .rating-title {
+        margin-bottom: 5px !important;
+    }
 }

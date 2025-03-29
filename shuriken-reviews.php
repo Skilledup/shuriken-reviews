@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.4
+ * Version: 1.1.5
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
  * License: GPL2
@@ -309,35 +309,35 @@ function shuriken_rating_shortcode($atts) {
     
     // Start output buffering
     ob_start();
-
-    // Template
     ?>
     <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
-        <<?php echo tag_escape($tag); ?>>
-            <?php echo esc_html($rating->name); ?>
-        </<?php echo tag_escape($tag); ?>>
-        
-        <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
-            <?php for ($i = 1; $i <= 5; $i++): ?>
-                <span class="star" 
-                      data-value="<?php echo $i; ?>" 
-                      role="button" 
-                      tabindex="0"
-                      aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
-                    ★
-                </span>
-            <?php endfor; ?>
-        </div>
+        <div class="shuriken-rating-wrapper">
+            <<?php echo tag_escape($tag); ?> class="rating-title">
+                <?php echo esc_html($rating->name); ?>
+            </<?php echo tag_escape($tag); ?>>
+            
+            <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <span class="star" 
+                          data-value="<?php echo $i; ?>" 
+                          role="button" 
+                          tabindex="0"
+                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
+                        ★
+                    </span>
+                <?php endfor; ?>
+            </div>
 
-        <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
-            <?php 
-            printf(
-                /* translators: 1: Average rating value out of 5, 2: Total number of votes */
-                esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-                esc_html($average),
-                esc_html($rating->total_votes)
-            );
-            ?>
+            <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
+                <?php 
+                printf(
+                    /* translators: 1: Average rating value out of 5, 2: Total number of votes */
+                    esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+                    esc_html($average),
+                    esc_html($rating->total_votes)
+                );
+                ?>
+            </div>
         </div>
     </div>
     <?php
