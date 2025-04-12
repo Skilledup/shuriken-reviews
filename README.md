@@ -8,7 +8,7 @@ Shuriken Reviews is a WordPress plugin that enhances the comment section with ad
 - **Admin Settings**: Manage ratings from the WordPress admin dashboard.
 - **Shortcode**: Display ratings using the `[shuriken_rating]` shortcode.
 - **AJAX Rating Submission**: Users can submit ratings without reloading the page.
-- **Customizable Latest Comments Block**: Excludes author comments and displays comments in a grid layout.
+- **Customizable Latest Comments Block**: Excludes author comments and/or reply comments based on plugin settings from latest comments block.
 - **Responsive Design**: Ensures the rating system looks great on all devices.
 - **Accessibility options**: Keyboard navigation and Sreen reader support.
 
@@ -16,9 +16,15 @@ Shuriken Reviews is a WordPress plugin that enhances the comment section with ad
 
 ### Admin Settings
 
-- **Create New Rating**: Fill in the rating name and click 'Create Rating'.
-- **Update Rating**: Modify the rating name and click 'Update'.
-- **Delete Rating**: Click 'Delete' to remove a rating.
+1. **Creating Ratings**
+    - Navigate to 'Shuriken Reviews > Ratings' in WordPress admin
+    - Enter rating name and settings
+    - Click 'Create Rating'
+    - Update or delete Rating if needed
+
+2. **Comments Settings**
+    - Navigate to 'Shuriken Reviews > Comments Settings' in WordPress admin
+    - Check comment exclusion function as desired
 
 ### Shortcode
 
