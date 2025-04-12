@@ -35,7 +35,11 @@ function shuriken_reviews_load_textdomain() {
  */
 
 function exclude_author_comments_from_latest_comments($query) {
-    // Only modify queries for Latest Comments block
+    // Only modify queries for Latest Comments block if feature is enabled
+    if (!get_option('shuriken_exclude_author_comments', '1')) {
+        return;
+    }
+    
     if (isset($query->query_vars['number']) && $query->query_vars['number'] > 0) {
         
         // Generate a unique transient key based on the current post
@@ -200,6 +204,10 @@ function shuriken_reviews_activate() {
 
         error_log('Shuriken Reviews tables created successfully');
 
+        // Initialize plugin options
+        add_option('shuriken_exclude_author_comments', '1');
+        add_option('shuriken_reviews_db_version', '1.1.3');
+
     } catch (Exception $e) {
         error_log('Error creating Shuriken Reviews tables: ' . $e->getMessage());
         // Optionally deactivate the plugin
@@ -207,6 +215,7 @@ function shuriken_reviews_activate() {
         wp_die('Error creating required database tables. Please check the error log for details.');
     }
 }
+
 register_activation_hook(__FILE__, 'shuriken_reviews_activate');
 
 /**
@@ -234,25 +243,56 @@ if (!function_exists('shuriken_reviews_manual_install')) {
  * @since 1.1.0
  */
 function shuriken_reviews_menu() {
+    // Add main menu item
     add_menu_page(
-        'Shuriken Reviews',
-        'Shuriken Reviews',
+        __('Shuriken Reviews', 'shuriken-reviews'),
+        __('Shuriken Reviews', 'shuriken-reviews'),
         'manage_options',
         'shuriken-reviews',
-        'shuriken_reviews_page',
+        'shuriken_reviews_ratings_page', // Changed to ratings page as default
         'dashicons-star-filled'
+    );
+
+    // Add Ratings submenu
+    add_submenu_page(
+        'shuriken-reviews',
+        __('Ratings Management', 'shuriken-reviews'),
+        __('Ratings', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews',
+        'shuriken_reviews_ratings_page'
+    );
+
+    // Add Comments Settings submenu
+    add_submenu_page(
+        'shuriken-reviews',
+        __('Comments Settings', 'shuriken-reviews'),
+        __('Comments Settings', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews-comments',
+        'shuriken_reviews_comments_page'
     );
 }
 add_action('admin_menu', 'shuriken_reviews_menu');
 
 /**
- * Displays the Shuriken Reviews admin page.
+ * Displays the Shuriken Reviews Ratings page.
  *
  * @return void
- * @since 1.1.0
+ * @since 1.1.5
  */
-function shuriken_reviews_page() {
-    include plugin_dir_path(__FILE__) . 'admin/settings.php';
+function shuriken_reviews_ratings_page() {
+    include plugin_dir_path(__FILE__) . 'admin/ratings.php';
+}
+
+/**
+ * Displays the Shuriken Reviews Comments Settings page.
+ *
+ * @return void
+ * @since 1.1.5
+ */
+function shuriken_reviews_comments_page() {
+    include plugin_dir_path(__FILE__) . 'admin/comments.php';
 }
 
 /**

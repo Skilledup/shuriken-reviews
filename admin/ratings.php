@@ -29,7 +29,7 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e('Shuriken Reviews Settings', 'shuriken-reviews'); ?></h1>
+    <h1><?php esc_html_e('Ratings Management', 'shuriken-reviews'); ?></h1>
     
     <h2><?php esc_html_e('Create New Rating', 'shuriken-reviews'); ?></h2>
     <form method="post" action="">
