@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Shuriken Reviews 1.1.6\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-reviews\n"
 "POT-Creation-Date: 2025-04-12T17:57:21+00:00\n"
-"PO-Revision-Date: 2025-04-12 22:05+0330\n"
+"PO-Revision-Date: 2025-04-12 22:32+0330\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fa_IR\n"
@@ -112,7 +112,7 @@ msgstr "نام"
 
 #: admin/ratings.php:117
 msgid "Shortcode"
-msgstr "میانگین امتیاز"
+msgstr "کد کوتاه"
 
 #: admin/ratings.php:118
 msgid "Average Rating"
