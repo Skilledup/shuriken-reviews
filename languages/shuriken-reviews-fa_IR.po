@@ -1,18 +1,16 @@
-# Copyright (C) 2025 Skilledup Hub
-# This file is distributed under the GPL2.
 msgid ""
 msgstr ""
 "Project-Id-Version: Shuriken Reviews 1.1.6\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-"
-"reviews\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-reviews\n"
 "POT-Creation-Date: 2025-04-12T17:57:21+00:00\n"
-"PO-Revision-Date: 2025-04-12 21:42+0330\n"
+"PO-Revision-Date: 2025-04-12 22:05+0330\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fa_IR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n==0 || n==1);\n"
 "X-Generator: Poedit 3.6\n"
 "X-Domain: shuriken-reviews\n"
 
@@ -57,95 +55,90 @@ msgid "Exclude author comments from Latest Comments block"
 msgstr "نظرات نویسنده را از بلوک آخرین نظرات حذف کنید"
 
 #: admin/comments.php:40
-msgid ""
-"When enabled, comments made by post authors will not appear in the Latest "
-"Comments block."
-msgstr ""
-"وقتی فعال باشد، نظرات نویسندگان پست در بلوک آخرین نظرات ظاهر نمی شود."
+msgid "When enabled, comments made by post authors will not appear in the Latest Comments block."
+msgstr "وقتی فعال باشد، نظرات نویسندگان پست در بلوک آخرین نظرات ظاهر نمی شود."
 
 #: admin/comments.php:49
 msgid "Show only parent comments in Latest Comments block"
 msgstr "فقط نظرات ابتدایی را در بلوک آخرین نظرات نشان دهید"
 
 #: admin/comments.php:52
-msgid ""
-"When enabled, only initial comments will be shown (replies will be hidden)."
-msgstr ""
-"وقتی فعال باشد، فقط نظرات ابتدایی نشان داده می شود (پاسخ ها پنهان می شوند)."
+msgid "When enabled, only initial comments will be shown (replies will be hidden)."
+msgstr "وقتی فعال باشد، فقط نظرات ابتدایی نشان داده می شود (پاسخ ها پنهان می شوند)."
 
 #: admin/comments.php:62
 msgid "Save Comments Settings"
 msgstr "ذخیره تنظیمات دیدگاه"
 
-#: admin/ratings.php:11
+#: admin/ratings.php:15
 msgid "Rating created successfully!"
 msgstr "رتبه‌بندی با موفقیت ایجاد شد!"
 
-#: admin/ratings.php:18
+#: admin/ratings.php:22
 msgid "Rating updated successfully!"
 msgstr "رتبه‌بندی با موفقیت بروز شد!"
 
-#: admin/ratings.php:24
+#: admin/ratings.php:28
 msgid "Rating deleted successfully!"
 msgstr "رتبه‌بندی با موفقیت حذف شد!"
 
-#: admin/ratings.php:32 shuriken-reviews.php:265
+#: admin/ratings.php:56 shuriken-reviews.php:265
 msgid "Ratings Management"
 msgstr "مدیریت رتبه‌بندی ها"
 
-#: admin/ratings.php:34
+#: admin/ratings.php:57
 msgid "Create New Rating"
 msgstr "ایجاد رتبه‌بندی جدید"
 
-#: admin/ratings.php:38
+#: admin/ratings.php:61
 msgid "Rating Name"
 msgstr "نام رتبه‌بندی"
 
-#: admin/ratings.php:45
+#: admin/ratings.php:68
 msgid "Create Rating"
 msgstr "ایجاد رتبه‌بندی"
 
-#: admin/ratings.php:49
+#: admin/ratings.php:72
 msgid "Existing Ratings"
 msgstr "رتبه بندی های موجود"
 
-#: admin/ratings.php:53
+#: admin/ratings.php:115
 msgid "ID"
 msgstr "شناسه"
 
-#: admin/ratings.php:54
+#: admin/ratings.php:116
 msgid "Name"
 msgstr "نام"
 
-#: admin/ratings.php:55
+#: admin/ratings.php:117
 msgid "Shortcode"
 msgstr "میانگین امتیاز"
 
-#: admin/ratings.php:56
+#: admin/ratings.php:118
 msgid "Average Rating"
 msgstr "میانگین امتیاز"
 
-#: admin/ratings.php:57
+#: admin/ratings.php:119
 msgid "Total Votes"
 msgstr "کل رای‌ها"
 
-#: admin/ratings.php:58
+#: admin/ratings.php:120
 msgid "Actions"
 msgstr "عملیات"
 
-#: admin/ratings.php:74
+#: admin/ratings.php:136
 msgid "%s/5"
 msgstr "%s از ۵"
 
-#: admin/ratings.php:79
+#: admin/ratings.php:141
 msgid "Update"
 msgstr "بروزرسانی"
 
-#: admin/ratings.php:82
+#: admin/ratings.php:144
 msgid "Are you sure?"
 msgstr "مطمئن هستید؟"
 
-#: admin/ratings.php:83
+#: admin/ratings.php:145
 msgid "Delete"
 msgstr "حذف"
 
@@ -183,3 +176,21 @@ msgstr "خطا: %s"
 #: shuriken-reviews.php:535
 msgid "Error submitting rating. Please try again."
 msgstr "خطا در ارسال رای. لطفاً دوباره امتحان کنید."
+
+#: admin/ratings.php:82
+msgid "Search ratings..."
+msgstr "جستجو رتبه‌بندی ها..."
+
+#: admin/ratings.php:86
+msgid "Search Ratings"
+msgstr "جستجو"
+
+#: admin/ratings.php:89
+msgid "Clear Search"
+msgstr "پاکسازی جستجو"
+
+#: admin/ratings.php:100
+msgid "Found %s rating matching your search."
+msgid_plural "Found %s ratings matching your search."
+msgstr[0] "تعداد %s رتبه‌بندی یافت شد."
+msgstr[1] "تعداد %s رتبه‌بندی یافت شد."

@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) exit;
 global $wpdb;
 $table_name = $wpdb->prefix . 'shuriken_ratings';
 
+$per_page = 10; // Number of items per page
+$current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+$offset = ($current_page - 1) * $per_page;
+
 // Handle form submissions
 if (isset($_POST['create_rating'])) {
     $name = sanitize_text_field($_POST['rating_name']);
@@ -24,13 +28,32 @@ if (isset($_POST['delete_rating'])) {
     echo '<div class="notice notice-success"><p>' . esc_html__('Rating deleted successfully!', 'shuriken-reviews') . '</p></div>';
 }
 
-// Get all ratings
-$ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+// Add search functionality
+$search = isset($_GET['rating_search']) ? sanitize_text_field($_GET['rating_search']) : '';
+if (!empty($search)) {
+    $total_items = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table_name WHERE name LIKE %s",
+        '%' . $wpdb->esc_like($search) . '%'
+    ));
+    
+    $ratings = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE name LIKE %s ORDER BY id DESC LIMIT %d OFFSET %d",
+        '%' . $wpdb->esc_like($search) . '%',
+        $per_page,
+        $offset
+    ));
+} else {
+    $total_items = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+    $ratings = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $table_name ORDER BY id DESC LIMIT %d OFFSET %d",
+        $per_page,
+        $offset
+    ));
+}
 ?>
 
 <div class="wrap">
     <h1><?php esc_html_e('Ratings Management', 'shuriken-reviews'); ?></h1>
-    
     <h2><?php esc_html_e('Create New Rating', 'shuriken-reviews'); ?></h2>
     <form method="post" action="">
         <table class="form-table">
@@ -47,6 +70,45 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
     </form>
 
     <h2><?php esc_html_e('Existing Ratings', 'shuriken-reviews'); ?></h2>
+
+    <!-- Add search form before the create new rating section -->
+    <form method="get" class="search-box" style="margin: 1em 0;">
+        <input type="hidden" name="page" value="shuriken-reviews">
+        <p>
+            <input type="search"
+                id="rating-search"
+                name="rating_search"
+                value="<?php echo esc_attr($search); ?>"
+                placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>"
+                class="regular-text">
+            <input type="submit"
+                class="button"
+                value="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
+            <?php if (!empty($search)): ?>
+                <a href="?page=shuriken-reviews" class="button">
+                    <?php esc_html_e('Clear Search', 'shuriken-reviews'); ?>
+                </a>
+            <?php endif; ?>
+        </p>
+    </form>
+
+    <!-- Show result count when searching -->
+    <?php if (!empty($search)): ?>
+        <p>
+            <?php
+            printf(
+                esc_html(_n(
+                    'Found %s rating matching your search.',
+                    'Found %s ratings matching your search.',
+                    count($ratings),
+                    'shuriken-reviews'
+                )),
+                number_format_i18n(count($ratings))
+            );
+            ?>
+        </p>
+    <?php endif; ?>
+
     <table class="wp-list-table widefat fixed striped shuriken-ratings-table">
         <thead>
             <tr>
@@ -59,7 +121,7 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($ratings as $rating): 
+            <?php foreach ($ratings as $rating):
                 $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
             ?>
                 <tr>
@@ -88,4 +150,27 @@ $ratings = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
             <?php endforeach; ?>
         </tbody>
     </table>
+
+    <?php
+    $total_pages = ceil($total_items / $per_page);
+
+    if ($total_pages > 1) {
+        echo '<div class="tablenav bottom">';
+        echo '<div class="tablenav-pages">';
+        echo paginate_links(array(
+            'base' => add_query_arg('paged', '%#%'),
+            'format' => '',
+            'prev_text' => __('&laquo;'),
+            'next_text' => __('&raquo;'),
+            'total' => $total_pages,
+            'current' => $current_page,
+            'show_all' => false,
+            'end_size' => 1,
+            'mid_size' => 2,
+            'add_args' => array('rating_search' => $search) // Preserve search parameter
+        ));
+        echo '</div>';
+        echo '</div>';
+    }
+    ?>
 </div>
