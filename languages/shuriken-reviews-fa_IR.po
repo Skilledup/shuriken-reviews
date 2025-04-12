@@ -2,21 +2,22 @@
 # This file is distributed under the GPL2.
 msgid ""
 msgstr ""
-"Project-Id-Version: Shuriken Reviews 1.1.2\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-reviews\n"
-"POT-Creation-Date: 2025-03-27T16:52:38+01:00\n"
-"PO-Revision-Date: 2025-03-27 19:36+0330\n"
+"Project-Id-Version: Shuriken Reviews 1.1.6\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/shuriken-"
+"reviews\n"
+"POT-Creation-Date: 2025-04-12T17:57:21+00:00\n"
+"PO-Revision-Date: 2025-04-12 21:42+0330\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fa_IR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.6\n"
 "X-Domain: shuriken-reviews\n"
 
 #. Plugin Name of the plugin
-#: shuriken-reviews.php
+#: shuriken-reviews.php shuriken-reviews.php:254 shuriken-reviews.php:255
 msgid "Shuriken Reviews"
 msgstr "شوریکن ریویو"
 
@@ -35,98 +36,150 @@ msgstr "اسکیلداپ هاب"
 msgid "https://skilledup.ir"
 msgstr "https://skilledup.ir"
 
-#: admin/settings.php:11
+#: admin/comments.php:6
+msgid "Invalid nonce specified"
+msgstr "نانس اشتباه است"
+
+#: admin/comments.php:16
+msgid "Comments settings saved successfully!"
+msgstr "تنظیمات دیدگاه باموفقیت ذخیره شد!"
+
+#: admin/comments.php:22 shuriken-reviews.php:275 shuriken-reviews.php:276
+msgid "Comments Settings"
+msgstr "تنظیمات دیدگاه"
+
+#: admin/comments.php:28
+msgid "Latest Comments Block"
+msgstr "بلاک آخرین دیدگاه ها"
+
+#: admin/comments.php:37
+msgid "Exclude author comments from Latest Comments block"
+msgstr "نظرات نویسنده را از بلوک آخرین نظرات حذف کنید"
+
+#: admin/comments.php:40
+msgid ""
+"When enabled, comments made by post authors will not appear in the Latest "
+"Comments block."
+msgstr ""
+"وقتی فعال باشد، نظرات نویسندگان پست در بلوک آخرین نظرات ظاهر نمی شود."
+
+#: admin/comments.php:49
+msgid "Show only parent comments in Latest Comments block"
+msgstr "فقط نظرات ابتدایی را در بلوک آخرین نظرات نشان دهید"
+
+#: admin/comments.php:52
+msgid ""
+"When enabled, only initial comments will be shown (replies will be hidden)."
+msgstr ""
+"وقتی فعال باشد، فقط نظرات ابتدایی نشان داده می شود (پاسخ ها پنهان می شوند)."
+
+#: admin/comments.php:62
+msgid "Save Comments Settings"
+msgstr "ذخیره تنظیمات دیدگاه"
+
+#: admin/ratings.php:11
 msgid "Rating created successfully!"
 msgstr "رتبه‌بندی با موفقیت ایجاد شد!"
 
-#: admin/settings.php:18
+#: admin/ratings.php:18
 msgid "Rating updated successfully!"
 msgstr "رتبه‌بندی با موفقیت بروز شد!"
 
-#: admin/settings.php:24
+#: admin/ratings.php:24
 msgid "Rating deleted successfully!"
 msgstr "رتبه‌بندی با موفقیت حذف شد!"
 
-#: admin/settings.php:32
-msgid "Shuriken Reviews Settings"
-msgstr "تنظیمات شوریکن ریویو"
+#: admin/ratings.php:32 shuriken-reviews.php:265
+msgid "Ratings Management"
+msgstr "مدیریت رتبه‌بندی ها"
 
-#: admin/settings.php:34
+#: admin/ratings.php:34
 msgid "Create New Rating"
 msgstr "ایجاد رتبه‌بندی جدید"
 
-#: admin/settings.php:38
+#: admin/ratings.php:38
 msgid "Rating Name"
 msgstr "نام رتبه‌بندی"
 
-#: admin/settings.php:45
+#: admin/ratings.php:45
 msgid "Create Rating"
 msgstr "ایجاد رتبه‌بندی"
 
-#: admin/settings.php:49
+#: admin/ratings.php:49
 msgid "Existing Ratings"
 msgstr "رتبه بندی های موجود"
 
-#: admin/settings.php:53
+#: admin/ratings.php:53
 msgid "ID"
 msgstr "شناسه"
 
-#: admin/settings.php:54
+#: admin/ratings.php:54
 msgid "Name"
 msgstr "نام"
 
-#: admin/settings.php:55
+#: admin/ratings.php:55
 msgid "Shortcode"
-msgstr "کدکوتاه"
+msgstr "میانگین امتیاز"
 
-#: admin/settings.php:56
+#: admin/ratings.php:56
 msgid "Average Rating"
 msgstr "میانگین امتیاز"
 
-#: admin/settings.php:57
+#: admin/ratings.php:57
 msgid "Total Votes"
 msgstr "کل رای‌ها"
 
-#: admin/settings.php:58
+#: admin/ratings.php:58
 msgid "Actions"
 msgstr "عملیات"
 
-#. translators: %s: Average rating value out of 5
-#: admin/settings.php:76
+#: admin/ratings.php:74
 msgid "%s/5"
 msgstr "%s از ۵"
 
-#: admin/settings.php:83
+#: admin/ratings.php:79
 msgid "Update"
 msgstr "بروزرسانی"
 
-#: admin/settings.php:84
-msgid "Delete"
-msgstr "حذف"
-
-#: admin/settings.php:85
+#: admin/ratings.php:82
 msgid "Are you sure?"
 msgstr "مطمئن هستید؟"
 
-#. translators: %s: Login URL
-#: shuriken-reviews.php:380
-msgid "Please <a href=\"%s\">login</a> to rate"
-msgstr "لطفاً برای رای دادن <a href=\"%s\">وارد</a> شوید"
+#: admin/ratings.php:83
+msgid "Delete"
+msgstr "حذف"
 
-#: shuriken-reviews.php:381
-msgid "Thank you for rating!"
-msgstr "از رای شما سپاسگذاریم!"
+#: shuriken-reviews.php:266
+msgid "Ratings"
+msgstr "رتبه‌بندی"
+
+#: shuriken-reviews.php:365
+msgid "Rating stars"
+msgstr "ستاره های رتبه‌بندی"
+
+#: shuriken-reviews.php:371
+msgid "Rate %d out of 5"
+msgstr "ثبت رای %d از ۵"
 
 #. translators: 1: Average rating value out of 5, 2: Total number of votes
-#: shuriken-reviews.php:383
+#: shuriken-reviews.php:381 shuriken-reviews.php:532
 msgid "Average: %1$s/5 (%2$s votes)"
 msgstr "میانگین: %1$s از ۵ (%2$s رای)"
 
+#. translators: %s: Login URL
+#: shuriken-reviews.php:529
+msgid "Please <a href=\"%s\">login</a> to rate"
+msgstr "لطفاً برای رای دادن <a href=\"%s\">وارد</a> شوید"
+
+#: shuriken-reviews.php:530
+msgid "Thank you for rating!"
+msgstr "از رای شما سپاسگذاریم!"
+
 #. translators: %s: Error message
-#: shuriken-reviews.php:385
+#: shuriken-reviews.php:534
 msgid "Error: %s"
 msgstr "خطا: %s"
 
-#: shuriken-reviews.php:386
+#: shuriken-reviews.php:535
 msgid "Error submitting rating. Please try again."
 msgstr "خطا در ارسال رای. لطفاً دوباره امتحان کنید."
