@@ -26,44 +26,49 @@ function shuriken_reviews_load_textdomain() {
 }
 
 /**
- * Excludes comments made by post authors from the Latest Comments block in WordPress.
- * This function helps to filter out author responses from the comment feed,
- * showing only visitor comments in the Latest Comments block widget.
+ * Modifies the comments query to exclude specific types of comments from the Latest Comments block.
+ * Excludes author comments and/or reply comments based on plugin settings.
+ * Uses transients to cache author IDs for better performance.
  *
- * @since 1.0.0
+ * @param WP_Comment_Query $query The WordPress comment query object
  * @return void
+ * @since 1.0.0
  */
 
-function exclude_author_comments_from_latest_comments($query) {
-    // Only modify queries for Latest Comments block if feature is enabled
-    if (!get_option('shuriken_exclude_author_comments', '1')) {
-        return;
-    }
-    
+function exclude_comments_from_latest_comments($query) {
+    // Only modify queries for Latest Comments block
     if (isset($query->query_vars['number']) && $query->query_vars['number'] > 0) {
         
-        // Generate a unique transient key based on the current post
-        $post_id = get_the_ID();
-        $transient_key = 'excluded_author_comments_' . $post_id;
-        
-        // Try to get cached author ID
-        $post_author_id = get_transient($transient_key);
-        
-        if (false === $post_author_id) {
-            // Cache miss - get the post author's ID and cache it
-            $post_author_id = get_post_field('post_author', $post_id);
+        // Exclude author comments if enabled
+        if (get_option('shuriken_exclude_author_comments', '1')) {
+            // Generate a unique transient key based on the current post
+            $post_id = get_the_ID();
+            $transient_key = 'excluded_author_comments_' . $post_id;
             
-            // Cache the author ID for 12 hours
-            set_transient($transient_key, $post_author_id, 12 * HOUR_IN_SECONDS);
+            // Try to get cached author ID
+            $post_author_id = get_transient($transient_key);
+            
+            if (false === $post_author_id) {
+                // Cache miss - get the post author's ID and cache it
+                $post_author_id = get_post_field('post_author', $post_id);
+                
+                // Cache the author ID for 12 hours
+                set_transient($transient_key, $post_author_id, 12 * HOUR_IN_SECONDS);
+            }
+            
+            // Exclude comments from the post author
+            if ($post_author_id) {
+                $query->query_vars['author__not_in'] = array($post_author_id);
+            }
         }
-        
-        // Exclude comments from the post author
-        if ($post_author_id) {
-            $query->query_vars['author__not_in'] = array($post_author_id);
+
+        // Exclude reply comments if enabled
+        if (get_option('shuriken_exclude_reply_comments', '1')) {
+            $query->query_vars['parent'] = 0; // Only show top-level comments
         }
     }
 }
-add_action('pre_get_comments', 'exclude_author_comments_from_latest_comments');
+add_action('pre_get_comments', 'exclude_comments_from_latest_comments');
 
 // Clear transients when comments are modified
 function clear_author_comments_transients($comment_id) {
@@ -206,6 +211,7 @@ function shuriken_reviews_activate() {
 
         // Initialize plugin options
         add_option('shuriken_exclude_author_comments', '1');
+        add_option('shuriken_exclude_reply_comments', '1');
         add_option('shuriken_reviews_db_version', '1.1.3');
 
     } catch (Exception $e) {

@@ -7,7 +7,10 @@ if (isset($_POST['save_comments_settings'])) {
     }
     
     $exclude_author_comments = isset($_POST['exclude_author_comments']) ? '1' : '0';
+    $exclude_reply_comments = isset($_POST['exclude_reply_comments']) ? '1' : '0';
+    
     update_option('shuriken_exclude_author_comments', $exclude_author_comments);
+    update_option('shuriken_exclude_reply_comments', $exclude_reply_comments);
     
     echo '<div class="notice notice-success"><p>' . 
         esc_html__('Comments settings saved successfully!', 'shuriken-reviews') . 
@@ -24,17 +27,31 @@ if (isset($_POST['save_comments_settings'])) {
             <tr>
                 <th scope="row"><?php esc_html_e('Latest Comments Block', 'shuriken-reviews'); ?></th>
                 <td>
-                    <label for="exclude_author_comments">
-                        <input type="checkbox" 
-                               name="exclude_author_comments" 
-                               id="exclude_author_comments"
-                               value="1"
-                               <?php checked('1', get_option('shuriken_exclude_author_comments', '1')); ?>>
-                        <?php esc_html_e('Exclude author comments from Latest Comments block', 'shuriken-reviews'); ?>
-                    </label>
-                    <p class="description">
-                        <?php esc_html_e('When enabled, comments made by post authors will not appear in the Latest Comments block.', 'shuriken-reviews'); ?>
-                    </p>
+                    <fieldset>
+                        <label for="exclude_author_comments">
+                            <input type="checkbox" 
+                                   name="exclude_author_comments" 
+                                   id="exclude_author_comments"
+                                   value="1"
+                                   <?php checked('1', get_option('shuriken_exclude_author_comments', '1')); ?>>
+                            <?php esc_html_e('Exclude author comments from Latest Comments block', 'shuriken-reviews'); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('When enabled, comments made by post authors will not appear in the Latest Comments block.', 'shuriken-reviews'); ?>
+                        </p>
+                        <br>
+                        <label for="exclude_reply_comments">
+                            <input type="checkbox" 
+                                   name="exclude_reply_comments" 
+                                   id="exclude_reply_comments"
+                                   value="1"
+                                   <?php checked('1', get_option('shuriken_exclude_reply_comments', '1')); ?>>
+                            <?php esc_html_e('Show only parent comments in Latest Comments block', 'shuriken-reviews'); ?>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('When enabled, only initial comments will be shown (replies will be hidden).', 'shuriken-reviews'); ?>
+                        </p>
+                    </fieldset>
                 </td>
             </tr>
         </table>
