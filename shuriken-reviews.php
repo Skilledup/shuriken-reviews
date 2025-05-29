@@ -92,36 +92,139 @@ add_action('delete_comment', 'clear_author_comments_transients');
  * @since 1.0.0
  */
 
+/**
+ * Enqueue Swiper.js for the comments slider
+ */
+function enqueue_swiper_for_comments() {
+    // Make sure WordPress functions exist before using them
+    if (!function_exists('wp_enqueue_style') || !function_exists('wp_enqueue_script')) {
+        return;
+    }
+    
+    // Enqueue Swiper CSS and JS
+    wp_enqueue_style('swiper-style', 'https://unpkg.com/swiper/swiper-bundle.min.css');
+    wp_enqueue_script('swiper-script', 'https://unpkg.com/swiper/swiper-bundle.min.js', array('jquery'), null, true);
+    
+    // Add custom initialization script
+    if (function_exists('wp_add_inline_script')) {
+        wp_add_inline_script('swiper-script', '
+            document.addEventListener("DOMContentLoaded", function() {
+                if (document.querySelector(".comments-swiper-container")) {
+                    const commentsSwiper = new Swiper(".comments-swiper-container", {
+                        slidesPerView: 1,
+                        spaceBetween: 20,
+                        pagination: {
+                            el: ".swiper-pagination",
+                            clickable: true,
+                        },
+                        // Navigation buttons removed as requested
+                        breakpoints: {
+                            640: {
+                                slidesPerView: 2,
+                                spaceBetween: 20,
+                            },
+                            1024: {
+                                slidesPerView: 3,
+                                spaceBetween: 20,
+                            }
+                        }
+                    });
+                }
+            });
+        ');
+    }
+}
+
+// Add the action only if the function exists
+if (function_exists('add_action')) {
+    add_action('wp_enqueue_scripts', 'enqueue_swiper_for_comments');
+}
+
 function customize_latest_comments_block($block_content, $block) {
-    // Only modify Latest Comments block
     if ($block['blockName'] !== 'core/latest-comments') {
         return $block_content;
     }
 
-    // Parse the existing comments from the block content
+    // Load the HTML into a DOMDocument
     $dom = new DOMDocument();
-    libxml_use_internal_errors(true);
-    $dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-    libxml_clear_errors();
-
-    // Add CSS for the grid layout
+    @$dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'));
+    
+    // Get the comments list
+    $comments_list = $dom->getElementsByTagName('ol')->item(0);
+    
+    if (!$comments_list) {
+        return $block_content;
+    }
+    
+    // Create Swiper container structure
+    $swiper_container = $dom->createElement('div');
+    $swiper_container->setAttribute('class', 'comments-swiper-container swiper');
+    
+    $swiper_wrapper = $dom->createElement('div');
+    $swiper_wrapper->setAttribute('class', 'swiper-wrapper');
+    
+    // Move each comment into a swiper slide
+    $comments = $comments_list->getElementsByTagName('li');
+    $comments_array = array();
+    
+    // Convert the live NodeList to an array for easier manipulation
+    foreach ($comments as $comment) {
+        $comments_array[] = $comment;
+    }
+    
+    foreach ($comments_array as $comment) {
+        $slide = $dom->createElement('div');
+        $slide->setAttribute('class', 'swiper-slide');
+        $comment_clone = $comment->cloneNode(true);
+        $slide->appendChild($comment_clone);
+        $swiper_wrapper->appendChild($slide);
+    }
+    
+    $swiper_container->appendChild($swiper_wrapper);
+    
+    // Navigation buttons removed as requested
+    
+    // Add pagination
+    $pagination = $dom->createElement('div');
+    $pagination->setAttribute('class', 'swiper-pagination');
+    $swiper_container->appendChild($pagination);
+    
+    // Replace the original comments list with our swiper
+    $comments_list->parentNode->replaceChild($swiper_container, $comments_list);
+    
+    // Add CSS styling
     $style = $dom->createElement('style');
     $style->textContent = '
-        .wp-block-latest-comments {
-            display: grid !important;
-            grid-template-columns: 1fr !important; /* Default to single column for mobile */
-            gap: 1.2rem !important;
+        .comments-swiper-container {
+            width: 100%;
+            height: auto;
+            margin-bottom: 30px;
+            padding-bottom: 40px; /* Space for pagination */
+            position: relative;
         }
-        .wp-block-latest-comments .wp-block-latest-comments__comment {
+        .swiper-slide {
+            height: auto;
+            box-sizing: border-box;
+        }
+        .wp-block-latest-comments__comment {
             border: solid 1px #e0e0e0;
             padding: 15px !important;
             border-radius: 8px !important;
             margin: 0 !important;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .wp-block-latest-comments__comment:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         .wp-block-latest-comments__comment-author {
             font-weight: bold !important;
             display: block !important;
             margin-bottom: 5px !important;
+            color: #333;
         }
         .wp-block-latest-comments__comment-date {
             color: #666 !important;
@@ -132,16 +235,18 @@ function customize_latest_comments_block($block_content, $block) {
         .wp-block-latest-comments__comment-excerpt p {
             margin: 0 !important;
             margin-bottom: 10px !important;
+            line-height: 1.5;
         }
-        @media (min-width: 768px) {
-            .wp-block-latest-comments {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
+        .swiper-button-next, .swiper-button-prev {
+            color: #333;
         }
-        @media (min-width: 1024px) {
-            .wp-block-latest-comments {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
+        .swiper-pagination-bullet-active {
+            background-color: #333;
+        }
+        /* Hide the default comments list styling */
+        .wp-block-latest-comments {
+            list-style: none !important;
+            padding: 0 !important;
         }
     ';
     $dom->appendChild($style);
@@ -151,7 +256,11 @@ function customize_latest_comments_block($block_content, $block) {
 
     return $modified_content;
 }
-add_filter('render_block', 'customize_latest_comments_block', 10, 2);
+
+// Add the filter only if the function exists
+if (function_exists('add_filter')) {
+    add_filter('render_block', 'customize_latest_comments_block', 10, 2);
+}
 
 /**
  * Activation hook for the Shuriken Reviews plugin.
