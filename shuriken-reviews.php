@@ -204,6 +204,11 @@ function customize_latest_comments_block($block_content, $block) {
             padding: 40px 10px;
             position: relative;
         }
+        @media (max-width: 767px) {
+            .comments-swiper-container {
+                padding: 40px 0;
+            }
+        }
         .swiper-slide {
             height: auto;
             box-sizing: border-box;
