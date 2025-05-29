@@ -201,7 +201,7 @@ function customize_latest_comments_block($block_content, $block) {
             width: 100%;
             height: auto;
             margin-bottom: 30px;
-            padding-bottom: 40px 10px;
+            padding: 40px 10px;
             position: relative;
         }
         .swiper-slide {
