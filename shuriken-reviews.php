@@ -2,7 +2,9 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.7
+ * Version: 1.1.8
+ * Requires at least: 5.6
+ * Requires PHP: 7.4
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
  * License: GPL2
@@ -199,7 +201,7 @@ function customize_latest_comments_block($block_content, $block) {
             width: 100%;
             height: auto;
             margin-bottom: 30px;
-            padding-bottom: 40px; /* Space for pagination */
+            padding-bottom: 40px 10px;
             position: relative;
         }
         .swiper-slide {
@@ -218,7 +220,7 @@ function customize_latest_comments_block($block_content, $block) {
         }
         .wp-block-latest-comments__comment:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 7px rgba(0,0,0,0.1);
         }
         .wp-block-latest-comments__comment-author {
             font-weight: bold !important;
