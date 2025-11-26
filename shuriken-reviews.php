@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.8
+ * Version: 1.1.9
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -25,6 +25,212 @@ function shuriken_reviews_load_textdomain() {
         false,
         dirname(plugin_basename(__FILE__)) . '/languages'
     );
+}
+
+/**
+ * Registers the Shuriken Rating FSE block.
+ *
+ * @return void
+ * @since 1.1.9
+ */
+function shuriken_reviews_register_block() {
+    // Register the editor script with proper dependencies
+    wp_register_script(
+        'shuriken-rating-editor',
+        plugins_url('blocks/shuriken-rating/index.js', __FILE__),
+        array(
+            'wp-blocks',
+            'wp-element',
+            'wp-block-editor',
+            'wp-components',
+            'wp-i18n',
+            'wp-api-fetch'
+        ),
+        filemtime(plugin_dir_path(__FILE__) . 'blocks/shuriken-rating/index.js'),
+        true
+    );
+
+    // Register the block with explicit render callback
+    register_block_type(__DIR__ . '/blocks/shuriken-rating', array(
+        'render_callback' => 'shuriken_reviews_render_rating_block',
+    ));
+}
+add_action('init', 'shuriken_reviews_register_block');
+
+/**
+ * Render callback for the Shuriken Rating block.
+ *
+ * @param array    $attributes Block attributes.
+ * @param string   $content    Block content.
+ * @param WP_Block $block      Block instance.
+ * @return string Rendered block output.
+ * @since 1.1.9
+ */
+function shuriken_reviews_render_rating_block($attributes, $content, $block) {
+    // Ensure attributes is an array
+    if (!is_array($attributes)) {
+        $attributes = array();
+    }
+
+    $rating_id = isset($attributes['ratingId']) ? absint($attributes['ratingId']) : 0;
+    $title_tag = isset($attributes['titleTag']) ? sanitize_key($attributes['titleTag']) : 'h2';
+    $anchor_tag = isset($attributes['anchorTag']) ? sanitize_html_class($attributes['anchorTag']) : '';
+
+    // Validate title tag
+    $allowed_tags = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
+    if (!in_array($title_tag, $allowed_tags, true)) {
+        $title_tag = 'h2';
+    }
+
+    if (!$rating_id) {
+        return '';
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    $rating = $wpdb->get_row($wpdb->prepare(
+        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
+        $rating_id
+    ));
+
+    if (!$rating) {
+        return '';
+    }
+
+    // Calculate average rating
+    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+
+    // Get block wrapper attributes
+    $wrapper_attributes = get_block_wrapper_attributes(array(
+        'class' => 'shuriken-rating',
+        'data-id' => esc_attr($rating->id),
+    ));
+
+    if ($anchor_tag) {
+        $wrapper_attributes = str_replace('class="', 'id="' . esc_attr($anchor_tag) . '" class="', $wrapper_attributes);
+    }
+
+    ob_start();
+    ?>
+    <div <?php echo $wrapper_attributes; ?>>
+        <div class="shuriken-rating-wrapper">
+            <<?php echo esc_html($title_tag); ?> class="rating-title">
+                <?php echo esc_html($rating->name); ?>
+            </<?php echo esc_html($title_tag); ?>>
+            
+            <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
+                <?php for ($i = 1; $i <= 5; $i++) : ?>
+                    <span class="star" 
+                          data-value="<?php echo esc_attr($i); ?>" 
+                          role="button" 
+                          tabindex="0"
+                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
+                        ★
+                    </span>
+                <?php endfor; ?>
+            </div>
+
+            <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
+                <?php
+                printf(
+                    /* translators: 1: Average rating value out of 5, 2: Total number of votes */
+                    esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+                    esc_html($average),
+                    esc_html($rating->total_votes)
+                );
+                ?>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+/**
+ * Registers REST API endpoints for ratings management.
+ *
+ * @return void
+ * @since 1.1.9
+ */
+function shuriken_reviews_register_rest_routes() {
+    register_rest_route('shuriken-reviews/v1', '/ratings', array(
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'shuriken_reviews_get_ratings',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ),
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'shuriken_reviews_create_rating',
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+            'args'                => array(
+                'name' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ),
+            ),
+        ),
+    ));
+}
+add_action('rest_api_init', 'shuriken_reviews_register_rest_routes');
+
+/**
+ * REST API callback: Get all ratings.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response
+ * @since 1.1.9
+ */
+function shuriken_reviews_get_ratings($request) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    
+    $ratings = $wpdb->get_results(
+        "SELECT id, name, total_votes, total_rating FROM $table_name ORDER BY id DESC"
+    );
+    
+    return rest_ensure_response($ratings);
+}
+
+/**
+ * REST API callback: Create a new rating.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error
+ * @since 1.1.9
+ */
+function shuriken_reviews_create_rating($request) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'shuriken_ratings';
+    
+    $name = $request->get_param('name');
+    
+    $result = $wpdb->insert(
+        $table_name,
+        array('name' => $name),
+        array('%s')
+    );
+    
+    if ($result === false) {
+        return new WP_Error(
+            'create_failed',
+            __('Failed to create rating.', 'shuriken-reviews'),
+            array('status' => 500)
+        );
+    }
+    
+    $new_id = $wpdb->insert_id;
+    $rating = $wpdb->get_row($wpdb->prepare(
+        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
+        $new_id
+    ));
+    
+    return rest_ensure_response($rating);
 }
 
 /**

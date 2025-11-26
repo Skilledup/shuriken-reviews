@@ -1,0 +1,32 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "shuriken-reviews/rating",
+    "version": "1.0.0",
+    "title": "Shuriken Rating",
+    "category": "widgets",
+    "icon": "star-filled",
+    "description": "Display an interactive rating widget for collecting user ratings.",
+    "keywords": ["rating", "review", "stars", "vote"],
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"]
+    },
+    "textdomain": "shuriken-reviews",
+    "attributes": {
+        "ratingId": {
+            "type": "number",
+            "default": 0
+        },
+        "titleTag": {
+            "type": "string",
+            "default": "h2"
+        },
+        "anchorTag": {
+            "type": "string",
+            "default": ""
+        }
+    },
+    "editorScript": "shuriken-rating-editor",
+    "editorStyle": "file:./editor.css"
+}

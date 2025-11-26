@@ -1,0 +1,65 @@
+/* Editor styles for Shuriken Rating block */
+
+.shuriken-rating-block-editor {
+    padding: 20px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.shuriken-rating-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    color: #757575;
+}
+
+.shuriken-rating-placeholder .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #ffd700;
+    margin-bottom: 16px;
+}
+
+.shuriken-rating-placeholder p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Preview styles */
+.shuriken-rating-block-editor .shuriken-rating {
+    background: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+}
+
+.shuriken-rating-block-editor .shuriken-rating-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.shuriken-rating-block-editor .rating-title {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.shuriken-rating-block-editor .stars {
+    font-size: 24px;
+    color: #ddd;
+}
+
+.shuriken-rating-block-editor .stars .star {
+    transition: color 0.2s;
+}
+
+.shuriken-rating-block-editor .stars .star.active {
+    color: #ffd700;
+}
+
+.shuriken-rating-block-editor .rating-stats {
+    font-size: 14px;
+    color: #666;
+}
