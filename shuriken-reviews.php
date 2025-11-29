@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.1.9
+ * Version: 1.2.0
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -510,12 +510,13 @@ function shuriken_reviews_activate() {
         $sql = "CREATE TABLE IF NOT EXISTS $votes_table_name (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             rating_id mediumint(9) NOT NULL,
-            user_id bigint(20) NOT NULL,
+            user_id bigint(20) DEFAULT 0,
+            user_ip varchar(45) DEFAULT NULL,
             rating_value int NOT NULL,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
             date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
-            UNIQUE KEY unique_vote (rating_id, user_id)
+            UNIQUE KEY unique_vote (rating_id, user_id, user_ip)
         ) $charset_collate;";
 
         dbDelta($sql);
@@ -534,7 +535,8 @@ function shuriken_reviews_activate() {
         // Initialize plugin options
         add_option('shuriken_exclude_author_comments', '1');
         add_option('shuriken_exclude_reply_comments', '1');
-        add_option('shuriken_reviews_db_version', '1.1.3');
+        add_option('shuriken_allow_guest_voting', '0');
+        add_option('shuriken_reviews_db_version', '1.2.0');
 
     } catch (Exception $e) {
         error_log('Error creating Shuriken Reviews tables: ' . $e->getMessage());
@@ -555,11 +557,59 @@ register_activation_hook(__FILE__, 'shuriken_reviews_activate');
  * @since 1.1.3
  */
 if (!function_exists('shuriken_reviews_manual_install')) {
+    /**
+     * Handles database migrations and upgrades.
+     * Checks actual schema state rather than version to ensure idempotent upgrades.
+     *
+     * @return void
+     * @since 1.2.0
+     */
     function shuriken_reviews_manual_install() {
-        if (get_option('shuriken_reviews_db_version') !== '1.1.3') {
-            shuriken_reviews_activate();
-            update_option('shuriken_reviews_db_version', '1.1.3');
+        // Skip if already at current version
+        $current_version = get_option('shuriken_reviews_db_version', '0');
+        if (version_compare($current_version, '1.2.0', '>=')) {
+            return;
         }
+        
+        global $wpdb;
+        $votes_table_name = $wpdb->prefix . 'shuriken_votes';
+        
+        // Check if table exists before attempting migration
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$votes_table_name'") === $votes_table_name;
+        if (!$table_exists) {
+            return;
+        }
+        
+        // Check if user_ip column exists
+        $column_exists = $wpdb->get_results(
+            "SHOW COLUMNS FROM $votes_table_name LIKE 'user_ip'"
+        );
+        
+        if (empty($column_exists)) {
+            // Add user_ip column
+            $wpdb->query("ALTER TABLE $votes_table_name ADD COLUMN user_ip varchar(45) DEFAULT NULL AFTER user_id");
+            
+            // Check if unique_vote index exists and update it
+            $index_exists = $wpdb->get_results(
+                "SHOW INDEX FROM $votes_table_name WHERE Key_name = 'unique_vote'"
+            );
+            
+            if (!empty($index_exists)) {
+                $wpdb->query("ALTER TABLE $votes_table_name DROP INDEX unique_vote");
+            }
+            
+            // Create the new unique index with user_ip
+            $wpdb->query("ALTER TABLE $votes_table_name ADD UNIQUE KEY unique_vote (rating_id, user_id, user_ip)");
+            
+            // Make user_id default to 0 for guest votes
+            $wpdb->query("ALTER TABLE $votes_table_name MODIFY user_id bigint(20) DEFAULT 0");
+        }
+        
+        // Add the new option if it doesn't exist
+        add_option('shuriken_allow_guest_voting', '0');
+        
+        // Update version
+        update_option('shuriken_reviews_db_version', '1.2.0');
     }
     add_action('plugins_loaded', 'shuriken_reviews_manual_install');
 }
@@ -600,6 +650,16 @@ function shuriken_reviews_menu() {
         'shuriken-reviews-comments',
         'shuriken_reviews_comments_page'
     );
+
+    // Add Settings submenu
+    add_submenu_page(
+        'shuriken-reviews',
+        __('Settings', 'shuriken-reviews'),
+        __('Settings', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews-settings',
+        'shuriken_reviews_settings_page'
+    );
 }
 add_action('admin_menu', 'shuriken_reviews_menu');
 
@@ -621,6 +681,16 @@ function shuriken_reviews_ratings_page() {
  */
 function shuriken_reviews_comments_page() {
     include plugin_dir_path(__FILE__) . 'admin/comments.php';
+}
+
+/**
+ * Displays the Shuriken Reviews Settings page.
+ *
+ * @return void
+ * @since 1.2.0
+ */
+function shuriken_reviews_settings_page() {
+    include plugin_dir_path(__FILE__) . 'admin/settings.php';
 }
 
 /**
@@ -714,6 +784,33 @@ function shuriken_rating_shortcode($atts) {
 add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
 
 /**
+ * Gets the user's IP address, checking for proxies.
+ *
+ * @return string The user's IP address.
+ * @since 1.2.0
+ */
+function shuriken_get_user_ip() {
+    $ip = '';
+    
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        $ip = sanitize_text_field(wp_unslash($_SERVER['HTTP_CLIENT_IP']));
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        // HTTP_X_FORWARDED_FOR can contain multiple IPs, take the first one
+        $ips = explode(',', sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR'])));
+        $ip = trim($ips[0]);
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']));
+    }
+    
+    // Validate IP address
+    if (filter_var($ip, FILTER_VALIDATE_IP)) {
+        return $ip;
+    }
+    
+    return '0.0.0.0';
+}
+
+/**
  * Handles the AJAX request to submit a rating.
  * Updates or inserts the user's rating for a specific item.
  *
@@ -721,8 +818,10 @@ add_shortcode('shuriken_rating', 'shuriken_rating_shortcode');
  * @since 1.1.0
  */
 function handle_submit_rating() {
-    // Check if user is logged in
-    if (!is_user_logged_in()) {
+    $allow_guest_voting = get_option('shuriken_allow_guest_voting', '0') === '1';
+    
+    // Check if user is logged in or guest voting is allowed
+    if (!is_user_logged_in() && !$allow_guest_voting) {
         wp_send_json_error('You must be logged in to rate');
         return;
     }
@@ -742,63 +841,103 @@ function handle_submit_rating() {
     $table_name = $wpdb->prefix . 'shuriken_ratings';
     $votes_table_name = $wpdb->prefix . 'shuriken_votes';
     $user_id = get_current_user_id();
+    $user_ip = is_user_logged_in() ? null : shuriken_get_user_ip();
     $rating_id = intval($_POST['rating_id']);
     $rating_value = intval($_POST['rating_value']);
 
-    // Check if the user has already voted
-    $existing_vote = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_id = %d",
-        $rating_id,
-        $user_id
-    ));
-
-    if ($existing_vote) {
-        // Update the existing vote
-        $result = $wpdb->update(
-            $votes_table_name,
-            array('rating_value' => $rating_value),
-            array('id' => $existing_vote->id)
-        );
-
-        if ($result === false) {
-            wp_send_json_error('Database update failed');
-            return;
-        }
-
-        // Update the total rating and total votes
-        $wpdb->query($wpdb->prepare(
-            "UPDATE $table_name 
-            SET total_rating = total_rating - %d + %d 
-            WHERE id = %d",
-            $existing_vote->rating_value,
-            $rating_value,
-            $rating_id
+    // Check if the user has already voted (by user_id for logged in, by IP for guests)
+    if (is_user_logged_in()) {
+        $existing_vote = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_id = %d",
+            $rating_id,
+            $user_id
         ));
     } else {
-        // Insert a new vote
-        $result = $wpdb->insert(
-            $votes_table_name,
-            array(
+        $existing_vote = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_ip = %s AND user_id = 0",
+            $rating_id,
+            $user_ip
+        ));
+    }
+
+    // Start transaction for data consistency
+    $wpdb->query('START TRANSACTION');
+
+    try {
+        if ($existing_vote) {
+            // Update the existing vote
+            $result = $wpdb->update(
+                $votes_table_name,
+                array('rating_value' => $rating_value),
+                array('id' => $existing_vote->id)
+            );
+
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error('Database update failed');
+                return;
+            }
+
+            // Update the total rating
+            $update_result = $wpdb->query($wpdb->prepare(
+                "UPDATE $table_name 
+                SET total_rating = total_rating - %d + %d 
+                WHERE id = %d",
+                $existing_vote->rating_value,
+                $rating_value,
+                $rating_id
+            ));
+
+            if ($update_result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error('Failed to update rating totals');
+                return;
+            }
+        } else {
+            // Insert a new vote
+            $insert_data = array(
                 'rating_id' => $rating_id,
                 'user_id' => $user_id,
                 'rating_value' => $rating_value
-            )
-        );
+            );
+            
+            // Add IP for guest votes
+            if (!is_user_logged_in()) {
+                $insert_data['user_ip'] = $user_ip;
+            }
+            
+            $result = $wpdb->insert($votes_table_name, $insert_data);
 
-        if ($result === false) {
-            wp_send_json_error('Database insert failed');
-            return;
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error('Database insert failed');
+                return;
+            }
+
+            // Update the total rating and total votes
+            $update_result = $wpdb->query($wpdb->prepare(
+                "UPDATE $table_name 
+                SET total_votes = total_votes + 1,
+                total_rating = total_rating + %d 
+                WHERE id = %d",
+                $rating_value,
+                $rating_id
+            ));
+
+            if ($update_result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error('Failed to update rating totals');
+                return;
+            }
         }
 
-        // Update the total rating and total votes
-        $wpdb->query($wpdb->prepare(
-            "UPDATE $table_name 
-            SET total_votes = total_votes + 1,
-            total_rating = total_rating + %d 
-            WHERE id = %d",
-            $rating_value,
-            $rating_id
-        ));
+        // Commit the transaction
+        $wpdb->query('COMMIT');
+
+    } catch (Exception $e) {
+        $wpdb->query('ROLLBACK');
+        wp_send_json_error('An error occurred while processing your vote');
+        return;
     }
 
     // Calculate new average rating and total votes
@@ -837,7 +976,7 @@ function shuriken_reviews_scripts() {
         'shuriken-reviews',
         $plugin_url . 'assets/js/shuriken-reviews.js',
         array('jquery'),
-        '1.0.0',
+        '1.2.0',
         true
     );
     
@@ -845,6 +984,7 @@ function shuriken_reviews_scripts() {
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
         'logged_in' => is_user_logged_in(),
+        'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
         'login_url' => wp_login_url(),
         'i18n' => array(
             /* translators: %s: Login URL */

@@ -56,7 +56,11 @@ jQuery(document).ready(function($) {
         var value = $(this).data('value');
         var originalText = $rating.find('.rating-stats').html();
 
-        if (!shurikenReviews.logged_in) {
+        // Check if voting is allowed (logged in or guest voting enabled)
+        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        
+        if (!isLoggedIn && !guestVotingAllowed) {
             var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             
             // Add login message using translated string
