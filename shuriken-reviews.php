@@ -621,14 +621,14 @@ if (!function_exists('shuriken_reviews_manual_install')) {
  * @since 1.1.0
  */
 function shuriken_reviews_menu() {
-    // Add main menu item
     add_menu_page(
         __('Shuriken Reviews', 'shuriken-reviews'),
         __('Shuriken Reviews', 'shuriken-reviews'),
         'manage_options',
         'shuriken-reviews',
         'shuriken_reviews_ratings_page', // Changed to ratings page as default
-        'dashicons-star-filled'
+        'dashicons-star-filled',
+        26
     );
 
     // Add Ratings submenu
