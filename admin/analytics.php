@@ -13,9 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-global $wpdb;
-$ratings_table = $wpdb->prefix . 'shuriken_ratings';
-$votes_table = $wpdb->prefix . 'shuriken_votes';
+// Get analytics instance
+$analytics = shuriken_analytics();
 
 // Get date range filter
 $date_range = isset($_GET['date_range']) ? sanitize_text_field($_GET['date_range']) : '30';
@@ -24,122 +23,25 @@ if (!in_array($date_range, $valid_ranges, true)) {
     $date_range = '30';
 }
 
-// Build date condition for queries
-$date_condition = '';
-if ($date_range !== 'all') {
-    $date_condition = $wpdb->prepare(
-        " AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)",
-        intval($date_range)
-    );
-}
+// Fetch all data using the analytics class
+$overall_stats    = $analytics->get_overall_stats();
+$vote_counts      = $analytics->get_vote_counts($date_range);
+$vote_change_percent = $analytics->get_vote_change_percent($date_range);
+$top_rated        = $analytics->get_top_rated(10, 1, 3.0);
+$most_voted       = $analytics->get_most_voted(10);
+$low_performers   = $analytics->get_low_performers(10, 1, 3.0);
+$distribution_array = $analytics->get_rating_distribution($date_range);
+$votes_over_time  = $analytics->get_votes_over_time($date_range);
+$recent_votes     = $analytics->get_recent_votes(10);
 
-// Get overall stats
-$total_ratings = $wpdb->get_var("SELECT COUNT(*) FROM $ratings_table");
-$total_votes = $wpdb->get_var("SELECT SUM(total_votes) FROM $ratings_table");
-$overall_average = $wpdb->get_var(
-    "SELECT AVG(total_rating / NULLIF(total_votes, 0)) FROM $ratings_table WHERE total_votes > 0"
-);
-
-// Get unique voters count
-$unique_voters = $wpdb->get_var(
-    "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) FROM $votes_table"
-);
-
-// Get top rated items (minimum 1 vote, average >= 3 to qualify as "top")
-$top_rated = $wpdb->get_results(
-    "SELECT id, name, total_votes, total_rating, 
-            ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
-     FROM $ratings_table 
-     WHERE total_votes >= 1 
-       AND (total_rating / NULLIF(total_votes, 0)) >= 3
-     ORDER BY average DESC, total_votes DESC 
-     LIMIT 10"
-);
-
-// Get most voted items
-$most_voted = $wpdb->get_results(
-    "SELECT id, name, total_votes, total_rating,
-            ROUND(total_rating / NULLIF(total_votes, 0), 1) as average
-     FROM $ratings_table 
-     ORDER BY total_votes DESC 
-     LIMIT 10"
-);
-
-// Get low performers (items with average rating < 3, minimum 1 vote)
-$low_performers = $wpdb->get_results(
-    "SELECT id, name, total_votes, total_rating, 
-            ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
-     FROM $ratings_table 
-     WHERE total_votes >= 1 
-       AND (total_rating / NULLIF(total_votes, 0)) < 3
-     ORDER BY average ASC, total_votes DESC 
-     LIMIT 10"
-);
-
-// Get rating distribution
-$rating_distribution = $wpdb->get_results(
-    "SELECT rating_value, COUNT(*) as count 
-     FROM $votes_table 
-     WHERE 1=1 $date_condition
-     GROUP BY rating_value 
-     ORDER BY rating_value"
-);
-
-// Ensure all ratings 1-5 are represented
-$distribution_array = array_fill(1, 5, 0);
-foreach ($rating_distribution as $dist) {
-    $distribution_array[intval($dist->rating_value)] = intval($dist->count);
-}
-
-// Get votes over time (based on selected range)
-$votes_over_time = $wpdb->get_results(
-    "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
-     FROM $votes_table 
-     WHERE 1=1 $date_condition
-     GROUP BY DATE(date_created) 
-     ORDER BY vote_date"
-);
-
-// Get logged-in vs guest ratio
-$logged_in_votes = $wpdb->get_var(
-    "SELECT COUNT(*) FROM $votes_table WHERE user_id > 0 $date_condition"
-);
-$guest_votes = $wpdb->get_var(
-    "SELECT COUNT(*) FROM $votes_table WHERE user_id = 0 $date_condition"
-);
-
-// Get recent activity (last 10 votes)
-$recent_votes = $wpdb->get_results(
-    "SELECT v.rating_id, v.rating_value, v.date_created, v.user_id, r.name as rating_name
-     FROM $votes_table v
-     JOIN $ratings_table r ON v.rating_id = r.id
-     ORDER BY v.date_created DESC
-     LIMIT 10"
-);
-
-// Calculate vote change compared to previous period
-$current_period_votes = $wpdb->get_var(
-    "SELECT COUNT(*) FROM $votes_table WHERE 1=1 $date_condition"
-);
-
-if ($date_range !== 'all') {
-    $previous_period_condition = $wpdb->prepare(
-        " AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) AND date_created < DATE_SUB(NOW(), INTERVAL %d DAY)",
-        intval($date_range) * 2,
-        intval($date_range)
-    );
-    $previous_period_votes = $wpdb->get_var(
-        "SELECT COUNT(*) FROM $votes_table WHERE 1=1 $previous_period_condition"
-    );
-    
-    if ($previous_period_votes > 0) {
-        $vote_change_percent = round((($current_period_votes - $previous_period_votes) / $previous_period_votes) * 100, 1);
-    } else {
-        $vote_change_percent = $current_period_votes > 0 ? 100 : 0;
-    }
-} else {
-    $vote_change_percent = null;
-}
+// Extract values for template
+$total_ratings       = $overall_stats->total_ratings;
+$total_votes         = $overall_stats->total_votes;
+$overall_average     = $overall_stats->overall_average;
+$unique_voters       = $overall_stats->unique_voters;
+$current_period_votes = $vote_counts->period_votes;
+$logged_in_votes     = $vote_counts->member_votes;
+$guest_votes         = $vote_counts->guest_votes;
 ?>
 
 <div class="wrap shuriken-analytics">
@@ -457,13 +359,12 @@ if ($date_range !== 'all') {
                                 </td>
                                 <td>
                                     <?php if ($vote->user_id > 0) : ?>
-                                        <?php $user = get_userdata($vote->user_id); ?>
-                                        <?php echo $user ? esc_html($user->display_name) : __('Deleted User', 'shuriken-reviews'); ?>
+                                        <?php echo $vote->display_name ? esc_html($vote->display_name) : __('Deleted User', 'shuriken-reviews'); ?>
                                     <?php else : ?>
                                         <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo esc_html(human_time_diff(mysql2date('U', $vote->date_created), current_time('timestamp')) . ' ' . __('ago', 'shuriken-reviews')); ?></td>
+                                <td><?php echo esc_html($analytics->format_time_ago($vote->date_created)); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else : ?>

@@ -13,9 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-global $wpdb;
-$ratings_table = $wpdb->prefix . 'shuriken_ratings';
-$votes_table = $wpdb->prefix . 'shuriken_votes';
+// Get analytics instance
+$analytics = shuriken_analytics();
 
 // Get and validate rating ID
 $rating_id = isset($_GET['rating_id']) ? intval($_GET['rating_id']) : 0;
@@ -24,97 +23,36 @@ if (!$rating_id) {
     wp_die(__('Invalid rating ID', 'shuriken-reviews'));
 }
 
-// Get rating info
-$rating = $wpdb->get_row($wpdb->prepare(
-    "SELECT * FROM $ratings_table WHERE id = %d",
-    $rating_id
-));
+// Get rating info with stats
+$rating = $analytics->get_rating($rating_id);
 
 if (!$rating) {
     wp_die(__('Rating not found', 'shuriken-reviews'));
 }
 
-// Calculate average
-$average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+// Get detailed stats for this item
+$stats = $analytics->get_rating_stats($rating_id);
+
+// Extract values for template
+$average = $stats->average;
+$member_votes = $stats->member_votes;
+$guest_votes_count = $stats->guest_votes;
+$unique_voters = $stats->unique_voters;
+$first_vote = $stats->first_vote;
+$last_vote = $stats->last_vote;
+$distribution_array = $stats->distribution;
+$votes_over_time = $stats->votes_over_time;
 
 // Pagination for votes
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+
+// Get paginated votes
+$votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page);
+$votes = $votes_result->votes;
+$total_votes_count = $votes_result->total_count;
+$total_pages = $votes_result->total_pages;
 $offset = ($current_page - 1) * $per_page;
-
-// Get total votes count
-$total_votes_count = $wpdb->get_var($wpdb->prepare(
-    "SELECT COUNT(*) FROM $votes_table WHERE rating_id = %d",
-    $rating_id
-));
-
-$total_pages = ceil($total_votes_count / $per_page);
-
-// Get votes with pagination
-$votes = $wpdb->get_results($wpdb->prepare(
-    "SELECT v.*, u.display_name, u.user_email
-     FROM $votes_table v
-     LEFT JOIN {$wpdb->users} u ON v.user_id = u.ID
-     WHERE v.rating_id = %d
-     ORDER BY v.date_created DESC
-     LIMIT %d OFFSET %d",
-    $rating_id,
-    $per_page,
-    $offset
-));
-
-// Get rating distribution for this item
-$rating_distribution = $wpdb->get_results($wpdb->prepare(
-    "SELECT rating_value, COUNT(*) as count 
-     FROM $votes_table 
-     WHERE rating_id = %d
-     GROUP BY rating_value 
-     ORDER BY rating_value",
-    $rating_id
-));
-
-// Prepare distribution array
-$distribution_array = array_fill(1, 5, 0);
-foreach ($rating_distribution as $dist) {
-    $distribution_array[intval($dist->rating_value)] = intval($dist->count);
-}
-
-// Get votes over time (last 30 days)
-$votes_over_time = $wpdb->get_results($wpdb->prepare(
-    "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
-     FROM $votes_table 
-     WHERE rating_id = %d AND date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-     GROUP BY DATE(date_created) 
-     ORDER BY vote_date",
-    $rating_id
-));
-
-// Get logged-in vs guest stats for this item
-$member_votes = $wpdb->get_var($wpdb->prepare(
-    "SELECT COUNT(*) FROM $votes_table WHERE rating_id = %d AND user_id > 0",
-    $rating_id
-));
-$guest_votes_count = $wpdb->get_var($wpdb->prepare(
-    "SELECT COUNT(*) FROM $votes_table WHERE rating_id = %d AND user_id = 0",
-    $rating_id
-));
-
-// Get first and last vote dates
-$first_vote = $wpdb->get_var($wpdb->prepare(
-    "SELECT MIN(date_created) FROM $votes_table WHERE rating_id = %d",
-    $rating_id
-));
-$last_vote = $wpdb->get_var($wpdb->prepare(
-    "SELECT MAX(date_created) FROM $votes_table WHERE rating_id = %d",
-    $rating_id
-));
-
-// Get unique voters count
-$unique_voters = $wpdb->get_var($wpdb->prepare(
-    "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-     FROM $votes_table WHERE rating_id = %d",
-    $rating_id
-));
 
 // Back URL
 $back_url = admin_url('admin.php?page=shuriken-reviews-analytics');
@@ -193,13 +131,13 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
         </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
-                <h4><?php echo $first_vote ? esc_html(human_time_diff(mysql2date('U', $first_vote), current_time('timestamp')) . ' ' . __('ago', 'shuriken-reviews')) : '-'; ?></h4>
+                <h4><?php echo esc_html($analytics->format_time_ago($first_vote)); ?></h4>
                 <p><?php esc_html_e('First Vote', 'shuriken-reviews'); ?></p>
             </div>
         </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
-                <h4><?php echo $last_vote ? esc_html(human_time_diff(mysql2date('U', $last_vote), current_time('timestamp')) . ' ' . __('ago', 'shuriken-reviews')) : '-'; ?></h4>
+                <h4><?php echo esc_html($analytics->format_time_ago($last_vote)); ?></h4>
                 <p><?php esc_html_e('Last Vote', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -281,12 +219,16 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
                                 <?php endif; ?>
                             </td>
                             <td class="column-ip">
-                                <code><?php echo esc_html($vote->user_ip); ?></code>
+                                <?php if (empty($vote->user_ip)) : ?>
+                                    <em><?php esc_html_e('N/A', 'shuriken-reviews'); ?></em>
+                                <?php else : ?>
+                                    <code><?php echo esc_html($vote->user_ip); ?></code>
+                                <?php endif; ?>
                             </td>
                             <td class="column-date">
-                                <?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $vote->date_created)); ?>
+                                <?php echo esc_html($analytics->format_date($vote->date_created)); ?>
                                 <br>
-                                <small class="timeago"><?php echo esc_html(human_time_diff(mysql2date('U', $vote->date_created), current_time('timestamp')) . ' ' . __('ago', 'shuriken-reviews')); ?></small>
+                                <small class="timeago"><?php echo esc_html($analytics->format_time_ago($vote->date_created)); ?></small>
                             </td>
                         </tr>
                     <?php endforeach; ?>
