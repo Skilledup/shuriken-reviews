@@ -1,0 +1,580 @@
+/**
+ * Shuriken Reviews Analytics Page Styles
+ *
+ * @package Shuriken_Reviews
+ * @since 1.3.0
+ */
+
+/* General Layout */
+.shuriken-analytics {
+    max-width: 1600px;
+    margin-right: 20px;
+}
+
+.shuriken-analytics h1 {
+    margin-bottom: 20px;
+    font-size: 23px;
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+/* Filter Bar */
+.shuriken-filter-bar {
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.shuriken-filter-bar label {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.shuriken-filter-bar select {
+    min-width: 150px;
+}
+
+/* Stats Grid */
+.shuriken-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.shuriken-stats-grid.secondary {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 30px;
+}
+
+/* Stat Cards */
+.shuriken-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.shuriken-stat-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.shuriken-stat-card.small {
+    padding: 15px;
+}
+
+.shuriken-stat-card.small .stat-content h4 {
+    font-size: 22px;
+    margin: 0 0 5px 0;
+    color: #1d2327;
+}
+
+.shuriken-stat-card .stat-icon {
+    font-size: 40px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #2271b1, #135e96);
+    color: #fff;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.shuriken-stat-card .stat-content {
+    flex: 1;
+}
+
+.shuriken-stat-card .stat-content h3 {
+    font-size: 28px;
+    margin: 0 0 5px 0;
+    color: #1d2327;
+    line-height: 1.2;
+}
+
+.shuriken-stat-card .stat-content p {
+    margin: 0;
+    color: #646970;
+    font-size: 13px;
+}
+
+/* Stat Change Indicator */
+.stat-change {
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    vertical-align: middle;
+}
+
+.stat-change.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.stat-change.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Charts Section */
+.shuriken-charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+@media screen and (max-width: 1200px) {
+    .shuriken-charts-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.shuriken-chart-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.shuriken-chart-card.wide {
+    grid-column: span 1;
+}
+
+.shuriken-chart-card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f1;
+    color: #1d2327;
+}
+
+.chart-container {
+    position: relative;
+    height: 250px;
+}
+
+/* Tables Section */
+.shuriken-tables-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+@media screen and (max-width: 900px) {
+    .shuriken-tables-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.shuriken-table-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.shuriken-table-card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: #1d2327;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shuriken-table-card h2 .dashicons {
+    color: #2271b1;
+}
+
+.shuriken-table-card .table-description {
+    color: #646970;
+    font-size: 12px;
+    margin: 0 0 15px 0;
+}
+
+.shuriken-table-card table {
+    border-spacing: 0;
+}
+
+.shuriken-table-card table th {
+    background: #f6f7f7;
+    font-weight: 600;
+}
+
+.shuriken-table-card table td,
+.shuriken-table-card table th {
+    padding: 10px 12px;
+}
+
+/* Rank Badges */
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.rank-badge.rank-1 {
+    background: linear-gradient(135deg, #ffd700, #ffb700);
+    box-shadow: 0 2px 4px rgba(255, 183, 0, 0.4);
+}
+
+.rank-badge.rank-2 {
+    background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+    box-shadow: 0 2px 4px rgba(168, 168, 168, 0.4);
+}
+
+.rank-badge.rank-3 {
+    background: linear-gradient(135deg, #cd7f32, #b87333);
+    box-shadow: 0 2px 4px rgba(184, 115, 51, 0.4);
+}
+
+/* Star Display */
+.star-display {
+    color: #ffb900;
+    font-size: 14px;
+    margin-right: 4px;
+}
+
+.star-display.low {
+    color: #dc3232;
+}
+
+.star-rating-display {
+    color: #ffb900;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+/* Clickable Row Styles */
+.shuriken-clickable-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.shuriken-clickable-row:hover {
+    background-color: #f0f6fc !important;
+}
+
+.shuriken-clickable-row:hover td {
+    background-color: transparent;
+}
+
+/* Rating Item Links */
+.rating-item-link {
+    color: #2271b1;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.rating-item-link:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.rating-item-link:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 1px;
+    box-shadow: none;
+}
+
+/* Stats Link Icon */
+.row-actions {
+    display: inline;
+    margin-left: 8px;
+}
+
+.stats-link {
+    color: #787c82;
+    text-decoration: none;
+    vertical-align: middle;
+    transition: color 0.15s ease;
+}
+
+.stats-link:hover {
+    color: #2271b1;
+}
+
+.stats-link .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+}
+
+/* Item Stats Page Specific Styles */
+.shuriken-item-stats h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.shuriken-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.shuriken-back-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.shuriken-item-meta {
+    color: #646970;
+    margin-top: 5px;
+    font-size: 13px;
+}
+
+.shuriken-item-meta code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.shuriken-table-card.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Vote History Table Columns */
+.column-id {
+    width: 60px;
+}
+
+.column-rating {
+    width: 120px;
+}
+
+.column-voter {
+    width: auto;
+}
+
+.column-ip {
+    width: 130px;
+}
+
+.column-date {
+    width: 180px;
+}
+
+.rating-number {
+    color: #646970;
+    font-size: 11px;
+    margin-left: 5px;
+}
+
+/* Voter Type Badge */
+.voter-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.voter-type.member {
+    background: #d4edda;
+    color: #155724;
+}
+
+.voter-type.guest {
+    background: #f0f0f1;
+    color: #646970;
+}
+
+.voter-type .dashicons {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+}
+
+.timeago {
+    color: #646970;
+}
+
+/* Pagination Styles */
+.tablenav .tablenav-pages {
+    margin: 15px 0 0;
+}
+
+.tablenav-pages .pagination-links a,
+.tablenav-pages .pagination-links span {
+    padding: 4px 8px;
+    margin: 0 2px;
+    text-decoration: none;
+}
+
+.tablenav-pages .pagination-links .current {
+    background: #2271b1;
+    color: #fff;
+    border-radius: 3px;
+}
+
+/* Export Section */
+.shuriken-export-section {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.shuriken-export-section h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    color: #1d2327;
+}
+
+.shuriken-export-section p {
+    color: #646970;
+    margin: 0 0 15px 0;
+}
+
+.shuriken-export-section button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.shuriken-export-section button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Empty State */
+.shuriken-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+}
+
+.shuriken-empty-state .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 15px;
+    color: #c3c4c7;
+}
+
+.shuriken-empty-state h3 {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    color: #1d2327;
+}
+
+.shuriken-empty-state p {
+    margin: 0;
+}
+
+/* Loading State */
+.shuriken-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.shuriken-loading .spinner {
+    float: none;
+    margin: 0;
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 782px) {
+    .shuriken-analytics {
+        margin-right: 10px;
+    }
+    
+    .shuriken-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .shuriken-stat-card {
+        padding: 15px;
+    }
+    
+    .shuriken-stat-card .stat-icon {
+        font-size: 30px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .shuriken-stat-card .stat-content h3 {
+        font-size: 22px;
+    }
+    
+    .shuriken-charts-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .shuriken-tables-row {
+        grid-template-columns: 1fr;
+    }
+    
+}
+
+/* Print Styles */
+@media print {
+    .shuriken-filter-bar,
+    .shuriken-export-section {
+        display: none;
+    }
+    
+    .shuriken-stat-card,
+    .shuriken-chart-card,
+    .shuriken-table-card {
+        break-inside: avoid;
+        border: 1px solid #ddd;
+    }
+}
+
+/* RTL Support */
+body.rtl .shuriken-stat-card {
+    flex-direction: row-reverse;
+}
+
+body.rtl .stat-change {
+    margin-left: 0;
+    margin-right: 8px;
+}
+
+body.rtl .shuriken-table-card h2 {
+    flex-direction: row-reverse;
+}
+
+body.rtl .star-display {
+    margin-right: 0;
+    margin-left: 4px;
+}

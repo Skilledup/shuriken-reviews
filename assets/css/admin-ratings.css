@@ -108,7 +108,7 @@
 .inline-edit-row-rating .inline-edit-legend {
     font-weight: 600;
     margin-bottom: 1em;
-    padding: 0;
+    padding: .2em 1em !important;
     font-size: 14px;
     line-height: 1.4;
 }

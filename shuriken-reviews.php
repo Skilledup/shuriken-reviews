@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.2.3
+ * Version: 1.3.2
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.2.3');
+    define('SHURIKEN_REVIEWS_VERSION', '1.3.2');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -448,6 +448,16 @@ function shuriken_reviews_menu() {
         'shuriken_reviews_comments_page'
     );
 
+    // Add Analytics submenu
+    add_submenu_page(
+        'shuriken-reviews',
+        __('Stats & Analytics', 'shuriken-reviews'),
+        __('Analytics', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews-analytics',
+        'shuriken_reviews_analytics_page'
+    );
+
     // Add Settings submenu
     add_submenu_page(
         'shuriken-reviews',
@@ -456,6 +466,16 @@ function shuriken_reviews_menu() {
         'manage_options',
         'shuriken-reviews-settings',
         'shuriken_reviews_settings_page'
+    );
+
+    // Add hidden Item Stats page (no menu item, accessed via link)
+    add_submenu_page(
+        null, // Hidden - no parent menu
+        __('Item Statistics', 'shuriken-reviews'),
+        __('Item Stats', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews-item-stats',
+        'shuriken_reviews_item_stats_page'
     );
 }
 add_action('admin_menu', 'shuriken_reviews_menu');
@@ -489,6 +509,235 @@ function shuriken_reviews_comments_page() {
 function shuriken_reviews_settings_page() {
     include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/settings.php';
 }
+
+/**
+ * Displays the Shuriken Reviews Analytics page.
+ *
+ * @return void
+ * @since 1.3.0
+ */
+function shuriken_reviews_analytics_page() {
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/analytics.php';
+}
+
+/**
+ * Displays the Shuriken Reviews Item Statistics page.
+ *
+ * @return void
+ * @since 1.3.0
+ */
+function shuriken_reviews_item_stats_page() {
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/item-stats.php';
+}
+
+/**
+ * Enqueues scripts and styles for the analytics admin page.
+ *
+ * @param string $hook The current admin page hook.
+ * @return void
+ * @since 1.3.0
+ */
+function shuriken_reviews_analytics_scripts($hook) {
+    // Load on analytics page and item stats page
+    $allowed_hooks = array(
+        'shuriken-reviews_page_shuriken-reviews-analytics',
+        'admin_page_shuriken-reviews-item-stats'
+    );
+    
+    if (!in_array($hook, $allowed_hooks, true)) {
+        return;
+    }
+
+    // Enqueue Chart.js from CDN
+    wp_enqueue_script(
+        'chartjs',
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+        array(),
+        '4.4.1',
+        true
+    );
+
+    // Enqueue analytics CSS
+    wp_enqueue_style(
+        'shuriken-admin-analytics',
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-analytics.css',
+        array(),
+        SHURIKEN_REVIEWS_VERSION
+    );
+
+    // Enqueue analytics JS
+    wp_enqueue_script(
+        'shuriken-admin-analytics',
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/admin-analytics.js',
+        array('jquery', 'chartjs'),
+        SHURIKEN_REVIEWS_VERSION,
+        true
+    );
+}
+add_action('admin_enqueue_scripts', 'shuriken_reviews_analytics_scripts');
+
+/**
+ * Handles CSV export of ratings data.
+ *
+ * @return void
+ * @since 1.3.0
+ */
+function shuriken_reviews_export_ratings() {
+    // Check nonce and permissions
+    if (!isset($_POST['shuriken_export_nonce']) || 
+        !wp_verify_nonce($_POST['shuriken_export_nonce'], 'shuriken_export_data')) {
+        wp_die(__('Security check failed', 'shuriken-reviews'));
+    }
+
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have permission to export data', 'shuriken-reviews'));
+    }
+
+    global $wpdb;
+    $ratings_table = $wpdb->prefix . 'shuriken_ratings';
+    $votes_table = $wpdb->prefix . 'shuriken_votes';
+
+    // Get all ratings with their stats
+    $ratings = $wpdb->get_results(
+        "SELECT r.id, r.name, r.total_votes, r.total_rating, r.date_created,
+                ROUND(r.total_rating / NULLIF(r.total_votes, 0), 2) as average_rating
+         FROM $ratings_table r
+         ORDER BY r.id ASC"
+    );
+
+    // Set headers for CSV download
+    $filename = 'shuriken-ratings-export-' . date('Y-m-d') . '.csv';
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    // Create output stream
+    $output = fopen('php://output', 'w');
+
+    // Add BOM for Excel UTF-8 compatibility
+    fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+    // Write header row
+    fputcsv($output, array(
+        __('ID', 'shuriken-reviews'),
+        __('Name', 'shuriken-reviews'),
+        __('Total Votes', 'shuriken-reviews'),
+        __('Total Rating Points', 'shuriken-reviews'),
+        __('Average Rating', 'shuriken-reviews'),
+        __('Date Created', 'shuriken-reviews')
+    ));
+
+    // Write data rows
+    foreach ($ratings as $rating) {
+        fputcsv($output, array(
+            $rating->id,
+            $rating->name,
+            $rating->total_votes,
+            $rating->total_rating,
+            $rating->average_rating ?: '0',
+            $rating->date_created
+        ));
+    }
+
+    fclose($output);
+    exit;
+}
+add_action('admin_post_shuriken_export_ratings', 'shuriken_reviews_export_ratings');
+
+/**
+ * Handles CSV export of individual item votes.
+ *
+ * @return void
+ * @since 1.3.0
+ */
+function shuriken_reviews_export_item_votes() {
+    // Check nonce and permissions
+    if (!isset($_POST['shuriken_export_item_nonce']) || 
+        !wp_verify_nonce($_POST['shuriken_export_item_nonce'], 'shuriken_export_item_votes')) {
+        wp_die(__('Security check failed', 'shuriken-reviews'));
+    }
+
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have permission to export data', 'shuriken-reviews'));
+    }
+
+    $rating_id = isset($_POST['rating_id']) ? intval($_POST['rating_id']) : 0;
+    if (!$rating_id) {
+        wp_die(__('Invalid rating ID', 'shuriken-reviews'));
+    }
+
+    global $wpdb;
+    $ratings_table = $wpdb->prefix . 'shuriken_ratings';
+    $votes_table = $wpdb->prefix . 'shuriken_votes';
+
+    // Get rating name
+    $rating = $wpdb->get_row($wpdb->prepare(
+        "SELECT name FROM $ratings_table WHERE id = %d",
+        $rating_id
+    ));
+
+    if (!$rating) {
+        wp_die(__('Rating not found', 'shuriken-reviews'));
+    }
+
+    // Get all votes for this rating
+    $votes = $wpdb->get_results($wpdb->prepare(
+        "SELECT v.id, v.rating_value, v.user_id, v.user_ip, v.date_created, u.display_name, u.user_email
+         FROM $votes_table v
+         LEFT JOIN {$wpdb->users} u ON v.user_id = u.ID
+         WHERE v.rating_id = %d
+         ORDER BY v.date_created DESC",
+        $rating_id
+    ));
+
+    // Set headers for CSV download
+    $filename = 'shuriken-votes-' . sanitize_title($rating->name) . '-' . date('Y-m-d') . '.csv';
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    // Create output stream
+    $output = fopen('php://output', 'w');
+
+    // Add BOM for Excel UTF-8 compatibility
+    fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+    // Write header row
+    fputcsv($output, array(
+        __('Vote ID', 'shuriken-reviews'),
+        __('Rating Value', 'shuriken-reviews'),
+        __('Voter Type', 'shuriken-reviews'),
+        __('Voter Name', 'shuriken-reviews'),
+        __('Voter Email', 'shuriken-reviews'),
+        __('IP Address', 'shuriken-reviews'),
+        __('Date & Time', 'shuriken-reviews')
+    ));
+
+    // Write data rows
+    foreach ($votes as $vote) {
+        $voter_type = $vote->user_id > 0 ? __('Member', 'shuriken-reviews') : __('Guest', 'shuriken-reviews');
+        $voter_name = $vote->user_id > 0 ? ($vote->display_name ?: __('Deleted User', 'shuriken-reviews')) : __('Guest', 'shuriken-reviews');
+        $voter_email = $vote->user_id > 0 ? ($vote->user_email ?: '-') : '-';
+        
+        fputcsv($output, array(
+            $vote->id,
+            $vote->rating_value,
+            $voter_type,
+            $voter_name,
+            $voter_email,
+            $vote->user_ip,
+            $vote->date_created
+        ));
+    }
+
+    fclose($output);
+    exit;
+}
+add_action('admin_post_shuriken_export_item_votes', 'shuriken_reviews_export_item_votes');
 
 /**
  * Registers the [shuriken_rating] shortcode.
