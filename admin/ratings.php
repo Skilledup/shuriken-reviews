@@ -1,35 +1,103 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+// Enqueue admin styles and scripts
+wp_enqueue_style(
+    'shuriken-reviews-admin-ratings',
+    SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-ratings.css',
+    array(),
+    SHURIKEN_REVIEWS_VERSION
+);
+
+wp_enqueue_script(
+    'shuriken-reviews-admin-ratings',
+    SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/admin-ratings.js',
+    array('jquery'),
+    SHURIKEN_REVIEWS_VERSION,
+    true
+);
+
+// Localize script for translations
+wp_localize_script('shuriken-reviews-admin-ratings', 'shurikenRatingsAdmin', array(
+    'ajaxurl' => admin_url('admin-ajax.php'),
+    'nonce' => wp_create_nonce('shuriken-ratings-admin-nonce'),
+    'i18n' => array(
+        'confirmDelete' => __('Are you sure you want to delete this rating? This action cannot be undone.', 'shuriken-reviews'),
+        'confirmBulkDelete' => __('Are you sure you want to delete the selected ratings? This action cannot be undone.', 'shuriken-reviews'),
+        'copied' => __('Shortcode copied to clipboard!', 'shuriken-reviews'),
+    )
+));
+
 global $wpdb;
 $table_name = $wpdb->prefix . 'shuriken_ratings';
+$votes_table = $wpdb->prefix . 'shuriken_votes';
 
-$per_page = 10; // Number of items per page
+$per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 $offset = ($current_page - 1) * $per_page;
 
-// Handle form submissions
-if (isset($_POST['create_rating'])) {
-    $name = sanitize_text_field($_POST['rating_name']);
-    $wpdb->insert($table_name, array('name' => $name));
-    echo '<div class="notice notice-success"><p>' . esc_html__('Rating created successfully!', 'shuriken-reviews') . '</p></div>';
+// Handle bulk actions
+if (isset($_POST['action']) && $_POST['action'] === 'delete' && !empty($_POST['rating_ids']) && check_admin_referer('shuriken_bulk_ratings', 'shuriken_bulk_nonce')) {
+    $ids = array_map('intval', $_POST['rating_ids']);
+    $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
+    
+    // Delete associated votes first
+    $wpdb->query($wpdb->prepare("DELETE FROM $votes_table WHERE rating_id IN ($ids_placeholder)", ...$ids));
+    
+    // Delete ratings
+    $deleted = $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE id IN ($ids_placeholder)", ...$ids));
+    
+    if ($deleted) {
+        echo '<div class="notice notice-success is-dismissible"><p>' . 
+             sprintf(esc_html(_n('%s rating deleted.', '%s ratings deleted.', $deleted, 'shuriken-reviews')), number_format_i18n($deleted)) . 
+             '</p></div>';
+    }
 }
 
-if (isset($_POST['update_rating'])) {
+// Handle single actions
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['rating_id']) && check_admin_referer('shuriken_delete_rating_' . intval($_GET['rating_id']))) {
+    $id = intval($_GET['rating_id']);
+    $wpdb->delete($votes_table, array('rating_id' => $id));
+    $result = $wpdb->delete($table_name, array('id' => $id));
+    if ($result) {
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating deleted successfully!', 'shuriken-reviews') . '</p></div>';
+    }
+}
+
+// Handle create rating
+if (isset($_POST['create_rating']) && check_admin_referer('shuriken_create_rating', 'shuriken_rating_nonce')) {
+    $name = sanitize_text_field($_POST['rating_name']);
+    if (!empty($name)) {
+        $result = $wpdb->insert($table_name, array('name' => $name));
+        if ($result) {
+            // Redirect to first page to see the new rating
+            wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
+            exit;
+        } else {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('Failed to create rating. Please try again.', 'shuriken-reviews') . '</p></div>';
+        }
+    }
+}
+
+// Show success message after redirect
+if (isset($_GET['message']) && $_GET['message'] === 'created') {
+    echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating created successfully!', 'shuriken-reviews') . '</p></div>';
+}
+
+// Handle inline edit
+if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 'shuriken_inline_nonce')) {
     $id = intval($_POST['rating_id']);
     $name = sanitize_text_field($_POST['rating_name']);
-    $wpdb->update($table_name, array('name' => $name), array('id' => $id));
-    echo '<div class="notice notice-success"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
+    if (!empty($name) && $id) {
+        $result = $wpdb->update($table_name, array('name' => $name), array('id' => $id));
+        if ($result !== false) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
+        }
+    }
 }
 
-if (isset($_POST['delete_rating'])) {
-    $id = intval($_POST['rating_id']);
-    $wpdb->delete($table_name, array('id' => $id));
-    echo '<div class="notice notice-success"><p>' . esc_html__('Rating deleted successfully!', 'shuriken-reviews') . '</p></div>';
-}
-
-// Add search functionality
-$search = isset($_GET['rating_search']) ? sanitize_text_field($_GET['rating_search']) : '';
+// Search functionality
+$search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 if (!empty($search)) {
     $total_items = $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM $table_name WHERE name LIKE %s",
@@ -50,127 +118,381 @@ if (!empty($search)) {
         $offset
     ));
 }
+
+$total_pages = ceil($total_items / $per_page);
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e('Ratings Management', 'shuriken-reviews'); ?></h1>
-    <h2><?php esc_html_e('Create New Rating', 'shuriken-reviews'); ?></h2>
-    <form method="post" action="">
-        <table class="form-table">
-            <tr>
-                <th><label for="rating_name"><?php esc_html_e('Rating Name', 'shuriken-reviews'); ?></label></th>
-                <td>
-                    <input type="text" name="rating_name" id="rating_name" class="regular-text" required>
-                </td>
-            </tr>
-        </table>
-        <p class="submit">
-            <input type="submit" name="create_rating" class="button button-primary" value="<?php esc_attr_e('Create Rating', 'shuriken-reviews'); ?>">
-        </p>
-    </form>
+    <h1 class="wp-heading-inline"><?php esc_html_e('Ratings', 'shuriken-reviews'); ?></h1>
+    <a href="#add-new-rating" class="page-title-action" onclick="document.getElementById('rating_name').focus(); return false;">
+        <?php esc_html_e('Add New', 'shuriken-reviews'); ?>
+    </a>
+    
+    <?php if (!empty($search)): ?>
+        <span class="subtitle">
+            <?php printf(esc_html__('Search results for: %s', 'shuriken-reviews'), '<strong>' . esc_html($search) . '</strong>'); ?>
+        </span>
+    <?php endif; ?>
+    
+    <hr class="wp-header-end">
 
-    <h2><?php esc_html_e('Existing Ratings', 'shuriken-reviews'); ?></h2>
+    <?php if (empty($ratings) && empty($search)): ?>
+        <div class="shuriken-ratings-empty-state">
+            <span class="dashicons dashicons-star-filled"></span>
+            <h3><?php esc_html_e('No ratings yet', 'shuriken-reviews'); ?></h3>
+            <p><?php esc_html_e('Create your first rating to get started!', 'shuriken-reviews'); ?></p>
+        </div>
+    <?php elseif (empty($ratings) && !empty($search)): ?>
+        <div class="shuriken-ratings-empty-state">
+            <span class="dashicons dashicons-search"></span>
+            <h3><?php esc_html_e('No ratings found', 'shuriken-reviews'); ?></h3>
+            <p><?php esc_html_e('Try adjusting your search criteria.', 'shuriken-reviews'); ?></p>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="button"><?php esc_html_e('Clear Search', 'shuriken-reviews'); ?></a>
+        </div>
+    <?php else: ?>
 
-    <!-- Add search form before the create new rating section -->
-    <form method="get" class="search-box" style="margin: 1em 0;">
+    <!-- Search Box (separate form, above bulk actions) -->
+    <form class="search-form" method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
         <input type="hidden" name="page" value="shuriken-reviews">
-        <p>
-            <input type="search"
-                id="rating-search"
-                name="rating_search"
-                value="<?php echo esc_attr($search); ?>"
-                placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>"
-                class="regular-text">
-            <input type="submit"
-                class="button"
-                value="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
+        <p class="search-box">
+            <label class="screen-reader-text" for="rating-search-input"><?php esc_html_e('Search Ratings:', 'shuriken-reviews'); ?></label>
+            <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>">
+            <input type="submit" id="search-submit" class="button" value="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
             <?php if (!empty($search)): ?>
-                <a href="?page=shuriken-reviews" class="button">
-                    <?php esc_html_e('Clear Search', 'shuriken-reviews'); ?>
-                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="button"><?php esc_html_e('Clear', 'shuriken-reviews'); ?></a>
             <?php endif; ?>
         </p>
     </form>
 
-    <!-- Show result count when searching -->
-    <?php if (!empty($search)): ?>
-        <p>
+    <form id="ratings-filter" method="post">
+        <?php wp_nonce_field('shuriken_bulk_ratings', 'shuriken_bulk_nonce'); ?>
+        
+        <!-- Top Tablenav -->
+        <div class="tablenav top">
+            <div class="alignleft actions bulkactions">
+                <label for="bulk-action-selector-top" class="screen-reader-text"><?php esc_html_e('Select bulk action', 'shuriken-reviews'); ?></label>
+                <select name="action" id="bulk-action-selector-top">
+                    <option value="-1"><?php esc_html_e('Bulk actions', 'shuriken-reviews'); ?></option>
+                    <option value="delete"><?php esc_html_e('Delete', 'shuriken-reviews'); ?></option>
+                </select>
+                <input type="submit" id="doaction" class="button action" value="<?php esc_attr_e('Apply', 'shuriken-reviews'); ?>" onclick="return document.querySelectorAll('input[name=\'rating_ids[]\']:checked').length > 0 ? confirm(shurikenRatingsAdmin.i18n.confirmBulkDelete) : (alert('<?php echo esc_js(__('Please select at least one rating.', 'shuriken-reviews')); ?>'), false);">
+            </div>
+
             <?php
-            printf(
-                esc_html(_n(
-                    'Found %s rating matching your search.',
-                    'Found %s ratings matching your search.',
-                    count($ratings),
-                    'shuriken-reviews'
-                )),
-                number_format_i18n(count($ratings))
-            );
+            // Pagination - Top
+            if ($total_pages > 1) {
+                ?>
+                <div class="tablenav-pages">
+                    <span class="displaying-num">
+                        <?php printf(esc_html(_n('%s item', '%s items', $total_items, 'shuriken-reviews')), number_format_i18n($total_items)); ?>
+                    </span>
+                    <span class="pagination-links">
+                        <?php
+                        // First page
+                        if ($current_page > 1) {
+                            printf('<a class="first-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(remove_query_arg('paged')),
+                                __('First page'),
+                                '&laquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&laquo;');
+                        }
+                        
+                        // Previous page
+                        if ($current_page > 1) {
+                            printf('<a class="prev-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', max(1, $current_page - 1))),
+                                __('Previous page'),
+                                '&lsaquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&lsaquo;');
+                        }
+                        ?>
+                        
+                        <span class="paging-input">
+                            <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e('Current Page'); ?></label>
+                            <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr($current_page); ?>" size="1" aria-describedby="table-paging">
+                            <span class="tablenav-paging-text">
+                                <?php esc_html_e('of'); ?>
+                                <span class="total-pages"><?php echo number_format_i18n($total_pages); ?></span>
+                            </span>
+                        </span>
+                        
+                        <?php
+                        // Next page
+                        if ($current_page < $total_pages) {
+                            printf('<a class="next-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', min($total_pages, $current_page + 1))),
+                                __('Next page'),
+                                '&rsaquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&rsaquo;');
+                        }
+                        
+                        // Last page
+                        if ($current_page < $total_pages) {
+                            printf('<a class="last-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', $total_pages)),
+                                __('Last page'),
+                                '&raquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&raquo;');
+                        }
+                        ?>
+                    </span>
+                </div>
+                <?php
+            }
             ?>
-        </p>
+            <br class="clear">
+        </div>
+
+        <!-- Ratings Table -->
+        <table class="wp-list-table widefat fixed striped table-view-list ratings">
+            <thead>
+                <tr>
+                    <td id="cb" class="manage-column column-cb check-column">
+                        <label class="screen-reader-text" for="cb-select-all-1"><?php esc_html_e('Select All'); ?></label>
+                        <input id="cb-select-all-1" type="checkbox">
+                    </td>
+                    <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                </tr>
+            </thead>
+            <tbody id="the-list">
+                <?php foreach ($ratings as $rating):
+                    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+                    $stars_filled = floor($average);
+                    $half_star = ($average - $stars_filled) >= 0.5;
+                    $edit_link = '#inline-edit-' . $rating->id;
+                    $delete_url = wp_nonce_url(
+                        admin_url('admin.php?page=shuriken-reviews&action=delete&rating_id=' . $rating->id),
+                        'shuriken_delete_rating_' . $rating->id
+                    );
+                ?>
+                    <tr id="rating-<?php echo esc_attr($rating->id); ?>" class="iedit">
+                        <th scope="row" class="check-column">
+                            <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($rating->id); ?>">
+                                <?php printf(esc_html__('Select %s', 'shuriken-reviews'), esc_html($rating->name)); ?>
+                            </label>
+                            <input id="cb-select-<?php echo esc_attr($rating->id); ?>" type="checkbox" name="rating_ids[]" value="<?php echo esc_attr($rating->id); ?>">
+                        </th>
+                        <td class="name column-name has-row-actions column-primary" data-colname="<?php esc_attr_e('Name', 'shuriken-reviews'); ?>">
+                            <strong>
+                                <a class="row-title" href="<?php echo esc_attr($edit_link); ?>" aria-label="<?php printf(esc_attr__('Edit "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>">
+                                    <?php echo esc_html($rating->name); ?>
+                                </a>
+                            </strong>
+                            <div class="row-actions">
+                                <span class="id"><?php printf(esc_html__('ID: %d', 'shuriken-reviews'), $rating->id); ?> | </span>
+                                <span class="edit">
+                                    <a href="<?php echo esc_attr($edit_link); ?>" class="editinline" aria-label="<?php printf(esc_attr__('Edit "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>">
+                                        <?php esc_html_e('Edit', 'shuriken-reviews'); ?>
+                                    </a> | 
+                                </span>
+                                <span class="trash">
+                                    <a href="<?php echo esc_url($delete_url); ?>" class="submitdelete" aria-label="<?php printf(esc_attr__('Delete "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>" onclick="return confirm(shurikenRatingsAdmin.i18n.confirmDelete);">
+                                        <?php esc_html_e('Delete', 'shuriken-reviews'); ?>
+                                    </a>
+                                </span>
+                            </div>
+                            <button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e('Show more details'); ?></span></button>
+                        </td>
+                        <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
+                            <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>
+                        </td>
+                        <td class="stats column-stats" data-colname="<?php esc_attr_e('Rating', 'shuriken-reviews'); ?>">
+                            <div class="shuriken-rating-display">
+                                <span class="shuriken-rating-stars" title="<?php printf(esc_attr__('%s out of 5', 'shuriken-reviews'), $average); ?>">
+                                    <?php 
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        if ($i <= $stars_filled) {
+                                            echo '<span class="star filled">★</span>';
+                                        } elseif ($i == $stars_filled + 1 && $half_star) {
+                                            echo '<span class="star half">★</span>';
+                                        } else {
+                                            echo '<span class="star empty">☆</span>';
+                                        }
+                                    }
+                                    ?>
+                                </span>
+                                <span class="rating-text">
+                                    <?php 
+                                    printf(
+                                        esc_html__('%1$s (%2$s votes)', 'shuriken-reviews'),
+                                        '<strong>' . esc_html($average) . '</strong>',
+                                        number_format_i18n($rating->total_votes)
+                                    ); 
+                                    ?>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Inline Edit Row -->
+                    <tr id="inline-edit-<?php echo esc_attr($rating->id); ?>" class="inline-edit-row inline-edit-row-rating hidden">
+                        <td colspan="4" class="colspanchange">
+                            <form method="post" class="inline-edit-form">
+                                <?php wp_nonce_field('shuriken_inline_edit', 'shuriken_inline_nonce'); ?>
+                                <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating->id); ?>">
+                                
+                                <fieldset class="inline-edit-col">
+                                    <legend class="inline-edit-legend"><?php esc_html_e('Quick Edit', 'shuriken-reviews'); ?></legend>
+                                    <div class="inline-edit-col">
+                                        <label>
+                                            <span class="title"><?php esc_html_e('Name', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <input type="text" name="rating_name" class="ptitle" value="<?php echo esc_attr($rating->name); ?>">
+                                            </span>
+                                        </label>
+                                    </div>
+                                </fieldset>
+                                
+                                <div class="submit inline-edit-save">
+                                    <button type="button" class="button cancel alignleft"><?php esc_html_e('Cancel', 'shuriken-reviews'); ?></button>
+                                    <button type="submit" name="inline_edit" class="button button-primary save alignright"><?php esc_html_e('Update', 'shuriken-reviews'); ?></button>
+                                    <span class="spinner"></span>
+                                    <br class="clear">
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="manage-column column-cb check-column">
+                        <label class="screen-reader-text" for="cb-select-all-2"><?php esc_html_e('Select All'); ?></label>
+                        <input id="cb-select-all-2" type="checkbox">
+                    </td>
+                    <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Bottom Tablenav -->
+        <div class="tablenav bottom">
+            <div class="alignleft actions bulkactions">
+                <label for="bulk-action-selector-bottom" class="screen-reader-text"><?php esc_html_e('Select bulk action', 'shuriken-reviews'); ?></label>
+                <select name="action2" id="bulk-action-selector-bottom">
+                    <option value="-1"><?php esc_html_e('Bulk actions', 'shuriken-reviews'); ?></option>
+                    <option value="delete"><?php esc_html_e('Delete', 'shuriken-reviews'); ?></option>
+                </select>
+                <input type="submit" id="doaction2" class="button action" value="<?php esc_attr_e('Apply', 'shuriken-reviews'); ?>" onclick="this.form.action.value = this.form.action2.value; return document.querySelectorAll('input[name=\'rating_ids[]\']:checked').length > 0 ? confirm(shurikenRatingsAdmin.i18n.confirmBulkDelete) : (alert('<?php echo esc_js(__('Please select at least one rating.', 'shuriken-reviews')); ?>'), false);">
+            </div>
+
+            <?php
+            // Pagination - Bottom
+            if ($total_pages > 1) {
+                ?>
+                <div class="tablenav-pages">
+                    <span class="displaying-num">
+                        <?php printf(esc_html(_n('%s item', '%s items', $total_items, 'shuriken-reviews')), number_format_i18n($total_items)); ?>
+                    </span>
+                    <span class="pagination-links">
+                        <?php
+                        // First page
+                        if ($current_page > 1) {
+                            printf('<a class="first-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(remove_query_arg('paged')),
+                                __('First page'),
+                                '&laquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&laquo;');
+                        }
+                        
+                        // Previous page
+                        if ($current_page > 1) {
+                            printf('<a class="prev-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', max(1, $current_page - 1))),
+                                __('Previous page'),
+                                '&lsaquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&lsaquo;');
+                        }
+                        ?>
+                        
+                        <span class="screen-reader-text"><?php esc_html_e('Current Page'); ?></span>
+                        <span id="table-paging" class="paging-input">
+                            <span class="tablenav-paging-text">
+                                <?php echo esc_html($current_page); ?>
+                                <?php esc_html_e('of'); ?>
+                                <span class="total-pages"><?php echo number_format_i18n($total_pages); ?></span>
+                            </span>
+                        </span>
+                        
+                        <?php
+                        // Next page
+                        if ($current_page < $total_pages) {
+                            printf('<a class="next-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', min($total_pages, $current_page + 1))),
+                                __('Next page'),
+                                '&rsaquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&rsaquo;');
+                        }
+                        
+                        // Last page
+                        if ($current_page < $total_pages) {
+                            printf('<a class="last-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                                esc_url(add_query_arg('paged', $total_pages)),
+                                __('Last page'),
+                                '&raquo;'
+                            );
+                        } else {
+                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&raquo;');
+                        }
+                        ?>
+                    </span>
+                </div>
+                <?php
+            }
+            ?>
+            <br class="clear">
+        </div>
+    </form>
     <?php endif; ?>
 
-    <table class="wp-list-table widefat fixed striped shuriken-ratings-table">
-        <thead>
-            <tr>
-                <th class="column-id"><?php esc_html_e('ID', 'shuriken-reviews'); ?></th>
-                <th class="column-name"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
-                <th class="column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
-                <th class="column-rating"><?php esc_html_e('Average Rating', 'shuriken-reviews'); ?></th>
-                <th class="column-votes"><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></th>
-                <th class="column-actions"><?php esc_html_e('Actions', 'shuriken-reviews'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($ratings as $rating):
-                $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
-            ?>
-                <tr>
-                    <td><?php echo esc_html($rating->id); ?></td>
-                    <td>
-                        <form method="post" action="" id="rating-form-<?php echo esc_attr($rating->id); ?>">
-                            <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating->id); ?>">
-                            <input type="text" name="rating_name" value="<?php echo esc_attr($rating->name); ?>" style="width: 100%;" class="regular-text">
-                        </form>
-                    </td>
-                    <td><code>[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code></td>
-                    <td><?php printf(esc_html__('%s/5', 'shuriken-reviews'), $average); ?></td>
-                    <td><?php echo esc_html($rating->total_votes); ?></td>
-                    <td>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" name="update_rating" class="button" form="rating-form-<?php echo esc_attr($rating->id); ?>">
-                                <?php esc_html_e('Update', 'shuriken-reviews'); ?>
-                            </button>
-                            <button type="submit" name="delete_rating" class="button" form="rating-form-<?php echo esc_attr($rating->id); ?>"
-                                onclick="return confirm('<?php esc_attr_e('Are you sure?', 'shuriken-reviews'); ?>');">
-                                <?php esc_html_e('Delete', 'shuriken-reviews'); ?>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <?php
-    $total_pages = ceil($total_items / $per_page);
-
-    if ($total_pages > 1) {
-        echo '<div class="tablenav bottom">';
-        echo '<div class="tablenav-pages">';
-        echo paginate_links(array(
-            'base' => add_query_arg('paged', '%#%'),
-            'format' => '',
-            'prev_text' => __('&laquo;'),
-            'next_text' => __('&raquo;'),
-            'total' => $total_pages,
-            'current' => $current_page,
-            'show_all' => false,
-            'end_size' => 1,
-            'mid_size' => 2,
-            'add_args' => array('rating_search' => $search) // Preserve search parameter
-        ));
-        echo '</div>';
-        echo '</div>';
-    }
-    ?>
+    <!-- Add New Rating Form -->
+    <div id="add-new-rating" class="shuriken-ratings-form-wrap">
+        <h2><?php esc_html_e('Add New Rating', 'shuriken-reviews'); ?></h2>
+        <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>">
+            <?php wp_nonce_field('shuriken_create_rating', 'shuriken_rating_nonce'); ?>
+            <table class="form-table" role="presentation">
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label for="rating_name"><?php esc_html_e('Rating Name', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   name="rating_name" 
+                                   id="rating_name" 
+                                   class="regular-text" 
+                                   required
+                                   placeholder="<?php esc_attr_e('Enter rating name...', 'shuriken-reviews'); ?>">
+                            <p class="description">
+                                <?php esc_html_e('Enter a descriptive name for this rating. This will be displayed to users.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="submit">
+                <input type="submit" 
+                       name="create_rating" 
+                       class="button button-primary" 
+                       value="<?php esc_attr_e('Add New Rating', 'shuriken-reviews'); ?>">
+            </p>
+        </form>
+    </div>
 </div>

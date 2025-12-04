@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.2.0
+ * Version: 1.2.3
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -11,6 +11,38 @@
  * Text Domain: shuriken-reviews
  * Domain Path: /languages
  */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Plugin constants
+ */
+if (!defined('SHURIKEN_REVIEWS_VERSION')) {
+    define('SHURIKEN_REVIEWS_VERSION', '1.2.3');
+}
+
+if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.2.0');
+}
+
+if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
+    define('SHURIKEN_REVIEWS_PLUGIN_FILE', __FILE__);
+}
+
+if (!defined('SHURIKEN_REVIEWS_PLUGIN_DIR')) {
+    define('SHURIKEN_REVIEWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
+
+if (!defined('SHURIKEN_REVIEWS_PLUGIN_URL')) {
+    define('SHURIKEN_REVIEWS_PLUGIN_URL', plugin_dir_url(__FILE__));
+}
+
+if (!defined('SHURIKEN_REVIEWS_PLUGIN_BASENAME')) {
+    define('SHURIKEN_REVIEWS_PLUGIN_BASENAME', plugin_basename(__FILE__));
+}
 
  /**
  * Loads the plugin text domain for translations.
@@ -23,7 +55,7 @@ function shuriken_reviews_load_textdomain() {
     load_plugin_textdomain(
         'shuriken-reviews',
         false,
-        dirname(plugin_basename(__FILE__)) . '/languages'
+        dirname(SHURIKEN_REVIEWS_PLUGIN_BASENAME) . '/languages'
     );
 }
 
@@ -32,7 +64,7 @@ function shuriken_reviews_load_textdomain() {
  * 
  * @since 1.2.0
  */
-require_once plugin_dir_path(__FILE__) . 'includes/comments.php';
+require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/comments.php';
 
 /**
  * Registers the Shuriken Rating FSE block.
@@ -44,7 +76,7 @@ function shuriken_reviews_register_block() {
     // Register the editor script with proper dependencies
     wp_register_script(
         'shuriken-rating-editor',
-        plugins_url('blocks/shuriken-rating/index.js', __FILE__),
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'blocks/shuriken-rating/index.js',
         array(
             'wp-blocks',
             'wp-element',
@@ -53,12 +85,12 @@ function shuriken_reviews_register_block() {
             'wp-i18n',
             'wp-api-fetch'
         ),
-        filemtime(plugin_dir_path(__FILE__) . 'blocks/shuriken-rating/index.js'),
+        SHURIKEN_REVIEWS_VERSION,
         true
     );
 
     // Register the block with explicit render callback
-    register_block_type(__DIR__ . '/blocks/shuriken-rating', array(
+    register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-rating', array(
         'render_callback' => 'shuriken_reviews_render_rating_block',
     ));
 }
@@ -301,17 +333,17 @@ function shuriken_reviews_activate() {
         add_option('shuriken_exclude_author_comments', '1');
         add_option('shuriken_exclude_reply_comments', '1');
         add_option('shuriken_allow_guest_voting', '0');
-        add_option('shuriken_reviews_db_version', '1.2.0');
+        add_option('shuriken_reviews_db_version', SHURIKEN_REVIEWS_DB_VERSION);
 
     } catch (Exception $e) {
         error_log('Error creating Shuriken Reviews tables: ' . $e->getMessage());
         // Optionally deactivate the plugin
-        deactivate_plugins(plugin_basename(__FILE__));
+        deactivate_plugins(SHURIKEN_REVIEWS_PLUGIN_BASENAME);
         wp_die('Error creating required database tables. Please check the error log for details.');
     }
 }
 
-register_activation_hook(__FILE__, 'shuriken_reviews_activate');
+register_activation_hook(SHURIKEN_REVIEWS_PLUGIN_FILE, 'shuriken_reviews_activate');
 
 /**
  * Deactivation hook for the Shuriken Reviews plugin.
@@ -332,7 +364,7 @@ if (!function_exists('shuriken_reviews_manual_install')) {
     function shuriken_reviews_manual_install() {
         // Skip if already at current version
         $current_version = get_option('shuriken_reviews_db_version', '0');
-        if (version_compare($current_version, '1.2.0', '>=')) {
+        if (version_compare($current_version, SHURIKEN_REVIEWS_DB_VERSION, '>=')) {
             return;
         }
         
@@ -374,7 +406,7 @@ if (!function_exists('shuriken_reviews_manual_install')) {
         add_option('shuriken_allow_guest_voting', '0');
         
         // Update version
-        update_option('shuriken_reviews_db_version', '1.2.0');
+        update_option('shuriken_reviews_db_version', SHURIKEN_REVIEWS_VERSION);
     }
     add_action('plugins_loaded', 'shuriken_reviews_manual_install');
 }
@@ -435,7 +467,7 @@ add_action('admin_menu', 'shuriken_reviews_menu');
  * @since 1.1.5
  */
 function shuriken_reviews_ratings_page() {
-    include plugin_dir_path(__FILE__) . 'admin/ratings.php';
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/ratings.php';
 }
 
 /**
@@ -445,7 +477,7 @@ function shuriken_reviews_ratings_page() {
  * @since 1.1.5
  */
 function shuriken_reviews_comments_page() {
-    include plugin_dir_path(__FILE__) . 'admin/comments.php';
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/comments.php';
 }
 
 /**
@@ -455,7 +487,7 @@ function shuriken_reviews_comments_page() {
  * @since 1.2.0
  */
 function shuriken_reviews_settings_page() {
-    include plugin_dir_path(__FILE__) . 'admin/settings.php';
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/settings.php';
 }
 
 /**
@@ -727,21 +759,20 @@ add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');
  * @since 1.1.0
  */
 function shuriken_reviews_scripts() {
-    $plugin_url = plugin_dir_url(__FILE__);
-
     wp_enqueue_style(
         'shuriken-reviews',
-        $plugin_url . 'assets/css/shuriken-reviews.css',
-        array()
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/shuriken-reviews.css',
+        array(),
+        SHURIKEN_REVIEWS_VERSION
     );
     
     wp_enqueue_script('jquery');
     
     wp_enqueue_script(
         'shuriken-reviews',
-        $plugin_url . 'assets/js/shuriken-reviews.js',
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/shuriken-reviews.js',
         array('jquery'),
-        '1.2.0',
+        SHURIKEN_REVIEWS_VERSION,
         true
     );
     

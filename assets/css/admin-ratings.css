@@ -1,0 +1,240 @@
+/**
+ * Shuriken Reviews - Admin Ratings Page Styles
+ * WordPress-native styling for ratings management
+ * 
+ * @package Shuriken Reviews
+ * @since 1.2.0
+ */
+
+/* Search Form */
+.wrap > .search-form {
+    float: right;
+    margin-bottom: 0;
+}
+
+.wrap > .search-form .search-box {
+    margin: 0;
+}
+
+.wrap > .search-form .search-box .button {
+    margin-left: 4px;
+}
+
+/* Clear float after search form */
+.wrap > form#ratings-filter {
+    clear: both;
+}
+
+/* Table Column Widths */
+.wp-list-table.ratings .column-cb {
+    width: 2.2em;
+}
+
+.wp-list-table.ratings .column-name {
+    width: 40%;
+}
+
+.wp-list-table.ratings .column-shortcode {
+    width: 30%;
+}
+
+.wp-list-table.ratings .column-stats {
+    width: 25%;
+}
+
+/* Rating Display */
+.shuriken-rating-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.shuriken-rating-stars {
+    color: #dba617;
+    font-size: 14px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.shuriken-rating-stars .star.filled {
+    color: #dba617;
+}
+
+.shuriken-rating-stars .star.half {
+    color: #dba617;
+    opacity: 0.6;
+}
+
+.shuriken-rating-stars .star.empty {
+    color: #ccc;
+}
+
+.rating-text {
+    color: #646970;
+    font-size: 13px;
+}
+
+/* Shortcode Styling */
+.shuriken-copy-shortcode {
+    display: inline-block;
+    background: #f0f0f1;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #135e96;
+    cursor: pointer;
+    user-select: all;
+    transition: background-color 0.2s;
+}
+
+.shuriken-copy-shortcode:hover {
+    background: #dcdcde;
+}
+
+/* Inline Edit Row */
+.inline-edit-row-rating {
+    background: #f6f7f7;
+}
+
+.inline-edit-row-rating .inline-edit-col {
+    padding: 0.5em 1em;
+}
+
+.inline-edit-row-rating fieldset {
+    margin: 0;
+}
+
+.inline-edit-row-rating .inline-edit-legend {
+    font-weight: 600;
+    margin-bottom: 1em;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.inline-edit-row-rating label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.inline-edit-row-rating .title {
+    width: 5em;
+    font-weight: 500;
+}
+
+.inline-edit-row-rating .input-text-wrap {
+    flex: 1;
+}
+
+.inline-edit-row-rating .input-text-wrap input {
+    width: 100%;
+    max-width: 400px;
+}
+
+.inline-edit-row-rating .inline-edit-save {
+    padding: 1em;
+    border-top: 1px solid #dcdcde;
+    margin-top: 1em;
+}
+
+.inline-edit-row-rating .spinner {
+    float: right;
+    margin-top: 4px;
+}
+
+/* Empty State */
+.shuriken-ratings-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #646970;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    margin-top: 20px;
+}
+
+.shuriken-ratings-empty-state .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+.shuriken-ratings-empty-state h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+/* Add New Rating Form */
+.shuriken-ratings-form-wrap {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 20px;
+    max-width: 800px;
+}
+
+.shuriken-ratings-form-wrap h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+/* Copy Notification */
+.shuriken-copy-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #00a32a;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 100000;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Row Actions - WordPress style */
+.wp-list-table.ratings td.column-name .row-actions {
+    color: #646970;
+}
+
+.wp-list-table.ratings .row-actions .id {
+    color: #a7aaad;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 782px) {
+    .wp-list-table.ratings .column-shortcode,
+    .wp-list-table.ratings .column-stats {
+        display: none;
+    }
+    
+    .wp-list-table.ratings .is-expanded .column-shortcode,
+    .wp-list-table.ratings .is-expanded .column-stats {
+        display: table-cell;
+    }
+    
+    .shuriken-ratings-form-wrap {
+        margin: 20px 0;
+    }
+}
+
+/* Hidden class for inline edit */
+.hidden {
+    display: none !important;
+}
