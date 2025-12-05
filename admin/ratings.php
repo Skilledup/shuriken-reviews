@@ -64,13 +64,29 @@ if (isset($_GET['message']) && $_GET['message'] === 'created') {
 if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 'shuriken_inline_nonce')) {
     $id = intval($_POST['rating_id']);
     $name = sanitize_text_field($_POST['rating_name']);
+    $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
+    $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
+    $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
+
     if (!empty($name) && $id) {
-        $result = $db->update_rating($id, array('name' => $name));
+        $result = $db->update_rating($id, array(
+            'name' => $name,
+            'parent_id' => $parent_id,
+            'effect_type' => $effect_type,
+            'display_only' => $display_only
+        ));
         if ($result) {
+            // Recalculate parent rating if this is a sub-rating
+            if ($parent_id) {
+                $db->recalculate_parent_rating($parent_id);
+            }
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
         }
     }
 }
+
+// Get all parent ratings for dropdown
+$parent_ratings = $db->get_parent_ratings();
 
 // Search functionality
 $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
@@ -218,6 +234,7 @@ $total_pages = $ratings_result->total_pages;
                         <input id="cb-select-all-1" type="checkbox">
                     </td>
                     <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-type"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
                     <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
                     <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
@@ -232,8 +249,21 @@ $total_pages = $ratings_result->total_pages;
                         admin_url('admin.php?page=shuriken-reviews&action=delete&rating_id=' . $rating->id),
                         'shuriken_delete_rating_' . $rating->id
                     );
+                    
+                    // Get parent name if exists
+                    $parent_name = '';
+                    if (!empty($rating->parent_id)) {
+                        $parent = $db->get_rating($rating->parent_id);
+                        if ($parent) {
+                            $parent_name = $parent->name;
+                        }
+                    }
+                    
+                    // Get sub-ratings count
+                    $sub_ratings = $db->get_sub_ratings($rating->id);
+                    $sub_count = count($sub_ratings);
                 ?>
-                    <tr id="rating-<?php echo esc_attr($rating->id); ?>" class="iedit">
+                    <tr id="rating-<?php echo esc_attr($rating->id); ?>" class="iedit <?php echo !empty($rating->parent_id) ? 'sub-rating' : ''; ?>">
                         <th scope="row" class="check-column">
                             <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($rating->id); ?>">
                                 <?php printf(esc_html__('Select %s', 'shuriken-reviews'), esc_html($rating->name)); ?>
@@ -242,6 +272,9 @@ $total_pages = $ratings_result->total_pages;
                         </th>
                         <td class="name column-name has-row-actions column-primary" data-colname="<?php esc_attr_e('Name', 'shuriken-reviews'); ?>">
                             <strong>
+                                <?php if (!empty($rating->parent_id)): ?>
+                                    <span class="sub-indicator dashicons dashicons-arrow-right-alt2" title="<?php printf(esc_attr__('Sub-rating of: %s', 'shuriken-reviews'), esc_attr($parent_name)); ?>"></span>
+                                <?php endif; ?>
                                 <a class="row-title" href="<?php echo esc_attr($edit_link); ?>" aria-label="<?php printf(esc_attr__('Edit "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>">
                                     <?php echo esc_html($rating->name); ?>
                                 </a>
@@ -260,6 +293,42 @@ $total_pages = $ratings_result->total_pages;
                                 </span>
                             </div>
                             <button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e('Show more details'); ?></span></button>
+                        </td>
+                        <td class="type column-type" data-colname="<?php esc_attr_e('Type', 'shuriken-reviews'); ?>">
+                            <?php if (!empty($rating->parent_id)): ?>
+                                <span class="rating-type sub-rating-badge <?php echo esc_attr($rating->effect_type); ?>">
+                                    <?php 
+                                    if ($rating->effect_type === 'negative') {
+                                        esc_html_e('Sub (Negative)', 'shuriken-reviews');
+                                    } else {
+                                        esc_html_e('Sub (Positive)', 'shuriken-reviews');
+                                    }
+                                    ?>
+                                </span>
+                                <div class="parent-info">
+                                    <?php printf(esc_html__('Parent: %s', 'shuriken-reviews'), esc_html($parent_name)); ?>
+                                </div>
+                            <?php elseif ($rating->display_only): ?>
+                                <span class="rating-type parent-badge display-only">
+                                    <?php esc_html_e('Display Only', 'shuriken-reviews'); ?>
+                                </span>
+                                <?php if ($sub_count > 0): ?>
+                                    <div class="sub-count">
+                                        <?php printf(esc_html(_n('%d sub-rating', '%d sub-ratings', $sub_count, 'shuriken-reviews')), $sub_count); ?>
+                                    </div>
+                                <?php endif; ?>
+                            <?php elseif ($sub_count > 0): ?>
+                                <span class="rating-type parent-badge">
+                                    <?php esc_html_e('Parent', 'shuriken-reviews'); ?>
+                                </span>
+                                <div class="sub-count">
+                                    <?php printf(esc_html(_n('%d sub-rating', '%d sub-ratings', $sub_count, 'shuriken-reviews')), $sub_count); ?>
+                                </div>
+                            <?php else: ?>
+                                <span class="rating-type standalone-badge">
+                                    <?php esc_html_e('Standalone', 'shuriken-reviews'); ?>
+                                </span>
+                            <?php endif; ?>
                         </td>
                         <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
                             <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>
@@ -293,7 +362,7 @@ $total_pages = $ratings_result->total_pages;
                     </tr>
                     <!-- Inline Edit Row -->
                     <tr id="inline-edit-<?php echo esc_attr($rating->id); ?>" class="inline-edit-row inline-edit-row-rating hidden">
-                        <td colspan="4" class="colspanchange">
+                        <td colspan="5" class="colspanchange">
                             <form method="post" class="inline-edit-form">
                                 <?php wp_nonce_field('shuriken_inline_edit', 'shuriken_inline_nonce'); ?>
                                 <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating->id); ?>">
@@ -305,6 +374,41 @@ $total_pages = $ratings_result->total_pages;
                                             <span class="title"><?php esc_html_e('Name', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <input type="text" name="rating_name" class="ptitle" value="<?php echo esc_attr($rating->name); ?>">
+                                            </span>
+                                        </label>
+                                        
+                                        <label>
+                                            <span class="title"><?php esc_html_e('Parent', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <select name="parent_id" class="parent-select">
+                                                    <option value=""><?php esc_html_e('— None (Standalone) —', 'shuriken-reviews'); ?></option>
+                                                    <?php 
+                                                    $available_parents = $db->get_parent_ratings($rating->id);
+                                                    foreach ($available_parents as $parent): 
+                                                    ?>
+                                                        <option value="<?php echo esc_attr($parent->id); ?>" <?php selected($rating->parent_id, $parent->id); ?>>
+                                                            <?php echo esc_html($parent->name); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="effect-type-label" style="<?php echo empty($rating->parent_id) ? 'display:none;' : ''; ?>">
+                                            <span class="title"><?php esc_html_e('Effect', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <select name="effect_type" class="effect-type-select">
+                                                    <option value="positive" <?php selected($rating->effect_type, 'positive'); ?>><?php esc_html_e('Positive (adds to parent)', 'shuriken-reviews'); ?></option>
+                                                    <option value="negative" <?php selected($rating->effect_type, 'negative'); ?>><?php esc_html_e('Negative (subtracts from parent)', 'shuriken-reviews'); ?></option>
+                                                </select>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="display-only-label" style="<?php echo !empty($rating->parent_id) ? 'display:none;' : ''; ?>">
+                                            <span class="title"><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <input type="checkbox" name="display_only" value="1" <?php checked($rating->display_only, 1); ?>>
+                                                <span class="description"><?php esc_html_e('Visitors cannot vote directly (only via sub-ratings)', 'shuriken-reviews'); ?></span>
                                             </span>
                                         </label>
                                     </div>
@@ -328,6 +432,7 @@ $total_pages = $ratings_result->total_pages;
                         <input id="cb-select-all-2" type="checkbox">
                     </td>
                     <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-type"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
                     <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
                     <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
@@ -440,6 +545,52 @@ $total_pages = $ratings_result->total_pages;
                                    placeholder="<?php esc_attr_e('Enter rating name...', 'shuriken-reviews'); ?>">
                             <p class="description">
                                 <?php esc_html_e('Enter a descriptive name for this rating. This will be displayed to users.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="parent_id"><?php esc_html_e('Parent Rating', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <select name="parent_id" id="parent_id" class="regular-text">
+                                <option value=""><?php esc_html_e('— None (Standalone Rating) —', 'shuriken-reviews'); ?></option>
+                                <?php foreach ($parent_ratings as $parent): ?>
+                                    <option value="<?php echo esc_attr($parent->id); ?>">
+                                        <?php echo esc_html($parent->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Select a parent to make this a sub-rating. Sub-ratings contribute to their parent\'s score.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="effect-type-row" style="display: none;">
+                        <th scope="row">
+                            <label for="effect_type"><?php esc_html_e('Effect on Parent', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <select name="effect_type" id="effect_type" class="regular-text">
+                                <option value="positive"><?php esc_html_e('Positive — Votes add to parent rating', 'shuriken-reviews'); ?></option>
+                                <option value="negative"><?php esc_html_e('Negative — Votes subtract from parent rating', 'shuriken-reviews'); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Positive: Higher votes improve parent score. Negative: Higher votes lower parent score (e.g., "Difficulty" or "Price").', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="display-only-row">
+                        <th scope="row">
+                            <label for="display_only"><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="display_only" id="display_only" value="1">
+                                <?php esc_html_e('Make this rating display-only (no direct voting)', 'shuriken-reviews'); ?>
+                            </label>
+                            <p class="description">
+                                <?php esc_html_e('Enable this for parent ratings where visitors should only vote via sub-ratings.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>

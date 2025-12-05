@@ -105,7 +105,7 @@ class Shuriken_Database {
      */
     public function get_rating($rating_id) {
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, date_created 
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
              FROM {$this->ratings_table} WHERE id = %d",
             $rating_id
         ));
@@ -127,12 +127,12 @@ class Shuriken_Database {
      * @return array Array of rating objects
      */
     public function get_all_ratings($orderby = 'id', $order = 'DESC') {
-        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created');
+        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
 
         return $this->wpdb->get_results(
-            "SELECT id, name, total_votes, total_rating, date_created 
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
              FROM {$this->ratings_table} 
              ORDER BY {$orderby} {$order}"
         );
@@ -150,7 +150,7 @@ class Shuriken_Database {
      */
     public function get_ratings_paginated($per_page = 20, $page = 1, $search = '', $orderby = 'id', $order = 'DESC') {
         $offset = ($page - 1) * $per_page;
-        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created');
+        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -167,7 +167,7 @@ class Shuriken_Database {
             ));
 
             $result->ratings = $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, date_created 
+                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
                  FROM {$this->ratings_table} 
                  WHERE name LIKE %s 
                  ORDER BY {$orderby} {$order} 
@@ -182,7 +182,7 @@ class Shuriken_Database {
             );
 
             $result->ratings = $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, date_created 
+                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
                  FROM {$this->ratings_table} 
                  ORDER BY {$orderby} {$order} 
                  LIMIT %d OFFSET %d",
@@ -200,13 +200,28 @@ class Shuriken_Database {
      * Create a new rating
      *
      * @param string $name Rating name
+     * @param int|null $parent_id Parent rating ID (optional)
+     * @param string $effect_type Effect type on parent: 'positive' or 'negative'
+     * @param bool $display_only Whether the rating is display-only (no direct voting)
      * @return int|false The new rating ID or false on failure
      */
-    public function create_rating($name) {
+    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false) {
+        $insert_data = array(
+            'name' => sanitize_text_field($name),
+            'effect_type' => in_array($effect_type, array('positive', 'negative'), true) ? $effect_type : 'positive',
+            'display_only' => $display_only ? 1 : 0
+        );
+        $format = array('%s', '%s', '%d');
+
+        if ($parent_id !== null && $parent_id > 0) {
+            $insert_data['parent_id'] = intval($parent_id);
+            $format[] = '%d';
+        }
+
         $result = $this->wpdb->insert(
             $this->ratings_table,
-            array('name' => sanitize_text_field($name)),
-            array('%s')
+            $insert_data,
+            $format
         );
 
         return $result !== false ? $this->wpdb->insert_id : false;
@@ -216,11 +231,11 @@ class Shuriken_Database {
      * Update a rating
      *
      * @param int $rating_id Rating ID
-     * @param array $data Data to update (name, total_votes, total_rating)
+     * @param array $data Data to update (name, total_votes, total_rating, parent_id, effect_type, display_only)
      * @return bool True on success, false on failure
      */
     public function update_rating($rating_id, $data) {
-        $allowed_fields = array('name', 'total_votes', 'total_rating');
+        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only');
         $update_data = array();
         $format = array();
 
@@ -229,6 +244,16 @@ class Shuriken_Database {
                 if ($key === 'name') {
                     $update_data[$key] = sanitize_text_field($value);
                     $format[] = '%s';
+                } elseif ($key === 'effect_type') {
+                    $update_data[$key] = in_array($value, array('positive', 'negative'), true) ? $value : 'positive';
+                    $format[] = '%s';
+                } elseif ($key === 'parent_id') {
+                    // Allow null for parent_id
+                    $update_data[$key] = $value === null || $value === '' || $value === 0 ? null : intval($value);
+                    $format[] = $update_data[$key] === null ? null : '%d';
+                } elseif ($key === 'display_only') {
+                    $update_data[$key] = $value ? 1 : 0;
+                    $format[] = '%d';
                 } else {
                     $update_data[$key] = intval($value);
                     $format[] = '%d';
@@ -262,6 +287,15 @@ class Shuriken_Database {
         $this->wpdb->query('START TRANSACTION');
 
         try {
+            // First, update any sub-ratings to have no parent
+            $this->wpdb->update(
+                $this->ratings_table,
+                array('parent_id' => null),
+                array('parent_id' => $rating_id),
+                array(null),
+                array('%d')
+            );
+
             // Delete associated votes first
             $this->wpdb->delete(
                 $this->votes_table,
@@ -288,6 +322,93 @@ class Shuriken_Database {
             $this->wpdb->query('ROLLBACK');
             return false;
         }
+    }
+
+    /**
+     * Get all sub-ratings for a parent rating
+     *
+     * @param int $parent_id Parent rating ID
+     * @return array Array of sub-rating objects
+     */
+    public function get_sub_ratings($parent_id) {
+        $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
+             FROM {$this->ratings_table} 
+             WHERE parent_id = %d 
+             ORDER BY name ASC",
+            $parent_id
+        ));
+
+        foreach ($ratings as &$rating) {
+            $rating->average = $rating->total_votes > 0 
+                ? round($rating->total_rating / $rating->total_votes, 1) 
+                : 0;
+        }
+
+        return $ratings;
+    }
+
+    /**
+     * Get all parent ratings (ratings that can have sub-ratings)
+     *
+     * @param int|null $exclude_id Rating ID to exclude from results
+     * @return array Array of rating objects
+     */
+    public function get_parent_ratings($exclude_id = null) {
+        if ($exclude_id) {
+            return $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
+                 FROM {$this->ratings_table} 
+                 WHERE parent_id IS NULL AND id != %d 
+                 ORDER BY name ASC",
+                $exclude_id
+            ));
+        }
+
+        return $this->wpdb->get_results(
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
+             FROM {$this->ratings_table} 
+             WHERE parent_id IS NULL 
+             ORDER BY name ASC"
+        );
+    }
+
+    /**
+     * Calculate and update parent rating totals based on sub-ratings
+     *
+     * @param int $parent_id Parent rating ID
+     * @return bool True on success, false on failure
+     */
+    public function recalculate_parent_rating($parent_id) {
+        // Get all sub-ratings
+        $sub_ratings = $this->get_sub_ratings($parent_id);
+        
+        if (empty($sub_ratings)) {
+            return true;
+        }
+
+        $total_votes = 0;
+        $total_rating = 0;
+
+        foreach ($sub_ratings as $sub) {
+            if ($sub->total_votes > 0) {
+                $total_votes += $sub->total_votes;
+                
+                if ($sub->effect_type === 'negative') {
+                    // For negative effect: invert the rating (6 - rating becomes the effective rating)
+                    // e.g., a 5-star negative rating contributes 1 point, 1-star contributes 5 points
+                    $inverted_rating = ($sub->total_votes * 6) - $sub->total_rating;
+                    $total_rating += $inverted_rating;
+                } else {
+                    $total_rating += $sub->total_rating;
+                }
+            }
+        }
+
+        return $this->update_rating($parent_id, array(
+            'total_votes' => $total_votes,
+            'total_rating' => $total_rating
+        ));
     }
 
     /**
@@ -490,8 +611,12 @@ class Shuriken_Database {
             name varchar(255) NOT NULL,
             total_votes int DEFAULT 0,
             total_rating int DEFAULT 0,
+            parent_id mediumint(9) DEFAULT NULL,
+            effect_type varchar(10) DEFAULT 'positive',
+            display_only tinyint(1) DEFAULT 0,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY parent_id (parent_id)
         ) $charset_collate;";
 
         dbDelta($sql_ratings);
@@ -565,6 +690,22 @@ class Shuriken_Database {
             $this->wpdb->query("ALTER TABLE {$this->votes_table} MODIFY user_id bigint(20) DEFAULT 0");
         }
 
+        // Check if parent_id column exists in ratings table
+        $parent_id_exists = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$this->ratings_table} LIKE 'parent_id'"
+        );
+
+        if (empty($parent_id_exists)) {
+            // Add parent_id column
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN parent_id mediumint(9) DEFAULT NULL AFTER total_rating");
+            // Add effect_type column
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN effect_type varchar(10) DEFAULT 'positive' AFTER parent_id");
+            // Add display_only column
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN display_only tinyint(1) DEFAULT 0 AFTER effect_type");
+            // Add index for parent_id
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD KEY parent_id (parent_id)");
+        }
+
         return true;
     }
 
@@ -579,7 +720,7 @@ class Shuriken_Database {
      */
     public function get_ratings_for_export() {
         return $this->wpdb->get_results(
-            "SELECT id, name, total_votes, total_rating, date_created,
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created,
                     ROUND(total_rating / NULLIF(total_votes, 0), 2) as average_rating
              FROM {$this->ratings_table}
              ORDER BY id ASC"

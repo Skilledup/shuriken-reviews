@@ -31,15 +31,76 @@
 }
 
 .wp-list-table.ratings .column-name {
-    width: 40%;
+    width: 30%;
+}
+
+.wp-list-table.ratings .column-type {
+    width: 15%;
 }
 
 .wp-list-table.ratings .column-shortcode {
-    width: 30%;
+    width: 25%;
 }
 
 .wp-list-table.ratings .column-stats {
     width: 25%;
+}
+
+/* Sub-rating indicator */
+.sub-indicator {
+    color: #72aee6;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+tr.sub-rating {
+    background-color: #f9f9f9;
+}
+
+tr.sub-rating .column-name {
+    padding-left: 20px;
+}
+
+/* Rating Type Badges */
+.rating-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.parent-badge {
+    background: #e7f5ff;
+    color: #1e73be;
+}
+
+.parent-badge.display-only {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.sub-rating-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.sub-rating-badge.negative {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.standalone-badge {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.parent-info,
+.sub-count {
+    color: #646970;
+    font-size: 12px;
+    margin-top: 4px;
 }
 
 /* Rating Display */
@@ -117,10 +178,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-bottom: 10px;
 }
 
 .inline-edit-row-rating .title {
-    width: 5em;
+    width: 6em;
     font-weight: 500;
 }
 
@@ -128,9 +190,19 @@
     flex: 1;
 }
 
-.inline-edit-row-rating .input-text-wrap input {
+.inline-edit-row-rating .input-text-wrap input[type="text"],
+.inline-edit-row-rating .input-text-wrap select {
     width: 100%;
     max-width: 400px;
+}
+
+.inline-edit-row-rating .input-text-wrap input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.inline-edit-row-rating .input-text-wrap .description {
+    color: #646970;
+    font-style: italic;
 }
 
 .inline-edit-row-rating .inline-edit-save {
@@ -220,17 +292,29 @@
 /* Responsive Design */
 @media screen and (max-width: 782px) {
     .wp-list-table.ratings .column-shortcode,
-    .wp-list-table.ratings .column-stats {
+    .wp-list-table.ratings .column-stats,
+    .wp-list-table.ratings .column-type {
         display: none;
     }
     
     .wp-list-table.ratings .is-expanded .column-shortcode,
-    .wp-list-table.ratings .is-expanded .column-stats {
+    .wp-list-table.ratings .is-expanded .column-stats,
+    .wp-list-table.ratings .is-expanded .column-type {
         display: table-cell;
     }
     
     .shuriken-ratings-form-wrap {
         margin: 20px 0;
+    }
+    
+    .inline-edit-row-rating label {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .inline-edit-row-rating .title {
+        width: auto;
+        margin-bottom: 5px;
     }
 }
 

@@ -28,7 +28,8 @@ jQuery(document).ready(function($) {
         }, 4000);
     });
 
-    $('.shuriken-rating .star').hover(
+    // Only add hover effects to votable ratings (not display-only)
+    $('.shuriken-rating:not(.display-only) .star').hover(
         function() {
             var $rating = $(this).closest('.shuriken-rating');
             $rating.data('hovering', true);
@@ -48,7 +49,8 @@ jQuery(document).ready(function($) {
         }
     );
 
-    $('.shuriken-rating .star').on('click', function(e) {
+    // Only allow clicking on votable ratings (not display-only)
+    $('.shuriken-rating:not(.display-only) .star').on('click', function(e) {
         e.preventDefault();
         var $rating = $(this).closest('.shuriken-rating');
         var $stars = $rating.find('.stars');
@@ -116,6 +118,19 @@ jQuery(document).ready(function($) {
                         .replace('%1$s', response.data.new_average)
                         .replace('%2$s', response.data.new_total_votes);
                     $rating.find('.rating-stats').data('average', response.data.new_average);
+                    
+                    // If there's a parent rating on the page, update it too
+                    if (response.data.parent_id) {
+                        var $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
+                        if ($parentRating.length) {
+                            var parentText = shurikenReviews.i18n.averageRating
+                                .replace('%1$s', response.data.parent_average)
+                                .replace('%2$s', response.data.parent_total_votes);
+                            $parentRating.find('.rating-stats').data('average', response.data.parent_average);
+                            $parentRating.find('.rating-stats').html(parentText);
+                            updateStars($parentRating, response.data.parent_average);
+                        }
+                    }
                 } else {
                     $rating.find('.rating-stats').html(
                         shurikenReviews.i18n.error.replace('%s', response.data)
@@ -145,7 +160,8 @@ jQuery(document).ready(function($) {
         });
     });
 
-    $('.shuriken-rating .star').on('keydown', function(e) {
+    // Only allow keyboard navigation on votable ratings (not display-only)
+    $('.shuriken-rating:not(.display-only) .star').on('keydown', function(e) {
         // Handle Enter (13) or Space (32) key press
         if (e.which === 13 || e.which === 32) {
             e.preventDefault();

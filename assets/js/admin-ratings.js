@@ -174,6 +174,40 @@
             $(this).closest('tr').toggleClass('is-expanded');
         });
 
+        /**
+         * Toggle effect type and display only fields based on parent selection
+         * For the "Add New Rating" form
+         */
+        $('#parent_id').on('change', function() {
+            const hasParent = $(this).val() !== '';
+            
+            if (hasParent) {
+                $('#effect-type-row').show();
+                $('#display-only-row').hide();
+                $('#display_only').prop('checked', false);
+            } else {
+                $('#effect-type-row').hide();
+                $('#display-only-row').show();
+            }
+        });
+
+        /**
+         * Toggle effect type and display only fields for inline edit forms
+         */
+        $(document).on('change', '.inline-edit-row-rating .parent-select', function() {
+            const $row = $(this).closest('.inline-edit-row-rating');
+            const hasParent = $(this).val() !== '';
+            
+            if (hasParent) {
+                $row.find('.effect-type-label').show();
+                $row.find('.display-only-label').hide();
+                $row.find('input[name="display_only"]').prop('checked', false);
+            } else {
+                $row.find('.effect-type-label').hide();
+                $row.find('.display-only-label').show();
+            }
+        });
+
     });
 
 })(jQuery);

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.3.5
+ * Version: 1.4.0
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,11 +21,11 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.3.5');
+    define('SHURIKEN_REVIEWS_VERSION', '1.4.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
-    define('SHURIKEN_REVIEWS_DB_VERSION', '1.2.0');
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.3.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
@@ -148,9 +148,16 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
     // Get average from the rating object (calculated by get_rating)
     $average = $rating->average;
 
+    // Check if this is a display-only rating
+    $is_display_only = !empty($rating->display_only);
+    $css_classes = 'shuriken-rating';
+    if ($is_display_only) {
+        $css_classes .= ' display-only';
+    }
+
     // Get block wrapper attributes
     $wrapper_attributes = get_block_wrapper_attributes(array(
-        'class' => 'shuriken-rating',
+        'class' => $css_classes,
         'data-id' => esc_attr($rating->id),
     ));
 
@@ -166,13 +173,17 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
                 <?php echo esc_html($rating->name); ?>
             </<?php echo esc_html($title_tag); ?>>
             
-            <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
+            <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
                 <?php for ($i = 1; $i <= 5; $i++) : ?>
                     <span class="star" 
                           data-value="<?php echo esc_attr($i); ?>" 
+                          <?php if (!$is_display_only): ?>
                           role="button" 
                           tabindex="0"
-                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
+                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>"
+                          <?php else: ?>
+                          aria-label="<?php printf(esc_attr__('%d out of 5', 'shuriken-reviews'), $i); ?>"
+                          <?php endif; ?>>
                         ★
                     </span>
                 <?php endfor; ?>
@@ -188,6 +199,12 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
                 );
                 ?>
             </div>
+            
+            <?php if ($is_display_only): ?>
+            <div class="display-only-notice">
+                <?php esc_html_e('Vote via sub-ratings below', 'shuriken-reviews'); ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -366,8 +383,12 @@ function shuriken_reviews_handle_rating_forms() {
         }
 
         $name = sanitize_text_field($_POST['rating_name']);
+        $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
+        $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
+        $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
+
         if (!empty($name)) {
-            $result = shuriken_db()->create_rating($name);
+            $result = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only);
             if ($result) {
                 wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                 exit;
@@ -731,22 +752,33 @@ function shuriken_rating_shortcode($atts) {
     // Get average from the rating object (calculated by get_rating)
     $average = $rating->average;
     
+    // Check if this is a display-only rating
+    $is_display_only = !empty($rating->display_only);
+    $css_classes = 'shuriken-rating';
+    if ($is_display_only) {
+        $css_classes .= ' display-only';
+    }
+    
     // Start output buffering
     ob_start();
     ?>
-    <div class="shuriken-rating" data-id="<?php echo esc_attr($rating->id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
+    <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
         <div class="shuriken-rating-wrapper">
             <<?php echo tag_escape($tag); ?> class="rating-title">
                 <?php echo esc_html($rating->name); ?>
             </<?php echo tag_escape($tag); ?>>
             
-            <div class="stars" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
+            <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
                 <?php for ($i = 1; $i <= 5; $i++): ?>
                     <span class="star" 
                           data-value="<?php echo $i; ?>" 
+                          <?php if (!$is_display_only): ?>
                           role="button" 
                           tabindex="0"
-                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>">
+                          aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>"
+                          <?php else: ?>
+                          aria-label="<?php printf(esc_attr__('%d out of 5', 'shuriken-reviews'), $i); ?>"
+                          <?php endif; ?>>
                         ★
                     </span>
                 <?php endfor; ?>
@@ -762,6 +794,12 @@ function shuriken_rating_shortcode($atts) {
                 );
                 ?>
             </div>
+            
+            <?php if ($is_display_only): ?>
+            <div class="display-only-notice">
+                <?php esc_html_e('Vote via sub-ratings below', 'shuriken-reviews'); ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -829,6 +867,19 @@ function handle_submit_rating() {
     $rating_id = intval($_POST['rating_id']);
     $rating_value = intval($_POST['rating_value']);
 
+    // Get the rating to check if it's display-only
+    $rating = $db->get_rating($rating_id);
+    if (!$rating) {
+        wp_send_json_error('Rating not found');
+        return;
+    }
+
+    // Check if this rating is display-only
+    if (!empty($rating->display_only)) {
+        wp_send_json_error('This rating is display-only and cannot be voted on directly');
+        return;
+    }
+
     // Check if the user has already voted
     $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
 
@@ -855,13 +906,30 @@ function handle_submit_rating() {
         }
     }
 
-    // Get updated rating data
-    $rating = $db->get_rating($rating_id);
+    // If this is a sub-rating, recalculate the parent rating
+    if (!empty($rating->parent_id)) {
+        $db->recalculate_parent_rating($rating->parent_id);
+    }
 
-    wp_send_json_success(array(
-        'new_average' => $rating->average,
-        'new_total_votes' => $rating->total_votes
-    ));
+    // Get updated rating data
+    $updated_rating = $db->get_rating($rating_id);
+
+    // Also send parent data if applicable
+    $response_data = array(
+        'new_average' => $updated_rating->average,
+        'new_total_votes' => $updated_rating->total_votes
+    );
+
+    if (!empty($rating->parent_id)) {
+        $parent_rating = $db->get_rating($rating->parent_id);
+        if ($parent_rating) {
+            $response_data['parent_id'] = $parent_rating->id;
+            $response_data['parent_average'] = $parent_rating->average;
+            $response_data['parent_total_votes'] = $parent_rating->total_votes;
+        }
+    }
+
+    wp_send_json_success($response_data);
 }
 add_action('wp_ajax_submit_rating', 'handle_submit_rating');
 add_action('wp_ajax_nopriv_submit_rating', 'handle_submit_rating');
