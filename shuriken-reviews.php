@@ -419,6 +419,43 @@ if (!function_exists('shuriken_reviews_manual_install')) {
 }
 
 /**
+ * Handle rating form submissions before any output.
+ * This runs on admin_init to allow proper redirects.
+ *
+ * @return void
+ * @since 1.3.5
+ */
+function shuriken_reviews_handle_rating_forms() {
+    // Only process on our admin page
+    if (!isset($_GET['page']) || $_GET['page'] !== 'shuriken-reviews') {
+        return;
+    }
+
+    // Handle create rating
+    if (isset($_POST['create_rating']) && isset($_POST['shuriken_rating_nonce'])) {
+        if (!wp_verify_nonce($_POST['shuriken_rating_nonce'], 'shuriken_create_rating')) {
+            return;
+        }
+        
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $name = sanitize_text_field($_POST['rating_name']);
+        if (!empty($name)) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'shuriken_ratings';
+            $result = $wpdb->insert($table_name, array('name' => $name));
+            if ($result) {
+                wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
+                exit;
+            }
+        }
+    }
+}
+add_action('admin_init', 'shuriken_reviews_handle_rating_forms');
+
+/**
  * Adds the Shuriken Reviews menu to the WordPress admin dashboard.
  *
  * @return void

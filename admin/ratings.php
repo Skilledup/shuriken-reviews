@@ -64,21 +64,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['ratin
     }
 }
 
-// Handle create rating
-if (isset($_POST['create_rating']) && check_admin_referer('shuriken_create_rating', 'shuriken_rating_nonce')) {
-    $name = sanitize_text_field($_POST['rating_name']);
-    if (!empty($name)) {
-        $result = $wpdb->insert($table_name, array('name' => $name));
-        if ($result) {
-            // Redirect to first page to see the new rating
-            wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
-            exit;
-        } else {
-            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('Failed to create rating. Please try again.', 'shuriken-reviews') . '</p></div>';
-        }
-    }
-}
-
 // Show success message after redirect
 if (isset($_GET['message']) && $_GET['message'] === 'created') {
     echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating created successfully!', 'shuriken-reviews') . '</p></div>';
