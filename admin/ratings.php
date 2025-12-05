@@ -28,24 +28,16 @@ wp_localize_script('shuriken-reviews-admin-ratings', 'shurikenRatingsAdmin', arr
     )
 ));
 
-global $wpdb;
-$table_name = $wpdb->prefix . 'shuriken_ratings';
-$votes_table = $wpdb->prefix . 'shuriken_votes';
+// Get database instance
+$db = shuriken_db();
 
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-$offset = ($current_page - 1) * $per_page;
 
 // Handle bulk actions
 if (isset($_POST['action']) && $_POST['action'] === 'delete' && !empty($_POST['rating_ids']) && check_admin_referer('shuriken_bulk_ratings', 'shuriken_bulk_nonce')) {
     $ids = array_map('intval', $_POST['rating_ids']);
-    $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
-    
-    // Delete associated votes first
-    $wpdb->query($wpdb->prepare("DELETE FROM $votes_table WHERE rating_id IN ($ids_placeholder)", ...$ids));
-    
-    // Delete ratings
-    $deleted = $wpdb->query($wpdb->prepare("DELETE FROM $table_name WHERE id IN ($ids_placeholder)", ...$ids));
+    $deleted = $db->delete_ratings($ids);
     
     if ($deleted) {
         echo '<div class="notice notice-success is-dismissible"><p>' . 
@@ -57,8 +49,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete' && !empty($_POST['r
 // Handle single actions
 if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['rating_id']) && check_admin_referer('shuriken_delete_rating_' . intval($_GET['rating_id']))) {
     $id = intval($_GET['rating_id']);
-    $wpdb->delete($votes_table, array('rating_id' => $id));
-    $result = $wpdb->delete($table_name, array('id' => $id));
+    $result = $db->delete_rating($id);
     if ($result) {
         echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating deleted successfully!', 'shuriken-reviews') . '</p></div>';
     }
@@ -74,8 +65,8 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
     $id = intval($_POST['rating_id']);
     $name = sanitize_text_field($_POST['rating_name']);
     if (!empty($name) && $id) {
-        $result = $wpdb->update($table_name, array('name' => $name), array('id' => $id));
-        if ($result !== false) {
+        $result = $db->update_rating($id, array('name' => $name));
+        if ($result) {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
         }
     }
@@ -83,28 +74,10 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
 
 // Search functionality
 $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-if (!empty($search)) {
-    $total_items = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $table_name WHERE name LIKE %s",
-        '%' . $wpdb->esc_like($search) . '%'
-    ));
-    
-    $ratings = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $table_name WHERE name LIKE %s ORDER BY id DESC LIMIT %d OFFSET %d",
-        '%' . $wpdb->esc_like($search) . '%',
-        $per_page,
-        $offset
-    ));
-} else {
-    $total_items = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-    $ratings = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $table_name ORDER BY id DESC LIMIT %d OFFSET %d",
-        $per_page,
-        $offset
-    ));
-}
-
-$total_pages = ceil($total_items / $per_page);
+$ratings_result = $db->get_ratings_paginated($per_page, $current_page, $search);
+$ratings = $ratings_result->ratings;
+$total_items = $ratings_result->total_count;
+$total_pages = $ratings_result->total_pages;
 ?>
 
 <div class="wrap">

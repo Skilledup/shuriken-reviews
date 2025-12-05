@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.3.4
+ * Version: 1.3.5
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.3.4');
+    define('SHURIKEN_REVIEWS_VERSION', '1.3.5');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -65,6 +65,13 @@ function shuriken_reviews_load_textdomain() {
  * @since 1.2.0
  */
 require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/comments.php';
+
+/**
+ * Include Database class for core database operations.
+ * 
+ * @since 1.3.5
+ */
+require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-database.php';
 
 /**
  * Include Analytics class for reusable statistics functions.
@@ -132,19 +139,14 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
         return '';
     }
 
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
-        $rating_id
-    ));
+    $rating = shuriken_db()->get_rating($rating_id);
 
     if (!$rating) {
         return '';
     }
 
-    // Calculate average rating
-    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+    // Get average from the rating object (calculated by get_rating)
+    $average = $rating->average;
 
     // Get block wrapper attributes
     $wrapper_attributes = get_block_wrapper_attributes(array(
@@ -233,13 +235,7 @@ add_action('rest_api_init', 'shuriken_reviews_register_rest_routes');
  * @since 1.1.9
  */
 function shuriken_reviews_get_ratings($request) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    
-    $ratings = $wpdb->get_results(
-        "SELECT id, name, total_votes, total_rating FROM $table_name ORDER BY id DESC"
-    );
-    
+    $ratings = shuriken_db()->get_all_ratings();
     return rest_ensure_response($ratings);
 }
 
@@ -251,18 +247,11 @@ function shuriken_reviews_get_ratings($request) {
  * @since 1.1.9
  */
 function shuriken_reviews_create_rating($request) {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    
     $name = $request->get_param('name');
     
-    $result = $wpdb->insert(
-        $table_name,
-        array('name' => $name),
-        array('%s')
-    );
+    $new_id = shuriken_db()->create_rating($name);
     
-    if ($result === false) {
+    if ($new_id === false) {
         return new WP_Error(
             'create_failed',
             __('Failed to create rating.', 'shuriken-reviews'),
@@ -270,11 +259,7 @@ function shuriken_reviews_create_rating($request) {
         );
     }
     
-    $new_id = $wpdb->insert_id;
-    $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
-        $new_id
-    ));
+    $rating = shuriken_db()->get_rating($new_id);
     
     return rest_ensure_response($rating);
 }
@@ -283,54 +268,18 @@ function shuriken_reviews_create_rating($request) {
  * Activation hook for the Shuriken Reviews plugin.
  * Creates the necessary database tables for storing ratings and votes.
  *
- * @global wpdb $wpdb WordPress database abstraction object.
  * @return void
  * @since 1.1.0
  */
 function shuriken_reviews_activate() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    $votes_table_name = $wpdb->prefix . 'shuriken_votes';
-    
-    $charset_collate = $wpdb->get_charset_collate();
-
     // Add error logging since WP_DEBUG is enabled
     error_log('Creating Shuriken Reviews tables...');
 
     try {
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            name varchar(255) NOT NULL,
-            total_votes int DEFAULT 0,
-            total_rating int DEFAULT 0,
-            date_created datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY  (id)
-        ) $charset_collate;";
-
-        dbDelta($sql);
+        $db = shuriken_db();
         
-        $sql = "CREATE TABLE IF NOT EXISTS $votes_table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            rating_id mediumint(9) NOT NULL,
-            user_id bigint(20) DEFAULT 0,
-            user_ip varchar(45) DEFAULT NULL,
-            rating_value int NOT NULL,
-            date_created datetime DEFAULT CURRENT_TIMESTAMP,
-            date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY  (id),
-            UNIQUE KEY unique_vote (rating_id, user_id, user_ip)
-        ) $charset_collate;";
-
-        dbDelta($sql);
-
-        // Verify tables were created
-        $ratings_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
-        $votes_exists = $wpdb->get_var("SHOW TABLES LIKE '$votes_table_name'") === $votes_table_name;
-
-        if (!$ratings_exists || !$votes_exists) {
-            error_log('Failed to create tables. Tables exist check: ratings=' . ($ratings_exists ? 'yes' : 'no') . ', votes=' . ($votes_exists ? 'yes' : 'no'));
+        if (!$db->create_tables()) {
+            error_log('Failed to create Shuriken Reviews tables.');
             throw new Exception('Failed to create required database tables');
         }
 
@@ -356,7 +305,6 @@ register_activation_hook(SHURIKEN_REVIEWS_PLUGIN_FILE, 'shuriken_reviews_activat
  * Deactivation hook for the Shuriken Reviews plugin.
  * Cleans up the database tables created by the plugin.
  *
- * @global wpdb $wpdb WordPress database abstraction object.
  * @return void
  * @since 1.1.3
  */
@@ -375,45 +323,21 @@ if (!function_exists('shuriken_reviews_manual_install')) {
             return;
         }
         
-        global $wpdb;
-        $votes_table_name = $wpdb->prefix . 'shuriken_votes';
+        $db = shuriken_db();
         
-        // Check if table exists before attempting migration
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$votes_table_name'") === $votes_table_name;
-        if (!$table_exists) {
+        // Check if tables exist before attempting migration
+        if (!$db->tables_exist()) {
             return;
         }
         
-        // Check if user_ip column exists
-        $column_exists = $wpdb->get_results(
-            "SHOW COLUMNS FROM $votes_table_name LIKE 'user_ip'"
-        );
-        
-        if (empty($column_exists)) {
-            // Add user_ip column
-            $wpdb->query("ALTER TABLE $votes_table_name ADD COLUMN user_ip varchar(45) DEFAULT NULL AFTER user_id");
-            
-            // Check if unique_vote index exists and update it
-            $index_exists = $wpdb->get_results(
-                "SHOW INDEX FROM $votes_table_name WHERE Key_name = 'unique_vote'"
-            );
-            
-            if (!empty($index_exists)) {
-                $wpdb->query("ALTER TABLE $votes_table_name DROP INDEX unique_vote");
-            }
-            
-            // Create the new unique index with user_ip
-            $wpdb->query("ALTER TABLE $votes_table_name ADD UNIQUE KEY unique_vote (rating_id, user_id, user_ip)");
-            
-            // Make user_id default to 0 for guest votes
-            $wpdb->query("ALTER TABLE $votes_table_name MODIFY user_id bigint(20) DEFAULT 0");
-        }
+        // Run migrations
+        $db->run_migrations($current_version);
         
         // Add the new option if it doesn't exist
         add_option('shuriken_allow_guest_voting', '0');
         
         // Update version
-        update_option('shuriken_reviews_db_version', SHURIKEN_REVIEWS_VERSION);
+        update_option('shuriken_reviews_db_version', SHURIKEN_REVIEWS_DB_VERSION);
     }
     add_action('plugins_loaded', 'shuriken_reviews_manual_install');
 }
@@ -443,9 +367,7 @@ function shuriken_reviews_handle_rating_forms() {
 
         $name = sanitize_text_field($_POST['rating_name']);
         if (!empty($name)) {
-            global $wpdb;
-            $table_name = $wpdb->prefix . 'shuriken_ratings';
-            $result = $wpdb->insert($table_name, array('name' => $name));
+            $result = shuriken_db()->create_rating($name);
             if ($result) {
                 wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                 exit;
@@ -637,17 +559,8 @@ function shuriken_reviews_export_ratings() {
         wp_die(__('You do not have permission to export data', 'shuriken-reviews'));
     }
 
-    global $wpdb;
-    $ratings_table = $wpdb->prefix . 'shuriken_ratings';
-    $votes_table = $wpdb->prefix . 'shuriken_votes';
-
     // Get all ratings with their stats
-    $ratings = $wpdb->get_results(
-        "SELECT r.id, r.name, r.total_votes, r.total_rating, r.date_created,
-                ROUND(r.total_rating / NULLIF(r.total_votes, 0), 2) as average_rating
-         FROM $ratings_table r
-         ORDER BY r.id ASC"
-    );
+    $ratings = shuriken_db()->get_ratings_for_export();
 
     // Set headers for CSV download
     $filename = 'shuriken-ratings-export-' . date('Y-m-d') . '.csv';
@@ -712,29 +625,17 @@ function shuriken_reviews_export_item_votes() {
         wp_die(__('Invalid rating ID', 'shuriken-reviews'));
     }
 
-    global $wpdb;
-    $ratings_table = $wpdb->prefix . 'shuriken_ratings';
-    $votes_table = $wpdb->prefix . 'shuriken_votes';
+    $db = shuriken_db();
 
-    // Get rating name
-    $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT name FROM $ratings_table WHERE id = %d",
-        $rating_id
-    ));
+    // Get rating info
+    $rating = $db->get_rating($rating_id);
 
     if (!$rating) {
         wp_die(__('Rating not found', 'shuriken-reviews'));
     }
 
     // Get all votes for this rating
-    $votes = $wpdb->get_results($wpdb->prepare(
-        "SELECT v.id, v.rating_value, v.user_id, v.user_ip, v.date_created, u.display_name, u.user_email
-         FROM $votes_table v
-         LEFT JOIN {$wpdb->users} u ON v.user_id = u.ID
-         WHERE v.rating_id = %d
-         ORDER BY v.date_created DESC",
-        $rating_id
-    ));
+    $votes = $db->get_votes_for_export($rating_id);
 
     // Set headers for CSV download
     $filename = 'shuriken-votes-' . sanitize_title($rating->name) . '-' . date('Y-m-d') . '.csv';
@@ -821,19 +722,14 @@ function shuriken_rating_shortcode($atts) {
     $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
 
     // Get rating data
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT id, name, total_votes, total_rating FROM $table_name WHERE id = %d",
-        $id
-    ));
+    $rating = shuriken_db()->get_rating($id);
 
     if (!$rating) {
         return '';
     }
 
-    // Calculate average rating
-    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+    // Get average from the rating object (calculated by get_rating)
+    $average = $rating->average;
     
     // Start output buffering
     ob_start();
@@ -927,118 +823,43 @@ function handle_submit_rating() {
         return;
     }
 
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'shuriken_ratings';
-    $votes_table_name = $wpdb->prefix . 'shuriken_votes';
+    $db = shuriken_db();
     $user_id = get_current_user_id();
     $user_ip = is_user_logged_in() ? null : shuriken_get_user_ip();
     $rating_id = intval($_POST['rating_id']);
     $rating_value = intval($_POST['rating_value']);
 
-    // Check if the user has already voted (by user_id for logged in, by IP for guests)
-    if (is_user_logged_in()) {
-        $existing_vote = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_id = %d",
+    // Check if the user has already voted
+    $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
+
+    if ($existing_vote) {
+        // Update the existing vote
+        $result = $db->update_vote(
+            $existing_vote->id,
             $rating_id,
-            $user_id
-        ));
-    } else {
-        $existing_vote = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $votes_table_name WHERE rating_id = %d AND user_ip = %s AND user_id = 0",
-            $rating_id,
-            $user_ip
-        ));
-    }
+            $existing_vote->rating_value,
+            $rating_value
+        );
 
-    // Start transaction for data consistency
-    $wpdb->query('START TRANSACTION');
-
-    try {
-        if ($existing_vote) {
-            // Update the existing vote
-            $result = $wpdb->update(
-                $votes_table_name,
-                array('rating_value' => $rating_value),
-                array('id' => $existing_vote->id)
-            );
-
-            if ($result === false) {
-                $wpdb->query('ROLLBACK');
-                wp_send_json_error('Database update failed');
-                return;
-            }
-
-            // Update the total rating
-            $update_result = $wpdb->query($wpdb->prepare(
-                "UPDATE $table_name 
-                SET total_rating = total_rating - %d + %d 
-                WHERE id = %d",
-                $existing_vote->rating_value,
-                $rating_value,
-                $rating_id
-            ));
-
-            if ($update_result === false) {
-                $wpdb->query('ROLLBACK');
-                wp_send_json_error('Failed to update rating totals');
-                return;
-            }
-        } else {
-            // Insert a new vote
-            $insert_data = array(
-                'rating_id' => $rating_id,
-                'user_id' => $user_id,
-                'rating_value' => $rating_value
-            );
-            
-            // Add IP for guest votes
-            if (!is_user_logged_in()) {
-                $insert_data['user_ip'] = $user_ip;
-            }
-            
-            $result = $wpdb->insert($votes_table_name, $insert_data);
-
-            if ($result === false) {
-                $wpdb->query('ROLLBACK');
-                wp_send_json_error('Database insert failed');
-                return;
-            }
-
-            // Update the total rating and total votes
-            $update_result = $wpdb->query($wpdb->prepare(
-                "UPDATE $table_name 
-                SET total_votes = total_votes + 1,
-                total_rating = total_rating + %d 
-                WHERE id = %d",
-                $rating_value,
-                $rating_id
-            ));
-
-            if ($update_result === false) {
-                $wpdb->query('ROLLBACK');
-                wp_send_json_error('Failed to update rating totals');
-                return;
-            }
+        if (!$result) {
+            wp_send_json_error('Failed to update vote');
+            return;
         }
+    } else {
+        // Insert a new vote
+        $result = $db->create_vote($rating_id, $rating_value, $user_id, $user_ip);
 
-        // Commit the transaction
-        $wpdb->query('COMMIT');
-
-    } catch (Exception $e) {
-        $wpdb->query('ROLLBACK');
-        wp_send_json_error('An error occurred while processing your vote');
-        return;
+        if (!$result) {
+            wp_send_json_error('Failed to submit vote');
+            return;
+        }
     }
 
-    // Calculate new average rating and total votes
-    $rating = $wpdb->get_row($wpdb->prepare(
-        "SELECT total_rating, total_votes FROM $table_name WHERE id = %d",
-        $rating_id
-    ));
-    $new_average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+    // Get updated rating data
+    $rating = $db->get_rating($rating_id);
 
     wp_send_json_success(array(
-        'new_average' => $new_average,
+        'new_average' => $rating->average,
         'new_total_votes' => $rating->total_votes
     ));
 }

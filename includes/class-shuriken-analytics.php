@@ -4,6 +4,7 @@
  *
  * Provides reusable methods for fetching rating statistics and analytics data.
  * Can be used in admin pages, shortcodes, REST API, or widgets.
+ * Uses Shuriken_Database for core database operations.
  *
  * @package Shuriken_Reviews
  * @since 1.3.0
@@ -39,13 +40,18 @@ class Shuriken_Analytics {
     private $votes_table;
 
     /**
+     * @var Shuriken_Database Database instance
+     */
+    private $db;
+
+    /**
      * Constructor
      */
     public function __construct() {
-        global $wpdb;
-        $this->wpdb = $wpdb;
-        $this->ratings_table = $wpdb->prefix . 'shuriken_ratings';
-        $this->votes_table = $wpdb->prefix . 'shuriken_votes';
+        $this->db = shuriken_db();
+        $this->wpdb = $this->db->get_wpdb();
+        $this->ratings_table = $this->db->get_ratings_table();
+        $this->votes_table = $this->db->get_votes_table();
     }
 
     /**
@@ -59,6 +65,15 @@ class Shuriken_Analytics {
             $instance = new self();
         }
         return $instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database
+     */
+    public function get_db() {
+        return $this->db;
     }
 
     /**
@@ -309,18 +324,7 @@ class Shuriken_Analytics {
      * @return object|null Rating object with calculated stats or null
      */
     public function get_rating($rating_id) {
-        $rating = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT * FROM {$this->ratings_table} WHERE id = %d",
-            $rating_id
-        ));
-        
-        if ($rating) {
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
-                : 0;
-        }
-        
-        return $rating;
+        return $this->db->get_rating($rating_id);
     }
 
     /**
