@@ -33,6 +33,14 @@ if (!$rating) {
 // Get detailed stats for this item
 $stats = $analytics->get_rating_stats($rating_id);
 
+// Get hierarchy-related data
+$is_parent = $analytics->has_sub_ratings($rating_id);
+$is_sub = !empty($rating->parent_id);
+$is_mirror = !empty($rating->mirror_of);
+$sub_ratings = $is_parent ? $analytics->get_sub_ratings_contribution($rating_id) : array();
+$parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
+$source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
+
 // Extract values for template
 $average = $stats->average;
 $member_votes = $stats->member_votes;
@@ -79,6 +87,49 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
             '<code>[shuriken_rating id="' . $rating->id . '"]</code>'
         ); ?>
     </p>
+    
+    <?php if ($is_mirror || $is_parent || $is_sub || !empty($rating->display_only)) : ?>
+    <!-- Hierarchy Info -->
+    <div class="shuriken-hierarchy-info">
+        <?php if ($is_mirror && $source_rating) : ?>
+            <span class="hierarchy-badge mirror">
+                <span class="dashicons dashicons-admin-links"></span>
+                <?php printf(
+                    esc_html__('Mirror of: %s', 'shuriken-reviews'),
+                    '<a href="' . esc_url(admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $source_rating->id)) . '">' . esc_html($source_rating->name) . '</a>'
+                ); ?>
+            </span>
+        <?php endif; ?>
+        
+        <?php if ($is_parent) : ?>
+            <span class="hierarchy-badge parent">
+                <span class="dashicons dashicons-networking"></span>
+                <?php printf(
+                    esc_html__('Parent Rating with %d sub-ratings', 'shuriken-reviews'),
+                    count($sub_ratings)
+                ); ?>
+            </span>
+        <?php endif; ?>
+        
+        <?php if ($is_sub && $parent_rating) : ?>
+            <span class="hierarchy-badge sub <?php echo esc_attr($rating->effect_type); ?>">
+                <span class="dashicons dashicons-arrow-<?php echo $rating->effect_type === 'positive' ? 'up' : 'down'; ?>-alt"></span>
+                <?php printf(
+                    esc_html__('Sub-rating of: %s (%s effect)', 'shuriken-reviews'),
+                    '<a href="' . esc_url(admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $parent_rating->id)) . '">' . esc_html($parent_rating->name) . '</a>',
+                    $rating->effect_type
+                ); ?>
+            </span>
+        <?php endif; ?>
+        
+        <?php if (!empty($rating->display_only)) : ?>
+            <span class="hierarchy-badge display-only">
+                <span class="dashicons dashicons-hidden"></span>
+                <?php esc_html_e('Display Only (calculated from sub-ratings)', 'shuriken-reviews'); ?>
+            </span>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
     
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">
@@ -161,6 +212,70 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
             </div>
         </div>
     </div>
+    
+    <?php if ($is_parent && !empty($sub_ratings)) : ?>
+    <!-- Sub-Ratings Breakdown -->
+    <div class="shuriken-table-card full-width sub-ratings-breakdown">
+        <h2>
+            <span class="dashicons dashicons-networking"></span>
+            <?php esc_html_e('Sub-Ratings Contribution', 'shuriken-reviews'); ?>
+        </h2>
+        <p class="table-description">
+            <?php esc_html_e('How each sub-rating contributes to this parent rating', 'shuriken-reviews'); ?>
+        </p>
+        
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Sub-Rating', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Effect', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Average', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Effective Score', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Votes', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Vote Share', 'shuriken-reviews'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($sub_ratings as $sub) : 
+                    $sub_stats_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $sub->id);
+                ?>
+                    <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($sub_stats_url); ?>">
+                        <td>
+                            <a href="<?php echo esc_url($sub_stats_url); ?>" class="rating-item-link">
+                                <?php echo esc_html($sub->name); ?>
+                            </a>
+                        </td>
+                        <td>
+                            <span class="effect-indicator <?php echo esc_attr($sub->effect_type); ?>">
+                                <?php echo $sub->effect_type === 'positive' ? '+' : '-'; ?>
+                                <?php echo esc_html(ucfirst($sub->effect_type)); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="star-display">★</span>
+                            <?php echo esc_html($sub->average ?: '0'); ?>/5
+                        </td>
+                        <td>
+                            <span class="effective-score <?php echo $sub->effect_type === 'negative' ? 'inverted' : ''; ?>">
+                                <?php echo esc_html($sub->effective_average ?: '0'); ?>/5
+                            </span>
+                            <?php if ($sub->effect_type === 'negative') : ?>
+                                <small class="inverted-note"><?php esc_html_e('(inverted)', 'shuriken-reviews'); ?></small>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo esc_html($sub->total_votes); ?></td>
+                        <td>
+                            <div class="vote-share-bar">
+                                <div class="vote-share-fill" style="width: <?php echo esc_attr(min(100, $sub->vote_contribution_percent)); ?>%;"></div>
+                            </div>
+                            <span class="vote-share-percent"><?php echo esc_html($sub->vote_contribution_percent); ?>%</span>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
     
     <!-- Votes Table -->
     <div class="shuriken-table-card full-width">

@@ -101,18 +101,24 @@ class Shuriken_Analytics {
     public function get_overall_stats() {
         $stats = new stdClass();
         
+        // Count all ratings
         $stats->total_ratings = (int) $this->wpdb->get_var(
             "SELECT COUNT(*) FROM {$this->ratings_table}"
         );
         
+        // Get rating type breakdown
+        $stats->rating_types = $this->get_rating_type_counts();
+        
+        // Total votes (exclude mirrors as they don't have their own votes)
         $stats->total_votes = (int) $this->wpdb->get_var(
-            "SELECT COALESCE(SUM(total_votes), 0) FROM {$this->ratings_table}"
+            "SELECT COALESCE(SUM(total_votes), 0) FROM {$this->ratings_table} WHERE mirror_of IS NULL"
         );
         
+        // Overall average (only from non-mirror ratings with votes)
         $stats->overall_average = (float) $this->wpdb->get_var(
             "SELECT AVG(total_rating / NULLIF(total_votes, 0)) 
              FROM {$this->ratings_table} 
-             WHERE total_votes > 0"
+             WHERE total_votes > 0 AND mirror_of IS NULL"
         );
         
         $stats->unique_voters = (int) $this->wpdb->get_var(
@@ -121,6 +127,55 @@ class Shuriken_Analytics {
         );
         
         return $stats;
+    }
+
+    /**
+     * Get rating type counts breakdown
+     *
+     * @return object Object with standalone, parent, sub, display_only, mirror counts
+     */
+    public function get_rating_type_counts() {
+        $counts = new stdClass();
+        
+        // Standalone: no parent_id, no mirror_of, and not a parent itself
+        $counts->standalone = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} r
+             WHERE r.parent_id IS NULL 
+               AND r.mirror_of IS NULL 
+               AND NOT EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = r.id)"
+        );
+        
+        // Parent ratings: has sub-ratings
+        $counts->parent = (int) $this->wpdb->get_var(
+            "SELECT COUNT(DISTINCT parent_id) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL"
+        );
+        
+        // Sub-ratings
+        $counts->sub = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL"
+        );
+        
+        // Sub-ratings with positive effect
+        $counts->sub_positive = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL AND effect_type = 'positive'"
+        );
+        
+        // Sub-ratings with negative effect
+        $counts->sub_negative = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL AND effect_type = 'negative'"
+        );
+        
+        // Display-only ratings
+        $counts->display_only = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE display_only = 1"
+        );
+        
+        // Mirror ratings
+        $counts->mirror = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE mirror_of IS NOT NULL"
+        );
+        
+        return $counts;
     }
 
     /**
@@ -184,7 +239,7 @@ class Shuriken_Analytics {
     }
 
     /**
-     * Get top rated items
+     * Get top rated items (standalone and parent ratings only)
      *
      * @param int $limit Maximum number of items to return
      * @param int $min_votes Minimum votes required
@@ -193,11 +248,13 @@ class Shuriken_Analytics {
      */
     public function get_top_rated($limit = 10, $min_votes = 1, $min_average = 3.0) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, 
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                     ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
              FROM {$this->ratings_table} 
              WHERE total_votes >= %d 
                AND (total_rating / NULLIF(total_votes, 0)) >= %f
+               AND mirror_of IS NULL
+               AND parent_id IS NULL
              ORDER BY average DESC, total_votes DESC 
              LIMIT %d",
             $min_votes,
@@ -207,16 +264,18 @@ class Shuriken_Analytics {
     }
 
     /**
-     * Get most voted (popular) items
+     * Get most voted (popular) items (standalone and parent ratings only)
      *
      * @param int $limit Maximum number of items to return
      * @return array Array of rating objects
      */
     public function get_most_voted($limit = 10) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating,
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                     ROUND(total_rating / NULLIF(total_votes, 0), 1) as average
              FROM {$this->ratings_table} 
+             WHERE mirror_of IS NULL
+               AND parent_id IS NULL
              ORDER BY total_votes DESC 
              LIMIT %d",
             $limit
@@ -224,7 +283,7 @@ class Shuriken_Analytics {
     }
 
     /**
-     * Get low performing items (average < threshold)
+     * Get low performing items (standalone and parent ratings only, average < threshold)
      *
      * @param int $limit Maximum number of items to return
      * @param int $min_votes Minimum votes required
@@ -233,15 +292,140 @@ class Shuriken_Analytics {
      */
     public function get_low_performers($limit = 10, $min_votes = 1, $max_average = 3.0) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, 
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                     ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
              FROM {$this->ratings_table} 
              WHERE total_votes >= %d 
                AND (total_rating / NULLIF(total_votes, 0)) < %f
+               AND mirror_of IS NULL
+               AND parent_id IS NULL
              ORDER BY average ASC, total_votes DESC 
              LIMIT %d",
             $min_votes,
             $max_average,
+            $limit
+        ));
+    }
+
+    /**
+     * Build SQL condition for filtering by rating type
+     *
+     * @param string $type Type filter: 'all', 'standalone', 'parent', 'sub'
+     * @return string SQL condition string
+     */
+    private function build_type_condition($type) {
+        switch ($type) {
+            case 'standalone':
+                return "AND parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = {$this->ratings_table}.id)";
+            case 'parent':
+                return "AND EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = {$this->ratings_table}.id)";
+            case 'sub':
+                return "AND parent_id IS NOT NULL";
+            default:
+                return "";
+        }
+    }
+
+    /**
+     * Get parent ratings with their sub-rating statistics
+     *
+     * @param int $limit Maximum number of items to return
+     * @return array Array of parent rating objects with sub-rating stats
+     */
+    public function get_parent_ratings_with_stats($limit = 10) {
+        $parents = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DISTINCT p.id, p.name, p.total_votes, p.total_rating, p.display_only,
+                    ROUND(p.total_rating / NULLIF(p.total_votes, 0), 1) as average,
+                    (SELECT COUNT(*) FROM {$this->ratings_table} s WHERE s.parent_id = p.id) as sub_count,
+                    (SELECT COUNT(*) FROM {$this->ratings_table} s WHERE s.parent_id = p.id AND s.effect_type = 'positive') as positive_subs,
+                    (SELECT COUNT(*) FROM {$this->ratings_table} s WHERE s.parent_id = p.id AND s.effect_type = 'negative') as negative_subs
+             FROM {$this->ratings_table} p
+             WHERE EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = p.id)
+             ORDER BY p.total_votes DESC
+             LIMIT %d",
+            $limit
+        ));
+        
+        return $parents;
+    }
+
+    /**
+     * Get sub-ratings for a specific parent with contribution analysis
+     *
+     * @param int $parent_id Parent rating ID
+     * @return array Array of sub-rating objects with contribution data
+     */
+    public function get_sub_ratings_contribution($parent_id) {
+        $parent = $this->db->get_rating($parent_id);
+        if (!$parent || $parent->total_votes == 0) {
+            return array();
+        }
+        
+        $subs = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT id, name, total_votes, total_rating, effect_type,
+                    ROUND(total_rating / NULLIF(total_votes, 0), 1) as average,
+                    ROUND((total_votes / %d) * 100, 1) as vote_contribution_percent
+             FROM {$this->ratings_table}
+             WHERE parent_id = %d
+             ORDER BY total_votes DESC",
+            $parent->total_votes,
+            $parent_id
+        ));
+        
+        // Calculate effective contribution to parent score
+        foreach ($subs as &$sub) {
+            if ($sub->total_votes > 0) {
+                $sub_average = $sub->total_rating / $sub->total_votes;
+                if ($sub->effect_type === 'negative') {
+                    // Negative: higher rating = lower contribution
+                    $sub->effective_average = 6 - $sub_average;
+                } else {
+                    $sub->effective_average = $sub_average;
+                }
+                $sub->effective_average = round($sub->effective_average, 1);
+            } else {
+                $sub->effective_average = 0;
+            }
+        }
+        
+        return $subs;
+    }
+
+    /**
+     * Get mirror ratings with their original rating info
+     *
+     * @param int $limit Maximum number of items to return
+     * @return array Array of mirror rating objects
+     */
+    public function get_mirror_ratings_with_originals($limit = 10) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT m.id, m.name as mirror_name, 
+                    o.id as original_id, o.name as original_name, 
+                    o.total_votes, o.total_rating,
+                    ROUND(o.total_rating / NULLIF(o.total_votes, 0), 1) as average
+             FROM {$this->ratings_table} m
+             JOIN {$this->ratings_table} o ON m.mirror_of = o.id
+             ORDER BY o.total_votes DESC
+             LIMIT %d",
+            $limit
+        ));
+    }
+
+    /**
+     * Get ratings that have mirrors
+     *
+     * @param int $limit Maximum number of items to return
+     * @return array Array of original rating objects with mirror count
+     */
+    public function get_mirrored_ratings($limit = 10) {
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT r.id, r.name, r.total_votes, r.total_rating,
+                    ROUND(r.total_rating / NULLIF(r.total_votes, 0), 1) as average,
+                    (SELECT COUNT(*) FROM {$this->ratings_table} m WHERE m.mirror_of = r.id) as mirror_count
+             FROM {$this->ratings_table} r
+             WHERE EXISTS (SELECT 1 FROM {$this->ratings_table} m WHERE m.mirror_of = r.id)
+             ORDER BY mirror_count DESC, r.total_votes DESC
+             LIMIT %d",
             $limit
         ));
     }
@@ -466,6 +650,20 @@ class Shuriken_Analytics {
                 'guests' => $vote_counts->guest_votes,
             ),
         );
+    }
+
+    /**
+     * Check if a rating has sub-ratings
+     *
+     * @param int $rating_id Rating ID to check
+     * @return bool True if rating has sub-ratings
+     */
+    public function has_sub_ratings($rating_id) {
+        $count = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id = %d",
+            $rating_id
+        ));
+        return $count > 0;
     }
 }
 

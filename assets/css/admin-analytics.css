@@ -563,6 +563,284 @@
     }
 }
 
+/* Hierarchical Section */
+.hierarchical-section {
+    margin-top: 20px;
+}
+
+/* Rating Types Grid */
+.shuriken-stats-grid.rating-types {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin-bottom: 30px;
+}
+
+.shuriken-stat-card.type-card {
+    padding: 15px;
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+}
+
+.type-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.type-icon.standalone { color: #2271b1; }
+.type-icon.parent { color: #8e44ad; }
+.type-icon.sub { color: #27ae60; }
+.type-icon.mirror { color: #3498db; }
+.type-icon.display-only { color: #f39c12; }
+
+.type-card .stat-content h4 {
+    font-size: 24px;
+    margin: 0 0 4px 0;
+    color: #1d2327;
+}
+
+.type-card .stat-content p {
+    margin: 0;
+    font-size: 11px;
+    color: #646970;
+}
+
+.sub-breakdown {
+    font-size: 10px;
+    display: block;
+    margin-top: 2px;
+}
+
+.sub-breakdown .positive { color: #155724; }
+.sub-breakdown .negative { color: #721c24; }
+
+/* Type Badges in Tables */
+.type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 3px;
+    text-transform: uppercase;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.type-badge.sub-badge {
+    background: #e7f3ff;
+    color: #0a4b78;
+}
+
+.type-badge.display-only-badge {
+    background: #fcf0e3;
+    color: #8a5a00;
+}
+
+/* Effect Indicators */
+.effect-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.effect-indicator.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.effect-indicator.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Mirror Count Badge */
+.mirror-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #e0e0e0;
+    color: #444;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+/* Votes Count in Tables */
+.votes-count {
+    color: #646970;
+    font-size: 11px;
+}
+
+/* Hierarchy Info Bar */
+.shuriken-hierarchy-info {
+    background: #f8f9fa;
+    border: 1px solid #e2e4e7;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.hierarchy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.hierarchy-badge .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.hierarchy-badge.mirror {
+    background: #e7f3ff;
+    color: #0a4b78;
+}
+
+.hierarchy-badge.parent {
+    background: #f3e8ff;
+    color: #5b21b6;
+}
+
+.hierarchy-badge.sub {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.hierarchy-badge.sub.negative {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.hierarchy-badge.display-only {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.hierarchy-badge a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.hierarchy-badge a:hover {
+    text-decoration: none;
+}
+
+/* Sub-Ratings Breakdown Table */
+.sub-ratings-breakdown {
+    margin-bottom: 25px;
+}
+
+.effective-score {
+    font-weight: 600;
+}
+
+.effective-score.inverted {
+    color: #dc3232;
+}
+
+.inverted-note {
+    color: #646970;
+    font-style: italic;
+    margin-left: 4px;
+}
+
+/* Vote Share Bar */
+.vote-share-bar {
+    width: 60px;
+    height: 8px;
+    background: #e2e4e7;
+    border-radius: 4px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+    overflow: hidden;
+}
+
+.vote-share-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1, #135e96);
+    border-radius: 4px;
+}
+
+.vote-share-percent {
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Rating Type Breakdown Section */
+.rating-type-breakdown {
+    margin-bottom: 25px;
+}
+
+.rating-type-breakdown h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f1;
+    color: #1d2327;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rating-type-breakdown h2 .dashicons {
+    color: #2271b1;
+}
+
+.breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.breakdown-item {
+    background: #f8f9fa;
+    border: 1px solid #e2e4e7;
+    border-radius: 6px;
+    padding: 12px 15px;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.breakdown-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.breakdown-item .count {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d2327;
+    margin-bottom: 4px;
+}
+
+.breakdown-item .label {
+    font-size: 11px;
+    color: #646970;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.breakdown-item.standalone { border-left: 3px solid #2271b1; }
+.breakdown-item.parent { border-left: 3px solid #8e44ad; }
+.breakdown-item.sub { border-left: 3px solid #27ae60; }
+.breakdown-item.mirror { border-left: 3px solid #3498db; }
+.breakdown-item.display-only { border-left: 3px solid #f39c12; }
+
 /* RTL Support */
 body.rtl .shuriken-stat-card {
     flex-direction: row-reverse;
@@ -581,3 +859,33 @@ body.rtl .star-display {
     margin-right: 0;
     margin-left: 4px;
 }
+
+body.rtl .type-badge {
+    margin-left: 0;
+    margin-right: 6px;
+}
+
+body.rtl .effect-indicator {
+    margin-right: 0;
+    margin-left: 4px;
+}
+
+body.rtl .mirror-count-badge {
+    margin-right: 0;
+    margin-left: 4px;
+}
+
+body.rtl .breakdown-item.standalone,
+body.rtl .breakdown-item.parent,
+body.rtl .breakdown-item.sub,
+body.rtl .breakdown-item.mirror,
+body.rtl .breakdown-item.display-only {
+    border-left: none;
+    border-right: 3px solid;
+}
+
+body.rtl .breakdown-item.standalone { border-right-color: #2271b1; }
+body.rtl .breakdown-item.parent { border-right-color: #8e44ad; }
+body.rtl .breakdown-item.sub { border-right-color: #27ae60; }
+body.rtl .breakdown-item.mirror { border-right-color: #3498db; }
+body.rtl .breakdown-item.display-only { border-right-color: #f39c12; }

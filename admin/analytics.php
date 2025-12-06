@@ -34,6 +34,11 @@ $distribution_array = $analytics->get_rating_distribution($date_range);
 $votes_over_time  = $analytics->get_votes_over_time($date_range);
 $recent_votes     = $analytics->get_recent_votes(10);
 
+// New hierarchical data
+$rating_types     = $overall_stats->rating_types;
+$parent_ratings   = $analytics->get_parent_ratings_with_stats(5);
+$mirrored_ratings = $analytics->get_mirrored_ratings(5);
+
 // Extract values for template
 $total_ratings       = $overall_stats->total_ratings;
 $total_votes         = $overall_stats->total_votes;
@@ -122,6 +127,53 @@ $guest_votes         = $vote_counts->guest_votes;
             <div class="stat-content">
                 <h4><?php echo esc_html($guest_votes ?: 0); ?></h4>
                 <p><?php esc_html_e('Guest Votes', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rating Types Breakdown -->
+    <div class="shuriken-stats-grid rating-types">
+        <div class="shuriken-stat-card type-card">
+            <span class="type-icon standalone">●</span>
+            <div class="stat-content">
+                <h4><?php echo esc_html($rating_types->standalone); ?></h4>
+                <p><?php esc_html_e('Standalone', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        <div class="shuriken-stat-card type-card">
+            <span class="type-icon parent">●</span>
+            <div class="stat-content">
+                <h4><?php echo esc_html($rating_types->parent); ?></h4>
+                <p><?php esc_html_e('Parent Ratings', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        <div class="shuriken-stat-card type-card">
+            <span class="type-icon sub">●</span>
+            <div class="stat-content">
+                <h4><?php echo esc_html($rating_types->sub); ?></h4>
+                <p>
+                    <?php esc_html_e('Sub-Ratings', 'shuriken-reviews'); ?>
+                    <?php if ($rating_types->sub > 0): ?>
+                        <span class="sub-breakdown">
+                            (<span class="positive">+<?php echo esc_html($rating_types->sub_positive); ?></span> / 
+                            <span class="negative">-<?php echo esc_html($rating_types->sub_negative); ?></span>)
+                        </span>
+                    <?php endif; ?>
+                </p>
+            </div>
+        </div>
+        <div class="shuriken-stat-card type-card">
+            <span class="type-icon mirror">●</span>
+            <div class="stat-content">
+                <h4><?php echo esc_html($rating_types->mirror); ?></h4>
+                <p><?php esc_html_e('Mirrors', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        <div class="shuriken-stat-card type-card">
+            <span class="type-icon display-only">●</span>
+            <div class="stat-content">
+                <h4><?php echo esc_html($rating_types->display_only); ?></h4>
+                <p><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></p>
             </div>
         </div>
     </div>
@@ -217,7 +269,7 @@ $guest_votes         = $vote_counts->guest_votes;
                 <span class="dashicons dashicons-megaphone"></span>
                 <?php esc_html_e('Most Popular Items', 'shuriken-reviews'); ?>
             </h2>
-            <p class="table-description"><?php esc_html_e('Items with the most votes', 'shuriken-reviews'); ?></p>
+            <p class="table-description"><?php esc_html_e('Standalone and parent ratings with most votes', 'shuriken-reviews'); ?></p>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -276,7 +328,7 @@ $guest_votes         = $vote_counts->guest_votes;
                 <span class="dashicons dashicons-warning"></span>
                 <?php esc_html_e('Low Performers', 'shuriken-reviews'); ?>
             </h2>
-            <p class="table-description"><?php esc_html_e('Items with average rating below 3 stars', 'shuriken-reviews'); ?></p>
+            <p class="table-description"><?php esc_html_e('Standalone and parent ratings with average below 3 stars', 'shuriken-reviews'); ?></p>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -376,6 +428,107 @@ $guest_votes         = $vote_counts->guest_votes;
             </table>
         </div>
     </div>
+    
+    <?php if ($parent_ratings || $mirrored_ratings) : ?>
+    <!-- Hierarchical Ratings Section -->
+    <div class="shuriken-tables-row hierarchical-section">
+        <?php if ($parent_ratings) : ?>
+        <!-- Parent Ratings Performance -->
+        <div class="shuriken-table-card">
+            <h2>
+                <span class="dashicons dashicons-networking"></span>
+                <?php esc_html_e('Parent Ratings Performance', 'shuriken-reviews'); ?>
+            </h2>
+            <p class="table-description"><?php esc_html_e('Ratings with sub-ratings and their calculated scores', 'shuriken-reviews'); ?></p>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Average', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Sub-Ratings', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Effect Mix', 'shuriken-reviews'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($parent_ratings as $parent) : 
+                        $stats_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $parent->id);
+                    ?>
+                        <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
+                            <td>
+                                <strong><?php echo esc_html($parent->name); ?></strong>
+                                <?php if ($parent->display_only): ?>
+                                    <span class="type-badge display-only-badge" title="<?php esc_attr_e('Display Only - No direct voting', 'shuriken-reviews'); ?>">
+                                        <?php esc_html_e('Display Only', 'shuriken-reviews'); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="star-display">★</span>
+                                <?php echo esc_html($parent->average ?: '0'); ?>/5
+                                <br><small class="votes-count"><?php printf(esc_html__('%s votes', 'shuriken-reviews'), esc_html($parent->total_votes)); ?></small>
+                            </td>
+                            <td>
+                                <strong><?php echo esc_html($parent->sub_count); ?></strong>
+                                <?php esc_html_e('sub-ratings', 'shuriken-reviews'); ?>
+                            </td>
+                            <td>
+                                <span class="effect-indicator positive" title="<?php esc_attr_e('Positive effect', 'shuriken-reviews'); ?>">
+                                    +<?php echo esc_html($parent->positive_subs); ?>
+                                </span>
+                                <span class="effect-indicator negative" title="<?php esc_attr_e('Negative effect', 'shuriken-reviews'); ?>">
+                                    -<?php echo esc_html($parent->negative_subs); ?>
+                                </span>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($mirrored_ratings) : ?>
+        <!-- Mirrored Ratings -->
+        <div class="shuriken-table-card">
+            <h2>
+                <span class="dashicons dashicons-admin-links"></span>
+                <?php esc_html_e('Mirrored Ratings', 'shuriken-reviews'); ?>
+            </h2>
+            <p class="table-description"><?php esc_html_e('Original ratings that have mirrors', 'shuriken-reviews'); ?></p>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Original Rating', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Average', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Mirrors', 'shuriken-reviews'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($mirrored_ratings as $rating) : 
+                        $stats_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating->id);
+                    ?>
+                        <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
+                            <td>
+                                <strong><?php echo esc_html($rating->name); ?></strong>
+                            </td>
+                            <td>
+                                <span class="star-display">★</span>
+                                <?php echo esc_html($rating->average ?: '0'); ?>/5
+                                <br><small class="votes-count"><?php printf(esc_html__('%s votes', 'shuriken-reviews'), esc_html($rating->total_votes)); ?></small>
+                            </td>
+                            <td>
+                                <span class="mirror-count-badge">
+                                    <?php echo esc_html($rating->mirror_count); ?>
+                                </span>
+                                <?php echo esc_html(_n('mirror', 'mirrors', $rating->mirror_count, 'shuriken-reviews')); ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
     
     <!-- Export Section -->
     <div class="shuriken-export-section">
