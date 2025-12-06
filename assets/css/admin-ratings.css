@@ -12,6 +12,10 @@
     margin-bottom: 0;
 }
 
+html[dir=rtl] .wrap > .search-form {
+    float: left;
+}
+
 .wrap > .search-form .search-box {
     margin: 0;
 }
@@ -293,6 +297,11 @@ tr.mirror-rating .column-name {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     z-index: 100000;
     animation: slideIn 0.3s ease-out;
+}
+
+html[dir=rtl] .shuriken-copy-notification {
+    right: auto !important;
+    left: 20px;
 }
 
 @keyframes slideIn {
