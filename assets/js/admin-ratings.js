@@ -175,37 +175,69 @@
         });
 
         /**
-         * Toggle effect type and display only fields based on parent selection
-         * For the "Add New Rating" form
+         * Update field visibility based on mirror and parent selection
+         * Reusable function for both Add New and Inline Edit forms
+         * 
+         * @param {jQuery} $container - The form container
+         * @param {Object} selectors - CSS selectors for elements
          */
-        $('#parent_id').on('change', function() {
-            const hasParent = $(this).val() !== '';
+        function updateFieldVisibility($container, selectors) {
+            const hasMirror = $container.find(selectors.mirror).val() !== '';
+            const hasParent = $container.find(selectors.parent).val() !== '';
             
-            if (hasParent) {
-                $('#effect-type-row').show();
-                $('#display-only-row').hide();
-                $('#display_only').prop('checked', false);
+            if (hasMirror) {
+                // Mirrors hide parent, effect type, and display-only options
+                $container.find(selectors.parentRow).hide();
+                $container.find(selectors.effectRow).hide();
+                $container.find(selectors.displayRow).hide();
+                $container.find(selectors.parent).val('');
+                $container.find(selectors.displayCheckbox).prop('checked', false);
             } else {
-                $('#effect-type-row').hide();
-                $('#display-only-row').show();
+                $container.find(selectors.parentRow).show();
+                if (hasParent) {
+                    $container.find(selectors.effectRow).show();
+                    $container.find(selectors.displayRow).hide();
+                    $container.find(selectors.displayCheckbox).prop('checked', false);
+                } else {
+                    $container.find(selectors.effectRow).hide();
+                    $container.find(selectors.displayRow).show();
+                }
             }
+        }
+
+        // Selectors for Add New Rating form
+        const addNewSelectors = {
+            mirror: '#mirror_of',
+            parent: '#parent_id',
+            parentRow: '#parent-id-row',
+            effectRow: '#effect-type-row',
+            displayRow: '#display-only-row',
+            displayCheckbox: '#display_only'
+        };
+
+        // Selectors for Inline Edit forms
+        const inlineEditSelectors = {
+            mirror: '.mirror-select',
+            parent: '.parent-select',
+            parentRow: '.parent-label',
+            effectRow: '.effect-type-label',
+            displayRow: '.display-only-label',
+            displayCheckbox: 'input[name="display_only"]'
+        };
+
+        /**
+         * Handle changes for Add New Rating form
+         */
+        $('#mirror_of, #parent_id').on('change', function() {
+            updateFieldVisibility($('#add-new-rating'), addNewSelectors);
         });
 
         /**
-         * Toggle effect type and display only fields for inline edit forms
+         * Handle changes for Inline Edit forms
          */
-        $(document).on('change', '.inline-edit-row-rating .parent-select', function() {
+        $(document).on('change', '.inline-edit-row-rating .mirror-select, .inline-edit-row-rating .parent-select', function() {
             const $row = $(this).closest('.inline-edit-row-rating');
-            const hasParent = $(this).val() !== '';
-            
-            if (hasParent) {
-                $row.find('.effect-type-label').show();
-                $row.find('.display-only-label').hide();
-                $row.find('input[name="display_only"]').prop('checked', false);
-            } else {
-                $row.find('.effect-type-label').hide();
-                $row.find('.display-only-label').show();
-            }
+            updateFieldVisibility($row, inlineEditSelectors);
         });
 
     });

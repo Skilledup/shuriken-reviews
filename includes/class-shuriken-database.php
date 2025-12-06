@@ -44,6 +44,11 @@ class Shuriken_Database {
     private static $instance = null;
 
     /**
+     * @var string Standard rating fields for SELECT queries
+     */
+    private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, date_created';
+
+    /**
      * Constructor
      */
     private function __construct() {
@@ -104,9 +109,48 @@ class Shuriken_Database {
      * @return object|null Rating object or null if not found
      */
     public function get_rating($rating_id) {
+        $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-             FROM {$this->ratings_table} WHERE id = %d",
+            "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
+            $rating_id
+        ));
+
+        if ($rating) {
+            // Default source_id to self
+            $rating->source_id = $rating->id;
+            
+            // If this is a mirror, get vote data from the original rating
+            // but preserve mirror_of so callers can detect it's a mirror
+            if (!empty($rating->mirror_of)) {
+                $original = $this->get_original_rating($rating->mirror_of);
+                if ($original) {
+                    // Copy vote data and settings from original
+                    $rating->total_votes = $original->total_votes;
+                    $rating->total_rating = $original->total_rating;
+                    $rating->display_only = $original->display_only;
+                    // Store original's ID for data-id attribute
+                    $rating->source_id = $original->id;
+                }
+            }
+            
+            $rating->average = $rating->total_votes > 0 
+                ? round($rating->total_rating / $rating->total_votes, 1) 
+                : 0;
+        }
+
+        return $rating;
+    }
+
+    /**
+     * Get original rating without mirror resolution (to avoid infinite loops)
+     *
+     * @param int $rating_id Rating ID
+     * @return object|null Rating object or null if not found
+     */
+    private function get_original_rating($rating_id) {
+        $fields = self::RATING_FIELDS;
+        $rating = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
             $rating_id
         ));
 
@@ -127,14 +171,13 @@ class Shuriken_Database {
      * @return array Array of rating objects
      */
     public function get_all_ratings($orderby = 'id', $order = 'DESC') {
-        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id');
+        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id', 'mirror_of');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        $fields = self::RATING_FIELDS;
 
         return $this->wpdb->get_results(
-            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-             FROM {$this->ratings_table} 
-             ORDER BY {$orderby} {$order}"
+            "SELECT {$fields} FROM {$this->ratings_table} ORDER BY {$orderby} {$order}"
         );
     }
 
@@ -150,13 +193,14 @@ class Shuriken_Database {
      */
     public function get_ratings_paginated($per_page = 20, $page = 1, $search = '', $orderby = 'id', $order = 'DESC') {
         $offset = ($page - 1) * $per_page;
-        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id');
+        $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id', 'mirror_of');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
 
         $result = new stdClass();
         $result->current_page = $page;
         $result->per_page = $per_page;
+        $fields = self::RATING_FIELDS;
 
         if (!empty($search)) {
             $search_like = '%' . $this->wpdb->esc_like($search) . '%';
@@ -167,8 +211,7 @@ class Shuriken_Database {
             ));
 
             $result->ratings = $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-                 FROM {$this->ratings_table} 
+                "SELECT {$fields} FROM {$this->ratings_table} 
                  WHERE name LIKE %s 
                  ORDER BY {$orderby} {$order} 
                  LIMIT %d OFFSET %d",
@@ -182,8 +225,7 @@ class Shuriken_Database {
             );
 
             $result->ratings = $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-                 FROM {$this->ratings_table} 
+                "SELECT {$fields} FROM {$this->ratings_table} 
                  ORDER BY {$orderby} {$order} 
                  LIMIT %d OFFSET %d",
                 $per_page,
@@ -203,9 +245,10 @@ class Shuriken_Database {
      * @param int|null $parent_id Parent rating ID (optional)
      * @param string $effect_type Effect type on parent: 'positive' or 'negative'
      * @param bool $display_only Whether the rating is display-only (no direct voting)
+     * @param int|null $mirror_of Original rating ID to mirror (optional)
      * @return int|false The new rating ID or false on failure
      */
-    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false) {
+    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null) {
         $insert_data = array(
             'name' => sanitize_text_field($name),
             'effect_type' => in_array($effect_type, array('positive', 'negative'), true) ? $effect_type : 'positive',
@@ -213,7 +256,11 @@ class Shuriken_Database {
         );
         $format = array('%s', '%s', '%d');
 
-        if ($parent_id !== null && $parent_id > 0) {
+        // Mirror takes precedence - if mirroring, ignore parent_id
+        if ($mirror_of !== null && $mirror_of > 0) {
+            $insert_data['mirror_of'] = intval($mirror_of);
+            $format[] = '%d';
+        } elseif ($parent_id !== null && $parent_id > 0) {
             $insert_data['parent_id'] = intval($parent_id);
             $format[] = '%d';
         }
@@ -231,11 +278,11 @@ class Shuriken_Database {
      * Update a rating
      *
      * @param int $rating_id Rating ID
-     * @param array $data Data to update (name, total_votes, total_rating, parent_id, effect_type, display_only)
+     * @param array $data Data to update (name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of)
      * @return bool True on success, false on failure
      */
     public function update_rating($rating_id, $data) {
-        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only');
+        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of');
         $update_data = array();
         $format = array();
 
@@ -247,8 +294,8 @@ class Shuriken_Database {
                 } elseif ($key === 'effect_type') {
                     $update_data[$key] = in_array($value, array('positive', 'negative'), true) ? $value : 'positive';
                     $format[] = '%s';
-                } elseif ($key === 'parent_id') {
-                    // Allow null for parent_id
+                } elseif ($key === 'parent_id' || $key === 'mirror_of') {
+                    // Allow null for parent_id and mirror_of
                     $update_data[$key] = $value === null || $value === '' || $value === 0 ? null : intval($value);
                     $format[] = $update_data[$key] === null ? null : '%d';
                 } elseif ($key === 'display_only') {
@@ -296,6 +343,15 @@ class Shuriken_Database {
                 array('%d')
             );
 
+            // Update any mirrors to have no mirror_of
+            $this->wpdb->update(
+                $this->ratings_table,
+                array('mirror_of' => null),
+                array('mirror_of' => $rating_id),
+                array(null),
+                array('%d')
+            );
+
             // Delete associated votes first
             $this->wpdb->delete(
                 $this->votes_table,
@@ -331,9 +387,9 @@ class Shuriken_Database {
      * @return array Array of sub-rating objects
      */
     public function get_sub_ratings($parent_id) {
+        $fields = self::RATING_FIELDS;
         $ratings = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-             FROM {$this->ratings_table} 
+            "SELECT {$fields} FROM {$this->ratings_table} 
              WHERE parent_id = %d 
              ORDER BY name ASC",
             $parent_id
@@ -355,20 +411,19 @@ class Shuriken_Database {
      * @return array Array of rating objects
      */
     public function get_parent_ratings($exclude_id = null) {
+        $fields = self::RATING_FIELDS;
         if ($exclude_id) {
             return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-                 FROM {$this->ratings_table} 
-                 WHERE parent_id IS NULL AND id != %d 
+                "SELECT {$fields} FROM {$this->ratings_table} 
+                 WHERE parent_id IS NULL AND mirror_of IS NULL AND id != %d 
                  ORDER BY name ASC",
                 $exclude_id
             ));
         }
 
         return $this->wpdb->get_results(
-            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created 
-             FROM {$this->ratings_table} 
-             WHERE parent_id IS NULL 
+            "SELECT {$fields} FROM {$this->ratings_table} 
+             WHERE parent_id IS NULL AND mirror_of IS NULL 
              ORDER BY name ASC"
         );
     }
@@ -408,6 +463,46 @@ class Shuriken_Database {
         return $this->update_rating($parent_id, array(
             'total_votes' => $total_votes,
             'total_rating' => $total_rating
+        ));
+    }
+
+    /**
+     * Get all ratings that can be mirrored (not already mirrors themselves)
+     *
+     * @param int|null $exclude_id Rating ID to exclude from results
+     * @return array Array of rating objects
+     */
+    public function get_mirrorable_ratings($exclude_id = null) {
+        $fields = self::RATING_FIELDS;
+        if ($exclude_id) {
+            return $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} 
+                 WHERE mirror_of IS NULL AND id != %d 
+                 ORDER BY name ASC",
+                $exclude_id
+            ));
+        }
+
+        return $this->wpdb->get_results(
+            "SELECT {$fields} FROM {$this->ratings_table} 
+             WHERE mirror_of IS NULL 
+             ORDER BY name ASC"
+        );
+    }
+
+    /**
+     * Get all mirrors of a rating
+     *
+     * @param int $rating_id Rating ID
+     * @return array Array of mirror rating objects
+     */
+    public function get_mirrors($rating_id) {
+        $fields = self::RATING_FIELDS;
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT {$fields} FROM {$this->ratings_table} 
+             WHERE mirror_of = %d 
+             ORDER BY name ASC",
+            $rating_id
         ));
     }
 
@@ -614,9 +709,11 @@ class Shuriken_Database {
             parent_id mediumint(9) DEFAULT NULL,
             effect_type varchar(10) DEFAULT 'positive',
             display_only tinyint(1) DEFAULT 0,
+            mirror_of mediumint(9) DEFAULT NULL,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
-            KEY parent_id (parent_id)
+            KEY parent_id (parent_id),
+            KEY mirror_of (mirror_of)
         ) $charset_collate;";
 
         dbDelta($sql_ratings);
@@ -706,6 +803,18 @@ class Shuriken_Database {
             $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD KEY parent_id (parent_id)");
         }
 
+        // Check if mirror_of column exists in ratings table
+        $mirror_of_exists = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$this->ratings_table} LIKE 'mirror_of'"
+        );
+
+        if (empty($mirror_of_exists)) {
+            // Add mirror_of column
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN mirror_of mediumint(9) DEFAULT NULL AFTER display_only");
+            // Add index for mirror_of
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD KEY mirror_of (mirror_of)");
+        }
+
         return true;
     }
 
@@ -720,7 +829,7 @@ class Shuriken_Database {
      */
     public function get_ratings_for_export() {
         return $this->wpdb->get_results(
-            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, date_created,
+            "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, date_created,
                     ROUND(total_rating / NULLIF(total_votes, 0), 2) as average_rating
              FROM {$this->ratings_table}
              ORDER BY id ASC"

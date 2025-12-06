@@ -64,6 +64,7 @@ if (isset($_GET['message']) && $_GET['message'] === 'created') {
 if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 'shuriken_inline_nonce')) {
     $id = intval($_POST['rating_id']);
     $name = sanitize_text_field($_POST['rating_name']);
+    $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
     $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
     $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
     $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
@@ -71,13 +72,14 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
     if (!empty($name) && $id) {
         $result = $db->update_rating($id, array(
             'name' => $name,
-            'parent_id' => $parent_id,
+            'mirror_of' => $mirror_of,
+            'parent_id' => $mirror_of ? null : $parent_id, // Clear parent if it's a mirror
             'effect_type' => $effect_type,
             'display_only' => $display_only
         ));
         if ($result) {
             // Recalculate parent rating if this is a sub-rating
-            if ($parent_id) {
+            if ($parent_id && !$mirror_of) {
                 $db->recalculate_parent_rating($parent_id);
             }
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
@@ -87,6 +89,9 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
 
 // Get all parent ratings for dropdown
 $parent_ratings = $db->get_parent_ratings();
+
+// Get all mirrorable ratings for dropdown
+$mirrorable_ratings = $db->get_mirrorable_ratings();
 
 // Search functionality
 $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
@@ -259,11 +264,24 @@ $total_pages = $ratings_result->total_pages;
                         }
                     }
                     
+                    // Get mirror original name if exists
+                    $mirror_original_name = '';
+                    if (!empty($rating->mirror_of)) {
+                        $mirror_original = $db->get_rating($rating->mirror_of);
+                        if ($mirror_original) {
+                            $mirror_original_name = $mirror_original->name;
+                        }
+                    }
+                    
                     // Get sub-ratings count
                     $sub_ratings = $db->get_sub_ratings($rating->id);
                     $sub_count = count($sub_ratings);
+                    
+                    // Get mirrors count
+                    $mirrors = $db->get_mirrors($rating->id);
+                    $mirror_count = count($mirrors);
                 ?>
-                    <tr id="rating-<?php echo esc_attr($rating->id); ?>" class="iedit <?php echo !empty($rating->parent_id) ? 'sub-rating' : ''; ?>">
+                    <tr id="rating-<?php echo esc_attr($rating->id); ?>" class="iedit <?php echo !empty($rating->parent_id) ? 'sub-rating' : ''; ?> <?php echo !empty($rating->mirror_of) ? 'mirror-rating' : ''; ?>">
                         <th scope="row" class="check-column">
                             <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($rating->id); ?>">
                                 <?php printf(esc_html__('Select %s', 'shuriken-reviews'), esc_html($rating->name)); ?>
@@ -272,7 +290,9 @@ $total_pages = $ratings_result->total_pages;
                         </th>
                         <td class="name column-name has-row-actions column-primary" data-colname="<?php esc_attr_e('Name', 'shuriken-reviews'); ?>">
                             <strong>
-                                <?php if (!empty($rating->parent_id)): ?>
+                                <?php if (!empty($rating->mirror_of)): ?>
+                                    <span class="mirror-indicator dashicons dashicons-admin-links" title="<?php printf(esc_attr__('Mirror of: %s', 'shuriken-reviews'), esc_attr($mirror_original_name)); ?>"></span>
+                                <?php elseif (!empty($rating->parent_id)): ?>
                                     <span class="sub-indicator dashicons dashicons-arrow-right-alt2" title="<?php printf(esc_attr__('Sub-rating of: %s', 'shuriken-reviews'), esc_attr($parent_name)); ?>"></span>
                                 <?php endif; ?>
                                 <a class="row-title" href="<?php echo esc_attr($edit_link); ?>" aria-label="<?php printf(esc_attr__('Edit "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>">
@@ -295,7 +315,14 @@ $total_pages = $ratings_result->total_pages;
                             <button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e('Show more details'); ?></span></button>
                         </td>
                         <td class="type column-type" data-colname="<?php esc_attr_e('Type', 'shuriken-reviews'); ?>">
-                            <?php if (!empty($rating->parent_id)): ?>
+                            <?php if (!empty($rating->mirror_of)): ?>
+                                <span class="rating-type mirror-badge">
+                                    <?php esc_html_e('Mirror', 'shuriken-reviews'); ?>
+                                </span>
+                                <div class="mirror-info">
+                                    <?php printf(esc_html__('of: %s', 'shuriken-reviews'), esc_html($mirror_original_name)); ?>
+                                </div>
+                            <?php elseif (!empty($rating->parent_id)): ?>
                                 <span class="rating-type sub-rating-badge <?php echo esc_attr($rating->effect_type); ?>">
                                     <?php 
                                     if ($rating->effect_type === 'negative') {
@@ -324,10 +351,20 @@ $total_pages = $ratings_result->total_pages;
                                 <div class="sub-count">
                                     <?php printf(esc_html(_n('%d sub-rating', '%d sub-ratings', $sub_count, 'shuriken-reviews')), $sub_count); ?>
                                 </div>
+                                <?php if ($mirror_count > 0): ?>
+                                    <div class="mirror-count">
+                                        <?php printf(esc_html(_n('%d mirror', '%d mirrors', $mirror_count, 'shuriken-reviews')), $mirror_count); ?>
+                                    </div>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <span class="rating-type standalone-badge">
                                     <?php esc_html_e('Standalone', 'shuriken-reviews'); ?>
                                 </span>
+                                <?php if ($mirror_count > 0): ?>
+                                    <div class="mirror-count">
+                                        <?php printf(esc_html(_n('%d mirror', '%d mirrors', $mirror_count, 'shuriken-reviews')), $mirror_count); ?>
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                         <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
@@ -378,6 +415,23 @@ $total_pages = $ratings_result->total_pages;
                                         </label>
                                         
                                         <label>
+                                            <span class="title"><?php esc_html_e('Mirror of', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <select name="mirror_of" class="mirror-select">
+                                                    <option value=""><?php esc_html_e('— Not a Mirror —', 'shuriken-reviews'); ?></option>
+                                                    <?php 
+                                                    $available_mirrors = $db->get_mirrorable_ratings($rating->id);
+                                                    foreach ($available_mirrors as $mirrorable): 
+                                                    ?>
+                                                        <option value="<?php echo esc_attr($mirrorable->id); ?>" <?php selected($rating->mirror_of, $mirrorable->id); ?>>
+                                                            <?php echo esc_html($mirrorable->name); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="parent-label" style="<?php echo !empty($rating->mirror_of) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Parent', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <select name="parent_id" class="parent-select">
@@ -394,7 +448,7 @@ $total_pages = $ratings_result->total_pages;
                                             </span>
                                         </label>
                                         
-                                        <label class="effect-type-label" style="<?php echo empty($rating->parent_id) ? 'display:none;' : ''; ?>">
+                                        <label class="effect-type-label" style="<?php echo (empty($rating->parent_id) || !empty($rating->mirror_of)) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Effect', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <select name="effect_type" class="effect-type-select">
@@ -404,7 +458,7 @@ $total_pages = $ratings_result->total_pages;
                                             </span>
                                         </label>
                                         
-                                        <label class="display-only-label" style="<?php echo !empty($rating->parent_id) ? 'display:none;' : ''; ?>">
+                                        <label class="display-only-label" style="<?php echo (!empty($rating->parent_id) || !empty($rating->mirror_of)) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <input type="checkbox" name="display_only" value="1" <?php checked($rating->display_only, 1); ?>>
@@ -549,6 +603,24 @@ $total_pages = $ratings_result->total_pages;
                         </td>
                     </tr>
                     <tr>
+                        <th scope="row">
+                            <label for="mirror_of"><?php esc_html_e('Mirror of', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <select name="mirror_of" id="mirror_of" class="regular-text">
+                                <option value=""><?php esc_html_e('— Not a Mirror (Original Rating) —', 'shuriken-reviews'); ?></option>
+                                <?php foreach ($mirrorable_ratings as $mirrorable): ?>
+                                    <option value="<?php echo esc_attr($mirrorable->id); ?>">
+                                        <?php echo esc_html($mirrorable->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Select a rating to mirror. Mirrors share the same vote data but have different names/labels.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="parent-id-row">
                         <th scope="row">
                             <label for="parent_id"><?php esc_html_e('Parent Rating', 'shuriken-reviews'); ?></label>
                         </th>

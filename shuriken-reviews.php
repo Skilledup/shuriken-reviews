@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,11 +21,11 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.4.0');
+    define('SHURIKEN_REVIEWS_VERSION', '1.4.1');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
-    define('SHURIKEN_REVIEWS_DB_VERSION', '1.3.0');
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.4.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
@@ -145,20 +145,23 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
         return '';
     }
 
-    // Get average from the rating object (calculated by get_rating)
-    $average = $rating->average;
-
-    // Check if this is a display-only rating
+    // get_rating() already resolves mirrors - it returns original's vote data
+    // but preserves the mirror's name and mirror_of field
+    $is_mirror = !empty($rating->mirror_of);
     $is_display_only = !empty($rating->display_only);
+    
     $css_classes = 'shuriken-rating';
     if ($is_display_only) {
         $css_classes .= ' display-only';
     }
+    if ($is_mirror) {
+        $css_classes .= ' mirror-rating';
+    }
 
-    // Get block wrapper attributes
+    // Get block wrapper attributes - use source_id for data-id (original's ID for mirrors)
     $wrapper_attributes = get_block_wrapper_attributes(array(
         'class' => $css_classes,
-        'data-id' => esc_attr($rating->id),
+        'data-id' => esc_attr($rating->source_id),
     ));
 
     if ($anchor_tag) {
@@ -189,12 +192,12 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
                 <?php endfor; ?>
             </div>
 
-            <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
+            <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>">
                 <?php
                 printf(
                     /* translators: 1: Average rating value out of 5, 2: Total number of votes */
                     esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-                    esc_html($average),
+                    esc_html($rating->average),
                     esc_html($rating->total_votes)
                 );
                 ?>
@@ -202,7 +205,7 @@ function shuriken_reviews_render_rating_block($attributes, $content, $block) {
             
             <?php if ($is_display_only): ?>
             <div class="display-only-notice">
-                <?php esc_html_e('Vote via sub-ratings below', 'shuriken-reviews'); ?>
+                <?php esc_html_e('Calculated from sub-ratings', 'shuriken-reviews'); ?>
             </div>
             <?php endif; ?>
         </div>
@@ -383,12 +386,14 @@ function shuriken_reviews_handle_rating_forms() {
         }
 
         $name = sanitize_text_field($_POST['rating_name']);
-        $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
+        $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
+        // Clear parent_id if this is a mirror (mirrors cannot be sub-ratings)
+        $parent_id = $mirror_of ? null : (isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null);
         $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
         $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
 
         if (!empty($name)) {
-            $result = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only);
+            $result = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
             if ($result) {
                 wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                 exit;
@@ -749,20 +754,23 @@ function shuriken_rating_shortcode($atts) {
         return '';
     }
 
-    // Get average from the rating object (calculated by get_rating)
-    $average = $rating->average;
-    
-    // Check if this is a display-only rating
+    // get_rating() already resolves mirrors - it returns original's vote data
+    // but preserves the mirror's name and mirror_of field
+    $is_mirror = !empty($rating->mirror_of);
     $is_display_only = !empty($rating->display_only);
+    
     $css_classes = 'shuriken-rating';
     if ($is_display_only) {
         $css_classes .= ' display-only';
+    }
+    if ($is_mirror) {
+        $css_classes .= ' mirror-rating';
     }
     
     // Start output buffering
     ob_start();
     ?>
-    <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
+    <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" <?php echo $anchor_id ? 'id="' . $anchor_id . '"' : ''; ?>>
         <div class="shuriken-rating-wrapper">
             <<?php echo tag_escape($tag); ?> class="rating-title">
                 <?php echo esc_html($rating->name); ?>
@@ -784,12 +792,12 @@ function shuriken_rating_shortcode($atts) {
                 <?php endfor; ?>
             </div>
 
-            <div class="rating-stats" data-average="<?php echo esc_attr($average); ?>">
+            <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>">
                 <?php 
                 printf(
                     /* translators: 1: Average rating value out of 5, 2: Total number of votes */
                     esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-                    esc_html($average),
+                    esc_html($rating->average),
                     esc_html($rating->total_votes)
                 );
                 ?>
@@ -797,7 +805,7 @@ function shuriken_rating_shortcode($atts) {
             
             <?php if ($is_display_only): ?>
             <div class="display-only-notice">
-                <?php esc_html_e('Vote via sub-ratings below', 'shuriken-reviews'); ?>
+                <?php esc_html_e('Calculated from sub-ratings', 'shuriken-reviews'); ?>
             </div>
             <?php endif; ?>
         </div>

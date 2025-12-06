@@ -53,11 +53,30 @@
     vertical-align: middle;
 }
 
+html[dir=rtl] .sub-indicator {
+    transform: scaleX(-1);
+}
+
+/* Mirror indicator */
+.mirror-indicator {
+    color: #1565c0;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
 tr.sub-rating {
     background-color: #f9f9f9;
 }
 
 tr.sub-rating .column-name {
+    padding-left: 20px;
+}
+
+tr.mirror-rating {
+    background-color: #f5faff;
+}
+
+tr.mirror-rating .column-name {
     padding-left: 20px;
 }
 
@@ -96,8 +115,15 @@ tr.sub-rating .column-name {
     color: #666;
 }
 
+.mirror-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
 .parent-info,
-.sub-count {
+.sub-count,
+.mirror-info,
+.mirror-count {
     color: #646970;
     font-size: 12px;
     margin-top: 4px;
