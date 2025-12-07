@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.5.0
+ * Version: 1.5.5
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.5.0');
+    define('SHURIKEN_REVIEWS_VERSION', '1.5.5');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -241,8 +241,47 @@ function shuriken_reviews_register_rest_routes() {
                     'type'              => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
                 ),
+                'parent_id' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+                'mirror_of' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+                'effect_type' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'default'           => 'positive',
+                    'enum'              => array('positive', 'negative'),
+                ),
+                'display_only' => array(
+                    'required'          => false,
+                    'type'              => 'boolean',
+                    'default'           => false,
+                ),
             ),
         ),
+    ));
+
+    // Endpoint for parent ratings (ratings that can be parents)
+    register_rest_route('shuriken-reviews/v1', '/ratings/parents', array(
+        'methods'             => 'GET',
+        'callback'            => 'shuriken_reviews_get_parent_ratings',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+    ));
+
+    // Endpoint for mirrorable ratings (ratings that can be mirrored)
+    register_rest_route('shuriken-reviews/v1', '/ratings/mirrorable', array(
+        'methods'             => 'GET',
+        'callback'            => 'shuriken_reviews_get_mirrorable_ratings',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
     ));
 }
 add_action('rest_api_init', 'shuriken_reviews_register_rest_routes');
@@ -268,8 +307,16 @@ function shuriken_reviews_get_ratings($request) {
  */
 function shuriken_reviews_create_rating($request) {
     $name = $request->get_param('name');
+    $parent_id = $request->get_param('parent_id');
+    $mirror_of = $request->get_param('mirror_of');
+    $effect_type = $request->get_param('effect_type') ?: 'positive';
+    $display_only = $request->get_param('display_only') ?: false;
     
-    $new_id = shuriken_db()->create_rating($name);
+    // Convert 0 to null for parent_id and mirror_of
+    $parent_id = $parent_id ? intval($parent_id) : null;
+    $mirror_of = $mirror_of ? intval($mirror_of) : null;
+    
+    $new_id = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
     
     if ($new_id === false) {
         return new WP_Error(
@@ -282,6 +329,30 @@ function shuriken_reviews_create_rating($request) {
     $rating = shuriken_db()->get_rating($new_id);
     
     return rest_ensure_response($rating);
+}
+
+/**
+ * REST API callback: Get parent ratings.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response
+ * @since 1.2.0
+ */
+function shuriken_reviews_get_parent_ratings($request) {
+    $ratings = shuriken_db()->get_parent_ratings();
+    return rest_ensure_response($ratings);
+}
+
+/**
+ * REST API callback: Get mirrorable ratings.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response
+ * @since 1.2.0
+ */
+function shuriken_reviews_get_mirrorable_ratings($request) {
+    $ratings = shuriken_db()->get_mirrorable_ratings();
+    return rest_ensure_response($ratings);
 }
 
 /**
