@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.5.5
+ * Version: 1.5.7
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.5.5');
+    define('SHURIKEN_REVIEWS_VERSION', '1.5.7');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -266,6 +266,62 @@ function shuriken_reviews_register_rest_routes() {
         ),
     ));
 
+    // Endpoint for single rating operations (GET, PUT, DELETE)
+    register_rest_route('shuriken-reviews/v1', '/ratings/(?P<id>\d+)', array(
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'shuriken_reviews_get_single_rating',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+            ),
+        ),
+        array(
+            'methods'             => 'PUT',
+            'callback'            => 'shuriken_reviews_update_rating',
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+                'name' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ),
+                'parent_id' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+                'mirror_of' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ),
+                'effect_type' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'enum'              => array('positive', 'negative'),
+                ),
+                'display_only' => array(
+                    'required'          => false,
+                    'type'              => 'boolean',
+                ),
+            ),
+        ),
+    ));
+
     // Endpoint for parent ratings (ratings that can be parents)
     register_rest_route('shuriken-reviews/v1', '/ratings/parents', array(
         'methods'             => 'GET',
@@ -353,6 +409,106 @@ function shuriken_reviews_get_parent_ratings($request) {
 function shuriken_reviews_get_mirrorable_ratings($request) {
     $ratings = shuriken_db()->get_mirrorable_ratings();
     return rest_ensure_response($ratings);
+}
+
+/**
+ * REST API callback: Get a single rating.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error
+ * @since 1.2.0
+ */
+function shuriken_reviews_get_single_rating($request) {
+    $id = $request->get_param('id');
+    $rating = shuriken_db()->get_rating($id);
+    
+    if (!$rating) {
+        return new WP_Error(
+            'not_found',
+            __('Rating not found.', 'shuriken-reviews'),
+            array('status' => 404)
+        );
+    }
+    
+    return rest_ensure_response($rating);
+}
+
+/**
+ * REST API callback: Update a rating.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error
+ * @since 1.2.0
+ */
+function shuriken_reviews_update_rating($request) {
+    $id = $request->get_param('id');
+    $db = shuriken_db();
+    
+    // Check if rating exists
+    $existing = $db->get_rating($id);
+    if (!$existing) {
+        return new WP_Error(
+            'not_found',
+            __('Rating not found.', 'shuriken-reviews'),
+            array('status' => 404)
+        );
+    }
+    
+    // Build update data array
+    $update_data = array();
+    
+    if ($request->has_param('name') && $request->get_param('name') !== '') {
+        $update_data['name'] = $request->get_param('name');
+    }
+    
+    if ($request->has_param('parent_id')) {
+        $parent_id = $request->get_param('parent_id');
+        $update_data['parent_id'] = $parent_id ? intval($parent_id) : null;
+    }
+    
+    if ($request->has_param('mirror_of')) {
+        $mirror_of = $request->get_param('mirror_of');
+        $update_data['mirror_of'] = $mirror_of ? intval($mirror_of) : null;
+    }
+    
+    if ($request->has_param('effect_type')) {
+        $update_data['effect_type'] = $request->get_param('effect_type');
+    }
+    
+    if ($request->has_param('display_only')) {
+        $update_data['display_only'] = $request->get_param('display_only');
+    }
+    
+    if (empty($update_data)) {
+        return new WP_Error(
+            'no_data',
+            __('No data provided for update.', 'shuriken-reviews'),
+            array('status' => 400)
+        );
+    }
+    
+    $result = $db->update_rating($id, $update_data);
+    
+    if ($result === false) {
+        return new WP_Error(
+            'update_failed',
+            __('Failed to update rating.', 'shuriken-reviews'),
+            array('status' => 500)
+        );
+    }
+    
+    // Recalculate parent rating if this is a sub-rating
+    if (!empty($update_data['parent_id'])) {
+        $db->recalculate_parent_rating($update_data['parent_id']);
+    }
+    // Also recalculate old parent if parent changed
+    if (!empty($existing->parent_id) && (empty($update_data['parent_id']) || $existing->parent_id != $update_data['parent_id'])) {
+        $db->recalculate_parent_rating($existing->parent_id);
+    }
+    
+    $rating = $db->get_rating($id);
+    
+    return rest_ensure_response($rating);
 }
 
 /**
