@@ -441,7 +441,7 @@ class Shuriken_Analytics {
      * @return array Associative array with keys 1-5 and vote counts
      */
     public function get_rating_distribution($date_range = 'all', $rating_id = null) {
-        $date_condition = $this->build_date_condition($date_range);
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
         
         // Join with ratings table to get effect_type and invert negative effect votes
