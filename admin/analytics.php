@@ -16,23 +16,26 @@ if (!defined('ABSPATH')) {
 // Get analytics instance
 $analytics = shuriken_analytics();
 
-// Get date range filter
-$date_range = isset($_GET['date_range']) ? sanitize_text_field($_GET['date_range']) : '30';
-$valid_ranges = array('7', '30', '90', '365', 'all');
-if (!in_array($date_range, $valid_ranges, true)) {
-    $date_range = '30';
-}
+// Parse date range from request parameters (supports presets and custom ranges)
+$date_range = $analytics->parse_date_range_params($_GET);
+$date_range_label = $analytics->get_date_range_label($date_range);
+
+// Determine current UI state
+$range_type = isset($_GET['range_type']) ? sanitize_text_field($_GET['range_type']) : 'preset';
+$preset_value = is_array($date_range) ? '30' : $date_range;
+$start_date = is_array($date_range) && !empty($date_range['start']) ? $date_range['start'] : '';
+$end_date = is_array($date_range) && !empty($date_range['end']) ? $date_range['end'] : '';
 
 // Fetch all data using the analytics class
 $overall_stats    = $analytics->get_overall_stats();
 $vote_counts      = $analytics->get_vote_counts($date_range);
 $vote_change_percent = $analytics->get_vote_change_percent($date_range);
-$top_rated        = $analytics->get_top_rated(10, 1, 3.0);
-$most_voted       = $analytics->get_most_voted(10);
-$low_performers   = $analytics->get_low_performers(10, 1, 3.0);
+$top_rated        = $analytics->get_top_rated(10, 1, 3.0, $date_range);
+$most_voted       = $analytics->get_most_voted(10, $date_range);
+$low_performers   = $analytics->get_low_performers(10, 1, 3.0, $date_range);
 $distribution_array = $analytics->get_rating_distribution($date_range);
 $votes_over_time  = $analytics->get_votes_over_time($date_range);
-$recent_votes     = $analytics->get_recent_votes(10);
+$recent_votes     = $analytics->get_recent_votes(10, null, $date_range);
 
 // New hierarchical data
 $rating_types     = $overall_stats->rating_types;
@@ -54,16 +57,41 @@ $guest_votes         = $vote_counts->guest_votes;
     
     <!-- Date Range Filter -->
     <div class="shuriken-filter-bar">
-        <form method="get" action="">
+        <form method="get" action="" id="shuriken-date-filter-form">
             <input type="hidden" name="page" value="shuriken-reviews-analytics">
-            <label for="date_range"><?php esc_html_e('Time Period:', 'shuriken-reviews'); ?></label>
-            <select name="date_range" id="date_range" onchange="this.form.submit()">
-                <option value="7" <?php selected($date_range, '7'); ?>><?php esc_html_e('Last 7 Days', 'shuriken-reviews'); ?></option>
-                <option value="30" <?php selected($date_range, '30'); ?>><?php esc_html_e('Last 30 Days', 'shuriken-reviews'); ?></option>
-                <option value="90" <?php selected($date_range, '90'); ?>><?php esc_html_e('Last 90 Days', 'shuriken-reviews'); ?></option>
-                <option value="365" <?php selected($date_range, '365'); ?>><?php esc_html_e('Last Year', 'shuriken-reviews'); ?></option>
-                <option value="all" <?php selected($date_range, 'all'); ?>><?php esc_html_e('All Time', 'shuriken-reviews'); ?></option>
-            </select>
+            <input type="hidden" name="range_type" id="range_type" value="<?php echo esc_attr($range_type); ?>">
+            
+            <div class="filter-row">
+                <label for="date_range"><?php esc_html_e('Time Period:', 'shuriken-reviews'); ?></label>
+                <select name="date_range" id="date_range" class="preset-select">
+                    <option value="7" <?php selected($preset_value, '7'); ?>><?php esc_html_e('Last 7 Days', 'shuriken-reviews'); ?></option>
+                    <option value="30" <?php selected($preset_value, '30'); ?>><?php esc_html_e('Last 30 Days', 'shuriken-reviews'); ?></option>
+                    <option value="90" <?php selected($preset_value, '90'); ?>><?php esc_html_e('Last 90 Days', 'shuriken-reviews'); ?></option>
+                    <option value="365" <?php selected($preset_value, '365'); ?>><?php esc_html_e('Last Year', 'shuriken-reviews'); ?></option>
+                    <option value="all" <?php selected($preset_value, 'all'); ?>><?php esc_html_e('All Time', 'shuriken-reviews'); ?></option>
+                    <option value="custom" <?php selected($range_type, 'custom'); ?>><?php esc_html_e('Custom Range...', 'shuriken-reviews'); ?></option>
+                </select>
+                
+                <div class="custom-date-range" style="<?php echo $range_type === 'custom' ? '' : 'display: none;'; ?>">
+                    <label for="start_date"><?php esc_html_e('From:', 'shuriken-reviews'); ?></label>
+                    <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
+                    
+                    <label for="end_date"><?php esc_html_e('To:', 'shuriken-reviews'); ?></label>
+                    <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
+                    
+                    <button type="submit" class="button button-primary"><?php esc_html_e('Apply', 'shuriken-reviews'); ?></button>
+                </div>
+            </div>
+            
+            <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
+            <div class="current-range-label">
+                <span class="dashicons dashicons-calendar-alt"></span>
+                <?php echo esc_html($date_range_label); ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews-analytics')); ?>" class="clear-filter">
+                    <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
+                </a>
+            </div>
+            <?php endif; ?>
         </form>
     </div>
     
@@ -561,4 +589,44 @@ var shurikenAnalyticsData = {
         stars: <?php echo wp_json_encode(__('Stars', 'shuriken-reviews')); ?>
     }
 };
+
+// Date range filter handling
+jQuery(document).ready(function($) {
+    var $dateSelect = $('#date_range');
+    var $customRange = $('.custom-date-range');
+    var $rangeType = $('#range_type');
+    var $form = $('#shuriken-date-filter-form');
+    
+    $dateSelect.on('change', function() {
+        if ($(this).val() === 'custom') {
+            $customRange.slideDown(200);
+            $rangeType.val('custom');
+        } else {
+            $customRange.slideUp(200);
+            $rangeType.val('preset');
+            // Auto-submit for preset options
+            $form.submit();
+        }
+    });
+    
+    // Validate custom date range before submit
+    $form.on('submit', function(e) {
+        if ($rangeType.val() === 'custom') {
+            var startDate = $('#start_date').val();
+            var endDate = $('#end_date').val();
+            
+            if (!startDate && !endDate) {
+                alert(<?php echo wp_json_encode(__('Please select at least a start or end date.', 'shuriken-reviews')); ?>);
+                e.preventDefault();
+                return false;
+            }
+            
+            if (startDate && endDate && startDate > endDate) {
+                alert(<?php echo wp_json_encode(__('Start date must be before end date.', 'shuriken-reviews')); ?>);
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+});
 </script>

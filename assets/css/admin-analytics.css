@@ -26,7 +26,14 @@
     border: 1px solid #c3c4c7;
     border-radius: 4px;
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.shuriken-filter-bar .filter-row {
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
@@ -37,6 +44,65 @@
 
 .shuriken-filter-bar select {
     min-width: 150px;
+}
+
+/* Custom Date Range Inputs */
+.custom-date-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-left: 10px;
+    border-left: 2px solid #2271b1;
+    margin-left: 5px;
+}
+
+.custom-date-range label {
+    font-weight: 500;
+    color: #646970;
+}
+
+.custom-date-range input[type="date"] {
+    padding: 4px 8px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    min-width: 140px;
+}
+
+.custom-date-range input[type="date"]:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.current-range-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f0f6fc;
+    border: 1px solid #c5d9ed;
+    border-radius: 4px;
+    color: #2271b1;
+    font-weight: 500;
+    margin-top: 15px;
+}
+
+.current-range-label .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.current-range-label .clear-filter {
+    margin-left: 8px;
+    color: #d63638;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.current-range-label .clear-filter:hover {
+    text-decoration: underline;
 }
 
 /* Stats Grid */
@@ -942,4 +1008,27 @@ body.rtl .view-selector-buttons {
 body.rtl .shuriken-view-selector label {
     margin-right: 0;
     margin-left: 5px;
+}
+
+/* RTL support for date filter */
+body.rtl .shuriken-filter-bar .filter-row {
+    flex-direction: row-reverse;
+}
+
+body.rtl .custom-date-range {
+    padding-left: 0;
+    padding-right: 10px;
+    border-left: none;
+    border-right: 2px solid #2271b1;
+    margin-left: 0;
+    margin-right: 5px;
+}
+
+body.rtl .current-range-label {
+    flex-direction: row-reverse;
+}
+
+body.rtl .current-range-label .clear-filter {
+    margin-left: 0;
+    margin-right: 8px;
 }
