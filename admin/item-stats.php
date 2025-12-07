@@ -41,15 +41,35 @@ $sub_ratings = $is_parent ? $analytics->get_sub_ratings_contribution($rating_id)
 $parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
 $source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
 
-// Extract values for template
-$average = $stats->average;
-$member_votes = $stats->member_votes;
-$guest_votes_count = $stats->guest_votes;
-$unique_voters = $stats->unique_voters;
-$first_vote = $stats->first_vote;
-$last_vote = $stats->last_vote;
-$distribution_array = $stats->distribution;
-$votes_over_time = $stats->votes_over_time;
+// For parent ratings, get breakdown data (direct, subs, total)
+$stats_breakdown = $is_parent ? $analytics->get_parent_rating_stats_breakdown($rating_id) : null;
+$current_view = isset($_GET['view']) && in_array($_GET['view'], array('direct', 'subs', 'total')) ? $_GET['view'] : 'total';
+
+// Extract values for template (use breakdown if parent rating)
+if ($is_parent && $stats_breakdown) {
+    $current_stats = $stats_breakdown->$current_view;
+    $average = $current_stats->average;
+    $member_votes = $current_stats->member_votes;
+    $guest_votes_count = $current_stats->guest_votes;
+    $unique_voters = $current_stats->unique_voters;
+    $first_vote = $current_stats->first_vote;
+    $last_vote = $current_stats->last_vote;
+    $distribution_array = $current_stats->distribution;
+    $votes_over_time = $current_stats->votes_over_time;
+    $display_total_votes = $current_stats->total_votes;
+    $display_total_rating = $current_stats->total_rating;
+} else {
+    $average = $stats->average;
+    $member_votes = $stats->member_votes;
+    $guest_votes_count = $stats->guest_votes;
+    $unique_voters = $stats->unique_voters;
+    $first_vote = $stats->first_vote;
+    $last_vote = $stats->last_vote;
+    $distribution_array = $stats->distribution;
+    $votes_over_time = $stats->votes_over_time;
+    $display_total_votes = $rating->total_votes;
+    $display_total_rating = $rating->total_rating;
+}
 
 // Pagination for votes
 $per_page = 20;
@@ -131,6 +151,45 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
     </div>
     <?php endif; ?>
     
+    <?php if ($is_parent && $stats_breakdown) : ?>
+    <!-- View Selector for Parent Ratings -->
+    <div class="shuriken-view-selector">
+        <label><?php esc_html_e('Display data from:', 'shuriken-reviews'); ?></label>
+        <div class="view-selector-buttons">
+            <?php 
+            $base_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
+            $views = array(
+                'total' => __('Total (Combined)', 'shuriken-reviews'),
+                'direct' => __('Direct Votes Only', 'shuriken-reviews'),
+                'subs' => __('From Sub-ratings Only', 'shuriken-reviews'),
+            );
+            foreach ($views as $view_key => $view_label) :
+                $is_active = ($current_view === $view_key);
+                $view_url = add_query_arg('view', $view_key, $base_url);
+            ?>
+                <a href="<?php echo esc_url($view_url); ?>" 
+                   class="button <?php echo $is_active ? 'button-primary' : 'button-secondary'; ?>">
+                    <?php echo esc_html($view_label); ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+        <p class="view-description">
+            <?php 
+            switch ($current_view) {
+                case 'direct':
+                    esc_html_e('Showing statistics from votes cast directly on this parent rating.', 'shuriken-reviews');
+                    break;
+                case 'subs':
+                    esc_html_e('Showing aggregated statistics from all sub-ratings (with effect type applied).', 'shuriken-reviews');
+                    break;
+                default:
+                    esc_html_e('Showing combined statistics from both direct votes and sub-ratings.', 'shuriken-reviews');
+            }
+            ?>
+        </p>
+    </div>
+    <?php endif; ?>
+    
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
@@ -144,7 +203,7 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-chart-bar"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($rating->total_votes); ?></h3>
+                <h3><?php echo esc_html($display_total_votes); ?></h3>
                 <p><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -160,7 +219,7 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-calculator"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($rating->total_rating); ?></h3>
+                <h3><?php echo esc_html($display_total_rating); ?></h3>
                 <p><?php esc_html_e('Total Points', 'shuriken-reviews'); ?></p>
             </div>
         </div>

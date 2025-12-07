@@ -432,6 +432,9 @@ class Shuriken_Analytics {
 
     /**
      * Get rating distribution (count of each star value)
+     * 
+     * For sub-ratings with negative effect_type, the rating values are inverted
+     * to show the effective contribution (1★→5★, 2★→4★, 3★→3★, 4★→2★, 5★→1★).
      *
      * @param string|int $date_range Number of days or 'all'
      * @param int|null $rating_id Optional specific rating ID
@@ -439,20 +442,28 @@ class Shuriken_Analytics {
      */
     public function get_rating_distribution($date_range = 'all', $rating_id = null) {
         $date_condition = $this->build_date_condition($date_range);
-        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND rating_id = %d", $rating_id) : '';
+        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
         
+        // Join with ratings table to get effect_type and invert negative effect votes
+        // For negative effect: effective_value = 6 - rating_value (1→5, 2→4, 3→3, 4→2, 5→1)
         $results = $this->wpdb->get_results(
-            "SELECT rating_value, COUNT(*) as count 
-             FROM {$this->votes_table} 
+            "SELECT 
+                CASE 
+                    WHEN r.effect_type = 'negative' THEN 6 - v.rating_value 
+                    ELSE v.rating_value 
+                END as effective_value, 
+                COUNT(*) as count 
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE 1=1 {$date_condition} {$rating_condition}
-             GROUP BY rating_value 
-             ORDER BY rating_value"
+             GROUP BY effective_value 
+             ORDER BY effective_value"
         );
         
         // Ensure all ratings 1-5 are represented
         $distribution = array_fill(1, 5, 0);
         foreach ($results as $row) {
-            $distribution[intval($row->rating_value)] = intval($row->count);
+            $distribution[intval($row->effective_value)] = intval($row->count);
         }
         
         return $distribution;
@@ -561,6 +572,220 @@ class Shuriken_Analytics {
         $stats->votes_over_time = $this->get_votes_over_time(30, $rating_id);
         
         return $stats;
+    }
+
+    /**
+     * Get detailed stats breakdown for a parent rating
+     * 
+     * Returns stats from three sources:
+     * - direct: Votes directly on the parent rating
+     * - subs: Aggregated stats from sub-ratings
+     * - total: Combined total
+     *
+     * @param int $rating_id Parent rating ID
+     * @return object|null Object with direct, subs, and total stats or null
+     */
+    public function get_parent_rating_stats_breakdown($rating_id) {
+        $rating = $this->get_rating($rating_id);
+        if (!$rating) {
+            return null;
+        }
+        
+        // Check if this is actually a parent rating
+        $sub_rating_ids = $this->wpdb->get_col($this->wpdb->prepare(
+            "SELECT id FROM {$this->ratings_table} WHERE parent_id = %d",
+            $rating_id
+        ));
+        
+        if (empty($sub_rating_ids)) {
+            return null; // Not a parent rating
+        }
+        
+        $breakdown = new stdClass();
+        
+        // === DIRECT VOTES (on parent rating itself) ===
+        $breakdown->direct = new stdClass();
+        
+        $direct_totals = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
+             FROM {$this->votes_table} WHERE rating_id = %d",
+            $rating_id
+        ));
+        
+        $breakdown->direct->total_votes = (int) $direct_totals->total_votes;
+        $breakdown->direct->total_rating = (int) $direct_totals->total_rating;
+        $breakdown->direct->average = $breakdown->direct->total_votes > 0 
+            ? round($breakdown->direct->total_rating / $breakdown->direct->total_votes, 1) 
+            : 0;
+        
+        $breakdown->direct->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0",
+            $rating_id
+        ));
+        
+        $breakdown->direct->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0",
+            $rating_id
+        ));
+        
+        $breakdown->direct->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
+             FROM {$this->votes_table} WHERE rating_id = %d",
+            $rating_id
+        ));
+        
+        $breakdown->direct->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d",
+            $rating_id
+        ));
+        
+        $breakdown->direct->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d",
+            $rating_id
+        ));
+        
+        $breakdown->direct->distribution = $this->get_rating_distribution('all', $rating_id);
+        $breakdown->direct->votes_over_time = $this->get_votes_over_time(30, $rating_id);
+        
+        // === SUB-RATINGS AGGREGATED ===
+        $breakdown->subs = new stdClass();
+        
+        $sub_ids_placeholder = implode(',', array_map('intval', $sub_rating_ids));
+        
+        // Get sub-ratings with their effect types for proper calculation
+        $sub_ratings_data = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT r.id, r.effect_type, r.total_votes, r.total_rating
+             FROM {$this->ratings_table} r
+             WHERE r.parent_id = %d",
+            $rating_id
+        ));
+        
+        // Calculate effective totals from sub-ratings (applying effect_type inversion)
+        $subs_total_votes = 0;
+        $subs_total_rating = 0;
+        foreach ($sub_ratings_data as $sub) {
+            if ($sub->total_votes > 0) {
+                $subs_total_votes += $sub->total_votes;
+                if ($sub->effect_type === 'negative') {
+                    // Invert the rating for negative effect
+                    $inverted_rating = ($sub->total_votes * 6) - $sub->total_rating;
+                    $subs_total_rating += $inverted_rating;
+                } else {
+                    $subs_total_rating += $sub->total_rating;
+                }
+            }
+        }
+        
+        $breakdown->subs->total_votes = $subs_total_votes;
+        $breakdown->subs->total_rating = $subs_total_rating;
+        $breakdown->subs->average = $subs_total_votes > 0 
+            ? round($subs_total_rating / $subs_total_votes, 1) 
+            : 0;
+        
+        // Aggregate vote counts from sub-ratings
+        $breakdown->subs->member_votes = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->votes_table} 
+             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id > 0"
+        );
+        
+        $breakdown->subs->guest_votes = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->votes_table} 
+             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id = 0"
+        );
+        
+        $breakdown->subs->unique_voters = (int) $this->wpdb->get_var(
+            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
+             FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder})"
+        );
+        
+        $breakdown->subs->first_vote = $this->wpdb->get_var(
+            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder})"
+        );
+        
+        $breakdown->subs->last_vote = $this->wpdb->get_var(
+            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder})"
+        );
+        
+        // Distribution from sub-ratings (with effect_type conversion)
+        $subs_distribution_results = $this->wpdb->get_results(
+            "SELECT 
+                CASE 
+                    WHEN r.effect_type = 'negative' THEN 6 - v.rating_value 
+                    ELSE v.rating_value 
+                END as effective_value, 
+                COUNT(*) as count 
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE v.rating_id IN ({$sub_ids_placeholder})
+             GROUP BY effective_value 
+             ORDER BY effective_value"
+        );
+        
+        $breakdown->subs->distribution = array_fill(1, 5, 0);
+        foreach ($subs_distribution_results as $row) {
+            $breakdown->subs->distribution[intval($row->effective_value)] = intval($row->count);
+        }
+        
+        // Votes over time from sub-ratings
+        $breakdown->subs->votes_over_time = $this->wpdb->get_results(
+            "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
+             FROM {$this->votes_table} 
+             WHERE rating_id IN ({$sub_ids_placeholder})
+               AND date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+             GROUP BY DATE(date_created) 
+             ORDER BY vote_date"
+        );
+        
+        // === TOTAL (Combined) ===
+        $breakdown->total = new stdClass();
+        
+        $breakdown->total->total_votes = $breakdown->direct->total_votes + $breakdown->subs->total_votes;
+        $breakdown->total->total_rating = $breakdown->direct->total_rating + $subs_total_rating;
+        $breakdown->total->average = $breakdown->total->total_votes > 0 
+            ? round($breakdown->total->total_rating / $breakdown->total->total_votes, 1) 
+            : 0;
+        
+        $breakdown->total->member_votes = $breakdown->direct->member_votes + $breakdown->subs->member_votes;
+        $breakdown->total->guest_votes = $breakdown->direct->guest_votes + $breakdown->subs->guest_votes;
+        
+        // Unique voters across all (parent + subs) - need to recalculate for truly unique
+        $all_rating_ids = array_merge(array($rating_id), $sub_rating_ids);
+        $all_ids_placeholder = implode(',', array_map('intval', $all_rating_ids));
+        
+        $breakdown->total->unique_voters = (int) $this->wpdb->get_var(
+            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
+             FROM {$this->votes_table} WHERE rating_id IN ({$all_ids_placeholder})"
+        );
+        
+        // First and last vote across all
+        $breakdown->total->first_vote = min(
+            $breakdown->direct->first_vote ?: PHP_INT_MAX,
+            $breakdown->subs->first_vote ?: PHP_INT_MAX
+        );
+        $breakdown->total->first_vote = $breakdown->total->first_vote === PHP_INT_MAX ? null : $breakdown->total->first_vote;
+        
+        $breakdown->total->last_vote = max(
+            $breakdown->direct->last_vote ?: '',
+            $breakdown->subs->last_vote ?: ''
+        ) ?: null;
+        
+        // Combined distribution
+        $breakdown->total->distribution = array_fill(1, 5, 0);
+        for ($i = 1; $i <= 5; $i++) {
+            $breakdown->total->distribution[$i] = $breakdown->direct->distribution[$i] + $breakdown->subs->distribution[$i];
+        }
+        
+        // Combined votes over time
+        $breakdown->total->votes_over_time = $this->wpdb->get_results(
+            "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
+             FROM {$this->votes_table} 
+             WHERE rating_id IN ({$all_ids_placeholder})
+               AND date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+             GROUP BY DATE(date_created) 
+             ORDER BY vote_date"
+        );
+        
+        return $breakdown;
     }
 
     /**
