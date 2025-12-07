@@ -64,22 +64,28 @@ if (isset($_GET['message']) && $_GET['message'] === 'created') {
 if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 'shuriken_inline_nonce')) {
     $id = intval($_POST['rating_id']);
     $name = sanitize_text_field($_POST['rating_name']);
-    $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
     $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
     $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
     $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
+    $convert_from_mirror = isset($_POST['convert_from_mirror']) && $_POST['convert_from_mirror'] === '1';
 
     if (!empty($name) && $id) {
-        $result = $db->update_rating($id, array(
+        $update_data = array(
             'name' => $name,
-            'mirror_of' => $mirror_of,
-            'parent_id' => $mirror_of ? null : $parent_id, // Clear parent if it's a mirror
+            'parent_id' => $parent_id,
             'effect_type' => $effect_type,
             'display_only' => $display_only
-        ));
+        );
+        
+        // If converting from mirror, clear the mirror_of field
+        if ($convert_from_mirror) {
+            $update_data['mirror_of'] = null;
+        }
+        
+        $result = $db->update_rating($id, $update_data);
         if ($result) {
             // Recalculate parent rating if this is a sub-rating
-            if ($parent_id && !$mirror_of) {
+            if ($parent_id) {
                 $db->recalculate_parent_rating($parent_id);
             }
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Rating updated successfully!', 'shuriken-reviews') . '</p></div>';
@@ -414,22 +420,15 @@ $total_pages = $ratings_result->total_pages;
                                             </span>
                                         </label>
                                         
-                                        <label>
-                                            <span class="title"><?php esc_html_e('Mirror of', 'shuriken-reviews'); ?></span>
+                                        <?php if (!empty($rating->mirror_of)): ?>
+                                        <label class="convert-mirror-label">
+                                            <span class="title"><?php esc_html_e('Mirror Status', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
-                                                <select name="mirror_of" class="mirror-select">
-                                                    <option value=""><?php esc_html_e('— Not a Mirror —', 'shuriken-reviews'); ?></option>
-                                                    <?php 
-                                                    $available_mirrors = $db->get_mirrorable_ratings($rating->id);
-                                                    foreach ($available_mirrors as $mirrorable): 
-                                                    ?>
-                                                        <option value="<?php echo esc_attr($mirrorable->id); ?>" <?php selected($rating->mirror_of, $mirrorable->id); ?>>
-                                                            <?php echo esc_html($mirrorable->name); ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
+                                                <input type="checkbox" name="convert_from_mirror" value="1" class="convert-mirror-checkbox">
+                                                <span class="description"><?php esc_html_e('Convert to independent rating (will start with 0 votes)', 'shuriken-reviews'); ?></span>
                                             </span>
                                         </label>
+                                        <?php endif; ?>
                                         
                                         <label class="parent-label" style="<?php echo !empty($rating->mirror_of) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Parent', 'shuriken-reviews'); ?></span>

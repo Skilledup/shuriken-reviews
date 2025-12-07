@@ -215,16 +215,6 @@
             displayCheckbox: '#display_only'
         };
 
-        // Selectors for Inline Edit forms
-        const inlineEditSelectors = {
-            mirror: '.mirror-select',
-            parent: '.parent-select',
-            parentRow: '.parent-label',
-            effectRow: '.effect-type-label',
-            displayRow: '.display-only-label',
-            displayCheckbox: 'input[name="display_only"]'
-        };
-
         /**
          * Handle changes for Add New Rating form
          */
@@ -233,11 +223,44 @@
         });
 
         /**
-         * Handle changes for Inline Edit forms
+         * Handle parent selection changes for Inline Edit forms
+         * Note: Converting to mirror is not allowed - user must delete and recreate
          */
-        $(document).on('change', '.inline-edit-row-rating .mirror-select, .inline-edit-row-rating .parent-select', function() {
+        $(document).on('change', '.inline-edit-row-rating .parent-select', function() {
             const $row = $(this).closest('.inline-edit-row-rating');
-            updateFieldVisibility($row, inlineEditSelectors);
+            const hasParent = $(this).val() !== '';
+            
+            if (hasParent) {
+                $row.find('.effect-type-label').show();
+                $row.find('.display-only-label').hide();
+                $row.find('input[name="display_only"]').prop('checked', false);
+            } else {
+                $row.find('.effect-type-label').hide();
+                $row.find('.display-only-label').show();
+            }
+        });
+
+        /**
+         * Handle "convert from mirror" checkbox for mirrors
+         * When checked, show parent/effect/display fields
+         */
+        $(document).on('change', '.inline-edit-row-rating .convert-mirror-checkbox', function() {
+            const $row = $(this).closest('.inline-edit-row-rating');
+            const isConverting = $(this).is(':checked');
+            
+            if (isConverting) {
+                $row.find('.parent-label').show();
+                $row.find('.display-only-label').show();
+                // Effect type depends on parent selection
+                if ($row.find('.parent-select').val() !== '') {
+                    $row.find('.effect-type-label').show();
+                    $row.find('.display-only-label').hide();
+                }
+            } else {
+                $row.find('.parent-label').hide();
+                $row.find('.effect-type-label').hide();
+                $row.find('.display-only-label').hide();
+            }
         });
 
     });
