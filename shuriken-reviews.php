@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.5.7
+ * Version: 1.5.8
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.5.7');
+    define('SHURIKEN_REVIEWS_VERSION', '1.5.8');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -696,6 +696,16 @@ function shuriken_reviews_menu() {
         'shuriken-reviews-item-stats',
         'shuriken_reviews_item_stats_page'
     );
+
+    // Add About submenu
+    add_submenu_page(
+        'shuriken-reviews',
+        __('About', 'shuriken-reviews'),
+        __('About', 'shuriken-reviews'),
+        'manage_options',
+        'shuriken-reviews-about',
+        'shuriken_reviews_about_page'
+    );
 }
 add_action('admin_menu', 'shuriken_reviews_menu');
 
@@ -750,6 +760,16 @@ function shuriken_reviews_item_stats_page() {
 }
 
 /**
+ * Displays the Shuriken Reviews About page.
+ *
+ * @return void
+ * @since 1.5.8
+ */
+function shuriken_reviews_about_page() {
+    include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/about.php';
+}
+
+/**
  * Enqueues scripts and styles for the analytics admin page.
  *
  * @param string $hook The current admin page hook.
@@ -794,6 +814,27 @@ function shuriken_reviews_analytics_scripts($hook) {
     );
 }
 add_action('admin_enqueue_scripts', 'shuriken_reviews_analytics_scripts');
+
+/**
+ * Enqueues styles for the About admin page.
+ *
+ * @param string $hook The current admin page hook.
+ * @return void
+ * @since 1.5.8
+ */
+function shuriken_reviews_about_scripts($hook) {
+    if ('shuriken-reviews_page_shuriken-reviews-about' !== $hook) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'shuriken-admin-about',
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-about.css',
+        array(),
+        SHURIKEN_REVIEWS_VERSION
+    );
+}
+add_action('admin_enqueue_scripts', 'shuriken_reviews_about_scripts');
 
 /**
  * Handles CSV export of ratings data.
