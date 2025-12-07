@@ -130,6 +130,10 @@ Configure plugin behavior at **Shuriken Reviews > Settings**:
 
 ## Changelog
 
+### 1.5.9
+
+- Ratings and Analytics page Styles modernized.
+
 ### 1.5.8
 
 - Added About page with quick start guide and documentation
