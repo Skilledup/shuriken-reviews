@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.5.11
+ * Version: 1.6.0
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.5.11');
+    define('SHURIKEN_REVIEWS_VERSION', '1.6.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -349,6 +349,28 @@ function shuriken_reviews_register_rest_routes() {
             return current_user_can('edit_posts');
         },
     ));
+
+    // Public endpoint to get fresh rating stats (bypasses cache)
+    register_rest_route('shuriken-reviews/v1', '/ratings/stats', array(
+        'methods'             => 'GET',
+        'callback'            => 'shuriken_reviews_get_rating_stats',
+        'permission_callback' => '__return_true',
+        'args'                => array(
+            'ids' => array(
+                'required'          => true,
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+                'description'       => 'Comma-separated list of rating IDs',
+            ),
+        ),
+    ));
+
+    // Public endpoint to generate a fresh nonce (bypasses cache)
+    register_rest_route('shuriken-reviews/v1', '/nonce', array(
+        'methods'             => 'GET',
+        'callback'            => 'shuriken_reviews_get_fresh_nonce',
+        'permission_callback' => '__return_true',
+    ));
 }
 add_action('rest_api_init', 'shuriken_reviews_register_rest_routes');
 
@@ -419,6 +441,63 @@ function shuriken_reviews_get_parent_ratings($request) {
 function shuriken_reviews_get_mirrorable_ratings($request) {
     $ratings = shuriken_db()->get_mirrorable_ratings();
     return rest_ensure_response($ratings);
+}
+
+/**
+ * REST API callback: Get fresh rating statistics (bypasses cache).
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error
+ * @since 1.6.0
+ */
+function shuriken_reviews_get_rating_stats($request) {
+    $ids_string = $request->get_param('ids');
+    $ids = array_map('intval', explode(',', $ids_string));
+    $ids = array_filter($ids); // Remove any invalid IDs
+    
+    if (empty($ids)) {
+        return new WP_Error(
+            'invalid_ids',
+            __('No valid rating IDs provided.', 'shuriken-reviews'),
+            array('status' => 400)
+        );
+    }
+    
+    $db = shuriken_db();
+    $stats = array();
+    
+    foreach ($ids as $id) {
+        $rating = $db->get_rating($id);
+        if ($rating) {
+            $stats[$id] = array(
+                'average' => $rating->average,
+                'total_votes' => $rating->total_votes,
+                'source_id' => $rating->source_id,
+            );
+        }
+    }
+    
+    return rest_ensure_response($stats);
+}
+
+/**
+ * REST API callback: Get a fresh nonce (bypasses cache).
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response
+ * @since 1.6.0
+ */
+function shuriken_reviews_get_fresh_nonce($request) {
+    // Prevent caching of this endpoint
+    nocache_headers();
+    
+    $nonce = wp_create_nonce('shuriken-reviews-nonce');
+    
+    return rest_ensure_response(array(
+        'nonce' => $nonce,
+        'logged_in' => is_user_logged_in(),
+        'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
+    ));
 }
 
 /**
@@ -1246,6 +1325,7 @@ function shuriken_reviews_scripts() {
     
     wp_localize_script('shuriken-reviews', 'shurikenReviews', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
+        'rest_url' => esc_url_raw(rest_url()),
         'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
         'logged_in' => is_user_logged_in(),
         'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
