@@ -9,6 +9,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 
 ## Features
 
+
 ### Rating System
 
 - **Unlimited Ratings**: Create as many ratings as you need for any content
@@ -17,12 +18,26 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Effect Types**: Configure positive or negative effect on parent ratings
 - **Display-Only Ratings**: Create aggregate ratings calculated from sub-ratings
 - **Guest Voting**: Optional support for non-logged-in users to submit ratings
+- **Cache-Proof Voting**: Always displays up-to-date ratings and allows voting even with full-page caching (see below)
+
 
 ### Integration Options
 
 - **FSE Block**: Full Site Editor block for seamless Gutenberg integration
 - **Shortcode**: Display ratings anywhere with `[shuriken_rating]`
 - **AJAX Submissions**: Smooth rating submissions without page reloads
+- **REST API Endpoints**: Fetches fresh rating data and nonces to bypass cache issues
+### Caching & Nonce Handling
+
+**Shuriken Reviews is fully compatible with aggressive page caching and CDNs.**
+
+- On every page load, the plugin's JavaScript fetches fresh rating statistics and a valid security nonce via the WordPress REST API, ensuring users always see the latest data and can vote successfully.
+- If a user votes and the nonce is expired (due to caching), the plugin automatically fetches a new nonce and retries the vote.
+- REST endpoints:
+   - `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` — Returns up-to-date stats for one or more ratings
+   - `GET /wp-json/shuriken-reviews/v1/nonce` — Returns a fresh nonce for secure voting
+
+**No special cache configuration is required.**
 
 ### Analytics Dashboard
 
@@ -130,47 +145,53 @@ Configure plugin behavior at **Shuriken Reviews > Settings**:
 
 ## Changelog
 
-### 1.5.9
 
+### 1.6.0
+
+- **Cache-bypass for ratings**: Always shows fresh rating data and valid nonce, even with full-page caching or CDNs
+- **Automatic nonce refresh**: Voting never fails due to expired nonce; plugin fetches a new one and retries automatically
+- **REST API endpoints**: Public endpoints for fetching live rating stats and nonces
+
+### 1.5.11
+
+- Now Shuriken Rating block preview follows Front-end
+
+### 1.5.10
+
+- Fixed, Now Shuriken Rating block fetchs Display only checkbox state
+
+### 1.5.9
 - Ratings and Analytics page Styles modernized.
 
 ### 1.5.8
-
 - Added About page with quick start guide and documentation
 
 ### 1.5.7
-
 - Performance improvements and bug fixes
 
 ### 1.5.0
-
 - Added Analytics dashboard with comprehensive statistics
 - Added CSV export functionality
 - Added date range filtering
 
 ### 1.4.0
-
 - Added parent-child rating relationships
 - Added mirror ratings feature
 - Added display-only aggregate ratings
 
 ### 1.3.0
-
 - Added guest voting support
 - Enhanced admin interface
 
 ### 1.2.0
-
 - Added Comments Settings page
 - Improved accessibility
 
 ### 1.1.0
-
 - Added FSE Block support
 - Added shortcode functionality
 
 ### 1.0.0
-
 - Initial release
 
 ## License
