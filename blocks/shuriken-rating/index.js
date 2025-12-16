@@ -141,7 +141,10 @@
                 setEditRatingMirrorOf(selectedRating.mirror_of ? String(selectedRating.mirror_of) : '');
                 setEditRatingParentId(selectedRating.parent_id ? String(selectedRating.parent_id) : '');
                 setEditRatingEffectType(selectedRating.effect_type || 'positive');
-                setEditRatingDisplayOnly(selectedRating.display_only === 1 || selectedRating.display_only === true);
+                // Normalize display_only (defensive coverage)
+                var displayOnlyValue = selectedRating.display_only;
+                var isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
+                setEditRatingDisplayOnly(isDisplayOnly);
                 setIsEditModalOpen(true);
             }
 
