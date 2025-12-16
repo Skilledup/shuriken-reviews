@@ -28,5 +28,6 @@
         }
     },
     "editorScript": "shuriken-rating-editor",
-    "editorStyle": "file:./editor.css"
+    "style": "shuriken-reviews-frontend",
+    "editorStyle": "shuriken-reviews-frontend"
 }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.5.10
+ * Version: 1.5.11
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.5.10');
+    define('SHURIKEN_REVIEWS_VERSION', '1.5.11');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -103,9 +103,19 @@ function shuriken_reviews_register_block() {
         true
     );
 
-    // Register the block with explicit render callback
+    // Register the front-end stylesheet and reuse it for the editor preview
+    wp_register_style(
+        'shuriken-reviews-frontend',
+        SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/shuriken-reviews.css',
+        array(),
+        SHURIKEN_REVIEWS_VERSION
+    );
+
+    // Register the block with explicit render callback and attach styles
     register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-rating', array(
         'render_callback' => 'shuriken_reviews_render_rating_block',
+        'style' => 'shuriken-reviews-frontend',
+        'editor_style' => 'shuriken-reviews-frontend',
     ));
 }
 add_action('init', 'shuriken_reviews_register_block');
