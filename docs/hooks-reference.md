@@ -4,6 +4,8 @@ This document lists all available hooks (actions and filters) in the Shuriken Re
 
 > **Version:** 1.7.0+
 
+> **Note:** All rating display hooks work consistently for both **Shortcodes** (`[shuriken_rating]`) and **Gutenberg Blocks**. The block renderer uses the same underlying render method as shortcodes, ensuring your customizations apply everywhere.
+
 ---
 
 ## Table of Contents

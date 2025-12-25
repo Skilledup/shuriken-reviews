@@ -110,6 +110,9 @@ class Shuriken_Block {
     /**
      * Render callback for the Shuriken Rating block
      *
+     * Uses the shared render method from Shuriken_Shortcodes to ensure
+     * all hooks and filters work consistently across shortcodes and blocks.
+     *
      * @param array    $attributes Block attributes.
      * @param string   $content    Block content.
      * @param WP_Block $block      Block instance.
@@ -141,73 +144,53 @@ class Shuriken_Block {
             return '';
         }
 
-        // get_rating() already resolves mirrors - it returns original's vote data
-        // but preserves the mirror's name and mirror_of field
-        $is_mirror = !empty($rating->mirror_of);
-        $is_display_only = !empty($rating->display_only);
+        // Use the shared render method from Shortcodes class
+        // This ensures all hooks/filters work for both shortcodes and blocks
+        $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag);
+
+        // Wrap with block wrapper attributes for proper Gutenberg integration
+        // We need to extract the inner content and re-wrap it with block attributes
+        return $this->wrap_with_block_attributes($html, $rating, $anchor_tag);
+    }
+
+    /**
+     * Wrap rating HTML with Gutenberg block wrapper attributes
+     *
+     * @param string $html       The rating HTML from shared render method.
+     * @param object $rating     The rating object.
+     * @param string $anchor_tag Optional anchor ID.
+     * @return string HTML wrapped with block attributes.
+     */
+    private function wrap_with_block_attributes($html, $rating, $anchor_tag = '') {
+        // The shared render method already outputs a complete div with classes
+        // We need to merge the block wrapper attributes with the existing ones
         
-        $css_classes = 'shuriken-rating';
-        if ($is_display_only) {
-            $css_classes .= ' display-only';
+        // Extract the class from the rendered HTML
+        if (preg_match('/class="([^"]*)"/', $html, $matches)) {
+            $existing_classes = $matches[1];
+            
+            // Get block wrapper attributes with merged classes
+            $wrapper_attributes = get_block_wrapper_attributes(array(
+                'class' => $existing_classes,
+                'data-id' => esc_attr($rating->source_id),
+            ));
+
+            // Add anchor ID if present
+            if ($anchor_tag) {
+                $wrapper_attributes = str_replace('class="', 'id="' . esc_attr($anchor_tag) . '" class="', $wrapper_attributes);
+            }
+
+            // Replace the opening div with our block-wrapped version
+            // Match the first div tag with class attribute
+            $html = preg_replace(
+                '/^<div\s+class="[^"]*"\s+data-id="[^"]*"(\s+id="[^"]*")?/',
+                '<div ' . $wrapper_attributes,
+                $html,
+                1
+            );
         }
-        if ($is_mirror) {
-            $css_classes .= ' mirror-rating';
-        }
 
-        // Get block wrapper attributes - use source_id for data-id (original's ID for mirrors)
-        $wrapper_attributes = get_block_wrapper_attributes(array(
-            'class' => $css_classes,
-            'data-id' => esc_attr($rating->source_id),
-        ));
-
-        if ($anchor_tag) {
-            $wrapper_attributes = str_replace('class="', 'id="' . esc_attr($anchor_tag) . '" class="', $wrapper_attributes);
-        }
-
-        ob_start();
-        ?>
-        <div <?php echo $wrapper_attributes; ?>>
-            <div class="shuriken-rating-wrapper">
-                <<?php echo esc_html($title_tag); ?> class="rating-title">
-                    <?php echo esc_html($rating->name); ?>
-                </<?php echo esc_html($title_tag); ?>>
-                
-                <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
-                    <?php for ($i = 1; $i <= 5; $i++) : ?>
-                        <span class="star" 
-                              data-value="<?php echo esc_attr($i); ?>" 
-                              <?php if (!$is_display_only): ?>
-                              role="button" 
-                              tabindex="0"
-                              aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>"
-                              <?php else: ?>
-                              aria-label="<?php printf(esc_attr__('%d out of 5', 'shuriken-reviews'), $i); ?>"
-                              <?php endif; ?>>
-                            ★
-                        </span>
-                    <?php endfor; ?>
-                </div>
-
-                <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>">
-                    <?php
-                    printf(
-                        /* translators: 1: Average rating value out of 5, 2: Total number of votes */
-                        esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-                        esc_html($rating->average),
-                        esc_html($rating->total_votes)
-                    );
-                    ?>
-                </div>
-                
-                <?php if ($is_display_only): ?>
-                <div class="display-only-notice">
-                    <?php esc_html_e('Calculated from sub-ratings', 'shuriken-reviews'); ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php
-        return ob_get_clean();
+        return $html;
     }
 }
 
