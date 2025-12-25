@@ -45,6 +45,12 @@ jQuery(document).ready(function($) {
             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
             type: 'GET',
             cache: false, // Important: bypass browser cache
+            beforeSend: function(xhr) {
+                // Include REST nonce for proper user authentication
+                if (shurikenReviews.rest_nonce) {
+                    xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
+                }
+            },
             success: function(nonceResponse) {
                 // Update nonce in global object
                 if (nonceResponse && nonceResponse.nonce) {
@@ -64,6 +70,11 @@ jQuery(document).ready(function($) {
                     cache: false, // Important: bypass browser cache
                     data: {
                         ids: ratingIds.join(',')
+                    },
+                    beforeSend: function(xhr) {
+                        if (shurikenReviews.rest_nonce) {
+                            xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
+                        }
                     },
                     success: function(statsResponse) {
                         // Update each rating with fresh data
@@ -198,6 +209,11 @@ jQuery(document).ready(function($) {
                             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
                             type: 'GET',
                             cache: false,
+                            beforeSend: function(xhr) {
+                                if (shurikenReviews.rest_nonce) {
+                                    xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
+                                }
+                            },
                             success: function(nonceResponse) {
                                 if (nonceResponse && nonceResponse.nonce) {
                                     shurikenReviews.nonce = nonceResponse.nonce;
@@ -247,6 +263,11 @@ jQuery(document).ready(function($) {
                         url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
                         type: 'GET',
                         cache: false,
+                        beforeSend: function(xhrRetry) {
+                            if (shurikenReviews.rest_nonce) {
+                                xhrRetry.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
+                            }
+                        },
                         success: function(nonceResponse) {
                             if (nonceResponse && nonceResponse.nonce) {
                                 shurikenReviews.nonce = nonceResponse.nonce;

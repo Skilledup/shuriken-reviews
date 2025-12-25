@@ -96,6 +96,7 @@ class Shuriken_Frontend {
             'ajaxurl' => admin_url('admin-ajax.php'),
             'rest_url' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
+            'rest_nonce' => wp_create_nonce('wp_rest'),
             'logged_in' => is_user_logged_in(),
             'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
             'login_url' => wp_login_url(),
