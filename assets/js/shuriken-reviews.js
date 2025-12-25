@@ -1,9 +1,16 @@
 jQuery(document).ready(function($) {
     var isFetchingFreshData = false;
     
-    function updateStars($rating, average) {
+    /**
+     * Update star display based on average rating
+     * The average should be in the DISPLAY scale (e.g., 8 for 8/10 stars)
+     * 
+     * @param {jQuery} $rating - The rating container element
+     * @param {number} scaledAverage - The average in display scale (matches max_stars)
+     */
+    function updateStars($rating, scaledAverage) {
         $rating.find('.star').each(function() {
-            if ($(this).data('value') <= average) {
+            if ($(this).data('value') <= scaledAverage) {
                 $(this).addClass('active');
             } else {
                 $(this).removeClass('active');
@@ -11,9 +18,22 @@ jQuery(document).ready(function($) {
         });
     }
 
+    /**
+     * Reset stars to show the current average
+     * Uses scaled-average if available, falls back to converting from normalized average
+     */
     function resetStars($rating) {
-        var average = parseFloat($rating.find('.rating-stats').data('average'));
-        updateStars($rating, average);
+        var $stats = $rating.find('.rating-stats');
+        var scaledAverage = parseFloat($stats.data('scaled-average'));
+        
+        // If no scaled average, calculate from normalized average
+        if (isNaN(scaledAverage)) {
+            var normalizedAverage = parseFloat($stats.data('average')) || 0;
+            var maxStars = parseInt($rating.data('max-stars')) || 5;
+            scaledAverage = (normalizedAverage / 5) * maxStars;
+        }
+        
+        updateStars($rating, scaledAverage);
     }
 
     /**
@@ -82,19 +102,27 @@ jQuery(document).ready(function($) {
                             var $ratings = $('.shuriken-rating[data-id="' + ratingId + '"]');
                             $ratings.each(function() {
                                 var $rating = $(this);
-                                var $stats = $rating.find('.rating-stats');
+                                var $statsEl = $rating.find('.rating-stats');
+                                var maxStars = parseInt($rating.data('max-stars')) || 5;
                                 
-                                // Update data attribute
-                                $stats.data('average', stats.average);
+                                // Calculate scaled average from normalized (1-5 scale)
+                                var normalizedAverage = parseFloat(stats.average) || 0;
+                                var scaledAverage = (normalizedAverage / 5) * maxStars;
+                                scaledAverage = Math.round(scaledAverage * 10) / 10; // Round to 1 decimal
                                 
-                                // Update displayed text
+                                // Update data attributes
+                                $statsEl.data('average', stats.average);
+                                $statsEl.data('scaled-average', scaledAverage);
+                                
+                                // Update displayed text with scaled values
                                 var text = shurikenReviews.i18n.averageRating
-                                    .replace('%1$s', stats.average)
-                                    .replace('%2$s', stats.total_votes);
-                                $stats.html(text);
+                                    .replace('%1$s', scaledAverage)
+                                    .replace('%2$s', maxStars)
+                                    .replace('%3$s', stats.total_votes);
+                                $statsEl.html(text);
                                 
-                                // Update stars
-                                updateStars($rating, parseFloat(stats.average));
+                                // Update stars using scaled average
+                                updateStars($rating, scaledAverage);
                             });
                         });
                     },
@@ -119,8 +147,17 @@ jQuery(document).ready(function($) {
     // Initialize stars based on average rating
     $('.shuriken-rating').each(function() {
         var $rating = $(this);
-        var average = parseFloat($rating.find('.rating-stats').data('average'));
-        updateStars($rating, average);
+        var $stats = $rating.find('.rating-stats');
+        var maxStars = parseInt($rating.data('max-stars')) || 5;
+        
+        // Use scaled-average if available, otherwise calculate from normalized average
+        var scaledAverage = parseFloat($stats.data('scaled-average'));
+        if (isNaN(scaledAverage)) {
+            var normalizedAverage = parseFloat($stats.data('average')) || 0;
+            scaledAverage = (normalizedAverage / 5) * maxStars;
+        }
+        
+        updateStars($rating, scaledAverage);
 
         // Update stars after 4 seconds
         setInterval(function() {
@@ -159,6 +196,7 @@ jQuery(document).ready(function($) {
         
         var $stars = $rating.find('.stars');
         var ratingId = $rating.data('id');
+        var maxStars = parseInt($rating.data('max-stars')) || 5;
         var originalText = $rating.find('.rating-stats').html();
         
         $.ajax({
@@ -168,6 +206,7 @@ jQuery(document).ready(function($) {
                 action: 'submit_rating',
                 rating_id: ratingId,
                 rating_value: value,
+                max_stars: maxStars,
                 nonce: shurikenReviews.nonce
             },
             success: function(response) {
@@ -182,21 +221,33 @@ jQuery(document).ready(function($) {
                             $(this).removeClass('active');
                         }
                     });
+                    
+                    // Use scaled average and max_stars from response for display
+                    var displayAverage = response.data.new_scaled_average || response.data.new_average;
+                    var displayMaxStars = response.data.max_stars || 5;
+                    
                     // Update text with translated string using numbered placeholders
                     originalText = shurikenReviews.i18n.averageRating
-                        .replace('%1$s', response.data.new_average)
-                        .replace('%2$s', response.data.new_total_votes);
+                        .replace('%1$s', displayAverage)
+                        .replace('%2$s', displayMaxStars)
+                        .replace('%3$s', response.data.new_total_votes);
                     $rating.find('.rating-stats').data('average', response.data.new_average);
+                    $rating.find('.rating-stats').data('scaled-average', displayAverage);
                     
                     // If there's a parent rating on the page, update it too
                     if (response.data.parent_id) {
                         var $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
                         if ($parentRating.length) {
+                            var parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
+                            var parentMaxStars = response.data.parent_max_stars || 5;
                             var parentText = shurikenReviews.i18n.averageRating
-                                .replace('%1$s', response.data.parent_average)
-                                .replace('%2$s', response.data.parent_total_votes);
+                                .replace('%1$s', parentDisplayAverage)
+                                .replace('%2$s', parentMaxStars)
+                                .replace('%3$s', response.data.parent_total_votes);
                             $parentRating.find('.rating-stats').data('average', response.data.parent_average);
+                            $parentRating.find('.rating-stats').data('scaled-average', parentDisplayAverage);
                             $parentRating.find('.rating-stats').html(parentText);
+                            // Update stars based on normalized average (1-5 scale)
                             updateStars($parentRating, response.data.parent_average);
                         }
                     }

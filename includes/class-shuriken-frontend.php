@@ -122,8 +122,8 @@ class Shuriken_Frontend {
             /* translators: %s: Login URL */
             'pleaseLogin' => __('Please <a href="%s">login</a> to rate', 'shuriken-reviews'),
             'thankYou' => __('Thank you for rating!', 'shuriken-reviews'),
-            /* translators: 1: Average rating value out of 5, 2: Total number of votes */
-            'averageRating' => __('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
+            /* translators: 1: Average rating value, 2: Maximum stars, 3: Total number of votes */
+            'averageRating' => __('Average: %1$s/%2$s (%3$s votes)', 'shuriken-reviews'),
             /* translators: %s: Error message */
             'error' => __('Error: %s', 'shuriken-reviews'),
             'genericError' => __('Error submitting rating. Please try again.', 'shuriken-reviews'),

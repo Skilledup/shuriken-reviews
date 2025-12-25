@@ -97,32 +97,46 @@ class Shuriken_AJAX {
         $user_id = get_current_user_id();
         $user_ip = is_user_logged_in() ? null : $this->get_user_ip();
         $rating_id = intval($_POST['rating_id']);
-        $rating_value = intval($_POST['rating_value']);
+        $rating_value = floatval($_POST['rating_value']);
+        $max_stars = isset($_POST['max_stars']) ? intval($_POST['max_stars']) : 5;
+
+        // Get the rating first to apply the filter
+        $rating = $db->get_rating($rating_id);
+        if (!$rating) {
+            wp_send_json_error(__('Rating not found', 'shuriken-reviews'));
+            return;
+        }
 
         /**
-         * Filter the minimum allowed rating value.
+         * Filter the maximum number of stars displayed and accepted for voting.
+         *
+         * This should match the filter used in the shortcode/block rendering.
+         * Votes are normalized to a 1-5 scale internally.
          *
          * @since 1.7.0
-         * @param int $min_value The minimum rating value. Default 1.
+         * @param int    $max_stars The maximum number of stars. Default 5.
+         * @param object $rating    The rating object.
          */
-        $min_rating = apply_filters('shuriken_min_rating_value', 1);
+        $max_stars_filtered = apply_filters('shuriken_rating_max_stars', 5, $rating);
+        $max_stars_filtered = max(1, intval($max_stars_filtered));
+        
+        // Use the filtered value (server-side filter takes precedence)
+        // This ensures security even if client sends wrong max_stars
+        $max_stars = $max_stars_filtered;
 
-        /**
-         * Filter the maximum allowed rating value.
-         *
-         * @since 1.7.0
-         * @param int $max_value The maximum rating value. Default 5.
-         */
-        $max_rating = apply_filters('shuriken_max_rating_value', 5);
-
-        // Validate rating value
-        if ($rating_value < $min_rating || $rating_value > $max_rating) {
+        // Validate rating value against the max stars
+        if ($rating_value < 1 || $rating_value > $max_stars) {
             wp_send_json_error(__('Invalid rating value', 'shuriken-reviews'));
             return;
         }
 
-        // Get the rating to check if it's display-only
-        $rating = $db->get_rating($rating_id);
+        // Normalize the rating value to 1-5 scale for storage
+        // e.g., 8 out of 10 stars → 4 out of 5
+        $normalized_value = ($rating_value / $max_stars) * 5;
+        $normalized_value = round($normalized_value, 2);
+        
+        // Ensure normalized value is within bounds
+        $normalized_value = max(1, min(5, $normalized_value));
         if (!$rating) {
             wp_send_json_error(__('Rating not found', 'shuriken-reviews'));
             return;
@@ -143,7 +157,7 @@ class Shuriken_AJAX {
          * @since 1.7.0
          * @param bool|WP_Error $can_vote     Whether the user can vote. Default true.
          * @param int           $rating_id    The rating ID.
-         * @param int           $rating_value The rating value.
+         * @param float         $rating_value The rating value (in the display scale, e.g., 1-10 for 10-star).
          * @param int           $user_id      The user ID (0 for guests).
          * @param object        $rating       The rating object.
          */
@@ -163,25 +177,27 @@ class Shuriken_AJAX {
          * Fires before a vote is submitted.
          *
          * @since 1.7.0
-         * @param int    $rating_id    The rating ID.
-         * @param int    $rating_value The rating value.
-         * @param int    $user_id      The user ID (0 for guests).
-         * @param string $user_ip      The user IP (for guests).
-         * @param object $rating       The rating object.
+         * @param int    $rating_id        The rating ID.
+         * @param float  $rating_value     The rating value (in the display scale).
+         * @param float  $normalized_value The normalized value (1-5 scale for storage).
+         * @param int    $user_id          The user ID (0 for guests).
+         * @param string $user_ip          The user IP (for guests).
+         * @param object $rating           The rating object.
+         * @param int    $max_stars        The maximum stars for this rating.
          */
-        do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $user_id, $user_ip, $rating);
+        do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
 
         // Check if the user has already voted
         $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
         $is_update = !empty($existing_vote);
 
         if ($existing_vote) {
-            // Update the existing vote
+            // Update the existing vote (use normalized value for storage)
             $result = $db->update_vote(
                 $existing_vote->id,
                 $rating_id,
                 $existing_vote->rating_value,
-                $rating_value
+                $normalized_value
             );
 
             if (!$result) {
@@ -193,17 +209,19 @@ class Shuriken_AJAX {
              * Fires after a vote is updated.
              *
              * @since 1.7.0
-             * @param int    $vote_id      The vote ID.
-             * @param int    $rating_id    The rating ID.
-             * @param int    $old_value    The previous rating value.
-             * @param int    $new_value    The new rating value.
-             * @param int    $user_id      The user ID (0 for guests).
-             * @param object $rating       The rating object.
+             * @param int    $vote_id          The vote ID.
+             * @param int    $rating_id        The rating ID.
+             * @param float  $old_value        The previous rating value (normalized 1-5 scale).
+             * @param float  $new_value        The new rating value (in display scale).
+             * @param float  $normalized_value The new normalized value (1-5 scale).
+             * @param int    $user_id          The user ID (0 for guests).
+             * @param object $rating           The rating object.
+             * @param int    $max_stars        The maximum stars for this rating.
              */
-            do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $user_id, $rating);
+            do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
         } else {
-            // Insert a new vote
-            $result = $db->create_vote($rating_id, $rating_value, $user_id, $user_ip);
+            // Insert a new vote (use normalized value for storage)
+            $result = $db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
 
             if (!$result) {
                 wp_send_json_error(__('Failed to submit vote', 'shuriken-reviews'));
@@ -214,13 +232,15 @@ class Shuriken_AJAX {
              * Fires after a new vote is created.
              *
              * @since 1.7.0
-             * @param int    $rating_id    The rating ID.
-             * @param int    $rating_value The rating value.
-             * @param int    $user_id      The user ID (0 for guests).
-             * @param string $user_ip      The user IP (for guests).
-             * @param object $rating       The rating object.
+             * @param int    $rating_id        The rating ID.
+             * @param float  $rating_value     The rating value (in display scale).
+             * @param float  $normalized_value The normalized value (1-5 scale for storage).
+             * @param int    $user_id          The user ID (0 for guests).
+             * @param string $user_ip          The user IP (for guests).
+             * @param object $rating           The rating object.
+             * @param int    $max_stars        The maximum stars for this rating.
              */
-            do_action('shuriken_vote_created', $rating_id, $rating_value, $user_id, $user_ip, $rating);
+            do_action('shuriken_vote_created', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
         }
 
         // If this is a sub-rating, recalculate the parent rating
@@ -231,19 +251,30 @@ class Shuriken_AJAX {
         // Get updated rating data
         $updated_rating = $db->get_rating($rating_id);
 
-        // Build response data
+        // Calculate scaled average for the response
+        $scaled_average = round(($updated_rating->average / 5) * $max_stars, 1);
+
+        // Build response data with both normalized and scaled values
         $response_data = array(
-            'new_average' => $updated_rating->average,
-            'new_total_votes' => $updated_rating->total_votes
+            'new_average' => $updated_rating->average,           // Normalized (1-5 scale)
+            'new_scaled_average' => $scaled_average,             // Scaled to max_stars
+            'new_total_votes' => $updated_rating->total_votes,
+            'max_stars' => $max_stars
         );
 
         // Also send parent data if applicable
         if (!empty($rating->parent_id)) {
             $parent_rating = $db->get_rating($rating->parent_id);
             if ($parent_rating) {
+                // Apply filter to get parent's max_stars
+                $parent_max_stars = apply_filters('shuriken_rating_max_stars', 5, $parent_rating);
+                $parent_scaled_average = round(($parent_rating->average / 5) * $parent_max_stars, 1);
+                
                 $response_data['parent_id'] = $parent_rating->id;
                 $response_data['parent_average'] = $parent_rating->average;
+                $response_data['parent_scaled_average'] = $parent_scaled_average;
                 $response_data['parent_total_votes'] = $parent_rating->total_votes;
+                $response_data['parent_max_stars'] = $parent_max_stars;
             }
         }
 
@@ -253,23 +284,26 @@ class Shuriken_AJAX {
          * @since 1.7.0
          * @param array  $response_data  The response data.
          * @param int    $rating_id      The rating ID.
-         * @param int    $rating_value   The rating value.
+         * @param float  $rating_value   The rating value (in display scale).
          * @param bool   $is_update      Whether this was an update or new vote.
          * @param object $updated_rating The updated rating object.
+         * @param int    $max_stars      The maximum stars for this rating.
          */
-        $response_data = apply_filters('shuriken_vote_response_data', $response_data, $rating_id, $rating_value, $is_update, $updated_rating);
+        $response_data = apply_filters('shuriken_vote_response_data', $response_data, $rating_id, $rating_value, $is_update, $updated_rating, $max_stars);
 
         /**
          * Fires after a vote is successfully submitted.
          *
          * @since 1.7.0
-         * @param int    $rating_id      The rating ID.
-         * @param int    $rating_value   The rating value.
-         * @param int    $user_id        The user ID (0 for guests).
-         * @param bool   $is_update      Whether this was an update or new vote.
-         * @param object $updated_rating The updated rating object.
+         * @param int    $rating_id        The rating ID.
+         * @param float  $rating_value     The rating value (in display scale).
+         * @param float  $normalized_value The normalized value (1-5 scale).
+         * @param int    $user_id          The user ID (0 for guests).
+         * @param bool   $is_update        Whether this was an update or new vote.
+         * @param object $updated_rating   The updated rating object.
+         * @param int    $max_stars        The maximum stars for this rating.
          */
-        do_action('shuriken_after_submit_vote', $rating_id, $rating_value, $user_id, $is_update, $updated_rating);
+        do_action('shuriken_after_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $is_update, $updated_rating, $max_stars);
 
         wp_send_json_success($response_data);
     }

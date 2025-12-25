@@ -149,13 +149,20 @@ class Shuriken_Shortcodes {
         $css_classes = apply_filters('shuriken_rating_css_classes', $css_classes, $rating);
 
         /**
-         * Filter the maximum number of stars.
+         * Filter the maximum number of stars displayed and accepted for voting.
+         *
+         * This filter controls both the visual display AND the voting scale.
+         * Votes are automatically normalized to a 1-5 scale internally.
+         * For example, with 10 stars: user clicks star 8 → stored as 4.0 (8/10 * 5)
          *
          * @since 1.7.0
          * @param int    $max_stars The maximum number of stars. Default 5.
          * @param object $rating    The rating object.
          */
         $max_stars = apply_filters('shuriken_rating_max_stars', 5, $rating);
+        
+        // Ensure max_stars is at least 1
+        $max_stars = max(1, intval($max_stars));
 
         /**
          * Filter the star character/symbol.
@@ -166,10 +173,14 @@ class Shuriken_Shortcodes {
          */
         $star_symbol = apply_filters('shuriken_rating_star_symbol', '★', $rating);
         
+        // Calculate the scaled average for display (convert from 5-scale to custom scale)
+        $scaled_average = ($rating->average / 5) * $max_stars;
+        $scaled_average = round($scaled_average, 1);
+        
         // Start output buffering
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
+        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
             <div class="shuriken-rating-wrapper">
                 <<?php echo tag_escape($tag); ?> class="rating-title">
                     <?php echo esc_html($rating->name); ?>
@@ -182,21 +193,22 @@ class Shuriken_Shortcodes {
                               <?php if (!$is_display_only): ?>
                               role="button" 
                               tabindex="0"
-                              aria-label="<?php printf(esc_attr__('Rate %d out of 5', 'shuriken-reviews'), $i); ?>"
+                              aria-label="<?php printf(esc_attr__('Rate %1$d out of %2$d', 'shuriken-reviews'), $i, $max_stars); ?>"
                               <?php else: ?>
-                              aria-label="<?php printf(esc_attr__('%d out of 5', 'shuriken-reviews'), $i); ?>"
+                              aria-label="<?php printf(esc_attr__('%1$d out of %2$d', 'shuriken-reviews'), $i, $max_stars); ?>"
                               <?php endif; ?>>
                             <?php echo esc_html($star_symbol); ?>
                         </span>
                     <?php endfor; ?>
                 </div>
 
-                <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>">
+                <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>" data-scaled-average="<?php echo esc_attr($scaled_average); ?>">
                     <?php 
                     printf(
-                        /* translators: 1: Average rating value out of 5, 2: Total number of votes */
-                        esc_html__('Average: %1$s/5 (%2$s votes)', 'shuriken-reviews'),
-                        esc_html($rating->average),
+                        /* translators: 1: Average rating value, 2: Maximum stars, 3: Total number of votes */
+                        esc_html__('Average: %1$s/%2$s (%3$s votes)', 'shuriken-reviews'),
+                        esc_html($scaled_average),
+                        esc_html($max_stars),
                         esc_html($rating->total_votes)
                     );
                     ?>

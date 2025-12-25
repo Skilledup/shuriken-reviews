@@ -95,9 +95,15 @@ add_filter('shuriken_rating_css_classes', function($classes, $rating) {
 
 #### `shuriken_rating_max_stars`
 
-Filters the maximum number of stars displayed in the rating widget. By default, the plugin uses a 5-star system.
+Filters the maximum number of stars displayed AND accepted for voting. By default, the plugin uses a 5-star system.
 
-> **Note:** Changing this only affects the display. The actual vote values are still stored as 1-5 in the database. For a true 10-star system, you'd also need to filter `shuriken_max_rating_value`.
+> **How it works:** When you change this to 10 stars, users can click any of the 10 stars. The vote is automatically **normalized to a 1-5 scale** for storage. For example:
+> - User clicks star 8 out of 10 → stored as `4.0` (8/10 × 5)
+> - User clicks star 3 out of 10 → stored as `1.5` (3/10 × 5)
+> 
+> The average is then **scaled back** for display. An average of `4.0` displays as "8/10" on a 10-star rating.
+> 
+> This approach ensures all existing votes remain valid and no database changes are needed.
 
 **Parameters:**
 | Parameter | Type | Description |
@@ -105,14 +111,33 @@ Filters the maximum number of stars displayed in the rating widget. By default, 
 | `$max_stars` | int | Maximum number of stars (default: 5) |
 | `$rating` | object | The rating object |
 
-**Example: Use 10 stars for specific ratings**
+**Example 1: Use 10 stars for all ratings**
 ```php
 add_filter('shuriken_rating_max_stars', function($max, $rating) {
-    // Use 10 stars only for ratings with "detailed" in the name
+    return 10;
+}, 10, 2);
+```
+
+**Example 2: Use 10 stars only for specific ratings**
+```php
+add_filter('shuriken_rating_max_stars', function($max, $rating) {
+    // Use 10 stars only for ratings with "Detailed" in the name
     if (strpos($rating->name, 'Detailed') !== false) {
         return 10;
     }
     return $max;
+}, 10, 2);
+```
+
+**Example 3: Use 3 stars (simple thumbs up/neutral/down style)**
+```php
+add_filter('shuriken_rating_max_stars', function($max, $rating) {
+    return 3;
+}, 10, 2);
+
+// Optionally use custom symbols
+add_filter('shuriken_rating_star_symbol', function($symbol, $rating) {
+    return '●'; // Simple circles
 }, 10, 2);
 ```
 
@@ -226,42 +251,6 @@ add_filter('shuriken_allow_guest_voting', function($allow) {
 
 ---
 
-#### `shuriken_min_rating_value`
-
-Filters the minimum allowed rating value. Default is 1.
-
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$min_value` | int | Minimum rating value (default: 1) |
-
-**Example: Start ratings from 0**
-```php
-add_filter('shuriken_min_rating_value', function($min) {
-    return 0;
-});
-```
-
----
-
-#### `shuriken_max_rating_value`
-
-Filters the maximum allowed rating value. Default is 5.
-
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$max_value` | int | Maximum rating value (default: 5) |
-
-**Example: Allow 10-star ratings**
-```php
-add_filter('shuriken_max_rating_value', function($max) {
-    return 10;
-});
-```
-
----
-
 #### `shuriken_can_submit_vote`
 
 Filters whether a specific user can submit a vote for a specific rating. This is the most powerful filter for controlling voting permissions.
@@ -313,13 +302,13 @@ add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $
 }, 10, 5);
 
 // Don't forget to increment the counter when vote is created
-add_action('shuriken_vote_created', function($rating_id, $value, $user_id, $ip, $rating) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
     if ($user_id > 0) {
         $today = date('Y-m-d');
         $votes_today = get_user_meta($user_id, 'shuriken_votes_' . $today, true) ?: 0;
         update_user_meta($user_id, 'shuriken_votes_' . $today, $votes_today + 1);
     }
-}, 10, 5);
+}, 10, 7);
 ```
 
 **Example 3: Block voting on specific ratings**
@@ -544,24 +533,28 @@ Fires immediately before a vote is processed. The vote has passed all validation
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$rating_id` | int | The rating ID |
-| `$rating_value` | int | The star value (1-5) |
+| `$rating_value` | float | The star value in display scale (e.g., 8 for 8/10 stars) |
+| `$normalized_value` | float | The normalized value (1-5 scale) that will be stored |
 | `$user_id` | int | The user ID (0 for guests) |
 | `$user_ip` | string | The user's IP address (only for guests) |
 | `$rating` | object | The rating object |
+| `$max_stars` | int | The maximum stars for this rating |
 
 **Example: Log all vote attempts**
 ```php
-add_action('shuriken_before_submit_vote', function($rating_id, $value, $user_id, $ip, $rating) {
+add_action('shuriken_before_submit_vote', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
     $log = sprintf(
-        '[%s] Vote attempt - Rating: %d (%s), Value: %d, User: %s',
+        '[%s] Vote attempt - Rating: %d (%s), Value: %s/%d (normalized: %s), User: %s',
         date('Y-m-d H:i:s'),
         $rating_id,
         $rating->name,
         $value,
+        $max_stars,
+        $normalized,
         $user_id > 0 ? "User #$user_id" : "Guest ($ip)"
     );
     error_log($log);
-}, 10, 5);
+}, 10, 7);
 ```
 
 ---
@@ -574,38 +567,42 @@ Fires after a NEW vote is successfully saved to the database. Does not fire for 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$rating_id` | int | The rating ID |
-| `$rating_value` | int | The star value (1-5) |
+| `$rating_value` | float | The star value in display scale |
+| `$normalized_value` | float | The normalized value (1-5 scale) that was stored |
 | `$user_id` | int | The user ID (0 for guests) |
 | `$user_ip` | string | The user's IP address (only for guests) |
 | `$rating` | object | The rating object (before the vote was counted) |
+| `$max_stars` | int | The maximum stars for this rating |
 
-**Example 1: Send email notification for new votes**
+**Example 1: Send email notification for low ratings**
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $user_id, $ip, $rating) {
-    // Only notify for low ratings
-    if ($value <= 2) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+    // Notify for ratings in the bottom 40% of the scale
+    $threshold = $max_stars * 0.4;
+    if ($value <= $threshold) {
         $subject = 'Low Rating Alert: ' . $rating->name;
         $message = sprintf(
-            "A %d-star rating was submitted for '%s'.\n\nUser: %s\nTime: %s",
+            "A %s/%d star rating was submitted for '%s'.\n\nUser: %s\nTime: %s",
             $value,
+            $max_stars,
             $rating->name,
             $user_id > 0 ? "User #$user_id" : "Guest",
             date('Y-m-d H:i:s')
         );
         wp_mail(get_option('admin_email'), $subject, $message);
     }
-}, 10, 5);
+}, 10, 7);
 ```
 
 **Example 2: Award points to users for voting**
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $user_id, $ip, $rating) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
     if ($user_id > 0) {
         // Award 5 points for voting (integrate with a points plugin)
         $current_points = get_user_meta($user_id, 'user_points', true) ?: 0;
         update_user_meta($user_id, 'user_points', $current_points + 5);
     }
-}, 10, 5);
+}, 10, 7);
 ```
 
 ---
@@ -619,23 +616,28 @@ Fires after an existing vote is changed. This happens when a user changes their 
 |-----------|------|-------------|
 | `$vote_id` | int | The vote record ID |
 | `$rating_id` | int | The rating ID |
-| `$old_value` | int | The previous star value |
-| `$new_value` | int | The new star value |
+| `$old_value` | float | The previous normalized value (1-5 scale) |
+| `$new_value` | float | The new value in display scale |
+| `$normalized_value` | float | The new normalized value (1-5 scale) |
 | `$user_id` | int | The user ID (0 for guests) |
 | `$rating` | object | The rating object |
+| `$max_stars` | int | The maximum stars for this rating |
 
 **Example: Track vote changes**
 ```php
-add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_value, $new_value, $user_id, $rating) {
+add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $new_value, $new_norm, $user_id, $rating, $max_stars) {
+    // Convert old normalized value to display scale for logging
+    $old_display = ($old_norm / 5) * $max_stars;
     $log = sprintf(
-        'Vote changed: Rating "%s" - User #%d changed from %d to %d stars',
+        'Vote changed: Rating "%s" - User #%d changed from %s to %s (out of %d)',
         $rating->name,
         $user_id,
-        $old_value,
-        $new_value
+        $old_display,
+        $new_value,
+        $max_stars
     );
     error_log($log);
-}, 10, 6);
+}, 10, 8);
 ```
 
 ---
@@ -648,14 +650,16 @@ Fires after any vote (new or update) is successfully processed. This is the best
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$rating_id` | int | The rating ID |
-| `$rating_value` | int | The star value (1-5) |
+| `$rating_value` | float | The star value in display scale |
+| `$normalized_value` | float | The normalized value (1-5 scale) |
 | `$user_id` | int | The user ID (0 for guests) |
 | `$is_update` | bool | `true` if vote was updated, `false` if new |
 | `$updated_rating` | object | The rating object with updated totals |
+| `$max_stars` | int | The maximum stars for this rating |
 
 **Example 1: Clear cache after voting**
 ```php
-add_action('shuriken_after_submit_vote', function($rating_id, $value, $user_id, $is_update, $rating) {
+add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars) {
     // Clear any cached rating data
     wp_cache_delete('shuriken_rating_' . $rating_id);
     
@@ -663,12 +667,12 @@ add_action('shuriken_after_submit_vote', function($rating_id, $value, $user_id, 
     if (function_exists('wp_cache_clear_cache')) {
         wp_cache_clear_cache();
     }
-}, 10, 5);
+}, 10, 7);
 ```
 
 **Example 2: Update a "trending" list**
 ```php
-add_action('shuriken_after_submit_vote', function($rating_id, $value, $user_id, $is_update, $rating) {
+add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars) {
     // Get current trending list
     $trending = get_option('shuriken_trending_ratings', []);
     
@@ -681,7 +685,7 @@ add_action('shuriken_after_submit_vote', function($rating_id, $value, $user_id, 
     });
     
     update_option('shuriken_trending_ratings', $trending);
-}, 10, 5);
+}, 10, 7);
 ```
 
 ---
@@ -798,10 +802,21 @@ add_action('shuriken_rating_deleted', function($rating_id) {
 add_filter('shuriken_allow_guest_voting', '__return_false');
 ```
 
+### Use 10-Star Rating System
+
+```php
+// Display 10 stars instead of 5
+// Votes are automatically normalized (e.g., 8/10 → 4/5 internally)
+add_filter('shuriken_rating_max_stars', function($max, $rating) {
+    return 10;
+}, 10, 2);
+```
+
 ### Add Custom Styling Based on Rating Value
 
 ```php
 add_filter('shuriken_rating_css_classes', function($classes, $rating) {
+    // Note: $rating->average is always in 1-5 scale (normalized)
     if ($rating->average >= 4.5) {
         $classes .= ' excellent-rating';
     } elseif ($rating->average >= 3.5) {
@@ -818,12 +833,13 @@ add_filter('shuriken_rating_css_classes', function($classes, $rating) {
 ### Send Slack Notification on New Votes
 
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $user_id, $ip, $rating) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
     $webhook_url = 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL';
     
     $message = sprintf(
-        '⭐ New %d-star rating for "%s"',
+        '⭐ New %s/%d star rating for "%s"',
         $value,
+        $max_stars,
         $rating->name
     );
     
@@ -831,7 +847,7 @@ add_action('shuriken_vote_created', function($rating_id, $value, $user_id, $ip, 
         'body' => json_encode(['text' => $message]),
         'headers' => ['Content-Type' => 'application/json']
     ]);
-}, 10, 5);
+}, 10, 7);
 ```
 
 ---
