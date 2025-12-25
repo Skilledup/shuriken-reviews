@@ -141,7 +141,7 @@ $total_pages = $ratings_result->total_pages;
         <input type="hidden" name="page" value="shuriken-reviews">
         <p class="search-box">
             <label class="screen-reader-text" for="rating-search-input"><?php esc_html_e('Search Ratings:', 'shuriken-reviews'); ?></label>
-            <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>">
+            <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>">
             <input type="submit" id="search-submit" class="button" value="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
             <?php if (!empty($search)): ?>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="button"><?php esc_html_e('Clear', 'shuriken-reviews'); ?></a>

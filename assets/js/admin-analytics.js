@@ -20,10 +20,13 @@
             return;
         }
 
+        // Detect dark mode
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
         // Chart.js default configuration
         Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif';
         Chart.defaults.font.size = 12;
-        Chart.defaults.color = '#646970';
+        Chart.defaults.color = isDarkMode ? '#94a3b8' : '#646970';
 
         // Initialize all charts
         initVotesOverTimeChart();
@@ -39,6 +42,11 @@
         if (!ctx) return;
 
         const data = shurikenAnalyticsData.votesOverTime || [];
+        
+        // Detect dark mode
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const gridColor = isDarkMode ? '#334155' : '#f0f0f1';
+        const tickColor = isDarkMode ? '#94a3b8' : '#646970';
         
         // Prepare data
         const labels = data.map(item => formatDate(item.vote_date));
@@ -62,7 +70,7 @@
                     pointRadius: 3,
                     pointHoverRadius: 6,
                     pointBackgroundColor: '#2271b1',
-                    pointBorderColor: '#fff',
+                    pointBorderColor: isDarkMode ? '#1e293b' : '#fff',
                     pointBorderWidth: 2
                 }]
             },
@@ -102,16 +110,18 @@
                             maxRotation: 45,
                             minRotation: 0,
                             autoSkip: true,
-                            maxTicksLimit: 10
+                            maxTicksLimit: 10,
+                            color: tickColor
                         }
                     },
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: '#f0f0f1'
+                            color: gridColor
                         },
                         ticks: {
-                            precision: 0
+                            precision: 0,
+                            color: tickColor
                         }
                     }
                 }
@@ -127,6 +137,11 @@
         if (!ctx) return;
 
         const data = shurikenAnalyticsData.ratingDistribution || [0, 0, 0, 0, 0];
+
+        // Detect dark mode
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const gridColor = isDarkMode ? '#334155' : '#f0f0f1';
+        const tickColor = isDarkMode ? '#94a3b8' : '#646970';
 
         // Colors from red (1 star) to green (5 stars)
         const colors = [
@@ -177,15 +192,19 @@
                     x: {
                         grid: {
                             display: false
+                        },
+                        ticks: {
+                            color: tickColor
                         }
                     },
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: '#f0f0f1'
+                            color: gridColor
                         },
                         ticks: {
-                            precision: 0
+                            precision: 0,
+                            color: tickColor
                         }
                     }
                 }
@@ -209,6 +228,13 @@
             return;
         }
 
+        // Detect dark mode
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const textColor = isDarkMode ? '#f1f5f9' : '#1d2327';
+        const labelColor = isDarkMode ? '#94a3b8' : '#646970';
+        const borderColor = isDarkMode ? '#1e293b' : '#fff';
+        const legendColor = isDarkMode ? '#e2e8f0' : '#646970';
+
         new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -222,7 +248,7 @@
                         '#2271b1',
                         '#72aee6'
                     ],
-                    borderColor: '#fff',
+                    borderColor: borderColor,
                     borderWidth: 3,
                     hoverOffset: 8
                 }]
@@ -237,7 +263,8 @@
                         labels: {
                             padding: 20,
                             usePointStyle: true,
-                            pointStyle: 'circle'
+                            pointStyle: 'circle',
+                            color: legendColor
                         }
                     },
                     tooltip: {
@@ -267,7 +294,7 @@
                     const fontSize = (height / 114).toFixed(2);
                     ctx.font = 'bold ' + fontSize + 'em sans-serif';
                     ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#1d2327';
+                    ctx.fillStyle = textColor;
                     
                     const text = total.toString();
                     const textX = Math.round((width - ctx.measureText(text).width) / 2);
@@ -277,7 +304,7 @@
                     
                     // Draw "Total" label
                     ctx.font = '0.8em sans-serif';
-                    ctx.fillStyle = '#646970';
+                    ctx.fillStyle = labelColor;
                     const labelText = 'Total';
                     const labelX = Math.round((width - ctx.measureText(labelText).width) / 2);
                     ctx.fillText(labelText, labelX, textY + 20);

@@ -442,6 +442,10 @@
 
 /* Dark Mode Support (WordPress Admin) */
 @media (prefers-color-scheme: dark) {
+    body, #wpcontent {
+        background: #0f172a !important;
+    }
+
     .shuriken-about-section:not(.credits-section) {
         background: #1e293b;
         border-color: #334155;

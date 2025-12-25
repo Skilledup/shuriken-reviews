@@ -539,8 +539,12 @@ html[dir=rtl] .shuriken-copy-notification {
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
-    .wrap > h1 {
-        color: #f1f5f9;
+    body, #wpcontent {
+        background: #0f172a !important;
+    }
+    .wrap > h1,
+    .wrap > h1.wp-heading-inline {
+        color: #f1f5f9 !important;
     }
     
     .wp-list-table.ratings {
@@ -560,16 +564,26 @@ html[dir=rtl] .shuriken-copy-notification {
         color: #e2e8f0;
     }
     
+    .wp-list-table.ratings tbody tr {
+        background: #1e293b;
+    }
+    
     .wp-list-table.ratings tbody tr:hover {
         background: #0f172a;
     }
     
-    tr.sub-rating {
-        background-color: #0f172a;
+    .wp-list-table.ratings tbody tr.alternate {
+        background: #172033;
     }
     
-    tr.mirror-rating {
-        background-color: #0c1929;
+    tr.sub-rating,
+    tr.sub-rating.alternate {
+        background-color: #0f172a !important;
+    }
+    
+    tr.mirror-rating,
+    tr.mirror-rating.alternate {
+        background-color: #0c1929 !important;
     }
     
     .shuriken-ratings-form-wrap,
@@ -623,9 +637,227 @@ html[dir=rtl] .shuriken-copy-notification {
         color: #f1f5f9;
     }
     
+    .shuriken-ratings-form-wrap .form-table td input[type="text"]:focus,
+    .shuriken-ratings-form-wrap .form-table td select:focus {
+        background: #1e293b;
+        border-color: #667eea;
+        color: #f1f5f9;
+        box-shadow: 0 0 0 1px #667eea;
+        outline: none;
+    }
+    
+    .shuriken-ratings-form-wrap .form-table td input[type="text"]::placeholder {
+        color: #64748b;
+    }
+    
     .wrap > .search-form .search-box input[type="search"] {
         background: #0f172a;
         border-color: #334155;
         color: #f1f5f9;
+    }
+    
+    .wrap > .search-form .search-box input[type="search"]:focus {
+        border-color: #667eea;
+        background: #1e293b;
+    }
+    
+    .wrap > .search-form .search-box .button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .wp-list-table.ratings tbody td strong,
+    .wp-list-table.ratings tbody td strong a {
+        color: #f1f5f9;
+    }
+    
+    .wp-list-table.ratings tbody td a.row-title {
+        color: #a5b4fc;
+    }
+    
+    .wp-list-table.ratings tbody td a.row-title:hover {
+        color: #c7d2fe;
+    }
+    
+    .wp-list-table.ratings td.column-name .row-actions {
+        color: #94a3b8;
+    }
+    
+    .wp-list-table.ratings td.column-name .row-actions a {
+        color: #a5b4fc;
+    }
+    
+    .wp-list-table.ratings td.column-name .row-actions a:hover {
+        color: #c7d2fe;
+    }
+    
+    .wp-list-table.ratings td.column-name .row-actions .trash a {
+        color: #f87171;
+    }
+    
+    .wp-list-table.ratings td.column-name .row-actions .trash a:hover {
+        color: #fca5a5;
+    }
+    
+    .wp-list-table.ratings .row-actions .id {
+        color: #94a3b8;
+    }
+    
+    .parent-info,
+    .sub-count,
+    .mirror-info,
+    .mirror-count {
+        color: #cbd5e1 !important;
+    }
+    
+    .rating-text {
+        color: #cbd5e1;
+    }
+    
+    .rating-text strong {
+        color: #f1f5f9;
+    }
+    
+    .shuriken-ratings-empty-state {
+        color: #94a3b8;
+    }
+    
+    .shuriken-ratings-empty-state p {
+        color: #94a3b8;
+    }
+    
+    .shuriken-ratings-form-wrap .form-table td .description {
+        color: #94a3b8;
+    }
+    
+    .inline-edit-row-rating .input-text-wrap .description {
+        color: #94a3b8;
+    }
+    
+    .inline-edit-row-rating .input-text-wrap input[type="checkbox"] {
+        filter: brightness(0.8);
+    }
+    
+    .shuriken-ratings-form-wrap .form-table td input[type="checkbox"] {
+        filter: brightness(0.8);
+    }
+    
+    .tablenav .tablenav-pages .pagination-links .current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+    }
+    
+    .tablenav .tablenav-pages .pagination-links a {
+        color: #a5b4fc;
+    }
+    
+    .tablenav .tablenav-pages .pagination-links a:hover {
+        color: #c7d2fe;
+        background: #1e293b;
+    }
+    
+    .tablenav .tablenav-pages .pagination-links .tablenav-pages-navspan {
+        color: #64748b;
+    }
+    
+    .tablenav .tablenav-pages .paging-input {
+        color: #cbd5e1;
+    }
+    
+    .tablenav .tablenav-pages .paging-input input {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .sub-indicator,
+    .mirror-indicator {
+        opacity: 0.9;
+    }
+    
+    .subtitle {
+        color: #94a3b8;
+    }
+    
+    .subtitle strong {
+        color: #f1f5f9;
+    }
+    
+    .page-title-action {
+        color: #a5b4fc !important;
+        border-color: #667eea !important;
+    }
+    
+    .page-title-action:hover {
+        color: #c7d2fe !important;
+        background: #1e293b !important;
+    }
+    
+    .tablenav .displaying-num {
+        color: #cbd5e1;
+    }
+    
+    .tablenav select {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .tablenav select:focus {
+        border-color: #667eea;
+    }
+    
+    .tablenav .button {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .tablenav .button:hover {
+        background: #334155;
+        border-color: #475569;
+        color: #f1f5f9;
+    }
+    
+    .tablenav .button.disabled {
+        background: #0f172a;
+        border-color: #1e293b;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+    
+    /* Rating type badges dark mode */
+    .rating-type.parent-badge {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        color: #dbeafe;
+    }
+    
+    .rating-type.parent-badge.display-only {
+        background: linear-gradient(135deg, #92400e 0%, #78350f 100%);
+        color: #fef3c7;
+    }
+    
+    .rating-type.sub-rating-badge {
+        background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+        color: #d1fae5;
+    }
+    
+    .rating-type.sub-rating-badge.negative {
+        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+        color: #fee2e2;
+    }
+    
+    .rating-type.standalone-badge {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        color: #e2e8f0;
+    }
+    
+    .rating-type.mirror-badge {
+        background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+        color: #e0e7ff;
+    }
+
+    .shuriken-copy-shortcode:hover {
+        background: linear-gradient(135deg, #20385e 0%, #355479 100%) !important;
+        color: #f1f5f9 !important;
     }
 }
