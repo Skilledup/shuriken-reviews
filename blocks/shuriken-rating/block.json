@@ -29,5 +29,5 @@
     },
     "editorScript": "shuriken-rating-editor",
     "style": "shuriken-reviews-frontend",
-    "editorStyle": "shuriken-reviews-frontend"
+    "editorStyle": ["shuriken-reviews-frontend", "shuriken-rating-editor"]
 }

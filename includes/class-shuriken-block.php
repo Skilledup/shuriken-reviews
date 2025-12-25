@@ -91,11 +91,19 @@ class Shuriken_Block {
             SHURIKEN_REVIEWS_VERSION
         );
 
+        // Register the editor-specific stylesheet
+        wp_register_style(
+            'shuriken-rating-editor',
+            SHURIKEN_REVIEWS_PLUGIN_URL . 'blocks/shuriken-rating/editor.css',
+            array(),
+            SHURIKEN_REVIEWS_VERSION
+        );
+
         // Register the block with explicit render callback and attach styles
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-rating', array(
             'render_callback' => array($this, 'render_block'),
             'style' => 'shuriken-reviews-frontend',
-            'editor_style' => 'shuriken-reviews-frontend',
+            'editor_style' => array('shuriken-reviews-frontend', 'shuriken-rating-editor'),
         ));
     }
 
