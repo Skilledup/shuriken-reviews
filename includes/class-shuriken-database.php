@@ -265,13 +265,36 @@ class Shuriken_Database {
             $format[] = '%d';
         }
 
+        /**
+         * Filter the rating data before insertion.
+         *
+         * @since 1.7.0
+         * @param array $insert_data The data to insert.
+         */
+        $insert_data = apply_filters('shuriken_before_create_rating', $insert_data);
+
         $result = $this->wpdb->insert(
             $this->ratings_table,
             $insert_data,
             $format
         );
 
-        return $result !== false ? $this->wpdb->insert_id : false;
+        if ($result !== false) {
+            $new_id = $this->wpdb->insert_id;
+
+            /**
+             * Fires after a rating is created.
+             *
+             * @since 1.7.0
+             * @param int   $rating_id   The new rating ID.
+             * @param array $insert_data The inserted data.
+             */
+            do_action('shuriken_rating_created', $new_id, $insert_data);
+
+            return $new_id;
+        }
+
+        return false;
     }
 
     /**
@@ -312,6 +335,15 @@ class Shuriken_Database {
             return false;
         }
 
+        /**
+         * Filter the rating data before update.
+         *
+         * @since 1.7.0
+         * @param array $update_data The data to update.
+         * @param int   $rating_id   The rating ID.
+         */
+        $update_data = apply_filters('shuriken_before_update_rating', $update_data, $rating_id);
+
         $result = $this->wpdb->update(
             $this->ratings_table,
             $update_data,
@@ -319,6 +351,17 @@ class Shuriken_Database {
             $format,
             array('%d')
         );
+
+        if ($result !== false) {
+            /**
+             * Fires after a rating is updated.
+             *
+             * @since 1.7.0
+             * @param int   $rating_id   The rating ID.
+             * @param array $update_data The updated data.
+             */
+            do_action('shuriken_rating_updated', $rating_id, $update_data);
+        }
 
         return $result !== false;
     }
@@ -330,6 +373,14 @@ class Shuriken_Database {
      * @return bool True on success, false on failure
      */
     public function delete_rating($rating_id) {
+        /**
+         * Fires before a rating is deleted.
+         *
+         * @since 1.7.0
+         * @param int $rating_id The rating ID about to be deleted.
+         */
+        do_action('shuriken_before_delete_rating', $rating_id);
+
         // Start transaction
         $this->wpdb->query('START TRANSACTION');
 
@@ -372,6 +423,15 @@ class Shuriken_Database {
             }
 
             $this->wpdb->query('COMMIT');
+
+            /**
+             * Fires after a rating is deleted.
+             *
+             * @since 1.7.0
+             * @param int $rating_id The deleted rating ID.
+             */
+            do_action('shuriken_rating_deleted', $rating_id);
+
             return true;
 
         } catch (Exception $e) {

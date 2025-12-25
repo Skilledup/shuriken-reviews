@@ -92,7 +92,7 @@ class Shuriken_Frontend {
      * @return array
      */
     private function get_localized_data() {
-        return array(
+        $data = array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'rest_url' => esc_url_raw(rest_url()),
             'nonce' => wp_create_nonce('shuriken-reviews-nonce'),
@@ -101,6 +101,14 @@ class Shuriken_Frontend {
             'login_url' => wp_login_url(),
             'i18n' => $this->get_i18n_strings(),
         );
+
+        /**
+         * Filter the localized data passed to JavaScript.
+         *
+         * @since 1.7.0
+         * @param array $data The localized data array.
+         */
+        return apply_filters('shuriken_localized_data', $data);
     }
 
     /**
@@ -109,7 +117,7 @@ class Shuriken_Frontend {
      * @return array
      */
     private function get_i18n_strings() {
-        return array(
+        $strings = array(
             /* translators: %s: Login URL */
             'pleaseLogin' => __('Please <a href="%s">login</a> to rate', 'shuriken-reviews'),
             'thankYou' => __('Thank you for rating!', 'shuriken-reviews'),
@@ -119,6 +127,14 @@ class Shuriken_Frontend {
             'error' => __('Error: %s', 'shuriken-reviews'),
             'genericError' => __('Error submitting rating. Please try again.', 'shuriken-reviews'),
         );
+
+        /**
+         * Filter the i18n strings passed to JavaScript.
+         *
+         * @since 1.7.0
+         * @param array $strings The i18n strings array.
+         */
+        return apply_filters('shuriken_i18n_strings', $strings);
     }
 }
 

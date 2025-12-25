@@ -68,6 +68,14 @@ class Shuriken_AJAX {
     public function handle_submit_rating() {
         $allow_guest_voting = get_option('shuriken_allow_guest_voting', '0') === '1';
         
+        /**
+         * Filter whether guest voting is allowed.
+         *
+         * @since 1.7.0
+         * @param bool $allow_guest_voting Whether guest voting is allowed.
+         */
+        $allow_guest_voting = apply_filters('shuriken_allow_guest_voting', $allow_guest_voting);
+        
         // Check if user is logged in or guest voting is allowed
         if (!is_user_logged_in() && !$allow_guest_voting) {
             wp_send_json_error(__('You must be logged in to rate', 'shuriken-reviews'));
@@ -91,8 +99,24 @@ class Shuriken_AJAX {
         $rating_id = intval($_POST['rating_id']);
         $rating_value = intval($_POST['rating_value']);
 
+        /**
+         * Filter the minimum allowed rating value.
+         *
+         * @since 1.7.0
+         * @param int $min_value The minimum rating value. Default 1.
+         */
+        $min_rating = apply_filters('shuriken_min_rating_value', 1);
+
+        /**
+         * Filter the maximum allowed rating value.
+         *
+         * @since 1.7.0
+         * @param int $max_value The maximum rating value. Default 5.
+         */
+        $max_rating = apply_filters('shuriken_max_rating_value', 5);
+
         // Validate rating value
-        if ($rating_value < 1 || $rating_value > 5) {
+        if ($rating_value < $min_rating || $rating_value > $max_rating) {
             wp_send_json_error(__('Invalid rating value', 'shuriken-reviews'));
             return;
         }
@@ -110,8 +134,46 @@ class Shuriken_AJAX {
             return;
         }
 
+        /**
+         * Filter whether the user can submit this vote.
+         *
+         * Return false to prevent the vote from being submitted.
+         * Return a WP_Error to provide a custom error message.
+         *
+         * @since 1.7.0
+         * @param bool|WP_Error $can_vote     Whether the user can vote. Default true.
+         * @param int           $rating_id    The rating ID.
+         * @param int           $rating_value The rating value.
+         * @param int           $user_id      The user ID (0 for guests).
+         * @param object        $rating       The rating object.
+         */
+        $can_vote = apply_filters('shuriken_can_submit_vote', true, $rating_id, $rating_value, $user_id, $rating);
+        
+        if (is_wp_error($can_vote)) {
+            wp_send_json_error($can_vote->get_error_message());
+            return;
+        }
+        
+        if ($can_vote === false) {
+            wp_send_json_error(__('You are not allowed to submit this vote', 'shuriken-reviews'));
+            return;
+        }
+
+        /**
+         * Fires before a vote is submitted.
+         *
+         * @since 1.7.0
+         * @param int    $rating_id    The rating ID.
+         * @param int    $rating_value The rating value.
+         * @param int    $user_id      The user ID (0 for guests).
+         * @param string $user_ip      The user IP (for guests).
+         * @param object $rating       The rating object.
+         */
+        do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $user_id, $user_ip, $rating);
+
         // Check if the user has already voted
         $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
+        $is_update = !empty($existing_vote);
 
         if ($existing_vote) {
             // Update the existing vote
@@ -126,6 +188,19 @@ class Shuriken_AJAX {
                 wp_send_json_error(__('Failed to update vote', 'shuriken-reviews'));
                 return;
             }
+
+            /**
+             * Fires after a vote is updated.
+             *
+             * @since 1.7.0
+             * @param int    $vote_id      The vote ID.
+             * @param int    $rating_id    The rating ID.
+             * @param int    $old_value    The previous rating value.
+             * @param int    $new_value    The new rating value.
+             * @param int    $user_id      The user ID (0 for guests).
+             * @param object $rating       The rating object.
+             */
+            do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $user_id, $rating);
         } else {
             // Insert a new vote
             $result = $db->create_vote($rating_id, $rating_value, $user_id, $user_ip);
@@ -134,6 +209,18 @@ class Shuriken_AJAX {
                 wp_send_json_error(__('Failed to submit vote', 'shuriken-reviews'));
                 return;
             }
+
+            /**
+             * Fires after a new vote is created.
+             *
+             * @since 1.7.0
+             * @param int    $rating_id    The rating ID.
+             * @param int    $rating_value The rating value.
+             * @param int    $user_id      The user ID (0 for guests).
+             * @param string $user_ip      The user IP (for guests).
+             * @param object $rating       The rating object.
+             */
+            do_action('shuriken_vote_created', $rating_id, $rating_value, $user_id, $user_ip, $rating);
         }
 
         // If this is a sub-rating, recalculate the parent rating
@@ -159,6 +246,30 @@ class Shuriken_AJAX {
                 $response_data['parent_total_votes'] = $parent_rating->total_votes;
             }
         }
+
+        /**
+         * Filter the vote submission response data.
+         *
+         * @since 1.7.0
+         * @param array  $response_data  The response data.
+         * @param int    $rating_id      The rating ID.
+         * @param int    $rating_value   The rating value.
+         * @param bool   $is_update      Whether this was an update or new vote.
+         * @param object $updated_rating The updated rating object.
+         */
+        $response_data = apply_filters('shuriken_vote_response_data', $response_data, $rating_id, $rating_value, $is_update, $updated_rating);
+
+        /**
+         * Fires after a vote is successfully submitted.
+         *
+         * @since 1.7.0
+         * @param int    $rating_id      The rating ID.
+         * @param int    $rating_value   The rating value.
+         * @param int    $user_id        The user ID (0 for guests).
+         * @param bool   $is_update      Whether this was an update or new vote.
+         * @param object $updated_rating The updated rating object.
+         */
+        do_action('shuriken_after_submit_vote', $rating_id, $rating_value, $user_id, $is_update, $updated_rating);
 
         wp_send_json_success($response_data);
     }

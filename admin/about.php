@@ -175,6 +175,97 @@ if (!defined('ABSPATH')) exit;
         </div>
     </div>
 
+    <!-- Developer Resources -->
+    <div class="shuriken-about-section">
+        <h2 class="section-title">
+            <span class="dashicons dashicons-code-standards"></span>
+            <?php esc_html_e('Developer Resources', 'shuriken-reviews'); ?>
+        </h2>
+        
+        <div class="developer-resources">
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-admin-plugins"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('Hooks & Filters', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Extend and customize the plugin with 20+ available hooks. Modify rating display, control voting behavior, and integrate with your custom code.', 'shuriken-reviews'); ?></p>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/hooks-reference.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('View Hooks Documentation', 'shuriken-reviews'); ?> →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-rest-api"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('REST API', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Access ratings data programmatically via REST API endpoints. Perfect for headless WordPress setups and custom integrations.', 'shuriken-reviews'); ?></p>
+                    <div class="api-endpoints">
+                        <code>GET /wp-json/shuriken-reviews/v1/ratings</code>
+                        <code>GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3</code>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-database"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('Helper Functions', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Use built-in helper functions to access plugin functionality in your themes and plugins.', 'shuriken-reviews'); ?></p>
+                    <div class="code-examples">
+                        <code>shuriken_db()->get_rating($id)</code>
+                        <code>shuriken_analytics()->get_top_rated()</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hooks-summary">
+            <h4><?php esc_html_e('Popular Hooks', 'shuriken-reviews'); ?></h4>
+            <table class="hooks-table">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Hook', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Description', 'shuriken-reviews'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>shuriken_rating_html</code></td>
+                        <td><?php esc_html_e('Filter', 'shuriken-reviews'); ?></td>
+                        <td><?php esc_html_e('Modify the rating HTML output', 'shuriken-reviews'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><code>shuriken_can_submit_vote</code></td>
+                        <td><?php esc_html_e('Filter', 'shuriken-reviews'); ?></td>
+                        <td><?php esc_html_e('Control who can vote', 'shuriken-reviews'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><code>shuriken_rating_star_symbol</code></td>
+                        <td><?php esc_html_e('Filter', 'shuriken-reviews'); ?></td>
+                        <td><?php esc_html_e('Change the star symbol (★, ❤, etc.)', 'shuriken-reviews'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><code>shuriken_vote_created</code></td>
+                        <td><?php esc_html_e('Action', 'shuriken-reviews'); ?></td>
+                        <td><?php esc_html_e('Triggered after a new vote', 'shuriken-reviews'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><code>shuriken_after_rating_stats</code></td>
+                        <td><?php esc_html_e('Action', 'shuriken-reviews'); ?></td>
+                        <td><?php esc_html_e('Add content after rating stats', 'shuriken-reviews'); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- System Info -->
     <div class="shuriken-about-section">
         <h2 class="section-title">

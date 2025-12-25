@@ -116,6 +116,16 @@ class Shuriken_Shortcodes {
      * @return string Rendered HTML.
      */
     public function render_rating_html($rating, $tag = 'h2', $anchor_id = '') {
+        /**
+         * Filter the rating data before rendering.
+         *
+         * @since 1.7.0
+         * @param object $rating    The rating object.
+         * @param string $tag       The HTML tag for the title.
+         * @param string $anchor_id The anchor ID.
+         */
+        $rating = apply_filters('shuriken_rating_data', $rating, $tag, $anchor_id);
+
         // get_rating() already resolves mirrors - it returns original's vote data
         // but preserves the mirror's name and mirror_of field
         $is_mirror = !empty($rating->mirror_of);
@@ -128,6 +138,33 @@ class Shuriken_Shortcodes {
         if ($is_mirror) {
             $css_classes .= ' mirror-rating';
         }
+
+        /**
+         * Filter the CSS classes for the rating container.
+         *
+         * @since 1.7.0
+         * @param string $css_classes The CSS classes string.
+         * @param object $rating      The rating object.
+         */
+        $css_classes = apply_filters('shuriken_rating_css_classes', $css_classes, $rating);
+
+        /**
+         * Filter the maximum number of stars.
+         *
+         * @since 1.7.0
+         * @param int    $max_stars The maximum number of stars. Default 5.
+         * @param object $rating    The rating object.
+         */
+        $max_stars = apply_filters('shuriken_rating_max_stars', 5, $rating);
+
+        /**
+         * Filter the star character/symbol.
+         *
+         * @since 1.7.0
+         * @param string $star_symbol The star symbol. Default '★'.
+         * @param object $rating      The rating object.
+         */
+        $star_symbol = apply_filters('shuriken_rating_star_symbol', '★', $rating);
         
         // Start output buffering
         ob_start();
@@ -139,7 +176,7 @@ class Shuriken_Shortcodes {
                 </<?php echo tag_escape($tag); ?>>
                 
                 <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
-                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <?php for ($i = 1; $i <= $max_stars; $i++): ?>
                         <span class="star" 
                               data-value="<?php echo $i; ?>" 
                               <?php if (!$is_display_only): ?>
@@ -149,7 +186,7 @@ class Shuriken_Shortcodes {
                               <?php else: ?>
                               aria-label="<?php printf(esc_attr__('%d out of 5', 'shuriken-reviews'), $i); ?>"
                               <?php endif; ?>>
-                            ★
+                            <?php echo esc_html($star_symbol); ?>
                         </span>
                     <?php endfor; ?>
                 </div>
@@ -170,10 +207,31 @@ class Shuriken_Shortcodes {
                     <?php esc_html_e('Calculated from sub-ratings', 'shuriken-reviews'); ?>
                 </div>
                 <?php endif; ?>
+
+                <?php
+                /**
+                 * Fires after the rating stats, inside the rating wrapper.
+                 *
+                 * @since 1.7.0
+                 * @param object $rating The rating object.
+                 */
+                do_action('shuriken_after_rating_stats', $rating);
+                ?>
             </div>
         </div>
         <?php
-        return ob_get_clean();
+        $html = ob_get_clean();
+
+        /**
+         * Filter the complete rating HTML output.
+         *
+         * @since 1.7.0
+         * @param string $html      The rendered HTML.
+         * @param object $rating    The rating object.
+         * @param string $tag       The HTML tag for the title.
+         * @param string $anchor_id The anchor ID.
+         */
+        return apply_filters('shuriken_rating_html', $html, $rating, $tag, $anchor_id);
     }
 }
 
