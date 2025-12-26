@@ -37,6 +37,32 @@ class Shuriken_REST_API {
      */
     private function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
+        
+        // Ensure cookie authentication works for REST API
+        add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 10, 1);
+    }
+    
+    /**
+     * Handle REST API authentication errors
+     * 
+     * Ensures cookie authentication works properly for logged-in users
+     *
+     * @param WP_Error|null|bool $result Authentication result.
+     * @return WP_Error|null|bool
+     */
+    public function rest_authentication_errors($result) {
+        // If there's already a result, use it
+        if ($result !== null) {
+            return $result;
+        }
+        
+        // If user is logged in via cookie, allow it
+        if (is_user_logged_in()) {
+            return true;
+        }
+        
+        // Otherwise, let WordPress handle it
+        return null;
     }
 
     /**
@@ -142,18 +168,24 @@ class Shuriken_REST_API {
     /**
      * Check if user can edit posts
      *
+     * @param WP_REST_Request $request The request object (optional).
      * @return bool
      */
-    public function can_edit_posts() {
+    public function can_edit_posts($request = null) {
+        // WordPress REST API handles authentication automatically
+        // This will work with cookie auth, application passwords, etc.
         return current_user_can('edit_posts');
     }
 
     /**
      * Check if user can manage options
      *
+     * @param WP_REST_Request $request The request object (optional).
      * @return bool
      */
-    public function can_manage_options() {
+    public function can_manage_options($request = null) {
+        // WordPress REST API handles authentication automatically
+        // This will work with cookie auth, application passwords, etc.
         return current_user_can('manage_options');
     }
 

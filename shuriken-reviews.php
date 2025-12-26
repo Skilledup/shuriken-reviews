@@ -186,23 +186,23 @@ final class Shuriken_Reviews {
         $container = shuriken_container();
         
         // Initialize REST API
-        $container->get('rest_api');
+        Shuriken_REST_API::init();
         
         // Initialize shortcodes
-        $container->get('shortcodes');
+        Shuriken_Shortcodes::init();
         
         // Initialize Gutenberg block
-        $container->get('block');
+        Shuriken_Block::init();
         
         // Initialize AJAX handlers
-        $container->get('ajax');
+        Shuriken_AJAX::init();
         
         // Initialize frontend assets
-        $container->get('frontend');
+        Shuriken_Frontend::init();
         
         // Initialize admin (only in admin context)
         if (is_admin()) {
-            $container->get('admin');
+            Shuriken_Admin::init();
         }
     }
 
