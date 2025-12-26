@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.5.7-blue)
+![Version](https://img.shields.io/badge/version-1.7.5--beta1-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple)
@@ -53,12 +53,85 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Customizable Latest Comments Block**: Filter out author and/or reply comments
 - **Flexible Configuration**: Easy settings to control comment display
 
+### Developer Features
+
+- **20+ WordPress Hooks**: Extend and customize with filters and actions
+- **Interfaces for Testing**: Mock implementations for unit testing
+- **Dependency Injection**: Flexible service container for better testability
+- **Exception System**: Comprehensive error handling with specific exception types
+- **REST API**: Full REST API endpoints for programmatic access
+- **Modular Architecture**: Clean, maintainable code structure
+
 ### User Experience
 
 - **Responsive Design**: Looks great on all devices
 - **Accessibility**: Full keyboard navigation and screen reader support
 - **RTL Support**: Right-to-left language support
 - **Translation Ready**: Fully internationalized with .pot file included
+
+## Developer Resources
+
+Shuriken Reviews is built with developers in mind. The plugin provides extensive customization options and follows WordPress coding standards.
+
+### Hooks & Filters
+
+The plugin exposes **20+ hooks** (12 filters + 8 actions) for complete customization:
+
+- **Rating Display**: Modify HTML output, CSS classes, star symbols, and more
+- **Vote Submission**: Control voting permissions, validate votes, customize responses
+- **Database Operations**: Intercept rating creation, updates, and deletions
+- **Frontend Assets**: Customize JavaScript data and translations
+
+📖 **[Complete Hooks Reference](docs/hooks-reference.md)** - Full documentation with examples
+
+### Interfaces & Testing
+
+- **`Shuriken_Database_Interface`** - Database operations contract
+- **`Shuriken_Analytics_Interface`** - Analytics operations contract
+- Mock implementations included for unit testing
+- No database required for tests
+
+📖 **[Testing Guide](tests/README.md)** - Learn how to test with mocks
+
+### Dependency Injection
+
+Lightweight DI container for flexible service management:
+
+```php
+// Get services from container
+$db = shuriken_container()->get('database');
+$analytics = shuriken_container()->get('analytics');
+
+// Inject dependencies in your code
+class My_Service {
+    public function __construct(Shuriken_Database_Interface $db = null) {
+        $this->db = $db ?: shuriken_db();
+    }
+}
+```
+
+📖 **[Dependency Injection Guide](docs/dependency-injection.md)** - Complete DI documentation
+
+### Exception System
+
+Comprehensive exception handling with specific exception types:
+
+- `Shuriken_Database_Exception` - Database operation failures
+- `Shuriken_Validation_Exception` - Input validation errors
+- `Shuriken_Not_Found_Exception` - Missing resources (404)
+- `Shuriken_Permission_Exception` - Authorization failures (403)
+- `Shuriken_Logic_Exception` - Business rule violations
+
+📖 **[Exception System Documentation](includes/exceptions/README.md)** - Error handling guide
+
+### REST API Endpoints
+
+- `GET /wp-json/shuriken-reviews/v1/ratings` - List all ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/{id}` - Get single rating
+- `POST /wp-json/shuriken-reviews/v1/ratings` - Create rating
+- `PUT /wp-json/shuriken-reviews/v1/ratings/{id}` - Update rating
+- `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` - Get fresh stats
+- `GET /wp-json/shuriken-reviews/v1/nonce` - Get fresh nonce
 
 ## Installation
 
@@ -145,6 +218,31 @@ Configure plugin behavior at **Shuriken Reviews > Settings**:
 
 ## Changelog
 
+### 1.7.5-beta1
+
+**Major Software Design Improvements**
+
+- **Modular Architecture**: Refactored main plugin file into 8 focused modules (REST API, Shortcodes, Block, AJAX, Frontend, Admin)
+- **20+ WordPress Hooks**: Added comprehensive hooks system (12 filters + 8 actions) for complete extensibility
+- **Interfaces for Testing**: Created `Shuriken_Database_Interface` and `Shuriken_Analytics_Interface` with mock implementations
+- **Exception System**: Implemented 6 custom exception types with unified exception handler
+- **Dependency Injection**: Added lightweight DI container for flexible service management
+- **Unified Star Rating**: Single `shuriken_rating_max_stars` filter with automatic normalization (supports any star count)
+- **Block & Shortcode Consistency**: Gutenberg blocks now use same rendering logic as shortcodes (all hooks work for both)
+- **Fixed Nonce Issues**: Proper REST API authentication for cached pages
+- **Comprehensive Documentation**: Added 2,500+ lines of developer documentation
+
+**Developer Experience**
+- All hooks work consistently for both shortcodes and blocks
+- Easy unit testing with mock implementations (no database required)
+- Type-safe error handling with specific exceptions
+- Flexible dependency injection for testing and customization
+- Complete API documentation with 50+ examples
+
+### 1.7.0
+
+- **Hooks System**: Initial implementation of extensibility hooks
+- **Module Refactoring**: Began splitting main file into modules
 
 ### 1.6.0
 

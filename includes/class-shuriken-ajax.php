@@ -66,30 +66,36 @@ class Shuriken_AJAX {
      * @since 1.1.0
      */
     public function handle_submit_rating() {
-        $allow_guest_voting = get_option('shuriken_allow_guest_voting', '0') === '1';
-        
-        /**
-         * Filter whether guest voting is allowed.
-         *
-         * @since 1.7.0
-         * @param bool $allow_guest_voting Whether guest voting is allowed.
-         */
-        $allow_guest_voting = apply_filters('shuriken_allow_guest_voting', $allow_guest_voting);
-        
-        // Check if user is logged in or guest voting is allowed
-        if (!is_user_logged_in() && !$allow_guest_voting) {
-            wp_send_json_error(__('You must be logged in to rate', 'shuriken-reviews'));
-            return;
-        }
+        try {
+            $allow_guest_voting = get_option('shuriken_allow_guest_voting', '0') === '1';
+            
+            /**
+             * Filter whether guest voting is allowed.
+             *
+             * @since 1.7.0
+             * @param bool $allow_guest_voting Whether guest voting is allowed.
+             */
+            $allow_guest_voting = apply_filters('shuriken_allow_guest_voting', $allow_guest_voting);
+            
+            // Check if user is logged in or guest voting is allowed
+            if (!is_user_logged_in() && !$allow_guest_voting) {
+                throw Shuriken_Permission_Exception::guest_not_allowed();
+            }
 
-        // Check nonce
-        if (!check_ajax_referer('shuriken-reviews-nonce', 'nonce', false)) {
-            wp_send_json_error(__('Invalid nonce', 'shuriken-reviews'));
-            return;
-        }
+            // Check nonce
+            if (!check_ajax_referer('shuriken-reviews-nonce', 'nonce', false)) {
+                throw new Shuriken_Exception(__('Invalid nonce', 'shuriken-reviews'), 'invalid_nonce');
+            }
 
-        if (!isset($_POST['rating_id']) || !isset($_POST['rating_value'])) {
-            wp_send_json_error(__('Missing required fields', 'shuriken-reviews'));
+            if (!isset($_POST['rating_id'])) {
+                throw Shuriken_Validation_Exception::required_field('rating_id');
+            }
+            
+            if (!isset($_POST['rating_value'])) {
+                throw Shuriken_Validation_Exception::required_field('rating_value');
+            }
+        } catch (Shuriken_Exception $e) {
+            Shuriken_Exception_Handler::handle_ajax_exception($e);
             return;
         }
 
@@ -100,76 +106,72 @@ class Shuriken_AJAX {
         $rating_value = floatval($_POST['rating_value']);
         $max_stars = isset($_POST['max_stars']) ? intval($_POST['max_stars']) : 5;
 
-        // Get the rating first to apply the filter
-        $rating = $db->get_rating($rating_id);
-        if (!$rating) {
-            wp_send_json_error(__('Rating not found', 'shuriken-reviews'));
-            return;
-        }
+        try {
+            // Get the rating first to apply the filter
+            $rating = $db->get_rating($rating_id);
+            if (!$rating) {
+                throw Shuriken_Not_Found_Exception::rating($rating_id);
+            }
 
-        /**
-         * Filter the maximum number of stars displayed and accepted for voting.
-         *
-         * This should match the filter used in the shortcode/block rendering.
-         * Votes are normalized to a 1-5 scale internally.
-         *
-         * @since 1.7.0
-         * @param int    $max_stars The maximum number of stars. Default 5.
-         * @param object $rating    The rating object.
-         */
-        $max_stars_filtered = apply_filters('shuriken_rating_max_stars', 5, $rating);
-        $max_stars_filtered = max(1, intval($max_stars_filtered));
-        
-        // Use the filtered value (server-side filter takes precedence)
-        // This ensures security even if client sends wrong max_stars
-        $max_stars = $max_stars_filtered;
+            /**
+             * Filter the maximum number of stars displayed and accepted for voting.
+             *
+             * This should match the filter used in the shortcode/block rendering.
+             * Votes are normalized to a 1-5 scale internally.
+             *
+             * @since 1.7.0
+             * @param int    $max_stars The maximum number of stars. Default 5.
+             * @param object $rating    The rating object.
+             */
+            $max_stars_filtered = apply_filters('shuriken_rating_max_stars', 5, $rating);
+            $max_stars_filtered = max(1, intval($max_stars_filtered));
+            
+            // Use the filtered value (server-side filter takes precedence)
+            // This ensures security even if client sends wrong max_stars
+            $max_stars = $max_stars_filtered;
 
-        // Validate rating value against the max stars
-        if ($rating_value < 1 || $rating_value > $max_stars) {
-            wp_send_json_error(__('Invalid rating value', 'shuriken-reviews'));
-            return;
-        }
+            // Validate rating value against the max stars
+            if ($rating_value < 1 || $rating_value > $max_stars) {
+                throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, $max_stars);
+            }
 
-        // Normalize the rating value to 1-5 scale for storage
-        // e.g., 8 out of 10 stars → 4 out of 5
-        $normalized_value = ($rating_value / $max_stars) * 5;
-        $normalized_value = round($normalized_value, 2);
-        
-        // Ensure normalized value is within bounds
-        $normalized_value = max(1, min(5, $normalized_value));
-        if (!$rating) {
-            wp_send_json_error(__('Rating not found', 'shuriken-reviews'));
-            return;
-        }
+            // Normalize the rating value to 1-5 scale for storage
+            // e.g., 8 out of 10 stars → 4 out of 5
+            $normalized_value = ($rating_value / $max_stars) * 5;
+            $normalized_value = round($normalized_value, 2);
+            
+            // Ensure normalized value is within bounds
+            $normalized_value = max(1, min(5, $normalized_value));
 
-        // Check if this rating is display-only
-        if (!empty($rating->display_only)) {
-            wp_send_json_error(__('This rating is display-only and cannot be voted on directly', 'shuriken-reviews'));
-            return;
-        }
+            // Check if this rating is display-only
+            if (!empty($rating->display_only)) {
+                throw Shuriken_Logic_Exception::display_only_rating();
+            }
 
-        /**
-         * Filter whether the user can submit this vote.
-         *
-         * Return false to prevent the vote from being submitted.
-         * Return a WP_Error to provide a custom error message.
-         *
-         * @since 1.7.0
-         * @param bool|WP_Error $can_vote     Whether the user can vote. Default true.
-         * @param int           $rating_id    The rating ID.
-         * @param float         $rating_value The rating value (in the display scale, e.g., 1-10 for 10-star).
-         * @param int           $user_id      The user ID (0 for guests).
-         * @param object        $rating       The rating object.
-         */
-        $can_vote = apply_filters('shuriken_can_submit_vote', true, $rating_id, $rating_value, $user_id, $rating);
-        
-        if (is_wp_error($can_vote)) {
-            wp_send_json_error($can_vote->get_error_message());
-            return;
-        }
-        
-        if ($can_vote === false) {
-            wp_send_json_error(__('You are not allowed to submit this vote', 'shuriken-reviews'));
+            /**
+             * Filter whether the user can submit this vote.
+             *
+             * Return false to prevent the vote from being submitted.
+             * Return a WP_Error to provide a custom error message.
+             *
+             * @since 1.7.0
+             * @param bool|WP_Error $can_vote     Whether the user can vote. Default true.
+             * @param int           $rating_id    The rating ID.
+             * @param float         $rating_value The rating value (in the display scale, e.g., 1-10 for 10-star).
+             * @param int           $user_id      The user ID (0 for guests).
+             * @param object        $rating       The rating object.
+             */
+            $can_vote = apply_filters('shuriken_can_submit_vote', true, $rating_id, $rating_value, $user_id, $rating);
+            
+            if (is_wp_error($can_vote)) {
+                throw Shuriken_Permission_Exception::voting_not_allowed($can_vote->get_error_message());
+            }
+            
+            if ($can_vote === false) {
+                throw Shuriken_Permission_Exception::voting_not_allowed();
+            }
+        } catch (Shuriken_Exception $e) {
+            Shuriken_Exception_Handler::handle_ajax_exception($e);
             return;
         }
 

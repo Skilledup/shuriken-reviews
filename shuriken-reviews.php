@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: Boosts wordpress comments with a added functionalities.
- * Version: 1.7.4
+ * Version: 1.7.5-beta1
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.7.4');
+    define('SHURIKEN_REVIEWS_VERSION', '1.7.5-beta1');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -82,9 +82,25 @@ final class Shuriken_Reviews {
      * @return void
      */
     private function load_dependencies() {
+        // Exceptions
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-database-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-validation-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-not-found-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-permission-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-logic-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-exception-handler.php';
+        
+        // Interfaces
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-database.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics.php';
+        
         // Core classes
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-database.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics.php';
+        
+        // Dependency injection container
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-container.php';
         
         // Feature modules
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rest-api.php';
@@ -167,24 +183,26 @@ final class Shuriken_Reviews {
      * @return void
      */
     public function init_modules() {
+        $container = shuriken_container();
+        
         // Initialize REST API
-        Shuriken_REST_API::init();
+        $container->get('rest_api');
         
         // Initialize shortcodes
-        Shuriken_Shortcodes::init();
+        $container->get('shortcodes');
         
         // Initialize Gutenberg block
-        Shuriken_Block::init();
+        $container->get('block');
         
         // Initialize AJAX handlers
-        Shuriken_AJAX::init();
+        $container->get('ajax');
         
         // Initialize frontend assets
-        Shuriken_Frontend::init();
+        $container->get('frontend');
         
         // Initialize admin (only in admin context)
         if (is_admin()) {
-            Shuriken_Admin::init();
+            $container->get('admin');
         }
     }
 

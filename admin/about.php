@@ -97,6 +97,61 @@ if (!defined('ABSPATH')) exit;
                 <h3><?php esc_html_e('Accessibility', 'shuriken-reviews'); ?></h3>
                 <p><?php esc_html_e('Full keyboard navigation and screen reader support for an inclusive user experience.', 'shuriken-reviews'); ?></p>
             </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="dashicons dashicons-code-standards"></span>
+                </div>
+                <h3><?php esc_html_e('Developer-Friendly', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('20+ hooks, interfaces for testing, dependency injection, and comprehensive exception handling. Built for extensibility.', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- What's New -->
+    <div class="shuriken-about-section">
+        <h2 class="section-title">
+            <span class="dashicons dashicons-megaphone"></span>
+            <?php esc_html_e('What\'s New in 1.7.5', 'shuriken-reviews'); ?>
+        </h2>
+        
+        <div class="whats-new-content">
+            <div class="new-feature-highlight">
+                <h3><?php esc_html_e('Major Software Design Improvements', 'shuriken-reviews'); ?></h3>
+                <ul class="new-features-list">
+                    <li>
+                        <strong><?php esc_html_e('Modular Architecture', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Refactored into 8 focused modules for better maintainability', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('20+ WordPress Hooks', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Complete extensibility with filters and actions', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Interfaces for Testing', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Mock implementations for unit testing without database', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Exception System', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('6 custom exception types with unified error handling', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Dependency Injection', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Flexible service container for better testability', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Unified Star Rating', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Single filter supports any star count (3, 5, 10, etc.) with automatic normalization', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Block & Shortcode Consistency', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All hooks work for both Gutenberg blocks and shortcodes', 'shuriken-reviews'); ?>
+                    </li>
+                </ul>
+                <p class="new-features-note">
+                    <?php esc_html_e('All improvements maintain 100% backward compatibility. Existing code continues to work unchanged.', 'shuriken-reviews'); ?>
+                </p>
+            </div>
         </div>
     </div>
 
@@ -189,9 +244,48 @@ if (!defined('ABSPATH')) exit;
                 </div>
                 <div class="resource-content">
                     <h4><?php esc_html_e('Hooks & Filters', 'shuriken-reviews'); ?></h4>
-                    <p><?php esc_html_e('Extend and customize the plugin with 20+ available hooks. Modify rating display, control voting behavior, and integrate with your custom code.', 'shuriken-reviews'); ?></p>
+                    <p><?php esc_html_e('Extend and customize the plugin with 20+ available hooks (12 filters + 8 actions). Modify rating display, control voting behavior, and integrate with your custom code.', 'shuriken-reviews'); ?></p>
                     <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/hooks-reference.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('View Hooks Documentation', 'shuriken-reviews'); ?> →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-testing"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('Interfaces & Testing', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Test your code with mock implementations. No database required for unit tests. Interfaces available for Database and Analytics services.', 'shuriken-reviews'); ?></p>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/tests/README.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('Testing Guide', 'shuriken-reviews'); ?> →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-admin-tools"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('Dependency Injection', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Flexible service container for managing dependencies. Easy to inject mocks for testing or swap implementations.', 'shuriken-reviews'); ?></p>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/dependency-injection.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('DI Documentation', 'shuriken-reviews'); ?> →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <div class="resource-icon">
+                    <span class="dashicons dashicons-warning"></span>
+                </div>
+                <div class="resource-content">
+                    <h4><?php esc_html_e('Exception System', 'shuriken-reviews'); ?></h4>
+                    <p><?php esc_html_e('Comprehensive error handling with 6 exception types. Type-safe error catching with automatic logging and WordPress integration.', 'shuriken-reviews'); ?></p>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/includes/exceptions/README.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('Exception Guide', 'shuriken-reviews'); ?> →
                     </a>
                 </div>
             </div>

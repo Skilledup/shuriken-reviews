@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
  *
  * @since 1.3.0
  */
-class Shuriken_Analytics {
+class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
     /**
      * @var wpdb WordPress database instance
@@ -46,9 +46,12 @@ class Shuriken_Analytics {
 
     /**
      * Constructor
+     *
+     * @param Shuriken_Database_Interface|null $db Optional database instance (for dependency injection).
      */
-    public function __construct() {
-        $this->db = shuriken_db();
+    public function __construct($db = null) {
+        // Use provided database or get from container
+        $this->db = $db ?: shuriken_db();
         $this->wpdb = $this->db->get_wpdb();
         $this->ratings_table = $this->db->get_ratings_table();
         $this->votes_table = $this->db->get_votes_table();

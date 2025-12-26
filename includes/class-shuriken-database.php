@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  *
  * @since 1.3.5
  */
-class Shuriken_Database {
+class Shuriken_Database implements Shuriken_Database_Interface {
 
     /**
      * @var wpdb WordPress database instance
