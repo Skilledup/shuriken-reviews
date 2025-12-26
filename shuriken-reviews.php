@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Shuriken Reviews
- * Description: Boosts wordpress comments with a added functionalities.
+ * Description: A powerful and flexible rating system for WordPress.
  * Version: 1.7.5-beta1
  * Requires at least: 5.6
  * Requires PHP: 7.4
