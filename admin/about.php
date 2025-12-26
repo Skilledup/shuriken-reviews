@@ -253,7 +253,7 @@ if (!defined('ABSPATH')) exit;
             
             <div class="resource-card">
                 <div class="resource-icon">
-                    <span class="dashicons dashicons-testing"></span>
+                    <span class="dashicons dashicons-saved"></span>
                 </div>
                 <div class="resource-content">
                     <h4><?php esc_html_e('Interfaces & Testing', 'shuriken-reviews'); ?></h4>
