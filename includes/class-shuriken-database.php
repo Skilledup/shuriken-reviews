@@ -914,12 +914,3 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         ));
     }
 }
-
-/**
- * Helper function to get database instance
- *
- * @return Shuriken_Database
- */
-function shuriken_db() {
-    return Shuriken_Database::get_instance();
-}

@@ -1164,12 +1164,3 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         return $count > 0;
     }
 }
-
-/**
- * Helper function to get analytics instance
- *
- * @return Shuriken_Analytics
- */
-function shuriken_analytics() {
-    return Shuriken_Analytics::get_instance();
-}
