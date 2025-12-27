@@ -1,5 +1,6 @@
 # Copyright (C) 2025 Skilledup Hub
 # This file is distributed under the GPL2.
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Shuriken Reviews 1.1.6\n"
@@ -9,194 +10,1588 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-04-12T18:28:00+00:00\n"
+"POT-Creation-Date: 2025-12-27 15:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.11.0\n"
+"X-Generator: Loco https://localise.biz/\n"
 "X-Domain: shuriken-reviews\n"
+"Language: \n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;"
 
-#. Plugin Name of the plugin
-#: shuriken-reviews.php
-#: shuriken-reviews.php:254
-#: shuriken-reviews.php:255
-msgid "Shuriken Reviews"
+#: includes/class-shuriken-shortcodes.php:198
+#, php-format
+msgid "%1$d out of %2$d"
+msgstr ""
+
+#: admin/ratings.php:397
+#, php-format
+msgid "%1$s (%2$s votes)"
+msgstr ""
+
+#: admin/ratings.php:362 admin/ratings.php:371
+msgid "%d mirror"
+msgid_plural "%d mirrors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/ratings.php:350 admin/ratings.php:358
+msgid "%d sub-rating"
+msgid_plural "%d sub-ratings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/ratings.php:172 admin/ratings.php:512
+#, php-format
+msgid "%s item"
+msgid_plural "%s items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/exceptions/class-shuriken-validation-exception.php:110
+#, php-format
+msgid "%s must be between %d and %d"
+msgstr ""
+
+#: admin/ratings.php:381
+#, php-format
+msgid "%s out of 5"
+msgstr ""
+
+#: admin/ratings.php:44
+#, php-format
+msgid "%s rating deleted."
+msgid_plural "%s ratings deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-shuriken-analytics.php:190
+#, php-format
+msgid "%s to %s"
+msgstr ""
+
+#: admin/item-stats.php:480
+#, php-format
+msgid "%s vote"
+msgid_plural "%s votes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/analytics.php:496 admin/analytics.php:544
+#, php-format
+msgid "%s votes"
+msgstr ""
+
+#: admin/item-stats.php:381
+msgid "(inverted)"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-validation-exception.php:93
+#, php-format
+msgid ". Expected: %s"
+msgstr ""
+
+#: admin/about.php:106
+msgid ""
+"20+ hooks, interfaces for testing, dependency injection, and comprehensive "
+"exception handling. Built for extensibility."
+msgstr ""
+
+#: admin/about.php:127
+msgid "20+ WordPress Hooks"
+msgstr ""
+
+#: admin/about.php:136
+msgid "6 custom exception types with unified error handling"
+msgstr ""
+
+#: includes/class-shuriken-exception-handler.php:131
+msgid "A database error occurred. Please try again."
+msgstr ""
+
+#: admin/about.php:24
+msgid "A powerful and flexible rating system for WordPress"
 msgstr ""
 
 #. Description of the plugin
-#: shuriken-reviews.php
-msgid "Boosts wordpress comments with a added functionalities."
+msgid "A powerful and flexible rating system for WordPress."
 msgstr ""
 
-#. Author of the plugin
-#: shuriken-reviews.php
-msgid "Skilledup Hub"
+#: includes/class-shuriken-admin.php:133 includes/class-shuriken-admin.php:134
+msgid "About"
 msgstr ""
 
-#. Author URI of the plugin
-#: shuriken-reviews.php
-msgid "https://skilledup.ir"
+#: admin/about.php:299
+msgid ""
+"Access ratings data programmatically via REST API endpoints. Perfect for "
+"headless WordPress setups and custom integrations."
 msgstr ""
 
-#: admin/comments.php:6
-msgid "Invalid nonce specified"
+#: admin/about.php:97
+msgid "Accessibility"
+msgstr ""
+
+#: admin/about.php:350 admin/about.php:355
+msgid "Action"
+msgstr ""
+
+#: admin/about.php:222
+msgid "Add an anchor ID for linking"
+msgstr ""
+
+#: admin/about.php:356
+msgid "Add content after rating stats"
+msgstr ""
+
+#: admin/ratings.php:113
+msgid "Add New"
+msgstr ""
+
+#: admin/ratings.php:583 admin/ratings.php:674
+msgid "Add New Rating"
+msgstr ""
+
+#: admin/about.php:180
+msgid "Add to Your Site"
+msgstr ""
+
+#: includes/class-shuriken-analytics.php:1112
+msgid "ago"
+msgstr ""
+
+#: admin/about.php:65
+msgid "AJAX Submissions"
+msgstr ""
+
+#: admin/about.php:148
+msgid "All hooks work for both Gutenberg blocks and shortcodes"
+msgstr ""
+
+#: admin/about.php:152
+msgid ""
+"All improvements maintain 100% backward compatibility. Existing code "
+"continues to work unchanged."
+msgstr ""
+
+#: admin/analytics.php:71 admin/item-stats.php:143
+#: includes/class-shuriken-analytics.php:196
+#: includes/class-shuriken-analytics.php:210
+msgid "All Time"
+msgstr ""
+
+#: admin/settings.php:37
+msgid "Allow guests to vote without logging in"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:104
+msgid "Analytics"
+msgstr ""
+
+#: admin/about.php:73
+msgid "Analytics Dashboard"
+msgstr ""
+
+#: admin/analytics.php:82 admin/item-stats.php:154 admin/ratings.php:163
+#: admin/ratings.php:503
+msgid "Apply"
+msgstr ""
+
+#: admin/ratings.php:26
+msgid ""
+"Are you sure you want to delete the selected ratings? This action cannot be "
+"undone."
+msgstr ""
+
+#: admin/ratings.php:25
+msgid ""
+"Are you sure you want to delete this rating? This action cannot be undone."
+msgstr ""
+
+#: admin/analytics.php:250 admin/analytics.php:307 admin/analytics.php:364
+#: admin/analytics.php:475 admin/analytics.php:529 admin/item-stats.php:350
+msgid "Average"
+msgstr ""
+
+#: admin/item-stats.php:258 includes/class-shuriken-admin.php:355
+msgid "Average Rating"
+msgstr ""
+
+#. 1: Average rating value, 2: Maximum stars, 3: Total number of votes
+#: includes/class-shuriken-frontend.php:126
+#: includes/class-shuriken-shortcodes.php:209
+#, php-format
+msgid "Average: %1$s/%2$s (%3$s votes)"
+msgstr ""
+
+#: admin/item-stats.php:109
+msgid "Back to Analytics"
+msgstr ""
+
+#: admin/about.php:208
+msgid "Basic Usage"
+msgstr ""
+
+#: admin/about.php:90
+msgid ""
+"Beautiful and responsive design that looks great on all devices - desktop, "
+"tablet, and mobile."
+msgstr ""
+
+#: admin/about.php:147
+msgid "Block & Shortcode Consistency"
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block description"
+msgid "Display an interactive rating widget for collecting user ratings."
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block keyword"
+msgid "rating"
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block keyword"
+msgid "review"
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block keyword"
+msgid "stars"
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block keyword"
+msgid "vote"
+msgstr ""
+
+#: blocks/shuriken-rating/block.json:1
+msgctxt "block title"
+msgid "Shuriken Rating"
+msgstr ""
+
+#: admin/ratings.php:160 admin/ratings.php:500
+msgid "Bulk actions"
+msgstr ""
+
+#: includes/class-shuriken-shortcodes.php:219
+msgid "Calculated from sub-ratings"
+msgstr ""
+
+#: admin/ratings.php:471
+msgid "Cancel"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-logic-exception.php:55
+msgid "Cannot create circular reference between ratings"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-logic-exception.php:79
+msgid "Cannot mirror a rating that is itself a mirror"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-logic-exception.php:67
+msgid "Cannot set a mirror or display-only rating as parent"
+msgstr ""
+
+#: admin/about.php:346
+msgid "Change the star symbol (★, ❤, etc.)"
+msgstr ""
+
+#: admin/analytics.php:91 admin/item-stats.php:163 admin/ratings.php:147
+msgid "Clear"
+msgstr ""
+
+#: admin/ratings.php:135
+msgid "Clear Search"
+msgstr ""
+
+#: admin/ratings.php:377
+msgid "Click to copy"
+msgstr ""
+
+#: admin/about.php:81
+msgid "Comments Enhancement"
+msgstr ""
+
+#: admin/comments.php:22 includes/class-shuriken-admin.php:93
+#: includes/class-shuriken-admin.php:94
+msgid "Comments Settings"
 msgstr ""
 
 #: admin/comments.php:16
 msgid "Comments settings saved successfully!"
 msgstr ""
 
-#: admin/comments.php:22
-#: shuriken-reviews.php:275
-#: shuriken-reviews.php:276
-msgid "Comments Settings"
+#: admin/about.php:128
+msgid "Complete extensibility with filters and actions"
 msgstr ""
 
-#: admin/comments.php:28
-msgid "Latest Comments Block"
+#: admin/about.php:228
+msgid "Complete shortcode with all parameters"
+msgstr ""
+
+#: admin/about.php:286
+msgid ""
+"Comprehensive error handling with 6 exception types. Type-safe error "
+"catching with automatic logging and WordPress integration."
+msgstr ""
+
+#: admin/about.php:74
+msgid ""
+"Comprehensive statistics and analytics with charts, trends, and detailed "
+"insights into your ratings."
+msgstr ""
+
+#: admin/about.php:341
+msgid "Control who can vote"
+msgstr ""
+
+#: admin/ratings.php:428
+msgid "Convert to independent rating (will start with 0 votes)"
+msgstr ""
+
+#: admin/about.php:169
+msgid "Create a Rating"
+msgstr ""
+
+#: admin/about.php:42
+msgid ""
+"Create unlimited ratings with parent-child relationships, mirrors, and "
+"effect types for comprehensive review systems."
+msgstr ""
+
+#: admin/ratings.php:128
+msgid "Create your first rating to get started!"
+msgstr ""
+
+#: admin/about.php:394
+msgid "Credits"
+msgstr ""
+
+#: admin/analytics.php:72 admin/item-stats.php:144
+msgid "Custom Range..."
+msgstr ""
+
+#: admin/about.php:214
+msgid "Custom Title Tag"
+msgstr ""
+
+#: admin/about.php:82
+msgid ""
+"Customize the Latest Comments block by excluding author and/or reply "
+"comments based on your preferences."
+msgstr ""
+
+#: includes/exceptions/class-shuriken-database-exception.php:86
+#, php-format
+msgid "Database query failed: %s"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-database-exception.php:98
+msgid "Database transaction failed and was rolled back"
+msgstr ""
+
+#: admin/about.php:376
+msgid "Database Version"
+msgstr ""
+
+#: admin/analytics.php:414
+msgid "Date"
+msgstr ""
+
+#: admin/item-stats.php:420 includes/class-shuriken-admin.php:431
+msgid "Date & Time"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:356
+msgid "Date Created"
+msgstr ""
+
+#: admin/ratings.php:161 admin/ratings.php:317 admin/ratings.php:501
+msgid "Delete"
+msgstr ""
+
+#: admin/ratings.php:316
+#, php-format
+msgid "Delete \"%s\""
+msgstr ""
+
+#: admin/analytics.php:442 admin/item-stats.php:444
+#: includes/class-shuriken-admin.php:437
+msgid "Deleted User"
+msgstr ""
+
+#: admin/about.php:139 admin/about.php:272
+msgid "Dependency Injection"
+msgstr ""
+
+#: admin/about.php:329
+msgid "Description"
+msgstr ""
+
+#: admin/about.php:401
+#, php-format
+msgid "Developed with %s by %s"
+msgstr ""
+
+#: admin/about.php:237
+msgid "Developer Resources"
+msgstr ""
+
+#: admin/about.php:105
+msgid "Developer-Friendly"
+msgstr ""
+
+#: admin/about.php:275
+msgid "DI Documentation"
+msgstr ""
+
+#: admin/item-stats.php:222
+msgid "Direct Votes Only"
+msgstr ""
+
+#: admin/item-stats.php:216
+msgid "Display data from:"
+msgstr ""
+
+#: admin/analytics.php:204 admin/analytics.php:489 admin/ratings.php:346
+#: admin/ratings.php:461 admin/ratings.php:656
+msgid "Display Only"
+msgstr ""
+
+#: admin/item-stats.php:207
+msgid "Display Only (calculated from sub-ratings)"
+msgstr ""
+
+#: admin/analytics.php:488
+msgid "Display Only - No direct voting"
+msgstr ""
+
+#: admin/about.php:210
+msgid "Display rating with ID 1"
+msgstr ""
+
+#: admin/about.php:58
+msgid ""
+"Display ratings anywhere using the flexible [shuriken_rating] shortcode with "
+"customizable parameters."
+msgstr ""
+
+#: admin/item-stats.php:503
+#, php-format
+msgid "Download all votes for \"%s\" as CSV."
+msgstr ""
+
+#: admin/analytics.php:564
+msgid "Download your ratings data for further analysis."
+msgstr ""
+
+#: admin/ratings.php:312
+msgid "Edit"
+msgstr ""
+
+#: admin/ratings.php:304 admin/ratings.php:311
+#, php-format
+msgid "Edit \"%s\""
+msgstr ""
+
+#: admin/item-stats.php:113
+msgid "Edit Rating"
+msgstr ""
+
+#: admin/item-stats.php:349 admin/ratings.php:451
+msgid "Effect"
+msgstr ""
+
+#: admin/analytics.php:477
+msgid "Effect Mix"
+msgstr ""
+
+#: admin/ratings.php:642
+msgid "Effect on Parent"
+msgstr ""
+
+#: admin/item-stats.php:351
+msgid "Effective Score"
+msgstr ""
+
+#: admin/ratings.php:664
+msgid ""
+"Enable this for parent ratings where visitors should only vote via sub-"
+"ratings."
+msgstr ""
+
+#: admin/ratings.php:600
+msgid ""
+"Enter a descriptive name for this rating. This will be displayed to users."
+msgstr ""
+
+#: admin/ratings.php:598
+msgid "Enter rating name..."
+msgstr ""
+
+#: includes/class-shuriken-frontend.php:129
+msgid "Error submitting rating. Please try again."
+msgstr ""
+
+#. %s: Error message
+#: includes/class-shuriken-frontend.php:128
+#, php-format
+msgid "Error: %s"
+msgstr ""
+
+#: admin/about.php:288
+msgid "Exception Guide"
+msgstr ""
+
+#: admin/about.php:135 admin/about.php:285
+msgid "Exception System"
 msgstr ""
 
 #: admin/comments.php:37
 msgid "Exclude author comments from Latest Comments block"
 msgstr ""
 
-#: admin/comments.php:40
-msgid "When enabled, comments made by post authors will not appear in the Latest Comments block."
+#: admin/analytics.php:563
+msgid "Export Data"
 msgstr ""
 
-#: admin/comments.php:49
-msgid "Show only parent comments in Latest Comments block"
+#: admin/analytics.php:570
+msgid "Export to CSV"
 msgstr ""
 
-#: admin/comments.php:52
-msgid "When enabled, only initial comments will be shown (replies will be hidden)."
+#: admin/item-stats.php:502
+msgid "Export Votes"
+msgstr ""
+
+#: admin/item-stats.php:510
+msgid "Export Votes to CSV"
+msgstr ""
+
+#: admin/about.php:247
+msgid ""
+"Extend and customize the plugin with 20+ available hooks (12 filters + 8 "
+"actions). Modify rating display, control voting behavior, and integrate with "
+"your custom code."
+msgstr ""
+
+#: includes/class-shuriken-rest-api.php:323
+msgid "Failed to create rating."
+msgstr ""
+
+#: includes/exceptions/class-shuriken-database-exception.php:73
+#, php-format
+msgid "Failed to delete %s with ID %d"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-database-exception.php:45
+#, php-format
+msgid "Failed to insert data into %s table"
+msgstr ""
+
+#: includes/class-shuriken-ajax.php:229
+msgid "Failed to submit vote"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-database-exception.php:59
+#, php-format
+msgid "Failed to update %s with ID %d"
+msgstr ""
+
+#: includes/class-shuriken-rest-api.php:412
+msgid "Failed to update rating."
+msgstr ""
+
+#: includes/class-shuriken-ajax.php:206
+msgid "Failed to update vote"
+msgstr ""
+
+#: admin/about.php:33
+msgid "Features"
+msgstr ""
+
+#: admin/about.php:335 admin/about.php:340 admin/about.php:345
+msgid "Filter"
+msgstr ""
+
+#: admin/item-stats.php:304
+msgid "First Vote"
+msgstr ""
+
+#: admin/about.php:140
+msgid "Flexible service container for better testability"
+msgstr ""
+
+#: admin/about.php:273
+msgid ""
+"Flexible service container for managing dependencies. Easy to inject mocks "
+"for testing or swap implementations."
+msgstr ""
+
+#: includes/class-shuriken-analytics.php:192
+#, php-format
+msgid "From %s"
+msgstr ""
+
+#: admin/item-stats.php:223
+msgid "From Sub-ratings Only"
+msgstr ""
+
+#: admin/analytics.php:76 admin/item-stats.php:148
+msgid "From:"
+msgstr ""
+
+#: admin/about.php:49
+msgid "FSE Block"
+msgstr ""
+
+#: admin/about.php:226
+msgid "Full Example"
+msgstr ""
+
+#: admin/about.php:98
+msgid ""
+"Full keyboard navigation and screen reader support for an inclusive user "
+"experience."
+msgstr ""
+
+#: admin/about.php:50
+msgid ""
+"Full Site Editor block for seamless integration with the Gutenberg block "
+"editor. Create ratings directly from blocks."
+msgstr ""
+
+#: admin/about.php:417
+msgid "GitHub"
+msgstr ""
+
+#: admin/about.php:172
+msgid "Go to Ratings"
+msgstr ""
+
+#: admin/about.php:170
+msgid ""
+"Go to Ratings page and create your first rating with a name and optional "
+"settings."
+msgstr ""
+
+#: admin/analytics.php:444 admin/item-stats.php:448 admin/item-stats.php:451
+#: includes/class-shuriken-admin.php:436 includes/class-shuriken-admin.php:437
+msgid "Guest"
+msgstr ""
+
+#: admin/analytics.php:157 admin/item-stats.php:298
+msgid "Guest Votes"
+msgstr ""
+
+#: admin/settings.php:28
+msgid "Guest Voting"
+msgstr ""
+
+#: admin/analytics.php:588
+msgid "Guests"
+msgstr ""
+
+#: admin/about.php:312
+msgid "Helper Functions"
+msgstr ""
+
+#: admin/about.php:327
+msgid "Hook"
+msgstr ""
+
+#: admin/about.php:246
+msgid "Hooks & Filters"
+msgstr ""
+
+#: admin/item-stats.php:342
+msgid "How each sub-rating contributes to this parent rating"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://skilledup.ir"
+msgstr ""
+
+#: admin/item-stats.php:416 includes/class-shuriken-admin.php:351
+msgid "ID"
+msgstr ""
+
+#: admin/ratings.php:309
+msgid "ID: %d"
+msgstr ""
+
+#: admin/about.php:259
+msgid "Interfaces & Testing"
+msgstr ""
+
+#: admin/about.php:131
+msgid "Interfaces for Testing"
+msgstr ""
+
+#: includes/class-shuriken-ajax.php:87
+msgid "Invalid nonce"
+msgstr ""
+
+#: admin/comments.php:6 admin/settings.php:6
+msgid "Invalid nonce specified"
+msgstr ""
+
+#: admin/item-stats.php:23 includes/class-shuriken-admin.php:394
+msgid "Invalid rating ID"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-validation-exception.php:91
+#, php-format
+msgid "Invalid value for %s"
+msgstr ""
+
+#: admin/item-stats.php:419 includes/class-shuriken-admin.php:430
+msgid "IP Address"
+msgstr ""
+
+#: admin/analytics.php:411
+msgid "Item"
+msgstr ""
+
+#. Hidden - no parent menu
+#: includes/class-shuriken-admin.php:123
+msgid "Item Statistics"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:124
+msgid "Item Stats"
+msgstr ""
+
+#: admin/analytics.php:244
+msgid "Items with average rating of 3 stars or higher"
+msgstr ""
+
+#: admin/analytics.php:68 admin/item-stats.php:140
+#: includes/class-shuriken-analytics.php:203
+msgid "Last 30 Days"
+msgstr ""
+
+#: admin/analytics.php:67 admin/item-stats.php:139
+#: includes/class-shuriken-analytics.php:201
+msgid "Last 7 Days"
+msgstr ""
+
+#: admin/analytics.php:69 admin/item-stats.php:141
+#: includes/class-shuriken-analytics.php:205
+msgid "Last 90 Days"
+msgstr ""
+
+#: admin/item-stats.php:310
+msgid "Last Vote"
+msgstr ""
+
+#: admin/analytics.php:70 admin/item-stats.php:142
+#: includes/class-shuriken-analytics.php:207
+msgid "Last Year"
+msgstr ""
+
+#: admin/comments.php:28
+msgid "Latest Comments Block"
+msgstr ""
+
+#: admin/analytics.php:407
+msgid "Latest votes received"
+msgstr ""
+
+#: admin/about.php:408
+msgid "Licensed under GPL v2 or later"
+msgstr ""
+
+#: admin/analytics.php:357
+msgid "Low Performers"
+msgstr ""
+
+#: admin/about.php:120
+msgid "Major Software Design Improvements"
+msgstr ""
+
+#: admin/ratings.php:661
+msgid "Make this rating display-only (no direct voting)"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:436
+msgid "Member"
+msgstr ""
+
+#: admin/analytics.php:151 admin/item-stats.php:292
+msgid "Member Votes"
+msgstr ""
+
+#: admin/analytics.php:587
+msgid "Members"
+msgstr ""
+
+#: admin/ratings.php:326
+msgid "Mirror"
+msgstr ""
+
+#: admin/analytics.php:550
+msgid "mirror"
+msgid_plural "mirrors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/ratings.php:606
+msgid "Mirror of"
+msgstr ""
+
+#: admin/item-stats.php:177 admin/ratings.php:300
+#, php-format
+msgid "Mirror of: %s"
+msgstr ""
+
+#: admin/ratings.php:425
+msgid "Mirror Status"
+msgstr ""
+
+#: admin/analytics.php:522
+msgid "Mirrored Ratings"
+msgstr ""
+
+#: admin/analytics.php:197 admin/analytics.php:530
+msgid "Mirrors"
+msgstr ""
+
+#: admin/about.php:132
+msgid "Mock implementations for unit testing without database"
+msgstr ""
+
+#: admin/about.php:336
+msgid "Modify the rating HTML output"
+msgstr ""
+
+#: admin/about.php:123
+msgid "Modular Architecture"
+msgstr ""
+
+#: admin/about.php:189
+msgid "Monitor Performance"
+msgstr ""
+
+#: admin/analytics.php:298
+msgid "Most Popular Items"
+msgstr ""
+
+#: admin/item-stats.php:456
+msgid "N/A"
+msgstr ""
+
+#: admin/analytics.php:249 admin/analytics.php:305 admin/analytics.php:363
+#: admin/analytics.php:474 admin/ratings.php:247 admin/ratings.php:297
+#: admin/ratings.php:417 admin/ratings.php:487
+#: includes/class-shuriken-admin.php:352
+msgid "Name"
+msgstr ""
+
+#: admin/ratings.php:455
+msgid "Negative (subtracts from parent)"
+msgstr ""
+
+#: admin/analytics.php:506
+msgid "Negative effect"
+msgstr ""
+
+#: admin/ratings.php:647
+msgid "Negative — Votes subtract from parent rating"
+msgstr ""
+
+#: admin/analytics.php:343
+msgid "No data available yet"
+msgstr ""
+
+#: includes/class-shuriken-rest-api.php:402
+msgid "No data provided for update."
+msgstr ""
+
+#: admin/analytics.php:394
+msgid "No low performers (all items have average ≥ 3 stars)"
+msgstr ""
+
+#: admin/ratings.php:133
+msgid "No ratings found"
+msgstr ""
+
+#: admin/ratings.php:127
+msgid "No ratings yet"
+msgstr ""
+
+#: admin/analytics.php:452
+msgid "No recent activity"
+msgstr ""
+
+#: admin/analytics.php:287
+msgid "No top rated items yet (need average ≥ 3 stars)"
+msgstr ""
+
+#: includes/class-shuriken-rest-api.php:467
+msgid "No valid rating IDs provided."
+msgstr ""
+
+#: admin/item-stats.php:470
+msgid "No votes recorded yet"
+msgstr ""
+
+#: admin/ratings.php:329
+#, php-format
+msgid "of: %s"
+msgstr ""
+
+#: includes/class-shuriken-exception-handler.php:199
+#, php-format
+msgid "Operation failed: %s"
+msgstr ""
+
+#: admin/analytics.php:528
+msgid "Original Rating"
+msgstr ""
+
+#: admin/analytics.php:524
+msgid "Original ratings that have mirrors"
+msgstr ""
+
+#: admin/analytics.php:127
+msgid "Overall Average"
+msgstr ""
+
+#: admin/ratings.php:355 admin/ratings.php:434
+msgid "Parent"
+msgstr ""
+
+#: admin/ratings.php:624
+msgid "Parent Rating"
+msgstr ""
+
+#: admin/item-stats.php:187
+msgid "Parent Rating with %d sub-ratings"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-not-found-exception.php:104
+msgid "Parent rating with ID %d not found"
+msgstr ""
+
+#: admin/analytics.php:175
+msgid "Parent Ratings"
+msgstr ""
+
+#: admin/analytics.php:468
+msgid "Parent Ratings Performance"
+msgstr ""
+
+#: admin/ratings.php:342
+#, php-format
+msgid "Parent: %s"
+msgstr ""
+
+#: admin/about.php:384
+msgid "PHP Version"
+msgstr ""
+
+#. %s: Login URL
+#: includes/class-shuriken-frontend.php:123
+#, php-format
+msgid "Please <a href=\"%s\">login</a> to rate"
+msgstr ""
+
+#: admin/analytics.php:619 admin/item-stats.php:554
+msgid "Please select at least a start or end date."
+msgstr ""
+
+#: admin/ratings.php:163 admin/ratings.php:503
+msgid "Please select at least one rating."
+msgstr ""
+
+#: admin/about.php:372
+msgid "Plugin Version"
+msgstr ""
+
+#: admin/about.php:323
+msgid "Popular Hooks"
+msgstr ""
+
+#: admin/ratings.php:454
+msgid "Positive (adds to parent)"
+msgstr ""
+
+#: admin/analytics.php:503
+msgid "Positive effect"
+msgstr ""
+
+#: admin/ratings.php:646
+msgid "Positive — Votes add to parent rating"
+msgstr ""
+
+#: admin/ratings.php:650
+msgid ""
+"Positive: Higher votes improve parent score. Negative: Higher votes lower "
+"parent score (e.g., \"Difficulty\" or \"Price\")."
+msgstr ""
+
+#: admin/ratings.php:414
+msgid "Quick Edit"
+msgstr ""
+
+#: admin/about.php:162
+msgid "Quick Start Guide"
+msgstr ""
+
+#: admin/analytics.php:248 admin/analytics.php:304
+msgid "Rank"
+msgstr ""
+
+#: includes/class-shuriken-shortcodes.php:196
+#, php-format
+msgid "Rate %1$d out of %2$d"
+msgstr ""
+
+#: admin/analytics.php:412 admin/item-stats.php:417 admin/ratings.php:250
+#: admin/ratings.php:379 admin/ratings.php:490
+msgid "Rating"
+msgstr ""
+
+#: admin/ratings.php:60
+msgid "Rating created successfully!"
+msgstr ""
+
+#: admin/ratings.php:54
+msgid "Rating deleted successfully!"
+msgstr ""
+
+#: admin/analytics.php:221 admin/item-stats.php:319
+msgid "Rating Distribution"
+msgstr ""
+
+#: admin/item-stats.php:119
+#, php-format
+msgid "Rating ID: %d | Created: %s | Shortcode: %s"
+msgstr ""
+
+#: admin/ratings.php:590
+msgid "Rating Name"
+msgstr ""
+
+#: admin/item-stats.php:30 includes/class-shuriken-admin.php:403
+msgid "Rating not found"
+msgstr ""
+
+#: includes/class-shuriken-rest-api.php:346
+#: includes/class-shuriken-rest-api.php:369
+msgid "Rating not found."
+msgstr ""
+
+#: includes/class-shuriken-shortcodes.php:189
+msgid "Rating stars"
+msgstr ""
+
+#: admin/about.php:41
+msgid "Rating System"
+msgstr ""
+
+#: admin/ratings.php:91
+msgid "Rating updated successfully!"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:426
+msgid "Rating Value"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-validation-exception.php:130
+msgid "Rating value must be between 1 and %d"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-not-found-exception.php:76
+msgid "Rating with ID %d not found"
+msgstr ""
+
+#: admin/ratings.php:111 includes/class-shuriken-admin.php:84
+msgid "Ratings"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:83
+msgid "Ratings Management"
+msgstr ""
+
+#: admin/analytics.php:470
+msgid "Ratings with sub-ratings and their calculated scores"
+msgstr ""
+
+#: admin/analytics.php:405
+msgid "Recent Activity"
+msgstr ""
+
+#: admin/about.php:124
+msgid "Refactored into 8 focused modules for better maintainability"
+msgstr ""
+
+#: admin/item-stats.php:437
+msgid "Registered Member"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-permission-exception.php:86
+#, php-format
+msgid "Required capability: %s"
+msgstr ""
+
+#: admin/about.php:89
+msgid "Responsive Design"
+msgstr ""
+
+#: admin/about.php:298
+msgid "REST API"
 msgstr ""
 
 #: admin/comments.php:62
 msgid "Save Comments Settings"
 msgstr ""
 
-#: admin/ratings.php:15
-msgid "Rating created successfully!"
-msgstr ""
-
-#: admin/ratings.php:22
-msgid "Rating updated successfully!"
-msgstr ""
-
-#: admin/ratings.php:28
-msgid "Rating deleted successfully!"
-msgstr ""
-
-#: admin/ratings.php:56
-#: shuriken-reviews.php:265
-msgid "Ratings Management"
-msgstr ""
-
-#: admin/ratings.php:57
-msgid "Create New Rating"
-msgstr ""
-
-#: admin/ratings.php:61
-msgid "Rating Name"
-msgstr ""
-
-#: admin/ratings.php:68
-msgid "Create Rating"
-msgstr ""
-
-#: admin/ratings.php:72
-msgid "Existing Ratings"
-msgstr ""
-
-#: admin/ratings.php:82
-msgid "Search ratings..."
-msgstr ""
-
-#: admin/ratings.php:86
-msgid "Search Ratings"
-msgstr ""
-
-#: admin/ratings.php:89
-msgid "Clear Search"
-msgstr ""
-
-#: admin/ratings.php:100
-msgid "Found %s rating matching your search."
-msgid_plural "Found %s ratings matching your search."
-msgstr[0] ""
-msgstr[1] ""
-
-#: admin/ratings.php:115
-msgid "ID"
-msgstr ""
-
-#: admin/ratings.php:116
-msgid "Name"
-msgstr ""
-
-#: admin/ratings.php:117
-msgid "Shortcode"
-msgstr ""
-
-#: admin/ratings.php:118
-msgid "Average Rating"
-msgstr ""
-
-#: admin/ratings.php:119
-msgid "Total Votes"
-msgstr ""
-
-#: admin/ratings.php:120
-msgid "Actions"
-msgstr ""
-
-#: admin/ratings.php:136
-msgid "%s/5"
-msgstr ""
-
-#: admin/ratings.php:141
-msgid "Update"
-msgstr ""
-
-#: admin/ratings.php:144
-msgid "Are you sure?"
+#: admin/settings.php:51
+msgid "Save Settings"
 msgstr ""
 
 #: admin/ratings.php:145
-msgid "Delete"
+msgid "Search Ratings"
 msgstr ""
 
-#: shuriken-reviews.php:266
-msgid "Ratings"
+#: admin/ratings.php:144
+msgid "Search ratings..."
 msgstr ""
 
-#: shuriken-reviews.php:365
-msgid "Rating stars"
+#: admin/ratings.php:143
+msgid "Search Ratings:"
 msgstr ""
 
-#: shuriken-reviews.php:371
-msgid "Rate %d out of 5"
+#: admin/ratings.php:118
+#, php-format
+msgid "Search results for: %s"
 msgstr ""
 
-#. translators: 1: Average rating value out of 5, 2: Total number of votes
-#: shuriken-reviews.php:381
-#: shuriken-reviews.php:532
-msgid "Average: %1$s/5 (%2$s votes)"
+#: includes/class-shuriken-admin.php:325 includes/class-shuriken-admin.php:385
+msgid "Security check failed"
 msgstr ""
 
-#. translators: %s: Login URL
-#: shuriken-reviews.php:529
-msgid "Please <a href=\"%s\">login</a> to rate"
+#: admin/ratings.php:293
+#, php-format
+msgid "Select %s"
 msgstr ""
 
-#: shuriken-reviews.php:530
+#: admin/ratings.php:636
+msgid ""
+"Select a parent to make this a sub-rating. Sub-ratings contribute to their "
+"parent's score."
+msgstr ""
+
+#: admin/ratings.php:618
+msgid ""
+"Select a rating to mirror. Mirrors share the same vote data but have "
+"different names/labels."
+msgstr ""
+
+#: admin/ratings.php:158 admin/ratings.php:498
+msgid "Select bulk action"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:113 includes/class-shuriken-admin.php:114
+msgid "Settings"
+msgstr ""
+
+#: admin/settings.php:14
+msgid "Settings saved successfully!"
+msgstr ""
+
+#: admin/ratings.php:249 admin/ratings.php:376 admin/ratings.php:489
+msgid "Shortcode"
+msgstr ""
+
+#: admin/ratings.php:27
+msgid "Shortcode copied to clipboard!"
+msgstr ""
+
+#: admin/about.php:203
+msgid "Shortcode Reference"
+msgstr ""
+
+#: admin/about.php:57
+msgid "Shortcode Support"
+msgstr ""
+
+#: admin/comments.php:49
+msgid "Show only parent comments in Latest Comments block"
+msgstr ""
+
+#: admin/item-stats.php:406
+#, php-format
+msgid "Showing %1$d-%2$d of %3$d votes"
+msgstr ""
+
+#: admin/item-stats.php:242
+msgid ""
+"Showing aggregated statistics from all sub-ratings (with effect type applied)"
+"."
+msgstr ""
+
+#: admin/item-stats.php:245
+msgid "Showing combined statistics from both direct votes and sub-ratings."
+msgstr ""
+
+#: admin/item-stats.php:239
+msgid "Showing statistics from votes cast directly on this parent rating."
+msgstr ""
+
+#. Name of the plugin
+#: admin/about.php:19 includes/class-shuriken-admin.php:71
+#: includes/class-shuriken-admin.php:72
+msgid "Shuriken Reviews"
+msgstr ""
+
+#: admin/settings.php:20
+msgid "Shuriken Reviews Settings"
+msgstr ""
+
+#: admin/about.php:144
+msgid ""
+"Single filter supports any star count (3, 5, 10, etc.) with automatic "
+"normalization"
+msgstr ""
+
+#. Author of the plugin
+msgid "Skilledup Hub"
+msgstr ""
+
+#: admin/about.php:66
+msgid ""
+"Smooth user experience with AJAX-powered rating submissions - no page "
+"reloads required."
+msgstr ""
+
+#: admin/analytics.php:168 admin/ratings.php:367
+msgid "Standalone"
+msgstr ""
+
+#: admin/analytics.php:359
+msgid "Standalone and parent ratings with average below 3 stars"
+msgstr ""
+
+#: admin/analytics.php:300
+msgid "Standalone and parent ratings with most votes"
+msgstr ""
+
+#: admin/analytics.php:589 admin/item-stats.php:523
+msgid "Stars"
+msgstr ""
+
+#: admin/analytics.php:625 admin/item-stats.php:560
+msgid "Start date must be before end date."
+msgstr ""
+
+#: admin/analytics.php:56 includes/class-shuriken-admin.php:103
+msgid "Stats & Analytics"
+msgstr ""
+
+#: admin/ratings.php:335
+msgid "Sub (Negative)"
+msgstr ""
+
+#: admin/ratings.php:337
+msgid "Sub (Positive)"
+msgstr ""
+
+#: admin/item-stats.php:348
+msgid "Sub-Rating"
+msgstr ""
+
+#: admin/ratings.php:302
+#, php-format
+msgid "Sub-rating of: %s"
+msgstr ""
+
+#: admin/item-stats.php:197
+#, php-format
+msgid "Sub-rating of: %s (%s effect)"
+msgstr ""
+
+#: admin/analytics.php:183 admin/analytics.php:476
+msgid "Sub-Ratings"
+msgstr ""
+
+#: admin/analytics.php:500
+msgid "sub-ratings"
+msgstr ""
+
+#: admin/item-stats.php:339
+msgid "Sub-Ratings Contribution"
+msgstr ""
+
+#: admin/about.php:367
+msgid "System Information"
+msgstr ""
+
+#: admin/about.php:260
+msgid ""
+"Test your code with mock implementations. No database required for unit "
+"tests. Interfaces available for Database and Analytics services."
+msgstr ""
+
+#: admin/about.php:262
+msgid "Testing Guide"
+msgstr ""
+
+#: includes/class-shuriken-frontend.php:124
 msgid "Thank you for rating!"
 msgstr ""
 
-#. translators: %s: Error message
-#: shuriken-reviews.php:534
-msgid "Error: %s"
+#: includes/exceptions/class-shuriken-validation-exception.php:76
+#, php-format
+msgid "The %s field is required"
 msgstr ""
 
-#: shuriken-reviews.php:535
-msgid "Error submitting rating. Please try again."
+#: includes/exceptions/class-shuriken-logic-exception.php:43
+msgid "This rating is display-only and cannot be voted on directly"
+msgstr ""
+
+#: admin/analytics.php:65 admin/item-stats.php:137
+msgid "Time Period:"
+msgstr ""
+
+#: admin/analytics.php:79 admin/item-stats.php:151
+msgid "To:"
+msgstr ""
+
+#: admin/analytics.php:242
+msgid "Top Rated Items"
+msgstr ""
+
+#: admin/item-stats.php:221
+msgid "Total (Combined)"
+msgstr ""
+
+#: admin/item-stats.php:282
+msgid "Total Points"
+msgstr ""
+
+#: admin/analytics.php:104
+msgid "Total Rating Items"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:354
+msgid "Total Rating Points"
+msgstr ""
+
+#: admin/item-stats.php:266 includes/class-shuriken-admin.php:353
+msgid "Total Votes"
+msgstr ""
+
+#: admin/analytics.php:145
+msgid "Total Votes (All Time)"
+msgstr ""
+
+#: admin/about.php:190
+msgid "Track your ratings performance with the built-in analytics dashboard."
+msgstr ""
+
+#: admin/about.php:351
+msgid "Triggered after a new vote"
+msgstr ""
+
+#: admin/ratings.php:134
+msgid "Try adjusting your search criteria."
+msgstr ""
+
+#: admin/about.php:328 admin/ratings.php:248 admin/ratings.php:323
+#: admin/ratings.php:488
+msgid "Type"
+msgstr ""
+
+#: admin/about.php:143
+msgid "Unified Star Rating"
+msgstr ""
+
+#: admin/analytics.php:135 admin/item-stats.php:274
+msgid "Unique Voters"
+msgstr ""
+
+#: includes/class-shuriken-analytics.php:194
+#, php-format
+msgid "Until %s"
+msgstr ""
+
+#: admin/ratings.php:472
+msgid "Update"
+msgstr ""
+
+#: admin/about.php:313
+msgid ""
+"Use built-in helper functions to access plugin functionality in your themes "
+"and plugins."
+msgstr ""
+
+#: admin/about.php:216
+msgid "Use h3 for the title (options: h1-h6, div, p, span)"
+msgstr ""
+
+#: admin/about.php:181
+msgid ""
+"Use the Shuriken Rating block in the editor or add the shortcode to your "
+"content."
+msgstr ""
+
+#: admin/item-stats.php:445
+msgid "User ID: %d"
+msgstr ""
+
+#: admin/about.php:21
+#, php-format
+msgid "Version %s"
+msgstr ""
+
+#: admin/about.php:192
+msgid "View Analytics"
+msgstr ""
+
+#: admin/about.php:249
+msgid "View Hooks Documentation"
+msgstr ""
+
+#: admin/analytics.php:273 admin/analytics.php:329 admin/analytics.php:380
+#: admin/analytics.php:429
+msgid "View Statistics"
+msgstr ""
+
+#: admin/ratings.php:464
+msgid "Visitors cannot vote directly (only via sub-ratings)"
+msgstr ""
+
+#: admin/item-stats.php:402
+msgid "Vote History"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:425
+msgid "Vote ID"
+msgstr ""
+
+#: admin/item-stats.php:353
+msgid "Vote Share"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-not-found-exception.php:90
+msgid "Vote with ID %d not found"
+msgstr ""
+
+#: admin/analytics.php:413 admin/item-stats.php:418
+msgid "Voter"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:429
+msgid "Voter Email"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:428
+msgid "Voter Name"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:427
+msgid "Voter Type"
+msgstr ""
+
+#: admin/analytics.php:229
+msgid "Voter Types"
+msgstr ""
+
+#: admin/analytics.php:251 admin/analytics.php:306 admin/analytics.php:365
+#: admin/analytics.php:586 admin/item-stats.php:352 admin/item-stats.php:522
+msgid "Votes"
+msgstr ""
+
+#: admin/analytics.php:119
+msgid "Votes (Period)"
+msgstr ""
+
+#: admin/analytics.php:213
+msgid "Voting Activity"
+msgstr ""
+
+#: admin/item-stats.php:327
+msgid "Voting Activity (Last 30 Days)"
+msgstr ""
+
+#: admin/settings.php:25
+msgid "Voting Settings"
+msgstr ""
+
+#: admin/about.php:413
+msgid "Website"
+msgstr ""
+
+#: admin/about.php:115
+#, php-format
+msgid "What's New in %s"
+msgstr ""
+
+#: admin/comments.php:40
+msgid ""
+"When enabled, comments made by post authors will not appear in the Latest "
+"Comments block."
+msgstr ""
+
+#: admin/comments.php:52
+msgid ""
+"When enabled, only initial comments will be shown (replies will be hidden)."
+msgstr ""
+
+#: admin/settings.php:40
+msgid ""
+"When enabled, visitors who are not logged in can also submit ratings. Guest "
+"votes are tracked by IP address to prevent multiple votes."
+msgstr ""
+
+#: admin/about.php:220
+msgid "With Anchor"
+msgstr ""
+
+#: admin/about.php:380
+msgid "WordPress Version"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-permission-exception.php:98
+msgid "You are not allowed to vote"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-permission-exception.php:61
+#, php-format
+msgid "You do not have permission to %s"
+msgstr ""
+
+#: includes/class-shuriken-admin.php:329 includes/class-shuriken-admin.php:389
+msgid "You do not have permission to export data"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-permission-exception.php:59
+msgid "You do not have permission to perform this action"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-logic-exception.php:91
+msgid "You have already voted on this rating"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-logic-exception.php:104
+msgid "You have reached your voting limit of %d votes"
+msgstr ""
+
+#: includes/exceptions/class-shuriken-permission-exception.php:73
+msgid "You must be logged in to perform this action"
+msgstr ""
+
+#: admin/ratings.php:628
+msgid "— None (Standalone Rating) —"
+msgstr ""
+
+#: admin/ratings.php:437
+msgid "— None (Standalone) —"
+msgstr ""
+
+#: admin/ratings.php:610
+msgid "— Not a Mirror (Original Rating) —"
 msgstr ""
