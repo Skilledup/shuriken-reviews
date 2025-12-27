@@ -112,7 +112,7 @@ if (!defined('ABSPATH')) exit;
     <div class="shuriken-about-section">
         <h2 class="section-title">
             <span class="dashicons dashicons-megaphone"></span>
-            <?php esc_html_e('What\'s New in 1.7.5', 'shuriken-reviews'); ?>
+            <?php printf( esc_html__( "What's New in %s", 'shuriken-reviews' ), esc_html( SHURIKEN_REVIEWS_VERSION ) ); ?>
         </h2>
         
         <div class="whats-new-content">
