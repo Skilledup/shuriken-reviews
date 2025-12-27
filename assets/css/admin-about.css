@@ -677,4 +677,13 @@
     .hooks-table tr:hover td {
         background: #1e293b;
     }
+
+    .new-features-list,
+    .new-features-note {
+        color: #94a3b8;
+    }
+
+    .new-feature-highlight > h3 {
+        color: #fff;
+    }
 }
