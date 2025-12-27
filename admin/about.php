@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) exit;
 
 <div class="wrap shuriken-about-wrap">
     <!-- Hero Section -->
-    <div class="shuriken-about-hero">
+    <div class="shuriken-about-hero mascot-hero">
         <div class="hero-content">
             <div class="hero-icon">
                 <span class="dashicons dashicons-star-filled"></span>
