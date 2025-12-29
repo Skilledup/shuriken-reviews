@@ -33,6 +33,7 @@ class Shuriken_Admin {
     private function __construct() {
         add_action('admin_menu', array($this, 'register_menu'));
         add_action('admin_init', array($this, 'handle_rating_forms'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_ratings_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_analytics_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_about_scripts'));
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
@@ -180,20 +181,87 @@ class Shuriken_Admin {
     }
 
     /**
+     * Check if we're on a specific plugin admin page
+     *
+     * Uses $_GET['page'] instead of hook name because WordPress generates
+     * hook names using sanitize_title() on the translated menu title,
+     * which produces different results for different languages.
+     *
+     * @param string|array $page_slugs Page slug(s) to check for.
+     * @return bool
+     * @since 1.7.5
+     */
+    private function is_plugin_page($page_slugs) {
+        if (!isset($_GET['page'])) {
+            return false;
+        }
+        
+        $current_page = sanitize_text_field(wp_unslash($_GET['page']));
+        
+        if (is_array($page_slugs)) {
+            return in_array($current_page, $page_slugs, true);
+        }
+        
+        return $current_page === $page_slugs;
+    }
+
+    /**
+     * Enqueue scripts and styles for the ratings admin page
+     *
+     * @param string $hook The current admin page hook (unused, kept for hook signature).
+     * @return void
+     * @since 1.7.5
+     */
+    public function enqueue_ratings_scripts($hook) {
+        // Check using page slug - works regardless of language/locale
+        if (!$this->is_plugin_page('shuriken-reviews')) {
+            return;
+        }
+
+        // Enqueue admin ratings CSS
+        wp_enqueue_style(
+            'shuriken-reviews-admin-ratings',
+            plugins_url('assets/css/admin-ratings.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(),
+            SHURIKEN_REVIEWS_VERSION
+        );
+
+        // Enqueue admin ratings JS
+        wp_enqueue_script(
+            'shuriken-reviews-admin-ratings',
+            plugins_url('assets/js/admin-ratings.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array('jquery'),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
+        // Localize script for translations
+        wp_localize_script('shuriken-reviews-admin-ratings', 'shurikenRatingsAdmin', array(
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('shuriken-ratings-admin-nonce'),
+            'i18n' => array(
+                'confirmDelete' => __('Are you sure you want to delete this rating? This action cannot be undone.', 'shuriken-reviews'),
+                'confirmBulkDelete' => __('Are you sure you want to delete the selected ratings? This action cannot be undone.', 'shuriken-reviews'),
+                'copied' => __('Shortcode copied to clipboard!', 'shuriken-reviews'),
+            )
+        ));
+    }
+
+    /**
      * Enqueue scripts and styles for the analytics admin page
      *
-     * @param string $hook The current admin page hook.
+     * @param string $hook The current admin page hook (unused, kept for hook signature).
      * @return void
      * @since 1.3.0
      */
     public function enqueue_analytics_scripts($hook) {
-        // Load on analytics page and item stats page
-        $allowed_hooks = array(
-            'shuriken-reviews_page_shuriken-reviews-analytics',
-            'admin_page_shuriken-reviews-item-stats'
+        // Check using page slug - works regardless of language/locale
+        $allowed_pages = array(
+            'shuriken-reviews-analytics',
+            'shuriken-reviews-item-stats'
         );
         
-        if (!in_array($hook, $allowed_hooks, true)) {
+        if (!$this->is_plugin_page($allowed_pages)) {
             return;
         }
 
@@ -209,7 +277,7 @@ class Shuriken_Admin {
         // Enqueue analytics CSS
         wp_enqueue_style(
             'shuriken-admin-analytics',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-analytics.css',
+            plugins_url('assets/css/admin-analytics.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );
@@ -217,7 +285,7 @@ class Shuriken_Admin {
         // Enqueue analytics JS
         wp_enqueue_script(
             'shuriken-admin-analytics',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/admin-analytics.js',
+            plugins_url('assets/js/admin-analytics.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array('jquery', 'chartjs'),
             SHURIKEN_REVIEWS_VERSION,
             true
@@ -227,18 +295,19 @@ class Shuriken_Admin {
     /**
      * Enqueue styles for the About admin page
      *
-     * @param string $hook The current admin page hook.
+     * @param string $hook The current admin page hook (unused, kept for hook signature).
      * @return void
      * @since 1.5.8
      */
     public function enqueue_about_scripts($hook) {
-        if ('shuriken-reviews_page_shuriken-reviews-about' !== $hook) {
+        // Check using page slug - works regardless of language/locale
+        if (!$this->is_plugin_page('shuriken-reviews-about')) {
             return;
         }
 
         wp_enqueue_style(
             'shuriken-admin-about',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-about.css',
+            plugins_url('assets/css/admin-about.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );

@@ -65,7 +65,7 @@ class Shuriken_Frontend {
         // Enqueue styles
         wp_enqueue_style(
             'shuriken-reviews',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/shuriken-reviews.css',
+            plugins_url('assets/css/shuriken-reviews.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );
@@ -76,7 +76,7 @@ class Shuriken_Frontend {
         // Enqueue main script
         wp_enqueue_script(
             'shuriken-reviews',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/shuriken-reviews.js',
+            plugins_url('assets/js/shuriken-reviews.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array('jquery'),
             SHURIKEN_REVIEWS_VERSION,
             true

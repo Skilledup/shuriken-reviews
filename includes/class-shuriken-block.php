@@ -70,7 +70,7 @@ class Shuriken_Block {
         // Register the editor script with proper dependencies
         wp_register_script(
             'shuriken-rating-editor',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'blocks/shuriken-rating/index.js',
+            plugins_url('blocks/shuriken-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-blocks',
                 'wp-element',
@@ -86,7 +86,7 @@ class Shuriken_Block {
         // Register the front-end stylesheet and reuse it for the editor preview
         wp_register_style(
             'shuriken-reviews-frontend',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/shuriken-reviews.css',
+            plugins_url('assets/css/shuriken-reviews.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );
@@ -94,7 +94,7 @@ class Shuriken_Block {
         // Register the editor-specific stylesheet
         wp_register_style(
             'shuriken-rating-editor',
-            SHURIKEN_REVIEWS_PLUGIN_URL . 'blocks/shuriken-rating/editor.css',
+            plugins_url('blocks/shuriken-rating/editor.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );

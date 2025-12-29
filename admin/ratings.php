@@ -1,32 +1,8 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-// Enqueue admin styles and scripts
-wp_enqueue_style(
-    'shuriken-reviews-admin-ratings',
-    SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/css/admin-ratings.css',
-    array(),
-    SHURIKEN_REVIEWS_VERSION
-);
-
-wp_enqueue_script(
-    'shuriken-reviews-admin-ratings',
-    SHURIKEN_REVIEWS_PLUGIN_URL . 'assets/js/admin-ratings.js',
-    array('jquery'),
-    SHURIKEN_REVIEWS_VERSION,
-    true
-);
-
-// Localize script for translations
-wp_localize_script('shuriken-reviews-admin-ratings', 'shurikenRatingsAdmin', array(
-    'ajaxurl' => admin_url('admin-ajax.php'),
-    'nonce' => wp_create_nonce('shuriken-ratings-admin-nonce'),
-    'i18n' => array(
-        'confirmDelete' => __('Are you sure you want to delete this rating? This action cannot be undone.', 'shuriken-reviews'),
-        'confirmBulkDelete' => __('Are you sure you want to delete the selected ratings? This action cannot be undone.', 'shuriken-reviews'),
-        'copied' => __('Shortcode copied to clipboard!', 'shuriken-reviews'),
-    )
-));
+// Note: Assets are enqueued via admin_enqueue_scripts hook in class-shuriken-admin.php
+// This ensures they load properly regardless of WordPress language settings
 
 // Get database instance
 $db = shuriken_db();
