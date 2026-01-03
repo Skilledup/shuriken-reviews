@@ -73,56 +73,25 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 
 Shuriken Reviews is built with developers in mind. The plugin provides extensive customization options and follows WordPress coding standards.
 
-### Hooks & Filters
+📚 **[Complete Developer Documentation](docs/INDEX.md)** - Start here for all guides and API references
 
-The plugin exposes **20+ hooks** (12 filters + 8 actions) for complete customization:
+### Quick Links
 
-- **Rating Display**: Modify HTML output, CSS classes, star symbols, and more
-- **Vote Submission**: Control voting permissions, validate votes, customize responses
-- **Database Operations**: Intercept rating creation, updates, and deletions
-- **Frontend Assets**: Customize JavaScript data and translations
+- **[Hooks Reference](docs/guides/hooks-reference.md)** - All 20 hooks with examples
+- **[Dependency Injection](docs/guides/dependency-injection.md)** - DI container guide
+- **[Exception System](docs/guides/exception-handling.md)** - Error handling
+- **[Testing Guide](docs/guides/testing.md)** - Unit testing with mocks
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design
+- **[Development Roadmap](docs/ROADMAP.md)** - Planned features
 
-📖 **[Complete Hooks Reference](docs/hooks-reference.md)** - Full documentation with examples
+### Key Features for Developers
 
-### Interfaces & Testing
-
-- **`Shuriken_Database_Interface`** - Database operations contract
-- **`Shuriken_Analytics_Interface`** - Analytics operations contract
-- Mock implementations included for unit testing
-- No database required for tests
-
-📖 **[Testing Guide](tests/README.md)** - Learn how to test with mocks
-
-### Dependency Injection
-
-Lightweight DI container for flexible service management:
-
-```php
-// Get services from container
-$db = shuriken_container()->get('database');
-$analytics = shuriken_container()->get('analytics');
-
-// Inject dependencies in your code
-class My_Service {
-    public function __construct(Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
-    }
-}
-```
-
-📖 **[Dependency Injection Guide](docs/dependency-injection.md)** - Complete DI documentation
-
-### Exception System
-
-Comprehensive exception handling with specific exception types:
-
-- `Shuriken_Database_Exception` - Database operation failures
-- `Shuriken_Validation_Exception` - Input validation errors
-- `Shuriken_Not_Found_Exception` - Missing resources (404)
-- `Shuriken_Permission_Exception` - Authorization failures (403)
-- `Shuriken_Logic_Exception` - Business rule violations
-
-📖 **[Exception System Documentation](includes/exceptions/README.md)** - Error handling guide
+- **20+ WordPress Hooks** (12 filters + 8 actions) for complete customization
+- **Interface-Based Testing** with `Shuriken_Database_Interface` and `Shuriken_Analytics_Interface`
+- **Dependency Injection** container for flexible service management
+- **Exception System** with 9 specific exception types
+- **Mock Implementations** for unit testing without database
+- **Modular Architecture** with single-responsibility modules
 
 ### REST API Endpoints
 

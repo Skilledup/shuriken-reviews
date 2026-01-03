@@ -472,3 +472,4 @@ $service = new My_Service($mock_db); // Uses mock
 - [SOLID Principles](https://en.wikipedia.org/wiki/SOLID)
 - [Inversion of Control](https://en.wikipedia.org/wiki/Inversion_of_control)
 
+See [INDEX.md](../INDEX.md) for complete documentation index.

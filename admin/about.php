@@ -245,7 +245,7 @@ if (!defined('ABSPATH')) exit;
                 <div class="resource-content">
                     <h4><?php esc_html_e('Hooks & Filters', 'shuriken-reviews'); ?></h4>
                     <p><?php esc_html_e('Extend and customize the plugin with 20+ available hooks (12 filters + 8 actions). Modify rating display, control voting behavior, and integrate with your custom code.', 'shuriken-reviews'); ?></p>
-                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/hooks-reference.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/hooks-reference.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('View Hooks Documentation', 'shuriken-reviews'); ?> →
                     </a>
                 </div>
@@ -258,7 +258,7 @@ if (!defined('ABSPATH')) exit;
                 <div class="resource-content">
                     <h4><?php esc_html_e('Interfaces & Testing', 'shuriken-reviews'); ?></h4>
                     <p><?php esc_html_e('Test your code with mock implementations. No database required for unit tests. Interfaces available for Database and Analytics services.', 'shuriken-reviews'); ?></p>
-                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/tests/README.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/testing.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('Testing Guide', 'shuriken-reviews'); ?> →
                     </a>
                 </div>
@@ -271,7 +271,7 @@ if (!defined('ABSPATH')) exit;
                 <div class="resource-content">
                     <h4><?php esc_html_e('Dependency Injection', 'shuriken-reviews'); ?></h4>
                     <p><?php esc_html_e('Flexible service container for managing dependencies. Easy to inject mocks for testing or swap implementations.', 'shuriken-reviews'); ?></p>
-                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/dependency-injection.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/dependency-injection.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('DI Documentation', 'shuriken-reviews'); ?> →
                     </a>
                 </div>
@@ -284,7 +284,7 @@ if (!defined('ABSPATH')) exit;
                 <div class="resource-content">
                     <h4><?php esc_html_e('Exception System', 'shuriken-reviews'); ?></h4>
                     <p><?php esc_html_e('Comprehensive error handling with 6 exception types. Type-safe error catching with automatic logging and WordPress integration.', 'shuriken-reviews'); ?></p>
-                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/includes/exceptions/README.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/exception-handling.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('Exception Guide', 'shuriken-reviews'); ?> →
                     </a>
                 </div>

@@ -1,21 +1,30 @@
-# Shuriken Reviews Exception System
+# Exception System in Shuriken Reviews
 
-This directory contains custom exception classes for better error handling throughout the plugin.
+Learn about the plugin's exception hierarchy and error handling system for robust, maintainable code.
 
 ## Exception Hierarchy
 
 ```
 Exception (PHP)
     └── Shuriken_Exception (Base)
-            ├── Shuriken_Database_Exception
-            ├── Shuriken_Validation_Exception
-            ├── Shuriken_Not_Found_Exception
-            ├── Shuriken_Permission_Exception
-            ├── Shuriken_Logic_Exception
-            ├── Shuriken_Configuration_Exception (new)
-            ├── Shuriken_Rate_Limit_Exception (new)
-            └── Shuriken_Integration_Exception (new)
+            ├── Shuriken_Database_Exception ✓ Implemented
+            ├── Shuriken_Validation_Exception ✓ Implemented
+            ├── Shuriken_Not_Found_Exception ✓ Implemented
+            ├── Shuriken_Permission_Exception ✓ Implemented
+            ├── Shuriken_Logic_Exception ✓ Implemented
+            ├── Shuriken_Configuration_Exception ✓ Implemented
+            ├── Shuriken_Rate_Limit_Exception (TODO: Rate limiting not yet implemented)
+            └── Shuriken_Integration_Exception (Partial: Some features reserved for future use)
 ```
+
+### Implementation Status
+
+| Exception | Status | When to Use |
+|-----------|--------|------------|
+| Base, Database, Validation, Not_Found, Permission, Logic | ✅ Ready | All current features |
+| Configuration | ✅ Ready | Plugin settings validation |
+| Rate_Limit | 🚧 TODO | Reserved for vote throttling/cooldown (not implemented) |
+| Integration | ⚠️ Partial | HTTP/API failures work; webhooks/cache/email reserved for future |
 
 ## Exception Types
 
@@ -161,7 +170,7 @@ if ($parent_id === $rating_id) {
 }
 ```
 
-### 7. `Shuriken_Configuration_Exception` (New)
+### 7. `Shuriken_Configuration_Exception`
 
 For plugin configuration and settings errors.
 
@@ -185,10 +194,9 @@ $max_stars = get_option('shuriken_max_stars');
 if (!$max_stars || $max_stars < 1) {
     throw Shuriken_Configuration_Exception::invalid_max_stars($max_stars);
 }
-// Note: System supports any value >= 1 (typically 1-10)
 ```
 
-### 8. `Shuriken_Rate_Limit_Exception` (New)
+### 8. `Shuriken_Rate_Limit_Exception`
 
 For rate limiting and throttling (429 errors).
 
@@ -202,50 +210,27 @@ Shuriken_Rate_Limit_Exception::api_limit_exceeded($retry_after, $limit);
 Shuriken_Rate_Limit_Exception::too_many_failures($action, $retry_after);
 ```
 
-**Additional Methods:**
-- `get_retry_after()` - Get seconds until limit resets
-- `get_limit()` - Get the rate limit
-- `get_action()` - Get the rate-limited action
+**Status:** Reserved for future implementation (v1.8.0+)
 
-**Usage:**
-```php
-$last_vote_time = get_user_meta($user_id, 'last_vote_time', true);
-if (time() - $last_vote_time < 5) {
-    throw Shuriken_Rate_Limit_Exception::voting_too_fast(5 - (time() - $last_vote_time));
-}
-```
-
-### 9. `Shuriken_Integration_Exception` (New)
+### 9. `Shuriken_Integration_Exception`
 
 For external service and integration failures (502 errors).
 
-**Static Factory Methods:**
+**Working Factory Methods:**
 ```php
 Shuriken_Integration_Exception::http_request_failed($url, $status, $error);
 Shuriken_Integration_Exception::api_connection_failed($api_name, $error);
 Shuriken_Integration_Exception::api_auth_failed($api_name);
+Shuriken_Integration_Exception::service_timeout($service_name, $timeout);
+```
+
+**Reserved for Future:**
+```php
 Shuriken_Integration_Exception::webhook_failed($webhook_url, $error);
 Shuriken_Integration_Exception::cache_failed($operation, $error);
 Shuriken_Integration_Exception::email_failed($error);
 Shuriken_Integration_Exception::plugin_dependency_missing($plugin_name);
 Shuriken_Integration_Exception::plugin_version_incompatible($plugin, $current, $required);
-Shuriken_Integration_Exception::service_timeout($service_name, $timeout);
-```
-
-**Additional Methods:**
-- `get_service()` - Get the service name
-- `get_context()` - Get additional context array
-
-**Usage:**
-```php
-$response = wp_remote_get($api_url);
-if (is_wp_error($response)) {
-    throw Shuriken_Integration_Exception::http_request_failed(
-        $api_url,
-        0,
-        $response->get_error_message()
-    );
-}
 ```
 
 ## Exception Handler
@@ -389,61 +374,6 @@ throw Shuriken_Not_Found_Exception::rating($id);
 throw new Shuriken_Not_Found_Exception("Rating $id not found", 'rating', $id);
 ```
 
-## Migration from Legacy Error Handling
-
-### Before (returning false)
-
-```php
-public function create_rating($name) {
-    $result = $this->wpdb->insert($table, ['name' => $name]);
-    if ($result === false) {
-        return false;
-    }
-    return $this->wpdb->insert_id;
-}
-
-// Caller has to check for false
-$id = $db->create_rating($name);
-if ($id === false) {
-    // Handle error
-}
-```
-
-### After (throwing exceptions)
-
-```php
-public function create_rating($name) {
-    $result = $this->wpdb->insert($table, ['name' => $name]);
-    if ($result === false) {
-        throw Shuriken_Database_Exception::insert_failed('ratings');
-    }
-    return $this->wpdb->insert_id;
-}
-
-// Caller can use try-catch
-try {
-    $id = $db->create_rating($name);
-    // Continue with success logic
-} catch (Shuriken_Database_Exception $e) {
-    // Handle error
-}
-```
-
-### Gradual Migration
-
-Use the `assert_not_false` helper for gradual migration:
-
-```php
-// Wrap legacy code that returns false
-$result = Shuriken_Exception_Handler::assert_not_false(
-    legacy_function_that_returns_false(),
-    'legacy_operation',
-    'Operation failed'
-);
-// If result was false, an exception is thrown
-// Otherwise, $result contains the actual value
-```
-
 ## HTTP Status Codes
 
 The exception handler automatically maps exceptions to HTTP status codes:
@@ -453,6 +383,7 @@ The exception handler automatically maps exceptions to HTTP status codes:
 | `Shuriken_Not_Found_Exception` | 404 |
 | `Shuriken_Permission_Exception` | 403 |
 | `Shuriken_Validation_Exception` | 400 |
+| `Shuriken_Rate_Limit_Exception` | 429 |
 | `Shuriken_Database_Exception` | 500 |
 | Other | 500 |
 
@@ -512,3 +443,4 @@ public function handle_submit_rating() {
 ✅ **WordPress Compatible** - Converts to WP_Error when needed  
 ✅ **Easier Testing** - Can test that specific exceptions are thrown  
 
+See [INDEX.md](../INDEX.md) for complete documentation index.

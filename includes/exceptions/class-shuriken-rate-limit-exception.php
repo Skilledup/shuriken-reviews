@@ -2,6 +2,13 @@
 /**
  * Rate Limit Exception for Shuriken Reviews
  *
+ * TODO: This exception is reserved for future rate limiting features.
+ * Currently, there is no rate limiting implementation in the plugin.
+ * It will be used when the following features are added:
+ * - Vote cooldown/throttling
+ * - Daily/hourly vote limits per user
+ * - API rate limiting
+ *
  * Thrown when a user exceeds rate limits for voting or other actions.
  *
  * @package Shuriken_Reviews
@@ -84,6 +91,8 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
     /**
      * Create exception for vote rate limit exceeded
      *
+     * TODO: Implement vote throttling/cooldown feature in database and AJAX handler
+     *
      * @param int $retry_after Seconds until user can vote again.
      * @param int $limit       Maximum votes allowed in the time period.
      * @return self
@@ -102,6 +111,8 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
     /**
      * Create exception for daily vote limit exceeded
      *
+     * TODO: Implement daily vote limit tracking per user
+     *
      * @param int $limit Maximum votes per day.
      * @return self
      */
@@ -117,6 +128,8 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
     /**
      * Create exception for hourly vote limit exceeded
      *
+     * TODO: Implement hourly vote limit tracking per user
+     *
      * @param int $limit Maximum votes per hour.
      * @return self
      */
@@ -131,6 +144,8 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
 
     /**
      * Create exception for per-item vote cooldown
+     *
+     * TODO: Implement vote cooldown tracking per user/rating combination
      *
      * @param int $retry_after Seconds until user can vote on this item again.
      * @return self

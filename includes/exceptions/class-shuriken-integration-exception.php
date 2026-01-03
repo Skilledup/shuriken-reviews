@@ -2,6 +2,18 @@
 /**
  * Integration Exception for Shuriken Reviews
  *
+ * TODO: Some exception factory methods are reserved for future features:
+ * - webhook_failed() - for webhook delivery (not yet implemented)
+ * - cache_failed() - for cache operations (not yet implemented)
+ * - email_failed() - for email notifications (not yet implemented)
+ * - plugin_dependency_missing() - for plugin checks (partially used)
+ * - plugin_version_incompatible() - for version checks (partially used)
+ *
+ * Currently implemented and used for:
+ * - HTTP request failures
+ * - API connection/auth failures
+ * - Service timeout handling
+ *
  * Thrown when external service integrations or third-party dependencies fail.
  *
  * @package Shuriken_Reviews
@@ -117,6 +129,8 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
     /**
      * Create exception for webhook delivery failure
      *
+     * TODO: Implement webhook delivery feature (not yet implemented)
+     *
      * @param string $webhook_url The webhook URL.
      * @param string $error       Error message.
      * @return self
@@ -134,6 +148,8 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
 
     /**
      * Create exception for cache service failure
+     *
+     * TODO: Implement caching layer for ratings/votes (not yet implemented)
      *
      * @param string $operation The cache operation that failed.
      * @param string $error     Error message.
@@ -153,6 +169,8 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
     /**
      * Create exception for email service failure
      *
+     * TODO: Implement email notification system (not yet implemented)
+     *
      * @param string $error Error message.
      * @return self
      */
@@ -167,6 +185,8 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
     /**
      * Create exception for plugin dependency not available
      *
+     * TODO: Implement plugin dependency checking (reserved for extensions)
+     *
      * @param string $plugin_name Name of the required plugin.
      * @return self
      */
@@ -180,6 +200,8 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
 
     /**
      * Create exception for incompatible plugin version
+     *
+     * TODO: Implement plugin version compatibility checking (reserved for extensions)
      *
      * @param string $plugin_name      Name of the plugin.
      * @param string $current_version  Current version.
