@@ -221,6 +221,88 @@ class Shuriken_Block {
         // Get child ratings
         $child_ratings = shuriken_db()->get_sub_ratings($rating_id);
 
+        // Build CSS variables from custom style attributes
+        $style_vars = array();
+        
+        // Color variables
+        if (!empty($attributes['parentTitleColor'])) {
+            $style_vars[] = '--shuriken-parent-title-color: ' . esc_attr($attributes['parentTitleColor']);
+        }
+        if (!empty($attributes['childTitleColor'])) {
+            $style_vars[] = '--shuriken-child-title-color: ' . esc_attr($attributes['childTitleColor']);
+        }
+        if (!empty($attributes['textColor'])) {
+            $style_vars[] = '--shuriken-text-color: ' . esc_attr($attributes['textColor']);
+        }
+        if (!empty($attributes['parentBackgroundColor'])) {
+            $style_vars[] = '--shuriken-parent-bg: ' . esc_attr($attributes['parentBackgroundColor']);
+        }
+        if (!empty($attributes['childBackgroundColor'])) {
+            $style_vars[] = '--shuriken-child-bg: ' . esc_attr($attributes['childBackgroundColor']);
+        }
+        if (!empty($attributes['starActiveColor'])) {
+            $style_vars[] = '--shuriken-star-active: ' . esc_attr($attributes['starActiveColor']);
+        }
+        if (!empty($attributes['starInactiveColor'])) {
+            $style_vars[] = '--shuriken-star-inactive: ' . esc_attr($attributes['starInactiveColor']);
+        }
+        
+        // Border variables - Parent
+        if (!empty($attributes['parentBorderColor'])) {
+            $style_vars[] = '--shuriken-parent-border-color: ' . esc_attr($attributes['parentBorderColor']);
+        }
+        if (!empty($attributes['parentBorderWidth'])) {
+            $style_vars[] = '--shuriken-parent-border-width: ' . esc_attr($attributes['parentBorderWidth']);
+        }
+        if (!empty($attributes['parentBorderStyle'])) {
+            $style_vars[] = '--shuriken-parent-border-style: ' . esc_attr($attributes['parentBorderStyle']);
+        }
+        if (!empty($attributes['parentBorderRadius'])) {
+            $style_vars[] = '--shuriken-parent-border-radius: ' . esc_attr($attributes['parentBorderRadius']);
+        }
+        
+        // Border variables - Child
+        if (!empty($attributes['childBorderColor'])) {
+            $style_vars[] = '--shuriken-child-border-color: ' . esc_attr($attributes['childBorderColor']);
+        }
+        if (!empty($attributes['childBorderWidth'])) {
+            $style_vars[] = '--shuriken-child-border-width: ' . esc_attr($attributes['childBorderWidth']);
+        }
+        if (!empty($attributes['childBorderStyle'])) {
+            $style_vars[] = '--shuriken-child-border-style: ' . esc_attr($attributes['childBorderStyle']);
+        }
+        if (!empty($attributes['childBorderRadius'])) {
+            $style_vars[] = '--shuriken-child-border-radius: ' . esc_attr($attributes['childBorderRadius']);
+        }
+        
+        // Typography variables
+        if (!empty($attributes['parentTitleFontSize'])) {
+            $style_vars[] = '--shuriken-parent-title-font-size: ' . esc_attr($attributes['parentTitleFontSize']);
+        }
+        if (!empty($attributes['parentTitleFontWeight'])) {
+            $style_vars[] = '--shuriken-parent-title-font-weight: ' . esc_attr($attributes['parentTitleFontWeight']);
+        }
+        if (!empty($attributes['childTitleFontSize'])) {
+            $style_vars[] = '--shuriken-child-title-font-size: ' . esc_attr($attributes['childTitleFontSize']);
+        }
+        if (!empty($attributes['childTitleFontWeight'])) {
+            $style_vars[] = '--shuriken-child-title-font-weight: ' . esc_attr($attributes['childTitleFontWeight']);
+        }
+        if (!empty($attributes['textFontSize'])) {
+            $style_vars[] = '--shuriken-text-font-size: ' . esc_attr($attributes['textFontSize']);
+        }
+        
+        // Spacing variables
+        if (!empty($attributes['parentPadding'])) {
+            $style_vars[] = '--shuriken-parent-padding: ' . esc_attr($attributes['parentPadding']);
+        }
+        if (!empty($attributes['childPadding'])) {
+            $style_vars[] = '--shuriken-child-padding: ' . esc_attr($attributes['childPadding']);
+        }
+        if (!empty($attributes['gapBetweenRatings'])) {
+            $style_vars[] = '--shuriken-gap: ' . esc_attr($attributes['gapBetweenRatings']);
+        }
+
         // Render parent rating
         $html = '<div class="shuriken-rating-group">';
         // Add parent-rating class to the wrapper of the parent rating
@@ -239,11 +321,19 @@ class Shuriken_Block {
         }
         $html .= '</div>';
 
-        // Wrap with block wrapper attributes
-        $wrapper_attributes = get_block_wrapper_attributes(array(
+        // Prepare wrapper attributes with CSS variables
+        $wrapper_attrs = array(
             'class' => 'shuriken-rating-group',
             'data-parent-id' => esc_attr($rating->source_id),
-        ));
+        );
+
+        // Add style attribute with CSS variables if any exist
+        if (!empty($style_vars)) {
+            $wrapper_attrs['style'] = implode('; ', $style_vars) . ';';
+        }
+
+        // Wrap with block wrapper attributes (this applies block supports like colors, spacing, etc.)
+        $wrapper_attributes = get_block_wrapper_attributes($wrapper_attrs);
 
         if ($anchor_tag) {
             $wrapper_attributes = str_replace('class="', 'id="' . esc_attr($anchor_tag) . '" class="', $wrapper_attributes);

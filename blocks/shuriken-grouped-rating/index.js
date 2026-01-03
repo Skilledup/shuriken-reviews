@@ -1,7 +1,7 @@
 (function (wp) {
     const { registerBlockType } = wp.blocks;
-    const { useBlockProps, InspectorControls } = wp.blockEditor;
-    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice, __experimentalDivider: Divider } = wp.components;
+    const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
+    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice, RangeControl, __experimentalUnitControl: UnitControl, __experimentalDivider: Divider } = wp.components;
     const { useState, useEffect, useMemo, useRef } = wp.element;
     const { __ } = wp.i18n;
     const apiFetch = wp.apiFetch;
@@ -9,7 +9,35 @@
     registerBlockType('shuriken-reviews/grouped-rating', {
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { ratingId, titleTag, anchorTag } = attributes;
+            const { 
+                ratingId, 
+                titleTag, 
+                anchorTag,
+                titleColor,
+                textColor,
+                parentTitleColor,
+                childTitleColor,
+                parentBackgroundColor,
+                childBackgroundColor,
+                starActiveColor,
+                starInactiveColor,
+                parentBorderColor,
+                parentBorderWidth,
+                parentBorderStyle,
+                parentBorderRadius,
+                childBorderColor,
+                childBorderWidth,
+                childBorderStyle,
+                childBorderRadius,
+                parentTitleFontSize,
+                parentTitleFontWeight,
+                childTitleFontSize,
+                childTitleFontWeight,
+                textFontSize,
+                parentPadding,
+                childPadding,
+                gapBetweenRatings
+            } = attributes;
             
             const [ratings, setRatings] = useState([]);
             const [parentRatings, setParentRatings] = useState([]);
@@ -485,6 +513,259 @@
                             },
                             help: __('Optional anchor ID for linking to this rating group.', 'shuriken-reviews')
                         })
+                    ),
+                    wp.element.createElement(
+                        PanelColorSettings,
+                        {
+                            title: __('Color Settings', 'shuriken-reviews'),
+                            initialOpen: false,
+                            colorSettings: [
+                                {
+                                    label: __('Parent Title Color', 'shuriken-reviews'),
+                                    value: parentTitleColor,
+                                    onChange: function (value) { setAttributes({ parentTitleColor: value }); }
+                                },
+                                {
+                                    label: __('Child Title Color', 'shuriken-reviews'),
+                                    value: childTitleColor,
+                                    onChange: function (value) { setAttributes({ childTitleColor: value }); }
+                                },
+                                {
+                                    label: __('Text Color', 'shuriken-reviews'),
+                                    value: textColor,
+                                    onChange: function (value) { setAttributes({ textColor: value }); }
+                                },
+                                {
+                                    label: __('Parent Background', 'shuriken-reviews'),
+                                    value: parentBackgroundColor,
+                                    onChange: function (value) { setAttributes({ parentBackgroundColor: value }); }
+                                },
+                                {
+                                    label: __('Child Background', 'shuriken-reviews'),
+                                    value: childBackgroundColor,
+                                    onChange: function (value) { setAttributes({ childBackgroundColor: value }); }
+                                },
+                                {
+                                    label: __('Active Star Color', 'shuriken-reviews'),
+                                    value: starActiveColor,
+                                    onChange: function (value) { setAttributes({ starActiveColor: value }); }
+                                },
+                                {
+                                    label: __('Inactive Star Color', 'shuriken-reviews'),
+                                    value: starInactiveColor,
+                                    onChange: function (value) { setAttributes({ starInactiveColor: value }); }
+                                }
+                            ]
+                        }
+                    ),
+                    wp.element.createElement(
+                        PanelBody,
+                        { title: __('Parent Rating Border', 'shuriken-reviews'), initialOpen: false },
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Border Width', 'shuriken-reviews'),
+                            value: parentBorderWidth,
+                            onChange: function (value) { setAttributes({ parentBorderWidth: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Border Style', 'shuriken-reviews'),
+                            value: parentBorderStyle,
+                            options: [
+                                { label: __('Solid', 'shuriken-reviews'), value: 'solid' },
+                                { label: __('Dashed', 'shuriken-reviews'), value: 'dashed' },
+                                { label: __('Dotted', 'shuriken-reviews'), value: 'dotted' },
+                                { label: __('Double', 'shuriken-reviews'), value: 'double' },
+                                { label: __('None', 'shuriken-reviews'), value: 'none' }
+                            ],
+                            onChange: function (value) { setAttributes({ parentBorderStyle: value }); }
+                        }),
+                        wp.element.createElement(
+                            PanelColorSettings,
+                            {
+                                title: __('Border Color', 'shuriken-reviews'),
+                                initialOpen: false,
+                                colorSettings: [
+                                    {
+                                        label: __('Parent Border Color', 'shuriken-reviews'),
+                                        value: parentBorderColor,
+                                        onChange: function (value) { setAttributes({ parentBorderColor: value }); }
+                                    }
+                                ]
+                            }
+                        ),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Border Radius', 'shuriken-reviews'),
+                            value: parentBorderRadius,
+                            onChange: function (value) { setAttributes({ parentBorderRadius: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: '%', label: '%' }
+                            ]
+                        })
+                    ),
+                    wp.element.createElement(
+                        PanelBody,
+                        { title: __('Child Rating Border', 'shuriken-reviews'), initialOpen: false },
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Border Width', 'shuriken-reviews'),
+                            value: childBorderWidth,
+                            onChange: function (value) { setAttributes({ childBorderWidth: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Border Style', 'shuriken-reviews'),
+                            value: childBorderStyle,
+                            options: [
+                                { label: __('Solid', 'shuriken-reviews'), value: 'solid' },
+                                { label: __('Dashed', 'shuriken-reviews'), value: 'dashed' },
+                                { label: __('Dotted', 'shuriken-reviews'), value: 'dotted' },
+                                { label: __('Double', 'shuriken-reviews'), value: 'double' },
+                                { label: __('None', 'shuriken-reviews'), value: 'none' }
+                            ],
+                            onChange: function (value) { setAttributes({ childBorderStyle: value }); }
+                        }),
+                        wp.element.createElement(
+                            PanelColorSettings,
+                            {
+                                title: __('Border Color', 'shuriken-reviews'),
+                                initialOpen: false,
+                                colorSettings: [
+                                    {
+                                        label: __('Child Border Color', 'shuriken-reviews'),
+                                        value: childBorderColor,
+                                        onChange: function (value) { setAttributes({ childBorderColor: value }); }
+                                    }
+                                ]
+                            }
+                        ),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Border Radius', 'shuriken-reviews'),
+                            value: childBorderRadius,
+                            onChange: function (value) { setAttributes({ childBorderRadius: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: '%', label: '%' }
+                            ]
+                        })
+                    ),
+                    wp.element.createElement(
+                        PanelBody,
+                        { title: __('Typography', 'shuriken-reviews'), initialOpen: false },
+                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginBottom: '8px' } }, 
+                            __('Parent Title', 'shuriken-reviews')
+                        ),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Font Size', 'shuriken-reviews'),
+                            value: parentTitleFontSize,
+                            onChange: function (value) { setAttributes({ parentTitleFontSize: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Font Weight', 'shuriken-reviews'),
+                            value: parentTitleFontWeight,
+                            options: [
+                                { label: __('Default', 'shuriken-reviews'), value: '' },
+                                { label: __('100 - Thin', 'shuriken-reviews'), value: '100' },
+                                { label: __('300 - Light', 'shuriken-reviews'), value: '300' },
+                                { label: __('400 - Normal', 'shuriken-reviews'), value: '400' },
+                                { label: __('500 - Medium', 'shuriken-reviews'), value: '500' },
+                                { label: __('600 - Semi Bold', 'shuriken-reviews'), value: '600' },
+                                { label: __('700 - Bold', 'shuriken-reviews'), value: '700' },
+                                { label: __('900 - Black', 'shuriken-reviews'), value: '900' }
+                            ],
+                            onChange: function (value) { setAttributes({ parentTitleFontWeight: value }); }
+                        }),
+                        Divider && wp.element.createElement(Divider, null),
+                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginTop: '16px', marginBottom: '8px' } }, 
+                            __('Child Title', 'shuriken-reviews')
+                        ),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Font Size', 'shuriken-reviews'),
+                            value: childTitleFontSize,
+                            onChange: function (value) { setAttributes({ childTitleFontSize: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Font Weight', 'shuriken-reviews'),
+                            value: childTitleFontWeight,
+                            options: [
+                                { label: __('Default', 'shuriken-reviews'), value: '' },
+                                { label: __('100 - Thin', 'shuriken-reviews'), value: '100' },
+                                { label: __('300 - Light', 'shuriken-reviews'), value: '300' },
+                                { label: __('400 - Normal', 'shuriken-reviews'), value: '400' },
+                                { label: __('500 - Medium', 'shuriken-reviews'), value: '500' },
+                                { label: __('600 - Semi Bold', 'shuriken-reviews'), value: '600' },
+                                { label: __('700 - Bold', 'shuriken-reviews'), value: '700' },
+                                { label: __('900 - Black', 'shuriken-reviews'), value: '900' }
+                            ],
+                            onChange: function (value) { setAttributes({ childTitleFontWeight: value }); }
+                        }),
+                        Divider && wp.element.createElement(Divider, null),
+                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginTop: '16px', marginBottom: '8px' } }, 
+                            __('Stats Text', 'shuriken-reviews')
+                        ),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Font Size', 'shuriken-reviews'),
+                            value: textFontSize,
+                            onChange: function (value) { setAttributes({ textFontSize: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        })
+                    ),
+                    wp.element.createElement(
+                        PanelBody,
+                        { title: __('Spacing', 'shuriken-reviews'), initialOpen: false },
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Parent Padding', 'shuriken-reviews'),
+                            value: parentPadding,
+                            onChange: function (value) { setAttributes({ parentPadding: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Child Padding', 'shuriken-reviews'),
+                            value: childPadding,
+                            onChange: function (value) { setAttributes({ childPadding: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        }),
+                        UnitControl && wp.element.createElement(UnitControl, {
+                            label: __('Gap Between Ratings', 'shuriken-reviews'),
+                            value: gapBetweenRatings,
+                            onChange: function (value) { setAttributes({ gapBetweenRatings: value }); },
+                            units: [
+                                { value: 'px', label: 'px' },
+                                { value: 'em', label: 'em' },
+                                { value: 'rem', label: 'rem' }
+                            ]
+                        })
                     )
                 ),
                 isCreateModalOpen && wp.element.createElement(
@@ -755,24 +1036,52 @@
                             : selectedRating
                                 ? wp.element.createElement(
                                     'div',
-                                    { className: 'shuriken-rating-group' },
+                                    { 
+                                        className: 'shuriken-rating-group',
+                                        style: {
+                                            gap: gapBetweenRatings || undefined
+                                        }
+                                    },
                                     wp.element.createElement(
                                         'div',
-                                        { className: 'shuriken-rating-wrapper parent-rating' },
+                                        { 
+                                            className: 'shuriken-rating-wrapper parent-rating',
+                                            style: {
+                                                backgroundColor: parentBackgroundColor || undefined,
+                                                borderColor: parentBorderColor || undefined,
+                                                borderWidth: parentBorderWidth || undefined,
+                                                borderStyle: (parentBorderWidth && parentBorderStyle) ? parentBorderStyle : undefined,
+                                                borderRadius: parentBorderRadius || undefined,
+                                                padding: parentPadding || undefined
+                                            }
+                                        },
                                         wp.element.createElement(
                                             titleTag,
-                                            { className: 'rating-title' },
+                                            { 
+                                                className: 'rating-title',
+                                                style: {
+                                                    color: parentTitleColor || titleColor || undefined,
+                                                    fontSize: parentTitleFontSize || undefined,
+                                                    fontWeight: parentTitleFontWeight || undefined
+                                                }
+                                            },
                                             selectedRating.name
                                         ),
                                         wp.element.createElement(
                                             'div',
                                             { className: 'stars' },
                                             [1, 2, 3, 4, 5].map(function (i) {
+                                                var isActive = i <= calculateAverage(selectedRating);
                                                 return wp.element.createElement(
                                                     'span',
                                                     {
                                                         key: i,
-                                                        className: 'star' + (i <= calculateAverage(selectedRating) ? ' active' : '')
+                                                        className: 'star' + (isActive ? ' active' : ''),
+                                                        style: {
+                                                            color: isActive 
+                                                                ? (starActiveColor || undefined)
+                                                                : (starInactiveColor || undefined)
+                                                        }
                                                     },
                                                     '★'
                                                 );
@@ -780,7 +1089,13 @@
                                         ),
                                         wp.element.createElement(
                                             'div',
-                                            { className: 'rating-stats' },
+                                            { 
+                                                className: 'rating-stats',
+                                                style: {
+                                                    color: textColor || undefined,
+                                                    fontSize: textFontSize || undefined
+                                                }
+                                            },
                                             __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(selectedRating) + '/5 (' + (selectedRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
                                         )
                                     ),
@@ -790,21 +1105,45 @@
                                         childRatings.map(function(child) {
                                             return wp.element.createElement(
                                                 'div',
-                                                { key: child.id, className: 'shuriken-rating-wrapper child-rating' },
+                                                { 
+                                                    key: child.id, 
+                                                    className: 'shuriken-rating-wrapper child-rating',
+                                                    style: {
+                                                        backgroundColor: childBackgroundColor || undefined,
+                                                        borderColor: childBorderColor || undefined,
+                                                        borderWidth: childBorderWidth || undefined,
+                                                        borderStyle: (childBorderWidth && childBorderStyle) ? childBorderStyle : undefined,
+                                                        borderRadius: childBorderRadius || undefined,
+                                                        padding: childPadding || undefined
+                                                    }
+                                                },
                                                 wp.element.createElement(
                                                     'h4',
-                                                    { className: 'rating-title' },
+                                                    { 
+                                                        className: 'rating-title',
+                                                        style: {
+                                                            color: childTitleColor || titleColor || undefined,
+                                                            fontSize: childTitleFontSize || undefined,
+                                                            fontWeight: childTitleFontWeight || undefined
+                                                        }
+                                                    },
                                                     child.name
                                                 ),
                                                 wp.element.createElement(
                                                     'div',
                                                     { className: 'stars' },
                                                     [1, 2, 3, 4, 5].map(function (i) {
+                                                        var isActive = i <= calculateAverage(child);
                                                         return wp.element.createElement(
                                                             'span',
                                                             {
                                                                 key: i,
-                                                                className: 'star' + (i <= calculateAverage(child) ? ' active' : '')
+                                                                className: 'star' + (isActive ? ' active' : ''),
+                                                                style: {
+                                                                    color: isActive 
+                                                                        ? (starActiveColor || undefined)
+                                                                        : (starInactiveColor || undefined)
+                                                                }
                                                             },
                                                             '★'
                                                         );
@@ -812,7 +1151,13 @@
                                                 ),
                                                 wp.element.createElement(
                                                     'div',
-                                                    { className: 'rating-stats' },
+                                                    { 
+                                                        className: 'rating-stats',
+                                                        style: {
+                                                            color: textColor || undefined,
+                                                            fontSize: textFontSize || undefined
+                                                        }
+                                                    },
                                                     calculateAverage(child) + '/5'
                                                 )
                                             );

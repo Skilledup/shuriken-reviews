@@ -268,3 +268,72 @@
         grid-template-columns: repeat(3, 1fr);
     }
 }
+/* Custom Style Settings Support - CSS Variables */
+/* Apply CSS variable overrides for custom block styling */
+
+/* Gap between ratings */
+.shuriken-rating-group {
+    gap: var(--shuriken-gap, 24px);
+}
+
+.shuriken-rating-group .parent-rating .shuriken-rating-wrapper {
+    gap: var(--shuriken-gap, 12px);
+}
+
+/* Parent Rating Styles */
+.shuriken-rating-group .parent-rating {
+    background-color: var(--shuriken-parent-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+    border-color: var(--shuriken-parent-border-color, transparent);
+    border-width: var(--shuriken-parent-border-width, 0);
+    border-style: var(--shuriken-parent-border-style, solid);
+    border-radius: var(--shuriken-parent-border-radius, 12px);
+    padding: var(--shuriken-parent-padding, 24px 28px);
+}
+
+.shuriken-rating-group .parent-rating .rating-title {
+    color: var(--shuriken-parent-title-color, #ffffff);
+    font-size: var(--shuriken-parent-title-font-size, 1.75em);
+    font-weight: var(--shuriken-parent-title-font-weight, 700);
+}
+
+.shuriken-rating-group .parent-rating .rating-stats {
+    color: var(--shuriken-text-color, rgba(255, 255, 255, 0.95));
+    font-size: var(--shuriken-text-font-size, 15px);
+}
+
+.shuriken-rating-group .parent-rating .stars .star {
+    color: var(--shuriken-star-inactive, rgba(255, 255, 255, 0.3));
+}
+
+.shuriken-rating-group .parent-rating .stars .star.active {
+    color: var(--shuriken-star-active, #ffd700);
+}
+
+/* Child Rating Styles */
+.shuriken-child-ratings .child-rating {
+    background-color: var(--shuriken-child-bg, #ffffff);
+    border-color: var(--shuriken-child-border-color, #e2e8f0);
+    border-width: var(--shuriken-child-border-width, 2px);
+    border-style: var(--shuriken-child-border-style, solid);
+    border-radius: var(--shuriken-child-border-radius, 8px);
+    padding: var(--shuriken-child-padding, 18px);
+}
+
+.shuriken-child-ratings .child-rating .rating-title {
+    color: var(--shuriken-child-title-color, #1a202c);
+    font-size: var(--shuriken-child-title-font-size, 1.05em);
+    font-weight: var(--shuriken-child-title-font-weight, 600);
+}
+
+.shuriken-child-ratings .child-rating .rating-stats {
+    color: var(--shuriken-text-color, #718096);
+    font-size: var(--shuriken-text-font-size, 13px);
+}
+
+.shuriken-child-ratings .child-rating .stars .star {
+    color: var(--shuriken-star-inactive, #ddd);
+}
+
+.shuriken-child-ratings .child-rating .stars .star.active {
+    color: var(--shuriken-star-active, #ffd700);
+}
