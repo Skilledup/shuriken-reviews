@@ -45,6 +45,14 @@ Learn how to test your code with mock implementations without requiring a databa
 - PHPUnit examples
 - WordPress test suite integration
 
+#### [Error Handling in FSE Blocks](guides/error-handling-blocks.md)
+Comprehensive guide to error handling in Gutenberg blocks with retry functionality.
+- Error flow from backend to frontend
+- User-friendly error messages
+- Retry functionality
+- Error types and codes
+- Best practices and testing
+
 ### 🏗️ Architecture & Design
 
 #### [Architecture Overview](ARCHITECTURE.md)

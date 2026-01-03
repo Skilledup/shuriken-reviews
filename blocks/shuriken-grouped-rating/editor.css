@@ -1,0 +1,28 @@
+/* Editor styles for Shuriken Grouped Rating block */
+
+.shuriken-grouped-rating-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.shuriken-grouped-rating-placeholder .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 20px;
+    color: #667eea;
+}
+
+.shuriken-grouped-rating-placeholder p {
+    font-size: 16px;
+    color: #64748b;
+    margin-top: 0;
+}

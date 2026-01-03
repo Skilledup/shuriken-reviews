@@ -105,6 +105,37 @@ class Shuriken_Block {
             'style' => 'shuriken-reviews-frontend',
             'editor_style' => array('shuriken-reviews-frontend', 'shuriken-rating-editor'),
         ));
+
+        // Register the grouped rating editor script
+        wp_register_script(
+            'shuriken-grouped-rating-editor',
+            plugins_url('blocks/shuriken-grouped-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-blocks',
+                'wp-element',
+                'wp-block-editor',
+                'wp-components',
+                'wp-i18n',
+                'wp-api-fetch'
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
+        // Register the grouped rating editor stylesheet
+        wp_register_style(
+            'shuriken-grouped-rating-editor',
+            plugins_url('blocks/shuriken-grouped-rating/editor.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(),
+            SHURIKEN_REVIEWS_VERSION
+        );
+
+        // Register the grouped rating block
+        register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
+            'render_callback' => array($this, 'render_grouped_block'),
+            'style' => 'shuriken-reviews-frontend',
+            'editor_style' => array('shuriken-reviews-frontend', 'shuriken-grouped-rating-editor'),
+        ));
     }
 
     /**
@@ -151,6 +182,82 @@ class Shuriken_Block {
         // Wrap with block wrapper attributes for proper Gutenberg integration
         // We need to extract the inner content and re-wrap it with block attributes
         return $this->wrap_with_block_attributes($html, $rating, $anchor_tag);
+    }
+
+    /**
+     * Render callback for the Shuriken Grouped Rating block
+     *
+     * @param array    $attributes Block attributes.
+     * @param string   $content    Block content.
+     * @param WP_Block $block      Block instance.
+     * @return string Rendered block output.
+     * @since 1.8.0
+     */
+    public function render_grouped_block($attributes, $content, $block) {
+        // Ensure attributes is an array
+        if (!is_array($attributes)) {
+            $attributes = array();
+        }
+
+        $rating_id = isset($attributes['ratingId']) ? absint($attributes['ratingId']) : 0;
+        $title_tag = isset($attributes['titleTag']) ? sanitize_key($attributes['titleTag']) : 'h2';
+        $anchor_tag = isset($attributes['anchorTag']) ? sanitize_html_class($attributes['anchorTag']) : '';
+
+        // Validate title tag
+        if (!in_array($title_tag, self::ALLOWED_TITLE_TAGS, true)) {
+            $title_tag = 'h2';
+        }
+
+        if (!$rating_id) {
+            return '';
+        }
+
+        $rating = shuriken_db()->get_rating($rating_id);
+
+        if (!$rating) {
+            return '';
+        }
+
+        // Get child ratings
+        $child_ratings = shuriken_db()->get_sub_ratings($rating_id);
+
+        // Render parent rating
+        $html = '<div class="shuriken-rating-group">';
+        // Add parent-rating class to the wrapper of the parent rating
+        $parent_html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag);
+        $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
+
+        // Render child ratings
+        if (!empty($child_ratings)) {
+            $html .= '<div class="shuriken-child-ratings">';
+            foreach ($child_ratings as $child) {
+                $child_html = shuriken_shortcodes()->render_rating_html($child, 'h4');
+                // Add child-rating class
+                $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
+            }
+            $html .= '</div>';
+        }
+        $html .= '</div>';
+
+        // Wrap with block wrapper attributes
+        $wrapper_attributes = get_block_wrapper_attributes(array(
+            'class' => 'shuriken-rating-group',
+            'data-parent-id' => esc_attr($rating->source_id),
+        ));
+
+        if ($anchor_tag) {
+            $wrapper_attributes = str_replace('class="', 'id="' . esc_attr($anchor_tag) . '" class="', $wrapper_attributes);
+        }
+
+        // Replace the opening div with our block-wrapped version
+        $html = preg_replace(
+            '/^<div\s+class="shuriken-rating-group"/',
+            '<div ' . $wrapper_attributes,
+            $html,
+            1
+        );
+
+        return $html;
     }
 
     /**

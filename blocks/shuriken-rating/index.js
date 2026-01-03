@@ -1,7 +1,7 @@
 (function (wp) {
     const { registerBlockType } = wp.blocks;
     const { useBlockProps, InspectorControls } = wp.blockEditor;
-    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl } = wp.components;
+    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice } = wp.components;
     const { useState, useEffect, useMemo, useRef } = wp.element;
     const { __ } = wp.i18n;
     const apiFetch = wp.apiFetch;
@@ -29,20 +29,62 @@
             const [mirrorableRatings, setMirrorableRatings] = useState([]);
             const [creating, setCreating] = useState(false);
             const [updating, setUpdating] = useState(false);
+            const [error, setError] = useState(null);
+            const [lastFailedAction, setLastFailedAction] = useState(null);
             const hasFetched = useRef(false);
 
             const blockProps = useBlockProps({
                 className: 'shuriken-rating-block-editor'
             });
 
-            // Fetch available ratings only once
-            useEffect(function () {
-                if (hasFetched.current) {
-                    return;
-                }
-                hasFetched.current = true;
+            // Error handling helper
+            function handleApiError(err, action) {
+                console.error('Shuriken Reviews API Error:', err);
                 
-                // Fetch all ratings, parent ratings, and mirrorable ratings in parallel
+                var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
+                
+                if (err.message) {
+                    errorMessage = err.message;
+                } else if (err.data && err.data.message) {
+                    errorMessage = err.data.message;
+                } else if (typeof err === 'string') {
+                    errorMessage = err;
+                }
+                
+                if (err.code === 'rest_forbidden' || err.code === 'rest_cookie_invalid_nonce') {
+                    errorMessage = __('Permission denied. Please refresh the page and try again.', 'shuriken-reviews');
+                } else if (err.code === 'rest_no_route') {
+                    errorMessage = __('API endpoint not found. Please ensure the plugin is properly installed.', 'shuriken-reviews');
+                } else if (err.status === 429 || err.code === 'rate_limit_exceeded') {
+                    errorMessage = __('Too many requests. Please wait a moment and try again.', 'shuriken-reviews');
+                } else if (err.status === 404 || err.code === 'not_found') {
+                    errorMessage = __('The requested resource was not found.', 'shuriken-reviews');
+                } else if (err.status === 500 || err.code === 'internal_server_error') {
+                    errorMessage = __('Server error. Please try again later.', 'shuriken-reviews');
+                }
+                
+                setError(errorMessage);
+                setLastFailedAction(action);
+            }
+
+            function retryLastAction() {
+                setError(null);
+                if (lastFailedAction) {
+                    lastFailedAction();
+                    setLastFailedAction(null);
+                }
+            }
+
+            function dismissError() {
+                setError(null);
+                setLastFailedAction(null);
+            }
+
+            // Fetch ratings
+            function fetchRatings() {
+                setLoading(true);
+                setError(null);
+                
                 Promise.all([
                     apiFetch({ path: '/shuriken-reviews/v1/ratings', method: 'GET' }),
                     apiFetch({ path: '/shuriken-reviews/v1/ratings/parents', method: 'GET' }),
@@ -58,13 +100,22 @@
                         setMirrorableRatings(Array.isArray(mirrorableData) ? mirrorableData : []);
                         setLoading(false);
                     })
-                    .catch(function (error) {
-                        console.error('Shuriken Reviews: Failed to fetch ratings', error);
+                    .catch(function (err) {
                         setRatings([]);
                         setParentRatings([]);
                         setMirrorableRatings([]);
                         setLoading(false);
+                        handleApiError(err, fetchRatings);
                     });
+            }
+
+            // Fetch available ratings only once
+            useEffect(function () {
+                if (hasFetched.current) {
+                    return;
+                }
+                hasFetched.current = true;
+                fetchRatings();
             }, []);
 
             // Find selected rating using useMemo for efficiency
@@ -126,9 +177,11 @@
                         setNewRatingDisplayOnly(false);
                         setIsModalOpen(false);
                         setCreating(false);
+                        setError(null);
                     })
-                    .catch(function () {
+                    .catch(function (err) {
                         setCreating(false);
+                        handleApiError(err, createNewRating);
                     });
             }
 
@@ -232,9 +285,11 @@
                         }
                         setIsEditModalOpen(false);
                         setUpdating(false);
+                        setError(null);
                     })
-                    .catch(function () {
+                    .catch(function (err) {
                         setUpdating(false);
+                        handleApiError(err, updateRating);
                     });
             }
 
@@ -521,6 +576,21 @@
                 wp.element.createElement(
                     'div',
                     blockProps,
+                    error && wp.element.createElement(
+                        Notice,
+                        {
+                            status: 'error',
+                            onRemove: dismissError,
+                            isDismissible: true,
+                            actions: lastFailedAction ? [
+                                {
+                                    label: __('Retry', 'shuriken-reviews'),
+                                    onClick: retryLastAction
+                                }
+                            ] : []
+                        },
+                        error
+                    ),
                     loading
                         ? wp.element.createElement(Spinner, null)
                         : !ratingId

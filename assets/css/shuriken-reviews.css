@@ -101,3 +101,124 @@
         margin-bottom: 5px !important;
     }
 }
+
+/* Grouped Rating Styles */
+.shuriken-rating-group {
+    margin: 30px 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.shuriken-rating-group .parent-rating {
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.shuriken-rating-group .parent-rating .rating-title {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.shuriken-rating-group .parent-rating .stars {
+    font-size: 28px;
+}
+
+.shuriken-rating-group .parent-rating .rating-stats {
+    font-size: 16px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.shuriken-child-ratings {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.shuriken-child-ratings .child-rating {
+    padding: 16px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.shuriken-child-ratings .child-rating:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.shuriken-child-ratings .child-rating .rating-title {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #2d3748;
+    margin-bottom: 8px !important;
+}
+
+.shuriken-child-ratings .child-rating .stars {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.shuriken-child-ratings .child-rating .rating-stats {
+    font-size: 13px;
+    color: #718096;
+}
+
+/* Display only indicator for parent ratings */
+.shuriken-rating-group .parent-rating.display-only::before {
+    content: "Calculated from sub-ratings";
+    display: block;
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+/* Mobile responsive for grouped ratings */
+@media (max-width: 768px) {
+    .shuriken-rating-group {
+        padding: 16px;
+        margin: 20px 0;
+    }
+
+    .shuriken-rating-group .parent-rating {
+        padding: 16px;
+    }
+
+    .shuriken-rating-group .parent-rating .rating-title {
+        font-size: 1.3em;
+    }
+
+    .shuriken-rating-group .parent-rating .stars {
+        font-size: 24px;
+    }
+
+    .shuriken-child-ratings {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .shuriken-child-ratings .child-rating {
+        padding: 12px;
+    }
+}
+
+/* Tablet responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .shuriken-child-ratings {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+}

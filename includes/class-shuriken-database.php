@@ -472,6 +472,10 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         ));
 
         foreach ($ratings as &$rating) {
+            // Set source_id for voting
+            $rating->source_id = $rating->id;
+            
+            // Calculate average
             $rating->average = $rating->total_votes > 0 
                 ? round($rating->total_rating / $rating->total_votes, 1) 
                 : 0;

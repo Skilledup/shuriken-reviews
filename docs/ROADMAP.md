@@ -17,6 +17,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Testing infrastructure (interfaces + mock DB)
 - Exception system + handler
 - Dependency injection container
+- Parent/child “grouped ratings” block
 
 🚧 Next up:
 - Vote rate limiting
@@ -25,7 +26,6 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 🚧 Later:
 - Rating notes/comments
 - Votes/notes management UI
-- Parent/child “grouped ratings” block
 - Alternative calendar display hook (Jalali/Shamsi)
 
 🚧 Future:
@@ -43,6 +43,17 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Added exception types + centralized handling
 - Fixed nonce validation with cached pages (REST API nonce)
 - Fixed star rating normalization behavior
+- Added Parent/Child Grouped Ratings Block with full CRUD management
+  - Create/edit parent ratings
+  - Add/edit/delete sub-ratings with batch updates (Apply button)
+  - Manage effect types (positive/negative)
+  - Visual indicators for unsaved changes
+  - New grouped rating frontend styling
+- Implemented comprehensive error handling in FSE blocks
+  - User-friendly error messages
+  - Retry functionality for failed operations
+  - Integration with backend exception system
+  - DELETE endpoint for ratings
 
 ---
 
@@ -96,14 +107,6 @@ Implementation checklist:
 - [ ] Bulk operations
 - [ ] Exports
 - [ ] User-facing “my activity” view
-
-### Parent/Child Grouped Ratings Block
-Goal: one block showing a parent rating + its child ratings.
-
-Implementation checklist:
-- [ ] Register new block + editor UI
-- [ ] Frontend rendering
-- [ ] Styling for hierarchy
 
 ### Calendar Display Hook
 Goal: allow alternative date formats (e.g. Jalali/Shamsi) without changing stored dates.

@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "shuriken-reviews/grouped-rating",
+    "version": "1.0.0",
+    "title": "Shuriken Grouped Rating",
+    "category": "widgets",
+    "icon": "networking",
+    "description": "Display a parent rating along with all its child ratings.",
+    "keywords": ["rating", "review", "stars", "vote", "group", "parent", "child"],
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"]
+    },
+    "textdomain": "shuriken-reviews",
+    "attributes": {
+        "ratingId": {
+            "type": "number",
+            "default": 0
+        },
+        "titleTag": {
+            "type": "string",
+            "default": "h2"
+        },
+        "anchorTag": {
+            "type": "string",
+            "default": ""
+        }
+    },
+    "editorScript": "shuriken-grouped-rating-editor",
+    "style": "shuriken-reviews-frontend",
+    "editorStyle": ["shuriken-reviews-frontend", "shuriken-grouped-rating-editor"]
+}

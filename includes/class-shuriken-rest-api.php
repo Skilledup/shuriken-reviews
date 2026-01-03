@@ -122,6 +122,12 @@ class Shuriken_REST_API {
                 'permission_callback' => array($this, 'can_manage_options'),
                 'args'                => $this->get_rating_update_args(),
             ),
+            array(
+                'methods'             => 'DELETE',
+                'callback'            => array($this, 'delete_rating'),
+                'permission_callback' => array($this, 'can_manage_options'),
+                'args'                => $this->get_rating_id_args(),
+            ),
         ));
 
         // Parent ratings endpoint
@@ -426,6 +432,51 @@ class Shuriken_REST_API {
         $rating = $db->get_rating($id);
         
         return rest_ensure_response($rating);
+    }
+
+    /**
+     * Delete a rating
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response|WP_Error
+     */
+    public function delete_rating($request) {
+        $id = $request->get_param('id');
+        $db = shuriken_db();
+        
+        // Check if rating exists
+        $existing = $db->get_rating($id);
+        if (!$existing) {
+            return new WP_Error(
+                'not_found',
+                __('Rating not found.', 'shuriken-reviews'),
+                array('status' => 404)
+            );
+        }
+
+        // Store parent_id before deletion for recalculation
+        $parent_id = $existing->parent_id;
+        
+        // Delete the rating
+        $result = $db->delete_rating($id);
+        
+        if ($result === false) {
+            return new WP_Error(
+                'delete_failed',
+                __('Failed to delete rating.', 'shuriken-reviews'),
+                array('status' => 500)
+            );
+        }
+
+        // Recalculate parent rating if this was a sub-rating
+        if (!empty($parent_id)) {
+            $db->recalculate_parent_rating($parent_id);
+        }
+        
+        return rest_ensure_response(array(
+            'deleted' => true,
+            'id' => $id
+        ));
     }
 
     /**
