@@ -65,8 +65,7 @@ shuriken-reviews/
 │       ├── class-shuriken-logic-exception.php
 │       ├── class-shuriken-configuration-exception.php
 │       ├── class-shuriken-rate-limit-exception.php
-│       ├── class-shuriken-integration-exception.php
-│       └── README.md              # Exception documentation
+│       └── class-shuriken-integration-exception.php
 │
 ├── docs/                          # Developer documentation
 │   ├── INDEX.md                   # Documentation index & quick start
@@ -84,7 +83,6 @@ shuriken-reviews/
 │   └── shuriken-reviews-fa_IR.* # Farsi translations
 │
 └── tests/                         # Testing utilities
-    ├── README.md                  # Testing documentation
     └── example-mock-database.php  # Mock implementation
 ```
 

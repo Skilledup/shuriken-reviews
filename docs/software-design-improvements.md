@@ -79,7 +79,7 @@ Added 20 WordPress hooks (12 filters + 8 actions):
 - `shuriken_rating_deleted` - After deletion
 
 ### Documentation
-Complete hooks reference: `docs/hooks-reference.md` (859 lines)
+Complete hooks reference: `docs/guides/hooks-reference.md`
 
 ### Benefits
 - ✅ Developers can customize without modifying core
