@@ -133,6 +133,27 @@ class Shuriken_Exception_Handler {
             return $message;
         }
 
+        if ($exception instanceof Shuriken_Rate_Limit_Exception) {
+            // Rate limit messages are already user-friendly
+            return $message;
+        }
+
+        if ($exception instanceof Shuriken_Configuration_Exception) {
+            // Configuration errors should be shown to admins only
+            if (current_user_can('manage_options')) {
+                return $message;
+            }
+            return __('A configuration error occurred. Please contact the site administrator.', 'shuriken-reviews');
+        }
+
+        if ($exception instanceof Shuriken_Integration_Exception) {
+            // Integration errors might be too technical for end users
+            if (!defined('WP_DEBUG') || !WP_DEBUG) {
+                return __('An external service error occurred. Please try again later.', 'shuriken-reviews');
+            }
+            return $message;
+        }
+
         return $message;
     }
 
@@ -157,6 +178,18 @@ class Shuriken_Exception_Handler {
 
         if ($exception instanceof Shuriken_Database_Exception) {
             return 500;
+        }
+
+        if ($exception instanceof Shuriken_Rate_Limit_Exception) {
+            return 429;
+        }
+
+        if ($exception instanceof Shuriken_Configuration_Exception) {
+            return 500;
+        }
+
+        if ($exception instanceof Shuriken_Integration_Exception) {
+            return 502;
         }
 
         return 500;

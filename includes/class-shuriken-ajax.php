@@ -189,69 +189,65 @@ class Shuriken_AJAX {
          */
         do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
 
-        // Check if the user has already voted
-        $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
-        $is_update = !empty($existing_vote);
+        try {
+            // Check if the user has already voted
+            $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
+            $is_update = !empty($existing_vote);
 
-        if ($existing_vote) {
-            // Update the existing vote (use normalized value for storage)
-            $result = $db->update_vote(
-                $existing_vote->id,
-                $rating_id,
-                $existing_vote->rating_value,
-                $normalized_value
-            );
+            if ($existing_vote) {
+                // Update the existing vote (use normalized value for storage)
+                $db->update_vote(
+                    $existing_vote->id,
+                    $rating_id,
+                    $existing_vote->rating_value,
+                    $normalized_value
+                );
 
-            if (!$result) {
-                wp_send_json_error(__('Failed to update vote', 'shuriken-reviews'));
-                return;
+                /**
+                 * Fires after a vote is updated.
+                 *
+                 * @since 1.7.0
+                 * @param int    $vote_id          The vote ID.
+                 * @param int    $rating_id        The rating ID.
+                 * @param float  $old_value        The previous rating value (normalized 1-5 scale).
+                 * @param float  $new_value        The new rating value (in display scale).
+                 * @param float  $normalized_value The new normalized value (1-5 scale).
+                 * @param int    $user_id          The user ID (0 for guests).
+                 * @param object $rating           The rating object.
+                 * @param int    $max_stars        The maximum stars for this rating.
+                 */
+                do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
+            } else {
+                // Insert a new vote (use normalized value for storage)
+                $db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
+
+                /**
+                 * Fires after a new vote is created.
+                 *
+                 * @since 1.7.0
+                 * @param int    $rating_id        The rating ID.
+                 * @param float  $rating_value     The rating value (in display scale).
+                 * @param float  $normalized_value The normalized value (1-5 scale for storage).
+                 * @param int    $user_id          The user ID (0 for guests).
+                 * @param string $user_ip          The user IP (for guests).
+                 * @param object $rating           The rating object.
+                 * @param int    $max_stars        The maximum stars for this rating.
+                 */
+                do_action('shuriken_vote_created', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
             }
 
-            /**
-             * Fires after a vote is updated.
-             *
-             * @since 1.7.0
-             * @param int    $vote_id          The vote ID.
-             * @param int    $rating_id        The rating ID.
-             * @param float  $old_value        The previous rating value (normalized 1-5 scale).
-             * @param float  $new_value        The new rating value (in display scale).
-             * @param float  $normalized_value The new normalized value (1-5 scale).
-             * @param int    $user_id          The user ID (0 for guests).
-             * @param object $rating           The rating object.
-             * @param int    $max_stars        The maximum stars for this rating.
-             */
-            do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
-        } else {
-            // Insert a new vote (use normalized value for storage)
-            $result = $db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
-
-            if (!$result) {
-                wp_send_json_error(__('Failed to submit vote', 'shuriken-reviews'));
-                return;
+            // If this is a sub-rating, recalculate the parent rating
+            if (!empty($rating->parent_id)) {
+                $db->recalculate_parent_rating($rating->parent_id);
             }
 
-            /**
-             * Fires after a new vote is created.
-             *
-             * @since 1.7.0
-             * @param int    $rating_id        The rating ID.
-             * @param float  $rating_value     The rating value (in display scale).
-             * @param float  $normalized_value The normalized value (1-5 scale for storage).
-             * @param int    $user_id          The user ID (0 for guests).
-             * @param string $user_ip          The user IP (for guests).
-             * @param object $rating           The rating object.
-             * @param int    $max_stars        The maximum stars for this rating.
-             */
-            do_action('shuriken_vote_created', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
-        }
+            // Get updated rating data
+            $updated_rating = $db->get_rating($rating_id);
 
-        // If this is a sub-rating, recalculate the parent rating
-        if (!empty($rating->parent_id)) {
-            $db->recalculate_parent_rating($rating->parent_id);
+        } catch (Shuriken_Exception $e) {
+            Shuriken_Exception_Handler::handle_ajax_exception($e);
+            return;
         }
-
-        // Get updated rating data
-        $updated_rating = $db->get_rating($rating_id);
 
         // Calculate scaled average for the response
         $scaled_average = round(($updated_rating->average / 5) * $max_stars, 1);

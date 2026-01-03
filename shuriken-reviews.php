@@ -89,6 +89,9 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-not-found-exception.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-permission-exception.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-logic-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-configuration-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-rate-limit-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-integration-exception.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-exception-handler.php';
         
         // Interfaces

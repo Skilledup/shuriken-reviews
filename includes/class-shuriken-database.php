@@ -246,11 +246,19 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string $effect_type Effect type on parent: 'positive' or 'negative'
      * @param bool $display_only Whether the rating is display-only (no direct voting)
      * @param int|null $mirror_of Original rating ID to mirror (optional)
-     * @return int|false The new rating ID or false on failure
+     * @return int The new rating ID
+     * @throws Shuriken_Database_Exception If insert fails
+     * @throws Shuriken_Validation_Exception If name is empty
      */
     public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null) {
+        $sanitized_name = sanitize_text_field($name);
+        
+        if (empty($sanitized_name)) {
+            throw Shuriken_Validation_Exception::required_field('name');
+        }
+        
         $insert_data = array(
-            'name' => sanitize_text_field($name),
+            'name' => $sanitized_name,
             'effect_type' => in_array($effect_type, array('positive', 'negative'), true) ? $effect_type : 'positive',
             'display_only' => $display_only ? 1 : 0
         );
@@ -279,22 +287,22 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $format
         );
 
-        if ($result !== false) {
-            $new_id = $this->wpdb->insert_id;
-
-            /**
-             * Fires after a rating is created.
-             *
-             * @since 1.7.0
-             * @param int   $rating_id   The new rating ID.
-             * @param array $insert_data The inserted data.
-             */
-            do_action('shuriken_rating_created', $new_id, $insert_data);
-
-            return $new_id;
+        if ($result === false) {
+            throw Shuriken_Database_Exception::insert_failed('ratings');
         }
 
-        return false;
+        $new_id = $this->wpdb->insert_id;
+
+        /**
+         * Fires after a rating is created.
+         *
+         * @since 1.7.0
+         * @param int   $rating_id   The new rating ID.
+         * @param array $insert_data The inserted data.
+         */
+        do_action('shuriken_rating_created', $new_id, $insert_data);
+
+        return $new_id;
     }
 
     /**
@@ -302,7 +310,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @param int $rating_id Rating ID
      * @param array $data Data to update (name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of)
-     * @return bool True on success, false on failure
+     * @return bool True on success
+     * @throws Shuriken_Database_Exception If update fails
+     * @throws Shuriken_Validation_Exception If no valid data provided
      */
     public function update_rating($rating_id, $data) {
         $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of');
@@ -332,7 +342,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         }
 
         if (empty($update_data)) {
-            return false;
+            throw Shuriken_Validation_Exception::invalid_value('data', $data, 'at least one valid field');
         }
 
         /**
@@ -352,25 +362,28 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             array('%d')
         );
 
-        if ($result !== false) {
-            /**
-             * Fires after a rating is updated.
-             *
-             * @since 1.7.0
-             * @param int   $rating_id   The rating ID.
-             * @param array $update_data The updated data.
-             */
-            do_action('shuriken_rating_updated', $rating_id, $update_data);
+        if ($result === false) {
+            throw Shuriken_Database_Exception::update_failed('ratings', $rating_id);
         }
 
-        return $result !== false;
+        /**
+         * Fires after a rating is updated.
+         *
+         * @since 1.7.0
+         * @param int   $rating_id   The rating ID.
+         * @param array $update_data The updated data.
+         */
+        do_action('shuriken_rating_updated', $rating_id, $update_data);
+
+        return true;
     }
 
     /**
      * Delete a rating and its associated votes
      *
      * @param int $rating_id Rating ID
-     * @return bool True on success, false on failure
+     * @return bool True on success
+     * @throws Shuriken_Database_Exception If delete fails or transaction fails
      */
     public function delete_rating($rating_id) {
         /**
@@ -419,7 +432,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($result === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::delete_failed('ratings', $rating_id);
             }
 
             $this->wpdb->query('COMMIT');
@@ -434,9 +447,12 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             return true;
 
+        } catch (Shuriken_Database_Exception $e) {
+            // Re-throw our own exceptions
+            throw $e;
         } catch (Exception $e) {
             $this->wpdb->query('ROLLBACK');
-            return false;
+            throw Shuriken_Database_Exception::transaction_failed();
         }
     }
 
@@ -492,7 +508,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * Calculate and update parent rating totals based on sub-ratings
      *
      * @param int $parent_id Parent rating ID
-     * @return bool True on success, false on failure
+     * @return bool True on success
+     * @throws Shuriken_Database_Exception If update fails
      */
     public function recalculate_parent_rating($parent_id) {
         // Get all sub-ratings
@@ -520,6 +537,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             }
         }
 
+        // update_rating() now throws exceptions, so propagate them
         return $this->update_rating($parent_id, array(
             'total_votes' => $total_votes,
             'total_rating' => $total_rating
@@ -570,11 +588,13 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * Delete multiple ratings and their associated votes
      *
      * @param array $rating_ids Array of rating IDs
-     * @return int|false Number of deleted ratings or false on failure
+     * @return int Number of deleted ratings
+     * @throws Shuriken_Database_Exception If delete fails or transaction fails
+     * @throws Shuriken_Validation_Exception If no rating IDs provided
      */
     public function delete_ratings($rating_ids) {
         if (empty($rating_ids)) {
-            return false;
+            throw Shuriken_Validation_Exception::required_field('rating_ids');
         }
 
         $ids = array_map('intval', $rating_ids);
@@ -598,15 +618,18 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($deleted === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::delete_failed('ratings', implode(',', $ids));
             }
 
             $this->wpdb->query('COMMIT');
             return $deleted;
 
+        } catch (Shuriken_Database_Exception $e) {
+            // Re-throw our own exceptions
+            throw $e;
         } catch (Exception $e) {
             $this->wpdb->query('ROLLBACK');
-            return false;
+            throw Shuriken_Database_Exception::transaction_failed();
         }
     }
 
@@ -647,9 +670,16 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_value Rating value (1-5)
      * @param int $user_id User ID (0 for guests)
      * @param string|null $user_ip IP address for guest votes
-     * @return bool True on success, false on failure
+     * @return bool True on success
+     * @throws Shuriken_Database_Exception If insert fails or transaction fails
+     * @throws Shuriken_Validation_Exception If rating_value is invalid
      */
     public function create_vote($rating_id, $rating_value, $user_id = 0, $user_ip = null) {
+        // Validate rating value
+        if ($rating_value < 1 || $rating_value > 5) {
+            throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 1, 5);
+        }
+
         $this->wpdb->query('START TRANSACTION');
 
         try {
@@ -669,7 +699,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($result === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::insert_failed('votes');
             }
 
             // Update rating totals
@@ -683,15 +713,18 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($update_result === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::update_failed('ratings', $rating_id);
             }
 
             $this->wpdb->query('COMMIT');
             return true;
 
+        } catch (Shuriken_Database_Exception $e) {
+            // Re-throw our own exceptions
+            throw $e;
         } catch (Exception $e) {
             $this->wpdb->query('ROLLBACK');
-            return false;
+            throw Shuriken_Database_Exception::transaction_failed();
         }
     }
 
@@ -702,9 +735,16 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_id Rating ID
      * @param int $old_value Previous rating value
      * @param int $new_value New rating value
-     * @return bool True on success, false on failure
+     * @return bool True on success
+     * @throws Shuriken_Database_Exception If update fails or transaction fails
+     * @throws Shuriken_Validation_Exception If new_value is invalid
      */
     public function update_vote($vote_id, $rating_id, $old_value, $new_value) {
+        // Validate new rating value
+        if ($new_value < 1 || $new_value > 5) {
+            throw Shuriken_Validation_Exception::out_of_range('new_value', $new_value, 1, 5);
+        }
+
         $this->wpdb->query('START TRANSACTION');
 
         try {
@@ -719,7 +759,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($result === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::update_failed('votes', $vote_id);
             }
 
             // Update rating total (subtract old, add new)
@@ -734,15 +774,18 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($update_result === false) {
                 $this->wpdb->query('ROLLBACK');
-                return false;
+                throw Shuriken_Database_Exception::update_failed('ratings', $rating_id);
             }
 
             $this->wpdb->query('COMMIT');
             return true;
 
+        } catch (Shuriken_Database_Exception $e) {
+            // Re-throw our own exceptions
+            throw $e;
         } catch (Exception $e) {
             $this->wpdb->query('ROLLBACK');
-            return false;
+            throw Shuriken_Database_Exception::transaction_failed();
         }
     }
 

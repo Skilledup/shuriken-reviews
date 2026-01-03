@@ -11,7 +11,10 @@ Exception (PHP)
             ├── Shuriken_Validation_Exception
             ├── Shuriken_Not_Found_Exception
             ├── Shuriken_Permission_Exception
-            └── Shuriken_Logic_Exception
+            ├── Shuriken_Logic_Exception
+            ├── Shuriken_Configuration_Exception (new)
+            ├── Shuriken_Rate_Limit_Exception (new)
+            └── Shuriken_Integration_Exception (new)
 ```
 
 ## Exception Types
@@ -155,6 +158,93 @@ if ($rating->display_only) {
 
 if ($parent_id === $rating_id) {
     throw Shuriken_Logic_Exception::circular_reference();
+}
+```
+
+### 7. `Shuriken_Configuration_Exception` (New)
+
+For plugin configuration and settings errors.
+
+**Static Factory Methods:**
+```php
+Shuriken_Configuration_Exception::invalid_option('max_stars', $value, 'integer 1-10');
+Shuriken_Configuration_Exception::missing_option('api_key');
+Shuriken_Configuration_Exception::invalid_max_stars($value);
+Shuriken_Configuration_Exception::invalid_effect_type($value);
+Shuriken_Configuration_Exception::invalid_table('custom_table');
+Shuriken_Configuration_Exception::conflicting_options('option1', 'option2');
+```
+
+**Additional Methods:**
+- `get_config_key()` - Get the configuration key
+- `get_config_value()` - Get the invalid value
+
+**Usage:**
+```php
+$max_stars = get_option('shuriken_max_stars');
+if (!$max_stars || $max_stars < 1) {
+    throw Shuriken_Configuration_Exception::invalid_max_stars($max_stars);
+}
+// Note: System supports any value >= 1 (typically 1-10)
+```
+
+### 8. `Shuriken_Rate_Limit_Exception` (New)
+
+For rate limiting and throttling (429 errors).
+
+**Static Factory Methods:**
+```php
+Shuriken_Rate_Limit_Exception::voting_too_fast($retry_after, $limit);
+Shuriken_Rate_Limit_Exception::daily_vote_limit($limit);
+Shuriken_Rate_Limit_Exception::hourly_vote_limit($limit);
+Shuriken_Rate_Limit_Exception::vote_cooldown($retry_after);
+Shuriken_Rate_Limit_Exception::api_limit_exceeded($retry_after, $limit);
+Shuriken_Rate_Limit_Exception::too_many_failures($action, $retry_after);
+```
+
+**Additional Methods:**
+- `get_retry_after()` - Get seconds until limit resets
+- `get_limit()` - Get the rate limit
+- `get_action()` - Get the rate-limited action
+
+**Usage:**
+```php
+$last_vote_time = get_user_meta($user_id, 'last_vote_time', true);
+if (time() - $last_vote_time < 5) {
+    throw Shuriken_Rate_Limit_Exception::voting_too_fast(5 - (time() - $last_vote_time));
+}
+```
+
+### 9. `Shuriken_Integration_Exception` (New)
+
+For external service and integration failures (502 errors).
+
+**Static Factory Methods:**
+```php
+Shuriken_Integration_Exception::http_request_failed($url, $status, $error);
+Shuriken_Integration_Exception::api_connection_failed($api_name, $error);
+Shuriken_Integration_Exception::api_auth_failed($api_name);
+Shuriken_Integration_Exception::webhook_failed($webhook_url, $error);
+Shuriken_Integration_Exception::cache_failed($operation, $error);
+Shuriken_Integration_Exception::email_failed($error);
+Shuriken_Integration_Exception::plugin_dependency_missing($plugin_name);
+Shuriken_Integration_Exception::plugin_version_incompatible($plugin, $current, $required);
+Shuriken_Integration_Exception::service_timeout($service_name, $timeout);
+```
+
+**Additional Methods:**
+- `get_service()` - Get the service name
+- `get_context()` - Get additional context array
+
+**Usage:**
+```php
+$response = wp_remote_get($api_url);
+if (is_wp_error($response)) {
+    throw Shuriken_Integration_Exception::http_request_failed(
+        $api_url,
+        0,
+        $response->get_error_message()
+    );
 }
 ```
 
