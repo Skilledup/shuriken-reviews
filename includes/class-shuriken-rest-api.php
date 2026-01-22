@@ -40,6 +40,9 @@ class Shuriken_REST_API {
         
         // Ensure cookie authentication works for REST API
         add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 10, 1);
+        
+        // Skip nonce verification for nonce endpoint
+        add_filter('rest_pre_dispatch', array($this, 'skip_nonce_verification'), 10, 3);
     }
     
     /**
@@ -63,6 +66,26 @@ class Shuriken_REST_API {
         
         // Otherwise, let WordPress handle it
         return null;
+    }
+
+    /**
+     * Skip nonce verification for the nonce endpoint
+     * 
+     * The nonce endpoint needs to bypass nonce checking since its purpose
+     * is to provide a fresh nonce to the client.
+     *
+     * @param mixed $result The dispatch result.
+     * @param WP_REST_Server $server The server object.
+     * @param WP_REST_Request $request The request object.
+     * @return mixed
+     */
+    public function skip_nonce_verification($result, $server, $request) {
+        // Skip nonce verification for the nonce endpoint
+        if (strpos($request->get_route(), '/shuriken-reviews/v1/nonce') !== false) {
+            // Return null to continue normal execution
+            return null;
+        }
+        return $result;
     }
 
     /**
