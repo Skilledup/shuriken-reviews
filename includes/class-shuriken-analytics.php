@@ -431,13 +431,25 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         }
         
         // With date filter, calculate from votes table
+        // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
-                    COALESCE(SUM(v.rating_value), 0) as total_rating,
-                    ROUND(AVG(v.rating_value), 1) as average
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 0) as total_rating,
+                    ROUND(AVG(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 1) as average
              FROM {$this->ratings_table} r
-             LEFT JOIN {$this->votes_table} v ON r.id = v.rating_id {$date_condition}
+             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
+             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
              WHERE r.mirror_of IS NULL
                AND r.parent_id IS NULL
              GROUP BY r.id
@@ -475,13 +487,25 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         }
         
         // With date filter, calculate from votes table
+        // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
-                    COALESCE(SUM(v.rating_value), 0) as total_rating,
-                    ROUND(AVG(v.rating_value), 1) as average
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 0) as total_rating,
+                    ROUND(AVG(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 1) as average
              FROM {$this->ratings_table} r
-             LEFT JOIN {$this->votes_table} v ON r.id = v.rating_id {$date_condition}
+             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
+             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
              WHERE r.mirror_of IS NULL
                AND r.parent_id IS NULL
              GROUP BY r.id
@@ -523,13 +547,25 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         }
         
         // With date filter, calculate from votes table
+        // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
-                    COALESCE(SUM(v.rating_value), 0) as total_rating,
-                    ROUND(AVG(v.rating_value), 1) as average
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 0) as total_rating,
+                    ROUND(AVG(
+                        CASE 
+                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            ELSE v.rating_value
+                        END
+                    ), 1) as average
              FROM {$this->ratings_table} r
-             LEFT JOIN {$this->votes_table} v ON r.id = v.rating_id {$date_condition}
+             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
+             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
              WHERE r.mirror_of IS NULL
                AND r.parent_id IS NULL
              GROUP BY r.id
