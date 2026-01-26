@@ -135,9 +135,11 @@ interface Shuriken_Analytics_Interface {
      * @param int $rating_id Rating ID.
      * @param int $page      Page number.
      * @param int $per_page  Items per page.
+     * @param string|array $date_range Date range filter ('all', days, or array with start/end).
+     * @param string $view   For parent ratings: 'direct', 'subs', or 'total'.
      * @return array Array with 'votes', 'total', and 'total_pages' keys.
      */
-    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20);
+    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20, $date_range = 'all', $view = 'direct');
 
     /**
      * Get chart data for visualization

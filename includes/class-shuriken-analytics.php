@@ -1067,17 +1067,43 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $rating_id Rating ID
      * @param int $page Current page (1-indexed)
      * @param int $per_page Items per page
+     * @param string|array $date_range Date range filter ('all', days, or array with start/end)
+     * @param string $view For parent ratings: 'direct', 'subs', or 'total'
      * @return object Object with votes array, total_count, total_pages, current_page
      */
-    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20) {
+    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20, $date_range = 'all', $view = 'direct') {
         $offset = ($page - 1) * $per_page;
         
         $result = new stdClass();
         
-        $result->total_count = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d",
-            $rating_id
-        ));
+        // Build date condition
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
+        
+        // Determine which rating IDs to query based on view
+        $rating_ids = array($rating_id);
+        if (in_array($view, array('subs', 'total'))) {
+            // Get sub-rating IDs
+            $sub_rating_ids = $this->wpdb->get_col($this->wpdb->prepare(
+                "SELECT id FROM {$this->ratings_table} WHERE parent_id = %d",
+                $rating_id
+            ));
+            
+            if (!empty($sub_rating_ids)) {
+                if ($view === 'subs') {
+                    // Only subs, not direct
+                    $rating_ids = $sub_rating_ids;
+                } else {
+                    // total: both direct and subs
+                    $rating_ids = array_merge(array($rating_id), $sub_rating_ids);
+                }
+            }
+        }
+        
+        $rating_ids_placeholder = implode(',', array_map('intval', $rating_ids));
+        
+        $result->total_count = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->votes_table} v WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition}"
+        );
         
         $result->total_pages = ceil($result->total_count / $per_page);
         $result->current_page = $page;
@@ -1087,10 +1113,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             "SELECT v.*, u.display_name, u.user_email
              FROM {$this->votes_table} v
              LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
-             WHERE v.rating_id = %d
+             WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition}
              ORDER BY v.date_created DESC
              LIMIT %d OFFSET %d",
-            $rating_id,
             $per_page,
             $offset
         ));

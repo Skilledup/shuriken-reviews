@@ -87,8 +87,9 @@ if ($is_parent && $stats_breakdown) {
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 
-// Get paginated votes
-$votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page);
+// Get paginated votes (with view filter for parent ratings)
+$vote_view = $is_parent ? $current_view : 'direct';
+$votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page, $date_range, $vote_view);
 $votes = $votes_result->votes;
 $total_votes_count = $votes_result->total_count;
 $total_pages = $votes_result->total_pages;
