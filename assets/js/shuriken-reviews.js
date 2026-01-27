@@ -60,17 +60,13 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        // Fetch fresh nonce
+        // Fetch fresh nonce (don't send X-WP-Nonce header - this is a public endpoint)
         $.ajax({
             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
             type: 'GET',
             cache: false, // Important: bypass browser cache
-            beforeSend: function(xhr) {
-                // Include REST nonce for proper user authentication
-                if (shurikenReviews.rest_nonce) {
-                    xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
-                }
-            },
+            // Note: Don't send X-WP-Nonce header here - the nonce endpoint must work
+            // without authentication to handle cached pages with stale nonces
             success: function(nonceResponse) {
                 // Update nonce in global object
                 if (nonceResponse && nonceResponse.nonce) {
@@ -83,7 +79,7 @@ jQuery(document).ready(function($) {
                     }
                 }
                 
-                // Fetch fresh rating stats
+                // Fetch fresh rating stats (public endpoint - no auth needed)
                 $.ajax({
                     url: shurikenReviews.rest_url + 'shuriken-reviews/v1/ratings/stats',
                     type: 'GET',
@@ -91,11 +87,7 @@ jQuery(document).ready(function($) {
                     data: {
                         ids: ratingIds.join(',')
                     },
-                    beforeSend: function(xhr) {
-                        if (shurikenReviews.rest_nonce) {
-                            xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
-                        }
-                    },
+                    // Note: Don't send X-WP-Nonce header - this is a public endpoint
                     success: function(statsResponse) {
                         // Update each rating with fresh data
                         $.each(statsResponse, function(ratingId, stats) {
@@ -255,16 +247,11 @@ jQuery(document).ready(function($) {
                     // Check if it's a nonce error and we haven't retried yet
                     if (response.data && typeof response.data === 'string' && 
                         response.data.toLowerCase().indexOf('nonce') !== -1 && retryCount === 0) {
-                        // Fetch fresh nonce and retry
+                        // Fetch fresh nonce and retry (public endpoint - no auth needed)
                         $.ajax({
                             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
                             type: 'GET',
                             cache: false,
-                            beforeSend: function(xhr) {
-                                if (shurikenReviews.rest_nonce) {
-                                    xhr.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
-                                }
-                            },
                             success: function(nonceResponse) {
                                 if (nonceResponse && nonceResponse.nonce) {
                                     shurikenReviews.nonce = nonceResponse.nonce;
@@ -309,16 +296,11 @@ jQuery(document).ready(function($) {
                     typeof xhr.responseJSON.data === 'string' && 
                     xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 && 
                     retryCount === 0) {
-                    // Fetch fresh nonce and retry
+                    // Fetch fresh nonce and retry (public endpoint - no auth needed)
                     $.ajax({
                         url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
                         type: 'GET',
                         cache: false,
-                        beforeSend: function(xhrRetry) {
-                            if (shurikenReviews.rest_nonce) {
-                                xhrRetry.setRequestHeader('X-WP-Nonce', shurikenReviews.rest_nonce);
-                            }
-                        },
                         success: function(nonceResponse) {
                             if (nonceResponse && nonceResponse.nonce) {
                                 shurikenReviews.nonce = nonceResponse.nonce;

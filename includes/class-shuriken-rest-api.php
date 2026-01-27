@@ -38,22 +38,30 @@ class Shuriken_REST_API {
     private function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
         
-        // Ensure cookie authentication works for REST API
-        add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 10, 1);
-        
-        // Skip nonce verification for nonce endpoint
-        add_filter('rest_pre_dispatch', array($this, 'skip_nonce_verification'), 10, 3);
+        // Skip nonce verification for public endpoints BEFORE authentication runs
+        add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 5, 1);
     }
     
     /**
      * Handle REST API authentication errors
      * 
-     * Ensures cookie authentication works properly for logged-in users
+     * Bypasses nonce verification for public endpoints like /nonce and /ratings/stats
+     * that need to work without authentication (e.g., for cached pages with stale nonces)
      *
      * @param WP_Error|null|bool $result Authentication result.
      * @return WP_Error|null|bool
      */
     public function rest_authentication_errors($result) {
+        // Check if this is a request to our public endpoints
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
+        
+        // Allow public endpoints to bypass nonce verification entirely
+        if (strpos($request_uri, '/shuriken-reviews/v1/nonce') !== false ||
+            strpos($request_uri, '/shuriken-reviews/v1/ratings/stats') !== false) {
+            // Return true to allow the request without authentication
+            return true;
+        }
+        
         // If there's already a result, use it
         if ($result !== null) {
             return $result;
@@ -66,26 +74,6 @@ class Shuriken_REST_API {
         
         // Otherwise, let WordPress handle it
         return null;
-    }
-
-    /**
-     * Skip nonce verification for the nonce endpoint
-     * 
-     * The nonce endpoint needs to bypass nonce checking since its purpose
-     * is to provide a fresh nonce to the client.
-     *
-     * @param mixed $result The dispatch result.
-     * @param WP_REST_Server $server The server object.
-     * @param WP_REST_Request $request The request object.
-     * @return mixed
-     */
-    public function skip_nonce_verification($result, $server, $request) {
-        // Skip nonce verification for the nonce endpoint
-        if (strpos($request->get_route(), '/shuriken-reviews/v1/nonce') !== false) {
-            // Return null to continue normal execution
-            return null;
-        }
-        return $result;
     }
 
     /**
