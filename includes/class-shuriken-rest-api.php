@@ -322,29 +322,32 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      */
     public function create_rating($request) {
-        $name = $request->get_param('name');
-        $parent_id = $request->get_param('parent_id');
-        $mirror_of = $request->get_param('mirror_of');
-        $effect_type = $request->get_param('effect_type') ?: 'positive';
-        $display_only = $request->get_param('display_only') ?: false;
-        
-        // Convert 0 to null for parent_id and mirror_of
-        $parent_id = $parent_id ? intval($parent_id) : null;
-        $mirror_of = $mirror_of ? intval($mirror_of) : null;
-        
-        $new_id = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
-        
-        if ($new_id === false) {
-            return new WP_Error(
-                'create_failed',
-                __('Failed to create rating.', 'shuriken-reviews'),
-                array('status' => 500)
-            );
+        try {
+            $name = $request->get_param('name');
+            $parent_id = $request->get_param('parent_id');
+            $mirror_of = $request->get_param('mirror_of');
+            $effect_type = $request->get_param('effect_type') ?: 'positive';
+            $display_only = $request->get_param('display_only') ?: false;
+            
+            // Convert 0 to null for parent_id and mirror_of
+            $parent_id = $parent_id ? intval($parent_id) : null;
+            $mirror_of = $mirror_of ? intval($mirror_of) : null;
+            
+            $new_id = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
+            
+            if ($new_id === false) {
+                throw new Shuriken_Database_Exception(
+                    __('Failed to create rating.', 'shuriken-reviews'),
+                    'create_rating'
+                );
+            }
+            
+            $rating = shuriken_db()->get_rating($new_id);
+            
+            return rest_ensure_response($rating);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
-        
-        $rating = shuriken_db()->get_rating($new_id);
-        
-        return rest_ensure_response($rating);
     }
 
     /**
@@ -354,18 +357,22 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      */
     public function get_single_rating($request) {
-        $id = $request->get_param('id');
-        $rating = shuriken_db()->get_rating($id);
-        
-        if (!$rating) {
-            return new WP_Error(
-                'not_found',
-                __('Rating not found.', 'shuriken-reviews'),
-                array('status' => 404)
-            );
+        try {
+            $id = $request->get_param('id');
+            $rating = shuriken_db()->get_rating($id);
+            
+            if (!$rating) {
+                throw new Shuriken_Not_Found_Exception(
+                    __('Rating not found.', 'shuriken-reviews'),
+                    'rating',
+                    $id
+                );
+            }
+            
+            return rest_ensure_response($rating);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
-        
-        return rest_ensure_response($rating);
     }
 
     /**
@@ -375,74 +382,76 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      */
     public function update_rating($request) {
-        $id = $request->get_param('id');
-        $db = shuriken_db();
-        
-        // Check if rating exists
-        $existing = $db->get_rating($id);
-        if (!$existing) {
-            return new WP_Error(
-                'not_found',
-                __('Rating not found.', 'shuriken-reviews'),
-                array('status' => 404)
-            );
+        try {
+            $id = $request->get_param('id');
+            $db = shuriken_db();
+            
+            // Check if rating exists
+            $existing = $db->get_rating($id);
+            if (!$existing) {
+                throw new Shuriken_Not_Found_Exception(
+                    __('Rating not found.', 'shuriken-reviews'),
+                    'rating',
+                    $id
+                );
+            }
+            
+            // Build update data array
+            $update_data = array();
+            
+            if ($request->has_param('name') && $request->get_param('name') !== '') {
+                $update_data['name'] = $request->get_param('name');
+            }
+            
+            if ($request->has_param('parent_id')) {
+                $parent_id = $request->get_param('parent_id');
+                $update_data['parent_id'] = $parent_id ? intval($parent_id) : null;
+            }
+            
+            if ($request->has_param('mirror_of')) {
+                $mirror_of = $request->get_param('mirror_of');
+                $update_data['mirror_of'] = $mirror_of ? intval($mirror_of) : null;
+            }
+            
+            if ($request->has_param('effect_type')) {
+                $update_data['effect_type'] = $request->get_param('effect_type');
+            }
+            
+            if ($request->has_param('display_only')) {
+                $update_data['display_only'] = $request->get_param('display_only');
+            }
+            
+            if (empty($update_data)) {
+                throw new Shuriken_Validation_Exception(
+                    __('No data provided for update.', 'shuriken-reviews'),
+                    'update_data'
+                );
+            }
+            
+            $result = $db->update_rating($id, $update_data);
+            
+            if ($result === false) {
+                throw new Shuriken_Database_Exception(
+                    __('Failed to update rating.', 'shuriken-reviews'),
+                    'update_rating'
+                );
+            }
+            
+            // Recalculate parent rating if this is a sub-rating
+            if (!empty($update_data['parent_id'])) {
+                $db->recalculate_parent_rating($update_data['parent_id']);
+            }
+            // Also recalculate old parent if parent changed
+            if (!empty($existing->parent_id) && (empty($update_data['parent_id']) || $existing->parent_id != $update_data['parent_id'])) {
+                $db->recalculate_parent_rating($existing->parent_id);
+            }
+            
+            $rating = $db->get_rating($id);
+            
+            return rest_ensure_response($rating);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
-        
-        // Build update data array
-        $update_data = array();
-        
-        if ($request->has_param('name') && $request->get_param('name') !== '') {
-            $update_data['name'] = $request->get_param('name');
-        }
-        
-        if ($request->has_param('parent_id')) {
-            $parent_id = $request->get_param('parent_id');
-            $update_data['parent_id'] = $parent_id ? intval($parent_id) : null;
-        }
-        
-        if ($request->has_param('mirror_of')) {
-            $mirror_of = $request->get_param('mirror_of');
-            $update_data['mirror_of'] = $mirror_of ? intval($mirror_of) : null;
-        }
-        
-        if ($request->has_param('effect_type')) {
-            $update_data['effect_type'] = $request->get_param('effect_type');
-        }
-        
-        if ($request->has_param('display_only')) {
-            $update_data['display_only'] = $request->get_param('display_only');
-        }
-        
-        if (empty($update_data)) {
-            return new WP_Error(
-                'no_data',
-                __('No data provided for update.', 'shuriken-reviews'),
-                array('status' => 400)
-            );
-        }
-        
-        $result = $db->update_rating($id, $update_data);
-        
-        if ($result === false) {
-            return new WP_Error(
-                'update_failed',
-                __('Failed to update rating.', 'shuriken-reviews'),
-                array('status' => 500)
-            );
-        }
-        
-        // Recalculate parent rating if this is a sub-rating
-        if (!empty($update_data['parent_id'])) {
-            $db->recalculate_parent_rating($update_data['parent_id']);
-        }
-        // Also recalculate old parent if parent changed
-        if (!empty($existing->parent_id) && (empty($update_data['parent_id']) || $existing->parent_id != $update_data['parent_id'])) {
-            $db->recalculate_parent_rating($existing->parent_id);
-        }
-        
-        $rating = $db->get_rating($id);
-        
-        return rest_ensure_response($rating);
     }
 
     /**
@@ -452,42 +461,45 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      */
     public function delete_rating($request) {
-        $id = $request->get_param('id');
-        $db = shuriken_db();
-        
-        // Check if rating exists
-        $existing = $db->get_rating($id);
-        if (!$existing) {
-            return new WP_Error(
-                'not_found',
-                __('Rating not found.', 'shuriken-reviews'),
-                array('status' => 404)
-            );
-        }
+        try {
+            $id = $request->get_param('id');
+            $db = shuriken_db();
+            
+            // Check if rating exists
+            $existing = $db->get_rating($id);
+            if (!$existing) {
+                throw new Shuriken_Not_Found_Exception(
+                    __('Rating not found.', 'shuriken-reviews'),
+                    'rating',
+                    $id
+                );
+            }
 
-        // Store parent_id before deletion for recalculation
-        $parent_id = $existing->parent_id;
-        
-        // Delete the rating
-        $result = $db->delete_rating($id);
-        
-        if ($result === false) {
-            return new WP_Error(
-                'delete_failed',
-                __('Failed to delete rating.', 'shuriken-reviews'),
-                array('status' => 500)
-            );
-        }
+            // Store parent_id before deletion for recalculation
+            $parent_id = $existing->parent_id;
+            
+            // Delete the rating
+            $result = $db->delete_rating($id);
+            
+            if ($result === false) {
+                throw new Shuriken_Database_Exception(
+                    __('Failed to delete rating.', 'shuriken-reviews'),
+                    'delete_rating'
+                );
+            }
 
-        // Recalculate parent rating if this was a sub-rating
-        if (!empty($parent_id)) {
-            $db->recalculate_parent_rating($parent_id);
+            // Recalculate parent rating if this was a sub-rating
+            if (!empty($parent_id)) {
+                $db->recalculate_parent_rating($parent_id);
+            }
+            
+            return rest_ensure_response(array(
+                'deleted' => true,
+                'id' => $id
+            ));
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
-        
-        return rest_ensure_response(array(
-            'deleted' => true,
-            'id' => $id
-        ));
     }
 
     /**
@@ -519,33 +531,36 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      */
     public function get_rating_stats($request) {
-        $ids_string = $request->get_param('ids');
-        $ids = array_map('intval', explode(',', $ids_string));
-        $ids = array_filter($ids); // Remove any invalid IDs
-        
-        if (empty($ids)) {
-            return new WP_Error(
-                'invalid_ids',
-                __('No valid rating IDs provided.', 'shuriken-reviews'),
-                array('status' => 400)
-            );
-        }
-        
-        $db = shuriken_db();
-        $stats = array();
-        
-        foreach ($ids as $id) {
-            $rating = $db->get_rating($id);
-            if ($rating) {
-                $stats[$id] = array(
-                    'average' => $rating->average,
-                    'total_votes' => $rating->total_votes,
-                    'source_id' => $rating->source_id,
+        try {
+            $ids_string = $request->get_param('ids');
+            $ids = array_map('intval', explode(',', $ids_string));
+            $ids = array_filter($ids); // Remove any invalid IDs
+            
+            if (empty($ids)) {
+                throw new Shuriken_Validation_Exception(
+                    __('No valid rating IDs provided.', 'shuriken-reviews'),
+                    'ids'
                 );
             }
+            
+            $db = shuriken_db();
+            $stats = array();
+            
+            foreach ($ids as $id) {
+                $rating = $db->get_rating($id);
+                if ($rating) {
+                    $stats[$id] = array(
+                        'average' => $rating->average,
+                        'total_votes' => $rating->total_votes,
+                        'source_id' => $rating->source_id,
+                    );
+                }
+            }
+            
+            return rest_ensure_response($stats);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
-        
-        return rest_ensure_response($stats);
     }
 
     /**
