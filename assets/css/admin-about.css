@@ -683,7 +683,13 @@
         color: #94a3b8;
     }
 
-    .new-feature-highlight > h3 {
-        color: #fff;
+    .new-feature-highlight > h3,
+    .new-feature-highlight > h4 {
+        color: #f1f5f9;
+    }
+
+    .new-feature-highlight > p,
+    .whats-new-content p {
+        color: #94a3b8;
     }
 }
