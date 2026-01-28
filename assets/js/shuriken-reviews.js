@@ -48,7 +48,9 @@ jQuery(document).ready(function($) {
         
         // Collect all rating IDs on the page
         var ratingIds = [];
-        $('.shuriken-rating').each(function() {
+        var $allRatings = $('.shuriken-rating');
+        
+        $allRatings.each(function() {
             var id = $(this).data('id');
             if (id && ratingIds.indexOf(id) === -1) {
                 ratingIds.push(id);
@@ -59,6 +61,9 @@ jQuery(document).ready(function($) {
             isFetchingFreshData = false;
             return;
         }
+        
+        // Add refreshing state to show loading feedback
+        $allRatings.addClass('shuriken-refreshing');
         
         // Fetch fresh nonce (don't send X-WP-Nonce header - this is a public endpoint)
         $.ajax({
@@ -115,20 +120,29 @@ jQuery(document).ready(function($) {
                                 
                                 // Update stars using scaled average
                                 updateStars($rating, scaledAverage);
+                                
+                                // Remove refreshing state with slight delay for smooth transition
+                                $rating.removeClass('shuriken-refreshing');
                             });
                         });
                     },
                     error: function(xhr, status, error) {
                         console.error('Failed to fetch fresh rating stats:', error);
+                        // Remove refreshing state on error too
+                        $('.shuriken-rating').removeClass('shuriken-refreshing');
                     },
                     complete: function() {
                         isFetchingFreshData = false;
+                        // Ensure refreshing state is removed even if no data returned
+                        $('.shuriken-rating.shuriken-refreshing').removeClass('shuriken-refreshing');
                     }
                 });
             },
             error: function(xhr, status, error) {
                 console.error('Failed to fetch fresh nonce:', error);
                 isFetchingFreshData = false;
+                // Remove refreshing state on error
+                $('.shuriken-rating').removeClass('shuriken-refreshing');
             }
         });
     }

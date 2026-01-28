@@ -140,6 +140,10 @@ if (!defined('ABSPATH')) exit;
                         <strong><?php esc_html_e('Grouped Rating Improvements', 'shuriken-reviews'); ?></strong>
                         <?php esc_html_e('Child ratings are now fetched via dedicated endpoint on block load', 'shuriken-reviews'); ?>
                     </li>
+                    <li>
+                        <strong><?php esc_html_e('Loading State Feedback', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Smooth opacity transition and spinner when refreshing cached data on page load', 'shuriken-reviews'); ?>
+                    </li>
                 </ul>
                 
                 <h4 style="margin-top: 1.5em;"><?php esc_html_e('Performance Improvements', 'shuriken-reviews'); ?></h4>

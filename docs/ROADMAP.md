@@ -91,6 +91,9 @@ Major performance optimization for FSE editor and frontend.
 | # | Task | Status |
 |---|------|--------|
 | 10 | Test and validate all optimizations | ✅ Done |
+| - | *Bonus:* Add loading state feedback for data refresh | ✅ Done |
+
+**UX Enhancement:** When cached data is refreshed on page load, ratings now show a subtle opacity fade and spinner indicator for better user feedback.
 
 **Dependency Graph:**
 ```
@@ -126,6 +129,8 @@ Major performance optimization for FSE editor and frontend.
 - `blocks/shared/ratings-store.js` - Centralized data store with thunks
 - `blocks/shuriken-rating/index.js` - Rewritten for shared store + AJAX search
 - `blocks/shuriken-grouped-rating/index.js` - Updated for shared store + child fetching
+- `assets/css/shuriken-reviews.css` - Loading state styles with opacity transition
+- `assets/js/shuriken-reviews.js` - Refreshing state feedback on data fetch
 
 ---
 
