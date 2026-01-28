@@ -381,10 +381,7 @@ class Shuriken_REST_API {
             $new_id = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
             
             if ($new_id === false) {
-                throw new Shuriken_Database_Exception(
-                    __('Failed to create rating.', 'shuriken-reviews'),
-                    'create_rating'
-                );
+                throw Shuriken_Database_Exception::insert_failed('ratings');
             }
             
             $rating = shuriken_db()->get_rating($new_id);
@@ -407,11 +404,7 @@ class Shuriken_REST_API {
             $rating = shuriken_db()->get_rating($id);
             
             if (!$rating) {
-                throw new Shuriken_Not_Found_Exception(
-                    __('Rating not found.', 'shuriken-reviews'),
-                    'rating',
-                    $id
-                );
+                throw Shuriken_Not_Found_Exception::rating($id);
             }
             
             return rest_ensure_response($rating);
@@ -434,11 +427,7 @@ class Shuriken_REST_API {
             // Check if rating exists
             $existing = $db->get_rating($id);
             if (!$existing) {
-                throw new Shuriken_Not_Found_Exception(
-                    __('Rating not found.', 'shuriken-reviews'),
-                    'rating',
-                    $id
-                );
+                throw Shuriken_Not_Found_Exception::rating($id);
             }
             
             // Build update data array
@@ -467,19 +456,13 @@ class Shuriken_REST_API {
             }
             
             if (empty($update_data)) {
-                throw new Shuriken_Validation_Exception(
-                    __('No data provided for update.', 'shuriken-reviews'),
-                    'update_data'
-                );
+                throw Shuriken_Validation_Exception::required_field('update_data');
             }
             
             $result = $db->update_rating($id, $update_data);
             
             if ($result === false) {
-                throw new Shuriken_Database_Exception(
-                    __('Failed to update rating.', 'shuriken-reviews'),
-                    'update_rating'
-                );
+                throw Shuriken_Database_Exception::update_failed('ratings', $id);
             }
             
             // Recalculate parent rating if this is a sub-rating
@@ -513,11 +496,7 @@ class Shuriken_REST_API {
             // Check if rating exists
             $existing = $db->get_rating($id);
             if (!$existing) {
-                throw new Shuriken_Not_Found_Exception(
-                    __('Rating not found.', 'shuriken-reviews'),
-                    'rating',
-                    $id
-                );
+                throw Shuriken_Not_Found_Exception::rating($id);
             }
 
             // Store parent_id before deletion for recalculation
@@ -527,10 +506,7 @@ class Shuriken_REST_API {
             $result = $db->delete_rating($id);
             
             if ($result === false) {
-                throw new Shuriken_Database_Exception(
-                    __('Failed to delete rating.', 'shuriken-reviews'),
-                    'delete_rating'
-                );
+                throw Shuriken_Database_Exception::delete_failed('ratings', $id);
             }
 
             // Recalculate parent rating if this was a sub-rating
@@ -581,20 +557,13 @@ class Shuriken_REST_API {
             $parent_id = $request->get_param('id');
             
             if (!$parent_id) {
-                throw new Shuriken_Validation_Exception(
-                    __('Parent rating ID is required.', 'shuriken-reviews'),
-                    'id'
-                );
+                throw Shuriken_Validation_Exception::required_field('id');
             }
             
             // Verify parent exists
             $parent = shuriken_db()->get_rating($parent_id);
             if (!$parent) {
-                throw new Shuriken_Not_Found_Exception(
-                    __('Parent rating not found.', 'shuriken-reviews'),
-                    'rating',
-                    $parent_id
-                );
+                throw Shuriken_Not_Found_Exception::parent_rating($parent_id);
             }
             
             $ratings = shuriken_db()->get_child_ratings($parent_id);
@@ -620,18 +589,12 @@ class Shuriken_REST_API {
             // Validate type parameter
             $valid_types = array('all', 'parents', 'mirrorable');
             if (!in_array($type, $valid_types, true)) {
-                throw new Shuriken_Validation_Exception(
-                    __('Invalid type parameter. Must be one of: all, parents, mirrorable.', 'shuriken-reviews'),
-                    'type'
-                );
+                throw Shuriken_Validation_Exception::invalid_value('type', $type, 'all, parents, or mirrorable');
             }
             
             // Validate limit
             if ($limit < 1 || $limit > 100) {
-                throw new Shuriken_Validation_Exception(
-                    __('Limit must be between 1 and 100.', 'shuriken-reviews'),
-                    'limit'
-                );
+                throw Shuriken_Validation_Exception::out_of_range('limit', $limit, 1, 100);
             }
             
             $ratings = shuriken_db()->search_ratings($search_term, $limit, $type);
@@ -656,10 +619,7 @@ class Shuriken_REST_API {
             $ids = array_filter($ids); // Remove any invalid IDs
             
             if (empty($ids)) {
-                throw new Shuriken_Validation_Exception(
-                    __('No valid rating IDs provided.', 'shuriken-reviews'),
-                    'ids'
-                );
+                throw Shuriken_Validation_Exception::required_field('ids');
             }
             
             // Use batch method for efficiency (single query instead of N queries)
