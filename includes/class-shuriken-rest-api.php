@@ -573,29 +573,72 @@ class Shuriken_REST_API {
      * Get child ratings of a parent rating
      *
      * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
+     * @return WP_REST_Response|WP_Error
      * @since 1.9.0
      */
     public function get_child_ratings($request) {
-        $parent_id = $request->get_param('id');
-        $ratings = shuriken_db()->get_child_ratings($parent_id);
-        return rest_ensure_response($ratings);
+        try {
+            $parent_id = $request->get_param('id');
+            
+            if (!$parent_id) {
+                throw new Shuriken_Validation_Exception(
+                    __('Parent rating ID is required.', 'shuriken-reviews'),
+                    'id'
+                );
+            }
+            
+            // Verify parent exists
+            $parent = shuriken_db()->get_rating($parent_id);
+            if (!$parent) {
+                throw new Shuriken_Not_Found_Exception(
+                    __('Parent rating not found.', 'shuriken-reviews'),
+                    'rating',
+                    $parent_id
+                );
+            }
+            
+            $ratings = shuriken_db()->get_child_ratings($parent_id);
+            return rest_ensure_response($ratings);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        }
     }
 
     /**
      * Search ratings by name (for AJAX autocomplete)
      *
      * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
+     * @return WP_REST_Response|WP_Error
      * @since 1.9.0
      */
     public function search_ratings($request) {
-        $search_term = $request->get_param('q');
-        $limit = $request->get_param('limit');
-        $type = $request->get_param('type');
-        
-        $ratings = shuriken_db()->search_ratings($search_term, $limit, $type);
-        return rest_ensure_response($ratings);
+        try {
+            $search_term = $request->get_param('q');
+            $limit = $request->get_param('limit');
+            $type = $request->get_param('type');
+            
+            // Validate type parameter
+            $valid_types = array('all', 'parents', 'mirrorable');
+            if (!in_array($type, $valid_types, true)) {
+                throw new Shuriken_Validation_Exception(
+                    __('Invalid type parameter. Must be one of: all, parents, mirrorable.', 'shuriken-reviews'),
+                    'type'
+                );
+            }
+            
+            // Validate limit
+            if ($limit < 1 || $limit > 100) {
+                throw new Shuriken_Validation_Exception(
+                    __('Limit must be between 1 and 100.', 'shuriken-reviews'),
+                    'limit'
+                );
+            }
+            
+            $ratings = shuriken_db()->search_ratings($search_term, $limit, $type);
+            return rest_ensure_response($ratings);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        }
     }
 
     /**
