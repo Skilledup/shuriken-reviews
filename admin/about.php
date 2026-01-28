@@ -117,37 +117,59 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Major Software Design Improvements', 'shuriken-reviews'); ?></h3>
+                <h3><?php esc_html_e('Data Retrieval Efficiency', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Major performance optimization for the FSE editor and frontend:', 'shuriken-reviews'); ?></p>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Modular Architecture', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Refactored into 8 focused modules for better maintainability', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Shared Data Store', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All rating blocks now share a single @wordpress/data store - no more duplicate API calls', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('20+ WordPress Hooks', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Complete extensibility with filters and actions', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('AJAX Search Dropdown', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Rating dropdowns now use search-as-you-type instead of loading all ratings upfront', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Interfaces for Testing', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Mock implementations for unit testing without database', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Batch Database Queries', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Stats endpoint now uses single query for multiple ratings instead of N queries', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Exception System', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('6 custom exception types with unified error handling', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('New REST Endpoints', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('/ratings/search and /ratings/{id}/children for efficient data fetching', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Dependency Injection', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Flexible service container for better testability', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Unified Star Rating', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Single filter supports any star count (3, 5, 10, etc.) with automatic normalization', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Block & Shortcode Consistency', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All hooks work for both Gutenberg blocks and shortcodes', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Grouped Rating Improvements', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Child ratings are now fetched via dedicated endpoint on block load', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
+                
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Performance Improvements', 'shuriken-reviews'); ?></h4>
+                <table class="hooks-table" style="margin-top: 0.5em;">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Scenario', 'shuriken-reviews'); ?></th>
+                            <th><?php esc_html_e('Before', 'shuriken-reviews'); ?></th>
+                            <th><?php esc_html_e('After', 'shuriken-reviews'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><?php esc_html_e('10 rating blocks in FSE', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('30 API calls', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('Shared store + on-demand', 'shuriken-reviews'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><?php esc_html_e('Dropdown with 1000 ratings', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('All loaded upfront', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('Search-as-you-type (max 20)', 'shuriken-reviews'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><?php esc_html_e('Frontend stats for 50 ratings', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('50 database queries', 'shuriken-reviews'); ?></td>
+                            <td><?php esc_html_e('1 batch query', 'shuriken-reviews'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
                 <p class="new-features-note">
                     <?php esc_html_e('All improvements maintain 100% backward compatibility. Existing code continues to work unchanged.', 'shuriken-reviews'); ?>
                 </p>
@@ -299,6 +321,8 @@ if (!defined('ABSPATH')) exit;
                     <p><?php esc_html_e('Access ratings data programmatically via REST API endpoints. Perfect for headless WordPress setups and custom integrations.', 'shuriken-reviews'); ?></p>
                     <div class="api-endpoints">
                         <code>GET /wp-json/shuriken-reviews/v1/ratings</code>
+                        <code>GET /wp-json/shuriken-reviews/v1/ratings/search?q=term</code>
+                        <code>GET /wp-json/shuriken-reviews/v1/ratings/{id}/children</code>
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3</code>
                     </div>
                 </div>

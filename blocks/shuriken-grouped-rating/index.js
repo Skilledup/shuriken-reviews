@@ -2,9 +2,13 @@
     const { registerBlockType } = wp.blocks;
     const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
     const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice, RangeControl, __experimentalUnitControl: UnitControl, __experimentalDivider: Divider } = wp.components;
-    const { useState, useEffect, useMemo, useRef } = wp.element;
+    const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
     const { __ } = wp.i18n;
     const apiFetch = wp.apiFetch;
+    const { useSelect, useDispatch } = wp.data;
+
+    // Store name constant
+    const STORE_NAME = 'shuriken-reviews';
 
     registerBlockType('shuriken-reviews/grouped-rating', {
         edit: function (props) {
@@ -39,9 +43,7 @@
                 gapBetweenRatings
             } = attributes;
             
-            const [ratings, setRatings] = useState([]);
-            const [parentRatings, setParentRatings] = useState([]);
-            const [loading, setLoading] = useState(true);
+            // Local UI state (not shared)
             const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
             const [isEditModalOpen, setIsEditModalOpen] = useState(false);
             const [isManageChildrenModalOpen, setIsManageChildrenModalOpen] = useState(false);
@@ -59,11 +61,50 @@
             const [savingChildren, setSavingChildren] = useState(false);
             const [error, setError] = useState(null);
             const [lastFailedAction, setLastFailedAction] = useState(null);
-            const hasFetched = useRef(false);
+            
+            // Search state for AJAX dropdown
+            const [searchTerm, setSearchTerm] = useState('');
+            const searchTimeoutRef = useRef(null);
 
             const blockProps = useBlockProps({
                 className: 'shuriken-grouped-rating-block-editor'
             });
+
+            // Get shared store dispatch
+            const { 
+                fetchRating,
+                searchRatings,
+                fetchParentRatings,
+                fetchChildRatings,
+                createRating,
+                updateRating,
+                deleteRating
+            } = useDispatch(STORE_NAME);
+
+            // Get data from shared store
+            const { 
+                selectedRating,
+                allRatingsById,
+                parentRatings,
+                searchResults,
+                isSearching,
+                isLoadingParents,
+                storeError
+            } = useSelect(function (select) {
+                var store = select(STORE_NAME);
+                return {
+                    selectedRating: ratingId ? store.getRating(ratingId) : null,
+                    allRatingsById: store.getRatingsById ? store.getRatingsById() : {},
+                    parentRatings: store.getParentRatings(),
+                    searchResults: store.getSearchResults(),
+                    isSearching: store.isSearching(),
+                    isLoadingParents: store.isLoadingParents(),
+                    storeError: store.getLastError ? store.getLastError() : null
+                };
+            }, [ratingId]);
+
+            // Determine loading state from store
+            const loading = isLoadingParents && parentRatings.length === 0;
 
             // Error handling helper
             function handleApiError(err, action) {
@@ -110,59 +151,64 @@
                 setLastFailedAction(null);
             }
 
-            // Fetch available ratings
-            function fetchRatings() {
-                setLoading(true);
-                setError(null);
+            // Handle search input change with debouncing
+            const handleSearchChange = useCallback(function (value) {
+                setSearchTerm(value);
                 
-                Promise.all([
-                    apiFetch({ path: '/shuriken-reviews/v1/ratings', method: 'GET' }),
-                    apiFetch({ path: '/shuriken-reviews/v1/ratings/parents', method: 'GET' })
-                ])
-                    .then(function (results) {
-                        var ratingsData = results[0];
-                        var parentsData = results[1];
-                        
-                        setRatings(Array.isArray(ratingsData) ? ratingsData : []);
-                        setParentRatings(Array.isArray(parentsData) ? parentsData : []);
-                        setLoading(false);
-                    })
-                    .catch(function (err) {
-                        setRatings([]);
-                        setParentRatings([]);
-                        setLoading(false);
-                        handleApiError(err, fetchRatings);
-                    });
-            }
-
-            // Fetch available ratings only once
-            useEffect(function () {
-                if (hasFetched.current) {
-                    return;
+                // Clear previous timeout
+                if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
                 }
-                hasFetched.current = true;
-                fetchRatings();
+                
+                // Debounce search by 300ms
+                searchTimeoutRef.current = setTimeout(function () {
+                    if (value && value.trim().length > 0) {
+                        searchRatings(value.trim(), 'parents', 20);
+                    }
+                }, 300);
+            }, [searchRatings]);
+
+            // Fetch parent ratings and selected rating on mount
+            useEffect(function () {
+                // Fetch parent ratings for the dropdown
+                fetchParentRatings();
+                
+                // If we have a selected rating, fetch it and its children
+                if (ratingId) {
+                    fetchRating(ratingId);
+                    fetchChildRatings(ratingId);
+                }
+                
+                // Cleanup timeout on unmount
+                return function () {
+                    if (searchTimeoutRef.current) {
+                        clearTimeout(searchTimeoutRef.current);
+                    }
+                };
             }, []);
 
-            // Find selected rating using useMemo for efficiency
-            const selectedRating = useMemo(function () {
-                if (!ratingId || ratings.length === 0) {
-                    return null;
+            // Fetch child ratings when ratingId changes
+            useEffect(function () {
+                if (ratingId) {
+                    fetchChildRatings(ratingId);
                 }
-                return ratings.find(function (r) {
-                    return parseInt(r.id, 10) === parseInt(ratingId, 10);
-                }) || null;
-            }, [ratingId, ratings]);
+            }, [ratingId]);
 
-            // Find child ratings
+            // Find child ratings from the store
             const childRatings = useMemo(function () {
-                if (!ratingId || ratings.length === 0) {
+                if (!ratingId) {
                     return [];
                 }
-                return ratings.filter(function (r) {
-                    return parseInt(r.parent_id, 10) === parseInt(ratingId, 10);
+                // Get children from the store's allRatingsById
+                var children = [];
+                var ratingsObj = allRatingsById || {};
+                Object.values(ratingsObj).forEach(function (r) {
+                    if (r && r.parent_id && parseInt(r.parent_id, 10) === parseInt(ratingId, 10)) {
+                        children.push(r);
+                    }
                 });
-            }, [ratingId, ratings]);
+                return children;
+            }, [ratingId, allRatingsById]);
 
             function createNewParentRating() {
                 if (!newParentName.trim() || creating) {
@@ -171,24 +217,14 @@
 
                 setCreating(true);
                 
-                var requestData = { 
+                createRating({ 
                     name: newParentName,
                     display_only: newParentDisplayOnly
-                };
-                
-                apiFetch({
-                    path: '/shuriken-reviews/v1/ratings',
-                    method: 'POST',
-                    data: requestData
                 })
                     .then(function (data) {
-                        setRatings(function (prev) {
-                            return [data].concat(prev);
-                        });
-                        setParentRatings(function (prev) {
-                            return [data].concat(prev);
-                        });
                         setAttributes({ ratingId: parseInt(data.id, 10) });
+                        // Refresh parent ratings to include new one
+                        fetchParentRatings();
                         // Reset form
                         setNewParentName('');
                         setNewParentDisplayOnly(true);
@@ -220,27 +256,13 @@
 
                 setUpdating(true);
                 
-                var requestData = {
+                updateRating(selectedRating.id, {
                     name: editParentName,
                     display_only: editParentDisplayOnly
-                };
-                
-                apiFetch({
-                    path: '/shuriken-reviews/v1/ratings/' + selectedRating.id,
-                    method: 'PUT',
-                    data: requestData
                 })
                     .then(function (data) {
-                        setRatings(function (prev) {
-                            return prev.map(function (r) {
-                                return parseInt(r.id, 10) === parseInt(data.id, 10) ? data : r;
-                            });
-                        });
-                        setParentRatings(function (prev) {
-                            return prev.map(function (r) {
-                                return parseInt(r.id, 10) === parseInt(data.id, 10) ? data : r;
-                            });
-                        });
+                        // Refresh parent ratings to reflect update
+                        fetchParentRatings();
                         setIsEditModalOpen(false);
                         setUpdating(false);
                         setError(null);
@@ -267,22 +289,13 @@
 
                 setManagingChildren(true);
                 
-                var requestData = {
+                createRating({
                     name: newChildName,
                     parent_id: parseInt(selectedRating.id, 10),
                     effect_type: newChildEffectType,
                     display_only: false
-                };
-                
-                apiFetch({
-                    path: '/shuriken-reviews/v1/ratings',
-                    method: 'POST',
-                    data: requestData
                 })
                     .then(function (data) {
-                        setRatings(function (prev) {
-                            return [data].concat(prev);
-                        });
                         setChildrenToManage(function (prev) {
                             return [data].concat(prev);
                         });
@@ -327,31 +340,14 @@
                 setSavingChildren(true);
                 setError(null);
 
-                // Update all edited children in sequence
+                // Update all edited children in sequence using store
                 var updatePromises = editIds.map(function (childId) {
-                    return apiFetch({
-                        path: '/shuriken-reviews/v1/ratings/' + childId,
-                        method: 'PUT',
-                        data: childrenLocalEdits[childId]
-                    });
+                    return updateRating(childId, childrenLocalEdits[childId]);
                 });
 
                 Promise.all(updatePromises)
                     .then(function (results) {
-                        // Update main ratings list
-                        setRatings(function (prev) {
-                            var updated = prev.slice();
-                            results.forEach(function (data) {
-                                var idx = updated.findIndex(function (r) {
-                                    return parseInt(r.id, 10) === parseInt(data.id, 10);
-                                });
-                                if (idx !== -1) {
-                                    updated[idx] = data;
-                                }
-                            });
-                            return updated;
-                        });
-                        // Update children list
+                        // Update children list with fresh data
                         setChildrenToManage(function (prev) {
                             var updated = prev.slice();
                             results.forEach(function (data) {
@@ -381,16 +377,8 @@
 
                 var retryAction = function() { deleteChild(childId); };
 
-                apiFetch({
-                    path: '/shuriken-reviews/v1/ratings/' + childId,
-                    method: 'DELETE'
-                })
+                deleteRating(childId)
                     .then(function () {
-                        setRatings(function (prev) {
-                            return prev.filter(function (r) {
-                                return parseInt(r.id, 10) !== parseInt(childId, 10);
-                            });
-                        });
                         setChildrenToManage(function (prev) {
                             return prev.filter(function (r) {
                                 return parseInt(r.id, 10) !== parseInt(childId, 10);
@@ -425,13 +413,36 @@
                 }
             }
 
-            // Build parent rating options for ComboboxControl
-            var ratingOptions = parentRatings.map(function (rating) {
-                return {
-                    label: rating.name + ' (ID: ' + rating.id + ')',
-                    value: String(rating.id)
-                };
-            });
+            // Build parent rating options for ComboboxControl (AJAX search based)
+            var ratingOptions = useMemo(function () {
+                var options = [];
+                var seenIds = {};
+                
+                // Always include selected rating first
+                if (selectedRating && selectedRating.id) {
+                    seenIds[selectedRating.id] = true;
+                    options.push({
+                        label: selectedRating.name + ' (ID: ' + selectedRating.id + ')',
+                        value: String(selectedRating.id)
+                    });
+                }
+                
+                // Only show search results when user has typed something
+                if (searchTerm && searchTerm.trim().length > 0) {
+                    var results = Array.isArray(searchResults) ? searchResults : [];
+                    results.forEach(function (rating) {
+                        if (rating && rating.id && !seenIds[rating.id]) {
+                            seenIds[rating.id] = true;
+                            options.push({
+                                label: rating.name + ' (ID: ' + rating.id + ')',
+                                value: String(rating.id)
+                            });
+                        }
+                    });
+                }
+                
+                return options;
+            }, [searchResults, selectedRating, searchTerm]);
 
             // Title tag options
             var titleTagOptions = [
@@ -475,9 +486,13 @@
                                     options: ratingOptions,
                                     onChange: function (value) {
                                         setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
+                                        // Fetch the selected rating if not already in store
+                                        if (value) {
+                                            fetchRating(parseInt(value, 10));
+                                        }
                                     },
-                                    onFilterValueChange: function () {},
-                                    placeholder: __('Search parent ratings...', 'shuriken-reviews')
+                                    onFilterValueChange: handleSearchChange,
+                                    placeholder: isSearching ? __('Searching...', 'shuriken-reviews') : __('Search parent ratings...', 'shuriken-reviews')
                                 }),
                                 wp.element.createElement(
                                     'div',

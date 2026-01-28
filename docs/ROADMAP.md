@@ -1,6 +1,6 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.7.5-beta1**
+Current Version: **1.9.0**
 
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
@@ -17,9 +17,11 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Testing infrastructure (interfaces + mock DB)
 - Exception system + handler
 - Dependency injection container
-- Parent/child “grouped ratings” block
+- Parent/child "grouped ratings" block
+- Data retrieval efficiency optimizations (shared store, AJAX search, batch queries)
 
 🚧 Next up:
+- Server-side render pre-fetch (batch query for frontend pages)
 - Vote rate limiting
 - Statistics caching
 
@@ -34,7 +36,100 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.7.5-beta1 (Current)
+## 1.9.0 (Current)
+
+### Data Retrieval Efficiency
+
+Major performance optimization for FSE editor and frontend.
+
+**Problem Solved:**
+- Each block instance was making 3 separate API calls fetching ALL ratings
+- No shared state between block instances in FSE editor
+- REST stats endpoint made N database queries for N ratings
+
+#### Phase 1: Database Foundation ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Add batch database method `get_ratings_by_ids($ids)` | ✅ Done |
+| 2 | Add search database method `search_ratings($term, $limit, $type)` | ✅ Done |
+| 9 | Update database interface with new signatures | ✅ Done |
+| - | *Bonus:* Add `get_child_ratings($parent_id)` for grouped blocks | ✅ Done |
+
+#### Phase 2: REST API Improvements ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 3 | Add `/ratings/search` endpoint for AJAX autocomplete | ✅ Done |
+| 4 | Optimize `/ratings/stats` to use batch query | ✅ Done |
+| - | *Bonus:* Add `/ratings/{id}/children` endpoint | ✅ Done |
+
+#### Phase 3: FSE Editor Optimization ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 5 | Create shared `@wordpress/data` store | ✅ Done |
+| 6 | Convert rating dropdown to AJAX (search only when typing) | ✅ Done |
+| 7 | Update grouped-rating block with same patterns | ✅ Done |
+
+#### Phase 4: Server-side Optimization 🚧
+
+| # | Task | Status |
+|---|------|--------|
+| 8 | Add server-side render pre-fetch | 🚧 Pending |
+
+**Goal:** On frontend page render, collect all rating block IDs, execute single batch query, distribute data to blocks.
+
+**Implementation checklist:**
+- [ ] Hook into block render to collect rating IDs
+- [ ] After all blocks collected, batch fetch via `get_ratings_by_ids()`
+- [ ] Pass pre-fetched data to individual block renders
+- [ ] Avoid duplicate queries on pages with many rating blocks
+
+#### Phase 5: Validation ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 10 | Test and validate all optimizations | ✅ Done |
+
+**Dependency Graph:**
+```
+[1] Batch DB method ──┬──► [4] Optimize stats endpoint ✅
+                      │
+                      └──► [8] Server-side pre-fetch 🚧
+
+[2] Search DB method ────► [3] REST search endpoint ✅ ────► [6] AJAX dropdown ✅
+                                                             │
+                                                             └──► [7] Grouped block ✅
+
+[5] Shared data store ✅ ──► [6] AJAX dropdown ✅
+                             │
+                             └──► [7] Grouped block ✅
+
+[9] Update interface ✅ ────► (parallel with 1 & 2)
+```
+
+**Performance Improvements Achieved:**
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| 10 rating blocks in FSE | 30 API calls (all fetching ALL ratings) | 1 shared store + on-demand fetches |
+| Rating dropdown with 1000 ratings | All 1000 loaded upfront | Search-as-you-type, max 20 results |
+| Frontend stats for 50 ratings | 50 database queries | 1 batch query |
+| Grouped block children | Not fetched on load | Fetched via dedicated endpoint |
+
+**Files Changed:**
+- `includes/class-shuriken-database.php` - Batch/search/children methods
+- `includes/interfaces/interface-shuriken-database.php` - Interface updates
+- `includes/class-shuriken-rest-api.php` - Search + children endpoints, optimized stats
+- `includes/class-shuriken-block.php` - Shared store registration
+- `blocks/shared/ratings-store.js` - Centralized data store with thunks
+- `blocks/shuriken-rating/index.js` - Rewritten for shared store + AJAX search
+- `blocks/shuriken-grouped-rating/index.js` - Updated for shared store + child fetching
+
+---
+
+## 1.7.5 (Released)
 
 ✅ Major refactor and stabilization
 - Split the large main plugin file into focused modules
@@ -57,7 +152,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.8.0 (Planned)
+## Planned:
 
 ### Vote Rate Limiting
 Goal: prevent voting abuse/spam.
@@ -83,10 +178,6 @@ Implementation checklist:
 - [ ] Add cache get/set to analytics layer (TTL)
 - [ ] Invalidate cache on vote changes
 - [ ] (Optional) Redis support
-
----
-
-## 1.9.0 (Planned)
 
 ### Rating Notes / Comments
 Goal: let users attach notes/comments to ratings.

@@ -122,6 +122,24 @@ interface Shuriken_Database_Interface {
     public function get_mirrors($rating_id);
 
     /**
+     * Get multiple ratings by IDs in a single query
+     *
+     * @param array $ids Array of rating IDs.
+     * @return array Array of rating objects indexed by ID.
+     */
+    public function get_ratings_by_ids($ids);
+
+    /**
+     * Search ratings by name
+     *
+     * @param string $search_term Search term to match against rating names.
+     * @param int    $limit       Maximum number of results.
+     * @param string $type        Filter type: 'all', 'parents', 'mirrorable'.
+     * @return array Array of rating objects matching the search.
+     */
+    public function search_ratings($search_term, $limit = 20, $type = 'all');
+
+    /**
      * Get user's vote for a rating
      *
      * @param int         $rating_id Rating ID.

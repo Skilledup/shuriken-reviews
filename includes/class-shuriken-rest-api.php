@@ -155,6 +155,51 @@ class Shuriken_REST_API {
             'permission_callback' => array($this, 'can_edit_posts'),
         ));
 
+        // Search ratings endpoint (for AJAX autocomplete)
+        register_rest_route(self::NAMESPACE, '/ratings/search', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'search_ratings'),
+            'permission_callback' => array($this, 'can_edit_posts'),
+            'args'                => array(
+                'q' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'default'           => '',
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'description'       => 'Search term to match against rating names',
+                ),
+                'limit' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'default'           => 20,
+                    'sanitize_callback' => 'absint',
+                    'description'       => 'Maximum number of results to return',
+                ),
+                'type' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'default'           => 'all',
+                    'enum'              => array('all', 'parents', 'mirrorable'),
+                    'description'       => 'Filter by rating type',
+                ),
+            ),
+        ));
+
+        // Get child ratings of a parent
+        register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/children', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'get_child_ratings'),
+            'permission_callback' => array($this, 'can_edit_posts'),
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                    'description'       => 'Parent rating ID',
+                ),
+            ),
+        ));
+
         // Public stats endpoint (bypasses cache)
         register_rest_route(self::NAMESPACE, '/ratings/stats', array(
             'methods'             => 'GET',
@@ -525,7 +570,38 @@ class Shuriken_REST_API {
     }
 
     /**
+     * Get child ratings of a parent rating
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response
+     * @since 1.9.0
+     */
+    public function get_child_ratings($request) {
+        $parent_id = $request->get_param('id');
+        $ratings = shuriken_db()->get_child_ratings($parent_id);
+        return rest_ensure_response($ratings);
+    }
+
+    /**
+     * Search ratings by name (for AJAX autocomplete)
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response
+     * @since 1.9.0
+     */
+    public function search_ratings($request) {
+        $search_term = $request->get_param('q');
+        $limit = $request->get_param('limit');
+        $type = $request->get_param('type');
+        
+        $ratings = shuriken_db()->search_ratings($search_term, $limit, $type);
+        return rest_ensure_response($ratings);
+    }
+
+    /**
      * Get fresh rating statistics (bypasses cache)
+     * 
+     * Optimized to use batch query instead of individual queries.
      *
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
@@ -543,18 +619,16 @@ class Shuriken_REST_API {
                 );
             }
             
-            $db = shuriken_db();
-            $stats = array();
+            // Use batch method for efficiency (single query instead of N queries)
+            $ratings = shuriken_db()->get_ratings_by_ids($ids);
             
-            foreach ($ids as $id) {
-                $rating = $db->get_rating($id);
-                if ($rating) {
-                    $stats[$id] = array(
-                        'average' => $rating->average,
-                        'total_votes' => $rating->total_votes,
-                        'source_id' => $rating->source_id,
-                    );
-                }
+            $stats = array();
+            foreach ($ratings as $id => $rating) {
+                $stats[$id] = array(
+                    'average' => $rating->average,
+                    'total_votes' => $rating->total_votes,
+                    'source_id' => $rating->source_id,
+                );
             }
             
             return rest_ensure_response($stats);

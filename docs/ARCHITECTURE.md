@@ -42,9 +42,15 @@ shuriken-reviews/
 │   │   └── admin-ratings.js               # Ratings page interactions
 │   └── images/                    # UI images and icons
 │
-├── blocks/                        # Gutenberg block definition
-│   └── shuriken-rating/
-│       ├── index.js               # Block registration & editor
+├── blocks/                        # Gutenberg block definitions
+│   ├── shared/
+│   │   └── ratings-store.js       # Shared @wordpress/data store
+│   ├── shuriken-rating/
+│   │   ├── index.js               # Block registration & editor
+│   │   ├── block.json             # Block metadata
+│   │   └── editor.css             # Editor-only styles
+│   └── shuriken-grouped-rating/
+│       ├── index.js               # Grouped rating block
 │       ├── block.json             # Block metadata
 │       └── editor.css             # Editor-only styles
 │
@@ -141,6 +147,8 @@ admin         → Shuriken_Admin
 
 **Key Methods:**
 - `get_rating($id)` - Retrieve rating
+- `get_ratings_by_ids($ids)` - Batch retrieve multiple ratings (single query)
+- `search_ratings($term, $limit, $type)` - Search ratings by name (for AJAX autocomplete)
 - `create_rating($data)` - Insert new rating
 - `update_rating($id, $data)` - Update rating
 - `delete_rating($id)` - Delete rating
@@ -253,8 +261,11 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 
 **Endpoints:**
 - `GET /wp-json/shuriken-reviews/v1/ratings`
+- `GET /wp-json/shuriken-reviews/v1/ratings/search` - AJAX autocomplete search
+- `GET /wp-json/shuriken-reviews/v1/ratings/parents` - Parent ratings only
+- `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - Mirrorable ratings
 - `POST /wp-json/shuriken-reviews/v1/votes`
-- `GET /wp-json/shuriken-reviews/v1/ratings/stats`
+- `GET /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized)
 - `GET /wp-json/shuriken-reviews/v1/nonce`
 
 ### Shortcodes Module (`class-shuriken-shortcodes.php`)
@@ -269,13 +280,44 @@ Handles `[shuriken_rating]` shortcode registration and rendering.
 
 ### Block Module (`class-shuriken-block.php`)
 
-Registers and renders the Gutenberg block.
+Registers and renders Gutenberg blocks.
 
 **Features:**
 - FSE (Full Site Editor) compatible
 - Uses same rendering as shortcode
 - Gutenberg editor UI
 - Block attributes management
+- Shared data store registration
+
+**Blocks:**
+- `shuriken-reviews/rating` - Single rating display
+- `shuriken-reviews/grouped-rating` - Parent with child ratings
+
+### Shared Data Store (`blocks/shared/ratings-store.js`)
+
+Centralized state management for all rating blocks using `@wordpress/data`.
+
+**Features:**
+- Prevents duplicate API calls across multiple blocks
+- Caches fetched ratings by ID
+- Debounced AJAX search for rating selection
+- Shared state between all block instances
+
+**Store Name:** `shuriken-reviews`
+
+**Key Selectors:**
+- `getRating(id)` - Get cached rating
+- `getSearchResults()` - Current search results
+- `getParentRatings()` - All parent ratings
+- `isSearching()` - Search loading state
+
+**Key Actions:**
+- `fetchRating(id)` - Fetch single rating
+- `searchRatings(term, type, limit)` - AJAX search
+- `fetchParentRatings()` - Load parent ratings
+- `createRating(data)` - Create new rating
+- `updateRating(id, data)` - Update rating
+- `deleteRating(id)` - Delete rating
 
 ### AJAX Module (`class-shuriken-ajax.php`)
 

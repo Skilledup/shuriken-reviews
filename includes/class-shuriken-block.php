@@ -67,6 +67,18 @@ class Shuriken_Block {
      * @since 1.1.9
      */
     public function register_block() {
+        // Register the shared ratings store (used by all blocks)
+        wp_register_script(
+            'shuriken-ratings-store',
+            plugins_url('blocks/shared/ratings-store.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-data',
+                'wp-api-fetch'
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
         // Register the editor script with proper dependencies
         wp_register_script(
             'shuriken-rating-editor',
@@ -77,7 +89,9 @@ class Shuriken_Block {
                 'wp-block-editor',
                 'wp-components',
                 'wp-i18n',
-                'wp-api-fetch'
+                'wp-api-fetch',
+                'wp-data',
+                'shuriken-ratings-store'
             ),
             SHURIKEN_REVIEWS_VERSION,
             true
@@ -116,7 +130,9 @@ class Shuriken_Block {
                 'wp-block-editor',
                 'wp-components',
                 'wp-i18n',
-                'wp-api-fetch'
+                'wp-api-fetch',
+                'wp-data',
+                'shuriken-ratings-store'
             ),
             SHURIKEN_REVIEWS_VERSION,
             true

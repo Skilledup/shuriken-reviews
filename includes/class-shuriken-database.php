@@ -589,6 +589,195 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /**
+     * Get multiple ratings by IDs in a single query
+     *
+     * This is more efficient than calling get_rating() multiple times
+     * as it executes a single SQL query with WHERE IN clause.
+     *
+     * @param array $ids Array of rating IDs
+     * @return array Array of rating objects indexed by ID
+     */
+    public function get_ratings_by_ids($ids) {
+        if (empty($ids)) {
+            return array();
+        }
+
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids); // Remove zeros/invalid
+        
+        if (empty($ids)) {
+            return array();
+        }
+
+        $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
+        $fields = self::RATING_FIELDS;
+
+        $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($ids_placeholder)",
+            ...$ids
+        ));
+
+        // Index by ID and calculate averages
+        $result = array();
+        foreach ($ratings as $rating) {
+            // Default source_id to self
+            $rating->source_id = $rating->id;
+            
+            // Calculate average
+            $rating->average = $rating->total_votes > 0 
+                ? round($rating->total_rating / $rating->total_votes, 1) 
+                : 0;
+            
+            $result[$rating->id] = $rating;
+        }
+
+        // Handle mirrors - collect mirror_of IDs that need resolution
+        $mirror_ids = array();
+        foreach ($result as $rating) {
+            if (!empty($rating->mirror_of) && !isset($result[$rating->mirror_of])) {
+                $mirror_ids[] = $rating->mirror_of;
+            }
+        }
+
+        // Fetch original ratings for mirrors if not already in result
+        if (!empty($mirror_ids)) {
+            $mirror_ids = array_unique($mirror_ids);
+            $mirror_placeholder = implode(',', array_fill(0, count($mirror_ids), '%d'));
+            $originals = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($mirror_placeholder)",
+                ...$mirror_ids
+            ));
+
+            $originals_map = array();
+            foreach ($originals as $orig) {
+                $orig->average = $orig->total_votes > 0 
+                    ? round($orig->total_rating / $orig->total_votes, 1) 
+                    : 0;
+                $originals_map[$orig->id] = $orig;
+            }
+
+            // Apply mirror data
+            foreach ($result as $id => $rating) {
+                if (!empty($rating->mirror_of) && isset($originals_map[$rating->mirror_of])) {
+                    $original = $originals_map[$rating->mirror_of];
+                    $result[$id]->total_votes = $original->total_votes;
+                    $result[$id]->total_rating = $original->total_rating;
+                    $result[$id]->display_only = $original->display_only;
+                    $result[$id]->average = $original->average;
+                    $result[$id]->source_id = $original->id;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get child ratings of a parent rating
+     *
+     * Returns all ratings that have the specified parent_id.
+     *
+     * @param int $parent_id The parent rating ID
+     * @return array Array of child rating objects
+     * @since 1.9.0
+     */
+    public function get_child_ratings($parent_id) {
+        $parent_id = absint($parent_id);
+        
+        if (!$parent_id) {
+            return array();
+        }
+
+        $fields = self::RATING_FIELDS;
+        $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT {$fields} FROM {$this->ratings_table} 
+             WHERE parent_id = %d 
+             ORDER BY name ASC",
+            $parent_id
+        ));
+
+        // Calculate averages and set source_id
+        foreach ($ratings as &$rating) {
+            $rating->source_id = $rating->id;
+            $rating->average = $rating->total_votes > 0 
+                ? round($rating->total_rating / $rating->total_votes, 1) 
+                : 0;
+        }
+
+        return $ratings;
+    }
+
+    /**
+     * Search ratings by name
+     *
+     * Used for AJAX autocomplete in the block editor dropdown.
+     * Returns limited results for efficient searching.
+     *
+     * @param string $search_term Search term to match against rating names
+     * @param int    $limit       Maximum number of results (default 20)
+     * @param string $type        Filter type: 'all', 'parents', 'mirrorable' (default 'all')
+     * @return array Array of rating objects matching the search
+     */
+    public function search_ratings($search_term, $limit = 20, $type = 'all') {
+        $search_term = sanitize_text_field($search_term);
+        $limit = absint($limit);
+        
+        if ($limit < 1) {
+            $limit = 20;
+        }
+        if ($limit > 100) {
+            $limit = 100; // Cap at 100 for performance
+        }
+
+        $fields = self::RATING_FIELDS;
+        $where_clause = '';
+
+        // Add type filter
+        switch ($type) {
+            case 'parents':
+                $where_clause = 'WHERE parent_id IS NULL AND mirror_of IS NULL';
+                break;
+            case 'mirrorable':
+                $where_clause = 'WHERE mirror_of IS NULL';
+                break;
+            default:
+                $where_clause = 'WHERE 1=1';
+        }
+
+        // Add search condition if search term provided
+        if (!empty($search_term)) {
+            $search_like = '%' . $this->wpdb->esc_like($search_term) . '%';
+            $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} 
+                 {$where_clause} AND name LIKE %s 
+                 ORDER BY name ASC 
+                 LIMIT %d",
+                $search_like,
+                $limit
+            ));
+        } else {
+            // No search term - return first N results
+            $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} 
+                 {$where_clause}
+                 ORDER BY name ASC 
+                 LIMIT %d",
+                $limit
+            ));
+        }
+
+        // Calculate averages
+        foreach ($ratings as &$rating) {
+            $rating->source_id = $rating->id;
+            $rating->average = $rating->total_votes > 0 
+                ? round($rating->total_rating / $rating->total_votes, 1) 
+                : 0;
+        }
+
+        return $ratings;
+    }
+
+    /**
      * Delete multiple ratings and their associated votes
      *
      * @param array $rating_ids Array of rating IDs

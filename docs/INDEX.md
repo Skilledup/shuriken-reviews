@@ -97,7 +97,7 @@ Current status of features, implementation progress, and planned work.
 
 ## Roadmap & Status
 
-### Current Version: 1.7.5-beta1
+### Current Version: 1.9.0
 
 **Major Features** ✅
 - Rating system with parent-child relationships
