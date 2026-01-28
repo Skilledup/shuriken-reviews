@@ -14,6 +14,21 @@ Welcome to the comprehensive documentation for **Shuriken Reviews** — a powerf
 
 ### 📋 Reference Guides
 
+#### [REST API Reference](guides/rest-api.md)
+Complete reference for all REST API endpoints with authentication, parameters, and usage examples.
+- Ratings CRUD operations
+- Search and filtering endpoints
+- Public endpoints (stats, nonce)
+- Authentication methods
+- Error handling
+
+#### [Helper Functions](guides/helper-functions.md)
+Reference for all global helper functions providing access to plugin services and components.
+- Core helper functions
+- Service accessors (database, analytics)
+- Component accessors
+- Usage patterns and examples
+
 #### [Hooks Reference](guides/hooks-reference.md)
 Complete API reference for all 20 WordPress hooks (12 filters + 8 actions) with examples and use cases.
 - Rating display filters

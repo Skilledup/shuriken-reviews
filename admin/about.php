@@ -329,6 +329,9 @@ if (!defined('ABSPATH')) exit;
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/{id}/children</code>
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3</code>
                     </div>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/rest-api.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('REST API Documentation', 'shuriken-reviews'); ?> →
+                    </a>
                 </div>
             </div>
             
@@ -343,6 +346,9 @@ if (!defined('ABSPATH')) exit;
                         <code>shuriken_db()->get_rating($id)</code>
                         <code>shuriken_analytics()->get_top_rated()</code>
                     </div>
+                    <a href="https://github.com/qasedak/shuriken-reviews/blob/main/docs/guides/helper-functions.md" target="_blank" rel="noopener noreferrer" class="resource-link">
+                        <?php esc_html_e('Helper Functions Reference', 'shuriken-reviews'); ?> →
+                    </a>
                 </div>
             </div>
         </div>
