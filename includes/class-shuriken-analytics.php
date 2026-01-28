@@ -1146,15 +1146,20 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $result->per_page = $per_page;
         
         $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.*, u.display_name, u.user_email
+            "SELECT v.*, u.display_name, u.user_email, r.name as rating_name
              FROM {$this->votes_table} v
              LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
+             LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition}
              ORDER BY v.date_created DESC
              LIMIT %d OFFSET %d",
             $per_page,
             $offset
         ));
+        
+        // Mark which votes are from sub-ratings vs direct (for parent rating views)
+        $result->is_multi_rating = count($rating_ids) > 1;
+        $result->parent_rating_id = $rating_id;
         
         return $result;
     }

@@ -411,11 +411,15 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
             ); ?>
         </p>
         
+        <?php $show_source_column = $is_parent && in_array($current_view, array('subs', 'total')); ?>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
                     <th class="column-id"><?php esc_html_e('ID', 'shuriken-reviews'); ?></th>
                     <th class="column-rating"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <?php if ($show_source_column) : ?>
+                    <th class="column-source"><?php esc_html_e('Source', 'shuriken-reviews'); ?></th>
+                    <?php endif; ?>
                     <th class="column-voter"><?php esc_html_e('Voter', 'shuriken-reviews'); ?></th>
                     <th class="column-ip"><?php esc_html_e('IP Address', 'shuriken-reviews'); ?></th>
                     <th class="column-date"><?php esc_html_e('Date & Time', 'shuriken-reviews'); ?></th>
@@ -433,6 +437,21 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                                 </span>
                                 <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
                             </td>
+                            <?php if ($show_source_column) : ?>
+                            <td class="column-source">
+                                <?php if ($vote->rating_id == $rating_id) : ?>
+                                    <span class="source-badge direct" title="<?php esc_attr_e('Direct vote on parent', 'shuriken-reviews'); ?>">
+                                        <span class="dashicons dashicons-star-filled"></span>
+                                        <?php esc_html_e('Direct', 'shuriken-reviews'); ?>
+                                    </span>
+                                <?php else : ?>
+                                    <span class="source-badge sub" title="<?php echo esc_attr($vote->rating_name); ?>">
+                                        <span class="dashicons dashicons-arrow-right-alt"></span>
+                                        <?php echo esc_html($vote->rating_name); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                             <td class="column-voter">
                                 <?php if ($vote->user_id > 0) : ?>
                                     <span class="voter-type member" title="<?php esc_attr_e('Registered Member', 'shuriken-reviews'); ?>">
@@ -468,7 +487,7 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                     <?php endforeach; ?>
                 <?php else : ?>
                     <tr>
-                        <td colspan="5"><?php esc_html_e('No votes recorded yet', 'shuriken-reviews'); ?></td>
+                        <td colspan="<?php echo $show_source_column ? 6 : 5; ?>"><?php esc_html_e('No votes recorded yet', 'shuriken-reviews'); ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>
