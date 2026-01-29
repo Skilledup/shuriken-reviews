@@ -165,6 +165,10 @@ class Shuriken_AJAX {
                 throw Shuriken_Logic_Exception::display_only_rating();
             }
 
+            // Check rate limits
+            $rate_limiter = shuriken_rate_limiter();
+            $rate_limiter->can_vote($user_id, $user_ip, $rating_id);
+
             /**
              * Filter whether the user can submit this vote.
              *

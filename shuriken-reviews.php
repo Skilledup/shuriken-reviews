@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: A powerful and flexible rating system for WordPress.
- * Version: 2.0.0
+ * Version: 1.10.0
  * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '2.0.0');
+    define('SHURIKEN_REVIEWS_VERSION', '1.10.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -97,10 +97,12 @@ final class Shuriken_Reviews {
         // Interfaces
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-database.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-rate-limiter.php';
         
         // Core classes
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-database.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rate-limiter.php';
         
         // Dependency injection container
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-container.php';

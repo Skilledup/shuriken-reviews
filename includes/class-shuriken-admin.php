@@ -51,6 +51,7 @@ class Shuriken_Admin {
         add_action('admin_init', array($this, 'handle_rating_forms'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_ratings_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_analytics_scripts'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_settings_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_about_scripts'));
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
         add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
@@ -356,6 +357,37 @@ class Shuriken_Admin {
             plugins_url('assets/css/admin-about.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
+        );
+    }
+
+    /**
+     * Enqueue scripts and styles for the Settings admin page
+     *
+     * @param string $hook The current admin page hook (unused, kept for hook signature).
+     * @return void
+     * @since 1.10.0
+     */
+    public function enqueue_settings_scripts($hook) {
+        // Check using page slug - works regardless of language/locale
+        if (!$this->is_plugin_page('shuriken-reviews-settings')) {
+            return;
+        }
+
+        // Enqueue settings CSS
+        wp_enqueue_style(
+            'shuriken-admin-settings',
+            plugins_url('assets/css/admin-settings.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(),
+            SHURIKEN_REVIEWS_VERSION
+        );
+
+        // Enqueue settings JS
+        wp_enqueue_script(
+            'shuriken-admin-settings',
+            plugins_url('assets/js/admin-settings.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array('jquery'),
+            SHURIKEN_REVIEWS_VERSION,
+            true
         );
     }
 

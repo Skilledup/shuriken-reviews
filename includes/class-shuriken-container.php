@@ -95,6 +95,11 @@ class Shuriken_Container {
             return new Shuriken_AJAX($container->get('database'));
         });
 
+        // Register rate limiter service (depends on database)
+        $this->singleton('rate_limiter', function($container) {
+            return new Shuriken_Rate_Limiter($container->get('database'));
+        });
+
         // Register frontend service (no dependencies)
         $this->singleton('frontend', function($container) {
             return Shuriken_Frontend::get_instance();

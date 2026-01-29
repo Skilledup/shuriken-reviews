@@ -2,7 +2,7 @@
 
 This document lists all available hooks (actions and filters) in the Shuriken Reviews plugin. Use these hooks to extend and customize the plugin's functionality.
 
-> **Version:** 1.7.0+
+> **Version:** 1.10.0+
 
 > **Note:** All rating display hooks work consistently for both **Shortcodes** (`[shuriken_rating]`) and **Gutenberg Blocks**. The block renderer uses the same underlying render method as shortcodes, ensuring your customizations apply everywhere.
 
@@ -13,11 +13,13 @@ This document lists all available hooks (actions and filters) in the Shuriken Re
 - [Filters](#filters)
   - [Rating Display](#rating-display-filters)
   - [Vote Submission](#vote-submission-filters)
+  - [Rate Limiting](#rate-limiting-filters)
   - [Database Operations](#database-filters)
   - [Frontend Assets](#frontend-filters)
 - [Actions](#actions)
   - [Rating Display](#rating-display-actions)
   - [Vote Submission](#vote-submission-actions)
+  - [Rate Limiting](#rate-limiting-actions)
   - [Database Operations](#database-actions)
 
 ---
@@ -382,6 +384,140 @@ add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $i
 
 ---
 
+### Rate Limiting Filters
+
+> **Since:** 1.10.0
+
+#### `shuriken_rate_limit_settings`
+
+Filters the rate limit settings before they are applied. Use this to dynamically adjust limits based on time, user role, or other conditions.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$settings` | array | Rate limit settings: `enabled`, `cooldown`, `hourly_limit`, `daily_limit` |
+| `$user_id` | int | User ID (0 for guests) |
+| `$is_guest` | bool | Whether the user is a guest |
+
+**Example 1: Stricter limits during peak hours**
+```php
+add_filter('shuriken_rate_limit_settings', function($settings, $user_id, $is_guest) {
+    $hour = (int) date('G'); // 0-23
+    
+    // Stricter limits between 9 AM and 5 PM
+    if ($hour >= 9 && $hour < 17) {
+        $settings['hourly_limit'] = 15;
+        $settings['daily_limit'] = 50;
+    }
+    
+    return $settings;
+}, 10, 3);
+```
+
+**Example 2: Higher limits for premium users**
+```php
+add_filter('shuriken_rate_limit_settings', function($settings, $user_id, $is_guest) {
+    if ($user_id > 0 && user_can($user_id, 'premium_member')) {
+        $settings['hourly_limit'] = 100;
+        $settings['daily_limit'] = 500;
+        $settings['cooldown'] = 0; // No cooldown
+    }
+    return $settings;
+}, 10, 3);
+```
+
+---
+
+#### `shuriken_bypass_rate_limit`
+
+Filters whether a user should bypass rate limiting entirely. By default, administrators bypass rate limits.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$bypass` | bool | Whether to bypass rate limiting (default: true for admins) |
+| `$user_id` | int | User ID (0 for guests) |
+| `$user_ip` | string\|null | User IP address |
+
+**Example 1: Allow editors to bypass**
+```php
+add_filter('shuriken_bypass_rate_limit', function($bypass, $user_id, $user_ip) {
+    if ($user_id > 0 && user_can($user_id, 'edit_posts')) {
+        return true;
+    }
+    return $bypass;
+}, 10, 3);
+```
+
+**Example 2: Whitelist specific IPs**
+```php
+add_filter('shuriken_bypass_rate_limit', function($bypass, $user_id, $user_ip) {
+    $whitelisted_ips = ['192.168.1.100', '10.0.0.50'];
+    
+    if (in_array($user_ip, $whitelisted_ips)) {
+        return true;
+    }
+    return $bypass;
+}, 10, 3);
+```
+
+---
+
+#### `shuriken_rate_limit_check_result`
+
+Filters the final result of a rate limit check. Use this to implement custom rate limiting logic or to override the built-in checks.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$can_vote` | bool\|WP_Error | Whether the vote is allowed (default: true after passing all checks) |
+| `$user_id` | int | User ID (0 for guests) |
+| `$user_ip` | string\|null | User IP address |
+| `$rating_id` | int | Rating ID being voted on |
+| `$limits` | array | Current rate limit settings |
+| `$usage` | array | Current usage statistics: `hourly_votes`, `daily_votes` |
+
+**Example: Block votes from suspicious patterns**
+```php
+add_filter('shuriken_rate_limit_check_result', function($can_vote, $user_id, $user_ip, $rating_id, $limits, $usage) {
+    // Block if user is voting too consistently (potential bot)
+    if ($usage['hourly_votes'] > 5) {
+        // Add your bot detection logic here
+        if (is_suspicious_voting_pattern($user_id, $rating_id)) {
+            return new WP_Error('suspicious_activity', 'Unusual voting pattern detected.');
+        }
+    }
+    return $can_vote;
+}, 10, 6);
+```
+
+---
+
+#### `shuriken_get_user_ip`
+
+Filters the detected user IP address. Use this to customize IP detection for sites behind load balancers or CDNs like Cloudflare.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ip` | string | Detected IP address |
+
+**Example: Use Cloudflare's real IP header**
+```php
+add_filter('shuriken_get_user_ip', function($ip) {
+    // Cloudflare passes the real IP in CF-Connecting-IP header
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $cf_ip = sanitize_text_field($_SERVER['HTTP_CF_CONNECTING_IP']);
+        if (filter_var($cf_ip, FILTER_VALIDATE_IP)) {
+            return $cf_ip;
+        }
+    }
+    return $ip;
+});
+```
+
+---
+
 ### Database Filters
 
 #### `shuriken_before_create_rating`
@@ -686,6 +822,101 @@ add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalize
     
     update_option('shuriken_trending_ratings', $trending);
 }, 10, 7);
+```
+
+---
+
+### Rate Limiting Actions
+
+> **Since:** 1.10.0
+
+#### `shuriken_before_rate_limit_check`
+
+Fires before rate limit checks are performed. Useful for logging or analytics.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$user_id` | int | User ID (0 for guests) |
+| `$user_ip` | string\|null | User IP address |
+| `$rating_id` | int | Rating ID being voted on |
+
+**Example: Log rate limit check attempts**
+```php
+add_action('shuriken_before_rate_limit_check', function($user_id, $user_ip, $rating_id) {
+    error_log(sprintf(
+        '[Rate Limit Check] User: %d, IP: %s, Rating: %d',
+        $user_id,
+        $user_ip ?? 'N/A',
+        $rating_id
+    ));
+}, 10, 3);
+```
+
+---
+
+#### `shuriken_rate_limit_exceeded`
+
+Fires when a rate limit is exceeded. Use this for logging, analytics, notifications, or triggering security measures.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$type` | string | Type of limit exceeded: `cooldown`, `hourly`, or `daily` |
+| `$user_id` | int | User ID (0 for guests) |
+| `$user_ip` | string\|null | User IP address |
+| `$retry_after` | int | Seconds until limit resets |
+
+**Example 1: Log rate limit violations**
+```php
+add_action('shuriken_rate_limit_exceeded', function($type, $user_id, $user_ip, $retry_after) {
+    error_log(sprintf(
+        '[Rate Limit Exceeded] Type: %s, User: %d, IP: %s, Retry after: %d seconds',
+        $type,
+        $user_id,
+        $user_ip ?? 'N/A',
+        $retry_after
+    ));
+}, 10, 4);
+```
+
+**Example 2: Track abuse patterns**
+```php
+add_action('shuriken_rate_limit_exceeded', function($type, $user_id, $user_ip, $retry_after) {
+    // Track violations per IP
+    $key = 'shuriken_violations_' . md5($user_ip);
+    $violations = get_transient($key) ?: 0;
+    set_transient($key, $violations + 1, DAY_IN_SECONDS);
+    
+    // Alert on excessive violations
+    if ($violations > 10) {
+        // Trigger security measure (e.g., temporary ban, CAPTCHA requirement)
+        do_action('shuriken_potential_abuse_detected', $user_ip, $violations);
+    }
+}, 10, 4);
+```
+
+**Example 3: Send Slack notification on abuse**
+```php
+add_action('shuriken_rate_limit_exceeded', function($type, $user_id, $user_ip, $retry_after) {
+    // Only notify on repeated daily limit violations
+    if ($type !== 'daily') {
+        return;
+    }
+    
+    $webhook_url = 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL';
+    $message = sprintf(
+        '⚠️ Rate limit exceeded: %s limit hit by User %d (IP: %s)',
+        $type,
+        $user_id,
+        $user_ip ?? 'unknown'
+    );
+    
+    wp_remote_post($webhook_url, [
+        'body' => json_encode(['text' => $message]),
+        'headers' => ['Content-Type' => 'application/json']
+    ]);
+}, 10, 4);
 ```
 
 ---

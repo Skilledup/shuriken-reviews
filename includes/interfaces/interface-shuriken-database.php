@@ -198,5 +198,37 @@ interface Shuriken_Database_Interface {
      * @return string Table name.
      */
     public function get_votes_table();
+
+    /**
+     * Get the timestamp of the last vote for a rating by a user/guest
+     *
+     * @param int         $rating_id Rating ID.
+     * @param int         $user_id   User ID (0 for guests).
+     * @param string|null $user_ip   User IP address (for guests).
+     * @return string|null Datetime string or null if no vote found.
+     */
+    public function get_last_vote_time($rating_id, $user_id, $user_ip = null);
+
+    /**
+     * Count votes by a user/guest since a given datetime
+     *
+     * @param int         $user_id User ID (0 for guests).
+     * @param string|null $user_ip User IP address (for guests).
+     * @param string      $since   Datetime string (Y-m-d H:i:s format).
+     * @return int Number of votes since the given time.
+     */
+    public function count_votes_since($user_id, $user_ip, $since);
+
+    /**
+     * Get the oldest vote datetime within a time window
+     *
+     * Used to calculate when rate limits will reset.
+     *
+     * @param int         $user_id        User ID (0 for guests).
+     * @param string|null $user_ip        User IP address (for guests).
+     * @param int         $window_seconds Time window in seconds.
+     * @return string|null Datetime string or null if no votes in window.
+     */
+    public function get_oldest_vote_in_window($user_id, $user_ip, $window_seconds);
 }
 

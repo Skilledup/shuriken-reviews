@@ -1,6 +1,6 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.9.1**
+Current Version: **1.10.0**
 
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
@@ -20,11 +20,12 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Parent/child "grouped ratings" block
 - Data retrieval efficiency optimizations (shared store, AJAX search, batch queries)
 - Voter Activity page (member & guest tracking, stats, charts, CSV export)
+- Vote rate limiting with modern settings UI
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
-- Vote rate limiting
 - Statistics caching
+- Rate limit performance caching
 
 🚧 Later:
 - Rating notes/comments
@@ -37,7 +38,60 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.9.1 (Current)
+## 1.10.0 (Current)
+
+### Vote Rate Limiting
+
+Comprehensive vote rate limiting system to prevent abuse and spam, with a modern tabbed settings UI.
+
+**Features:**
+- **Cooldown Between Votes** - Configurable delay between votes on the same rating item
+- **Hourly & Daily Limits** - Separate limits for logged-in members and guests
+- **Admin Bypass** - Administrators bypass rate limits by default (extendable via filter)
+- **Modern Settings UI** - New tabbed settings interface with card-based layout
+- **Extensive Hooks** - 5 new filters and 2 new actions for complete customization
+- **Disabled by Default** - Opt-in feature, won't affect existing sites until enabled
+
+**New Settings:**
+| Setting | Default (Members) | Default (Guests) |
+|---------|-------------------|------------------|
+| Vote Cooldown | 60 seconds | 60 seconds |
+| Hourly Limit | 30 votes | 10 votes |
+| Daily Limit | 100 votes | 30 votes |
+
+**New Hooks:**
+- `shuriken_rate_limit_settings` - Modify rate limits programmatically
+- `shuriken_bypass_rate_limit` - Bypass limits for specific users/roles
+- `shuriken_rate_limit_check_result` - Override rate limit check results
+- `shuriken_get_user_ip` - Customize IP detection (for proxies/CDNs)
+- `shuriken_before_rate_limit_check` - Action fired before checks
+- `shuriken_rate_limit_exceeded` - Action fired when limit is hit (for logging/analytics)
+- `shuriken_settings_tabs` - Add custom settings tabs
+
+**Files Added:**
+- `includes/interfaces/interface-shuriken-rate-limiter.php` - Rate limiter interface
+- `includes/class-shuriken-rate-limiter.php` - Rate limiter service implementation
+- `admin/partials/settings-general.php` - General settings tab partial
+- `admin/partials/settings-rate-limiting.php` - Rate limiting settings tab partial
+- `assets/css/admin-settings.css` - Modern settings page styles
+- `assets/js/admin-settings.js` - Settings page interactions
+- `tests/example-mock-rate-limiter.php` - Mock rate limiter for testing
+
+**Files Changed:**
+- `admin/settings.php` - Refactored to tabbed navigation system
+- `includes/class-shuriken-database.php` - New rate limiting query methods:
+  - `get_last_vote_time()` - Get timestamp of last vote on a rating
+  - `count_votes_since()` - Count votes within a time window
+  - `get_oldest_vote_in_window()` - Get oldest vote for reset calculation
+- `includes/interfaces/interface-shuriken-database.php` - Added new method signatures
+- `includes/class-shuriken-container.php` - Registered rate_limiter service
+- `includes/class-shuriken-ajax.php` - Integrated rate limiting checks
+- `includes/class-shuriken-admin.php` - Added settings scripts enqueue
+- `shuriken-reviews.php` - Added rate limiter includes, version bump
+
+---
+
+## 1.9.1 (Released)
 
 ### Voter Activity Page
 
@@ -194,21 +248,14 @@ Major performance optimization for FSE editor and frontend.
 
 ## Planned:
 
-### Vote Rate Limiting
-Goal: prevent voting abuse/spam.
-
-Planned:
-- Cooldown between votes (per user)
-- Daily/hourly vote limits (per user)
-- Guest/IP-based limits
+### Rate Limit Performance Caching
+Goal: reduce DB queries for rate limit checks on high-traffic sites.
 
 Implementation checklist:
-- [ ] Track vote timestamps (user meta / post meta)
-- [ ] Enforce limits inside AJAX voting handler
-- [ ] Throw `Shuriken_Rate_Limit_Exception` when exceeded
-- [ ] Map to HTTP 429 in exception handling
-- [ ] Add settings to configure thresholds
-- [ ] Add hook to bypass limits for trusted users
+- [ ] Cache vote counts in transients (per user/IP)
+- [ ] Set appropriate TTL (e.g., 60 seconds)
+- [ ] Invalidate on new vote
+- [ ] Add filter to disable caching if needed
 
 ### Statistics Caching
 Goal: reduce repeated DB work for rating stats.

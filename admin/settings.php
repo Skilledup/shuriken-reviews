@@ -1,54 +1,80 @@
 <?php
-if (!defined('ABSPATH')) exit;
+/**
+ * Shuriken Reviews Settings Page
+ *
+ * Main settings page with tabbed navigation.
+ *
+ * @package Shuriken_Reviews
+ * @since 1.10.0
+ */
 
-if (isset($_POST['save_general_settings'])) {
-    if (!wp_verify_nonce($_POST['shuriken_general_nonce'], 'shuriken_general_settings')) {
-        wp_die(__('Invalid nonce specified', 'shuriken-reviews'));
-    }
-    
-    $allow_guest_voting = isset($_POST['allow_guest_voting']) ? '1' : '0';
-    
-    update_option('shuriken_allow_guest_voting', $allow_guest_voting);
-    
-    echo '<div class="notice notice-success"><p>' . 
-        esc_html__('Settings saved successfully!', 'shuriken-reviews') . 
-        '</p></div>';
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
 }
+
+// Define available tabs
+$tabs = array(
+    'general' => array(
+        'label' => __('General', 'shuriken-reviews'),
+        'icon'  => '⚙️',
+        'file'  => 'settings-general.php',
+    ),
+    'rate-limiting' => array(
+        'label' => __('Rate Limiting', 'shuriken-reviews'),
+        'icon'  => '🛡️',
+        'file'  => 'settings-rate-limiting.php',
+    ),
+);
+
+/**
+ * Filter the available settings tabs.
+ *
+ * @since 1.10.0
+ * @param array $tabs Array of tab definitions.
+ */
+$tabs = apply_filters('shuriken_settings_tabs', $tabs);
+
+// Get current tab from URL, default to 'general'
+$current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
+
+// Validate current tab exists
+if (!isset($tabs[$current_tab])) {
+    $current_tab = 'general';
+}
+
+// Build base URL for tabs
+$base_url = admin_url('admin.php?page=shuriken-reviews-settings');
 ?>
 
-<div class="wrap">
+<div class="wrap shuriken-settings">
     <h1><?php esc_html_e('Shuriken Reviews Settings', 'shuriken-reviews'); ?></h1>
     
-    <form method="post" action="">
-        <?php wp_nonce_field('shuriken_general_settings', 'shuriken_general_nonce'); ?>
+    <!-- Tab Navigation -->
+    <nav class="shuriken-settings-tabs" aria-label="<?php esc_attr_e('Settings tabs', 'shuriken-reviews'); ?>">
+        <?php foreach ($tabs as $tab_key => $tab) : ?>
+            <a href="<?php echo esc_url(add_query_arg('tab', $tab_key, $base_url)); ?>" 
+               class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>"
+               <?php echo $current_tab === $tab_key ? 'aria-current="page"' : ''; ?>>
+                <span class="tab-icon"><?php echo esc_html($tab['icon']); ?></span>
+                <?php echo esc_html($tab['label']); ?>
+            </a>
+        <?php endforeach; ?>
+    </nav>
+    
+    <!-- Tab Content -->
+    <div class="shuriken-tab-content">
+        <?php
+        // Load the partial for the current tab
+        $partial_file = plugin_dir_path(__FILE__) . 'partials/' . $tabs[$current_tab]['file'];
         
-        <h2><?php esc_html_e('Voting Settings', 'shuriken-reviews'); ?></h2>
-        <table class="form-table">
-            <tr>
-                <th scope="row"><?php esc_html_e('Guest Voting', 'shuriken-reviews'); ?></th>
-                <td>
-                    <fieldset>
-                        <label for="allow_guest_voting">
-                            <input type="checkbox" 
-                                   name="allow_guest_voting" 
-                                   id="allow_guest_voting"
-                                   value="1"
-                                   <?php checked('1', get_option('shuriken_allow_guest_voting', '0')); ?>>
-                            <?php esc_html_e('Allow guests to vote without logging in', 'shuriken-reviews'); ?>
-                        </label>
-                        <p class="description">
-                            <?php esc_html_e('When enabled, visitors who are not logged in can also submit ratings. Guest votes are tracked by IP address to prevent multiple votes.', 'shuriken-reviews'); ?>
-                        </p>
-                    </fieldset>
-                </td>
-            </tr>
-        </table>
-        
-        <p class="submit">
-            <input type="submit" 
-                   name="save_general_settings" 
-                   class="button button-primary" 
-                   value="<?php esc_attr_e('Save Settings', 'shuriken-reviews'); ?>">
-        </p>
-    </form>
+        if (file_exists($partial_file)) {
+            include $partial_file;
+        } else {
+            echo '<div class="notice notice-error"><p>' . 
+                esc_html__('Settings tab file not found.', 'shuriken-reviews') . 
+                '</p></div>';
+        }
+        ?>
+    </div>
 </div>

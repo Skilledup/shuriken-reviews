@@ -983,6 +983,96 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     // =========================================================================
+    // Rate Limiting
+    // =========================================================================
+
+    /**
+     * Get the timestamp of the last vote for a rating by a user/guest
+     *
+     * @param int         $rating_id Rating ID.
+     * @param int         $user_id   User ID (0 for guests).
+     * @param string|null $user_ip   User IP address (for guests).
+     * @return string|null Datetime string or null if no vote found.
+     */
+    public function get_last_vote_time($rating_id, $user_id, $user_ip = null) {
+        if ($user_id > 0) {
+            return $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT date_modified FROM {$this->votes_table} 
+                 WHERE rating_id = %d AND user_id = %d
+                 ORDER BY date_modified DESC LIMIT 1",
+                $rating_id,
+                $user_id
+            ));
+        } else {
+            return $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT date_modified FROM {$this->votes_table} 
+                 WHERE rating_id = %d AND user_ip = %s AND user_id = 0
+                 ORDER BY date_modified DESC LIMIT 1",
+                $rating_id,
+                $user_ip
+            ));
+        }
+    }
+
+    /**
+     * Count votes by a user/guest since a given datetime
+     *
+     * @param int         $user_id User ID (0 for guests).
+     * @param string|null $user_ip User IP address (for guests).
+     * @param string      $since   Datetime string (Y-m-d H:i:s format).
+     * @return int Number of votes since the given time.
+     */
+    public function count_votes_since($user_id, $user_ip, $since) {
+        if ($user_id > 0) {
+            return (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table} 
+                 WHERE user_id = %d AND date_modified >= %s",
+                $user_id,
+                $since
+            ));
+        } else {
+            return (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table} 
+                 WHERE user_ip = %s AND user_id = 0 AND date_modified >= %s",
+                $user_ip,
+                $since
+            ));
+        }
+    }
+
+    /**
+     * Get the oldest vote datetime within a time window
+     *
+     * Used to calculate when rate limits will reset.
+     *
+     * @param int         $user_id        User ID (0 for guests).
+     * @param string|null $user_ip        User IP address (for guests).
+     * @param int         $window_seconds Time window in seconds.
+     * @return string|null Datetime string or null if no votes in window.
+     */
+    public function get_oldest_vote_in_window($user_id, $user_ip, $window_seconds) {
+        $since = gmdate('Y-m-d H:i:s', strtotime(current_time('mysql')) - $window_seconds);
+
+        if ($user_id > 0) {
+            return $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT date_modified FROM {$this->votes_table} 
+                 WHERE user_id = %d AND date_modified >= %s
+                 ORDER BY date_modified ASC LIMIT 1",
+                $user_id,
+                $since
+            ));
+        } else {
+            return $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT date_modified FROM {$this->votes_table} 
+                 WHERE user_ip = %s AND user_id = 0 AND date_modified >= %s
+                 ORDER BY date_modified ASC LIMIT 1",
+                $user_ip,
+                $since
+            ));
+        }
+    }
+
+    // =========================================================================
     // Table Management
     // =========================================================================
 
