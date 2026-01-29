@@ -433,8 +433,7 @@ $guest_votes         = $vote_counts->guest_votes;
                                 </td>
                                 <td>
                                     <span class="star-rating-display">
-                                        <?php echo str_repeat('★', intval($vote->rating_value)); ?>
-                                        <?php echo str_repeat('☆', 5 - intval($vote->rating_value)); ?>
+                                        <?php echo str_repeat('★', intval($vote->rating_value)) . str_repeat('☆', 5 - intval($vote->rating_value)); ?>
                                     </span>
                                 </td>
                                 <td>

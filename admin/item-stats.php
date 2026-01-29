@@ -432,8 +432,7 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                             <td class="column-id"><?php echo esc_html($vote->id); ?></td>
                             <td class="column-rating">
                                 <span class="star-rating-display">
-                                    <?php echo str_repeat('★', intval($vote->rating_value)); ?>
-                                    <?php echo str_repeat('☆', 5 - intval($vote->rating_value)); ?>
+                                    <?php echo str_repeat('★', intval($vote->rating_value)) . str_repeat('☆', 5 - intval($vote->rating_value)); ?>
                                 </span>
                                 <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
                             </td>
