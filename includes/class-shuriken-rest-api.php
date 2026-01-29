@@ -28,14 +28,23 @@ class Shuriken_REST_API {
     private static $instance = null;
 
     /**
+     * @var Shuriken_Database_Interface Database instance
+     */
+    private $db;
+
+    /**
      * REST API namespace
      */
     const NAMESPACE = 'shuriken-reviews/v1';
 
     /**
      * Constructor
+     *
+     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    private function __construct() {
+    public function __construct($db = null) {
+        $this->db = $db ?: shuriken_db();
+        
         add_action('rest_api_init', array($this, 'register_routes'));
         
         // Skip nonce verification for public endpoints BEFORE authentication runs
@@ -83,9 +92,18 @@ class Shuriken_REST_API {
      */
     public static function get_instance() {
         if (null === self::$instance) {
-            self::$instance = new self();
+            self::$instance = new self(shuriken_db());
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database_Interface
+     */
+    public function get_db() {
+        return $this->db;
     }
 
     /**
@@ -356,7 +374,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response
      */
     public function get_ratings($request) {
-        $ratings = shuriken_db()->get_all_ratings();
+        $ratings = $this->db->get_all_ratings();
         return rest_ensure_response($ratings);
     }
 
@@ -378,13 +396,13 @@ class Shuriken_REST_API {
             $parent_id = $parent_id ? intval($parent_id) : null;
             $mirror_of = $mirror_of ? intval($mirror_of) : null;
             
-            $new_id = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
+            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
             
             if ($new_id === false) {
                 throw Shuriken_Database_Exception::insert_failed('ratings');
             }
             
-            $rating = shuriken_db()->get_rating($new_id);
+            $rating = $this->db->get_rating($new_id);
             
             return rest_ensure_response($rating);
         } catch (Shuriken_Exception $e) {
@@ -401,7 +419,7 @@ class Shuriken_REST_API {
     public function get_single_rating($request) {
         try {
             $id = $request->get_param('id');
-            $rating = shuriken_db()->get_rating($id);
+            $rating = $this->db->get_rating($id);
             
             if (!$rating) {
                 throw Shuriken_Not_Found_Exception::rating($id);
@@ -422,10 +440,9 @@ class Shuriken_REST_API {
     public function update_rating($request) {
         try {
             $id = $request->get_param('id');
-            $db = shuriken_db();
             
             // Check if rating exists
-            $existing = $db->get_rating($id);
+            $existing = $this->db->get_rating($id);
             if (!$existing) {
                 throw Shuriken_Not_Found_Exception::rating($id);
             }
@@ -459,7 +476,7 @@ class Shuriken_REST_API {
                 throw Shuriken_Validation_Exception::required_field('update_data');
             }
             
-            $result = $db->update_rating($id, $update_data);
+            $result = $this->db->update_rating($id, $update_data);
             
             if ($result === false) {
                 throw Shuriken_Database_Exception::update_failed('ratings', $id);
@@ -467,14 +484,14 @@ class Shuriken_REST_API {
             
             // Recalculate parent rating if this is a sub-rating
             if (!empty($update_data['parent_id'])) {
-                $db->recalculate_parent_rating($update_data['parent_id']);
+                $this->db->recalculate_parent_rating($update_data['parent_id']);
             }
             // Also recalculate old parent if parent changed
             if (!empty($existing->parent_id) && (empty($update_data['parent_id']) || $existing->parent_id != $update_data['parent_id'])) {
-                $db->recalculate_parent_rating($existing->parent_id);
+                $this->db->recalculate_parent_rating($existing->parent_id);
             }
             
-            $rating = $db->get_rating($id);
+            $rating = $this->db->get_rating($id);
             
             return rest_ensure_response($rating);
         } catch (Shuriken_Exception $e) {
@@ -491,10 +508,9 @@ class Shuriken_REST_API {
     public function delete_rating($request) {
         try {
             $id = $request->get_param('id');
-            $db = shuriken_db();
             
             // Check if rating exists
-            $existing = $db->get_rating($id);
+            $existing = $this->db->get_rating($id);
             if (!$existing) {
                 throw Shuriken_Not_Found_Exception::rating($id);
             }
@@ -503,7 +519,7 @@ class Shuriken_REST_API {
             $parent_id = $existing->parent_id;
             
             // Delete the rating
-            $result = $db->delete_rating($id);
+            $result = $this->db->delete_rating($id);
             
             if ($result === false) {
                 throw Shuriken_Database_Exception::delete_failed('ratings', $id);
@@ -511,7 +527,7 @@ class Shuriken_REST_API {
 
             // Recalculate parent rating if this was a sub-rating
             if (!empty($parent_id)) {
-                $db->recalculate_parent_rating($parent_id);
+                $this->db->recalculate_parent_rating($parent_id);
             }
             
             return rest_ensure_response(array(
@@ -530,7 +546,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response
      */
     public function get_parent_ratings($request) {
-        $ratings = shuriken_db()->get_parent_ratings();
+        $ratings = $this->db->get_parent_ratings();
         return rest_ensure_response($ratings);
     }
 
@@ -541,7 +557,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response
      */
     public function get_mirrorable_ratings($request) {
-        $ratings = shuriken_db()->get_mirrorable_ratings();
+        $ratings = $this->db->get_mirrorable_ratings();
         return rest_ensure_response($ratings);
     }
 
@@ -561,12 +577,12 @@ class Shuriken_REST_API {
             }
             
             // Verify parent exists
-            $parent = shuriken_db()->get_rating($parent_id);
+            $parent = $this->db->get_rating($parent_id);
             if (!$parent) {
                 throw Shuriken_Not_Found_Exception::parent_rating($parent_id);
             }
             
-            $ratings = shuriken_db()->get_child_ratings($parent_id);
+            $ratings = $this->db->get_child_ratings($parent_id);
             return rest_ensure_response($ratings);
         } catch (Shuriken_Exception $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
@@ -597,7 +613,7 @@ class Shuriken_REST_API {
                 throw Shuriken_Validation_Exception::out_of_range('limit', $limit, 1, 100);
             }
             
-            $ratings = shuriken_db()->search_ratings($search_term, $limit, $type);
+            $ratings = $this->db->search_ratings($search_term, $limit, $type);
             return rest_ensure_response($ratings);
         } catch (Shuriken_Exception $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
@@ -623,7 +639,7 @@ class Shuriken_REST_API {
             }
             
             // Use batch method for efficiency (single query instead of N queries)
-            $ratings = shuriken_db()->get_ratings_by_ids($ids);
+            $ratings = $this->db->get_ratings_by_ids($ids);
             
             $stats = array();
             foreach ($ratings as $id => $rating) {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: A powerful and flexible rating system for WordPress.
- * Version: 1.9.1
+ * Version: 2.0.0
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Author: Skilledup Hub
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.9.1');
+    define('SHURIKEN_REVIEWS_VERSION', '2.0.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
@@ -183,29 +183,25 @@ final class Shuriken_Reviews {
     /**
      * Initialize all plugin modules
      *
+     * Services are created via the DI container, which handles
+     * dependency injection automatically.
+     *
      * @return void
      */
     public function init_modules() {
         $container = shuriken_container();
         
-        // Initialize REST API
-        Shuriken_REST_API::init();
-        
-        // Initialize shortcodes
-        Shuriken_Shortcodes::init();
-        
-        // Initialize Gutenberg block
-        Shuriken_Block::init();
-        
-        // Initialize AJAX handlers
-        Shuriken_AJAX::init();
-        
-        // Initialize frontend assets
-        Shuriken_Frontend::init();
+        // Initialize services via container (DI happens automatically)
+        // Getting a service from the container triggers its hooks registration
+        $container->get('rest_api');
+        $container->get('shortcodes');
+        $container->get('block');
+        $container->get('ajax');
+        $container->get('frontend');
         
         // Initialize admin (only in admin context)
         if (is_admin()) {
-            Shuriken_Admin::init();
+            $container->get('admin');
         }
     }
 

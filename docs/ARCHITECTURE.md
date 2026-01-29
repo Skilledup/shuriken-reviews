@@ -78,11 +78,13 @@ shuriken-reviews/
 │   ├── INDEX.md                   # Documentation index & quick start
 │   ├── ARCHITECTURE.md            # This file
 │   ├── ROADMAP.md                 # Feature roadmap & status
-│   ├── software-design-improvements.md  # v1.7.5 improvements
 │   └── guides/
 │       ├── hooks-reference.md          # All 20 hooks documented
-│       ├── dependency-injection.md     # DI container guide
+│       ├── dependency-injection.md     # DI container guide + adoption status
 │       ├── exception-handling.md       # Exception usage guide
+│       ├── helper-functions.md         # Helper functions reference
+│       ├── rest-api.md                 # REST API reference
+│       ├── error-handling-blocks.md    # Block error handling
 │       └── testing.md                  # Testing with mocks
 │
 ├── languages/                     # Internationalization
@@ -511,24 +513,45 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
 
 The container manages all plugin services and their dependencies.
 
+### DI Adoption Status
+
+All services with database dependencies now use constructor injection:
+
+| Service | Dependencies | DI Status |
+|---------|--------------|-----------|
+| `Shuriken_Database` | Foundation | Base singleton |
+| `Shuriken_Analytics` | `database` | ✅ DI-ready |
+| `Shuriken_REST_API` | `database` | ✅ DI-ready |
+| `Shuriken_Admin` | `database`, `analytics` | ✅ DI-ready |
+| `Shuriken_AJAX` | `database` | ✅ DI-ready |
+| `Shuriken_Block` | `database` | ✅ DI-ready |
+| `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
+| `Shuriken_Frontend` | None | No DI needed |
+
+**Coverage:** 87.5% (7 of 8 services)
+
 ### Service Registration
 
 ```php
 // Singleton - same instance every time
 shuriken_container()->singleton('database', function($container) {
-    return new Shuriken_Database();
+    return Shuriken_Database::get_instance();
 });
 
-// Transient - new instance each time
-shuriken_container()->bind('temporary_service', function($container) {
-    return new Temporary_Service();
-});
-
-// With dependencies
+// With dependencies injected
 shuriken_container()->singleton('analytics', function($container) {
-    return new Shuriken_Analytics(
-        $container->get('database')
+    return new Shuriken_Analytics($container->get('database'));
+});
+
+shuriken_container()->singleton('admin', function($container) {
+    return new Shuriken_Admin(
+        $container->get('database'),
+        $container->get('analytics')
     );
+});
+
+shuriken_container()->singleton('rest_api', function($container) {
+    return new Shuriken_REST_API($container->get('database'));
 });
 ```
 
@@ -541,16 +564,39 @@ $db = shuriken_container()->get('database');
 // Magic property access
 $db = shuriken_container()->database;
 
-// Helper function
+// Helper function (backward compatible)
 $db = shuriken_db();
 ```
 
-### Why Dependency Injection?
+### Benefits of DI
 
 1. **Testability** - Inject mocks instead of real services
 2. **Flexibility** - Swap implementations without changing code
 3. **Clarity** - Dependencies visible in constructor
 4. **Loose Coupling** - Classes depend on interfaces, not concrete classes
+
+### Constructor Injection Pattern
+
+All DI-ready services follow this pattern:
+
+```php
+class Shuriken_REST_API {
+    /** @var Shuriken_Database_Interface */
+    private $db;
+    
+    public function __construct($db = null) {
+        $this->db = $db ?: shuriken_db();
+    }
+    
+    public function get_db() {
+        return $this->db;
+    }
+}
+```
+
+This allows:
+- **Testing:** `new Shuriken_REST_API($mock_db)`
+- **Production:** Container injects real database automatically
 
 ---
 
@@ -564,7 +610,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHURIKEN_REVIEWS_VERSION', '1.7.5-beta1');
+define('SHURIKEN_REVIEWS_VERSION', '2.0.0');
 define('SHURIKEN_REVIEWS_DIR', plugin_dir_path(__FILE__));
 define('SHURIKEN_REVIEWS_URL', plugin_dir_url(__FILE__));
 

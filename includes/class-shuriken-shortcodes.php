@@ -28,14 +28,23 @@ class Shuriken_Shortcodes {
     private static $instance = null;
 
     /**
+     * @var Shuriken_Database_Interface Database instance
+     */
+    private $db;
+
+    /**
      * Allowed HTML tags for rating title
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
 
     /**
      * Constructor
+     *
+     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    private function __construct() {
+    public function __construct($db = null) {
+        $this->db = $db ?: shuriken_db();
+        
         add_shortcode('shuriken_rating', array($this, 'render_rating'));
     }
 
@@ -46,9 +55,18 @@ class Shuriken_Shortcodes {
      */
     public static function get_instance() {
         if (null === self::$instance) {
-            self::$instance = new self();
+            self::$instance = new self(shuriken_db());
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database_Interface
+     */
+    public function get_db() {
+        return $this->db;
     }
 
     /**
@@ -98,7 +116,7 @@ class Shuriken_Shortcodes {
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
 
         // Get rating data
-        $rating = shuriken_db()->get_rating($id);
+        $rating = $this->db->get_rating($id);
 
         if (!$rating) {
             return '';

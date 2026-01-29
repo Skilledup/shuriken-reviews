@@ -59,47 +59,53 @@ class Shuriken_Container {
     /**
      * Register core plugin services
      *
+     * Services are registered with their dependencies injected via the container.
+     * This enables proper dependency injection and testability.
+     *
      * @return void
      */
     private function register_core_services() {
-        // Register database service
+        // Register database service (foundation - no dependencies)
         $this->singleton('database', function($container) {
             return Shuriken_Database::get_instance();
         });
 
-        // Register analytics service (inject database dependency)
+        // Register analytics service (depends on database)
         $this->singleton('analytics', function($container) {
             return new Shuriken_Analytics($container->get('database'));
         });
 
-        // Register REST API service
+        // Register REST API service (depends on database)
         $this->singleton('rest_api', function($container) {
-            return Shuriken_REST_API::get_instance();
+            return new Shuriken_REST_API($container->get('database'));
         });
 
-        // Register shortcodes service
+        // Register shortcodes service (depends on database)
         $this->singleton('shortcodes', function($container) {
-            return Shuriken_Shortcodes::get_instance();
+            return new Shuriken_Shortcodes($container->get('database'));
         });
 
-        // Register block service
+        // Register block service (depends on database)
         $this->singleton('block', function($container) {
-            return Shuriken_Block::get_instance();
+            return new Shuriken_Block($container->get('database'));
         });
 
-        // Register AJAX service
+        // Register AJAX service (depends on database)
         $this->singleton('ajax', function($container) {
-            return Shuriken_AJAX::get_instance();
+            return new Shuriken_AJAX($container->get('database'));
         });
 
-        // Register frontend service
+        // Register frontend service (no dependencies)
         $this->singleton('frontend', function($container) {
             return Shuriken_Frontend::get_instance();
         });
 
-        // Register admin service
+        // Register admin service (depends on database + analytics)
         $this->singleton('admin', function($container) {
-            return Shuriken_Admin::get_instance();
+            return new Shuriken_Admin(
+                $container->get('database'),
+                $container->get('analytics')
+            );
         });
     }
 

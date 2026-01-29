@@ -28,9 +28,18 @@ class Shuriken_AJAX {
     private static $instance = null;
 
     /**
-     * Constructor
+     * @var Shuriken_Database_Interface Database instance
      */
-    private function __construct() {
+    private $db;
+
+    /**
+     * Constructor
+     *
+     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
+     */
+    public function __construct($db = null) {
+        $this->db = $db ?: shuriken_db();
+        
         // Rating submission
         add_action('wp_ajax_submit_rating', array($this, 'handle_submit_rating'));
         add_action('wp_ajax_nopriv_submit_rating', array($this, 'handle_submit_rating'));
@@ -43,9 +52,18 @@ class Shuriken_AJAX {
      */
     public static function get_instance() {
         if (null === self::$instance) {
-            self::$instance = new self();
+            self::$instance = new self(shuriken_db());
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database_Interface
+     */
+    public function get_db() {
+        return $this->db;
     }
 
     /**
@@ -99,7 +117,6 @@ class Shuriken_AJAX {
             return;
         }
 
-        $db = shuriken_db();
         $user_id = get_current_user_id();
         $user_ip = is_user_logged_in() ? null : $this->get_user_ip();
         $rating_id = intval($_POST['rating_id']);
@@ -108,7 +125,7 @@ class Shuriken_AJAX {
 
         try {
             // Get the rating first to apply the filter
-            $rating = $db->get_rating($rating_id);
+            $rating = $this->db->get_rating($rating_id);
             if (!$rating) {
                 throw Shuriken_Not_Found_Exception::rating($rating_id);
             }
@@ -191,12 +208,12 @@ class Shuriken_AJAX {
 
         try {
             // Check if the user has already voted
-            $existing_vote = $db->get_user_vote($rating_id, $user_id, $user_ip);
+            $existing_vote = $this->db->get_user_vote($rating_id, $user_id, $user_ip);
             $is_update = !empty($existing_vote);
 
             if ($existing_vote) {
                 // Update the existing vote (use normalized value for storage)
-                $db->update_vote(
+                $this->db->update_vote(
                     $existing_vote->id,
                     $rating_id,
                     $existing_vote->rating_value,
@@ -219,7 +236,7 @@ class Shuriken_AJAX {
                 do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
             } else {
                 // Insert a new vote (use normalized value for storage)
-                $db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
+                $this->db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
 
                 /**
                  * Fires after a new vote is created.
@@ -238,11 +255,11 @@ class Shuriken_AJAX {
 
             // If this is a sub-rating, recalculate the parent rating
             if (!empty($rating->parent_id)) {
-                $db->recalculate_parent_rating($rating->parent_id);
+                $this->db->recalculate_parent_rating($rating->parent_id);
             }
 
             // Get updated rating data
-            $updated_rating = $db->get_rating($rating_id);
+            $updated_rating = $this->db->get_rating($rating_id);
 
         } catch (Shuriken_Exception $e) {
             Shuriken_Exception_Handler::handle_ajax_exception($e);
@@ -262,7 +279,7 @@ class Shuriken_AJAX {
 
         // Also send parent data if applicable
         if (!empty($rating->parent_id)) {
-            $parent_rating = $db->get_rating($rating->parent_id);
+            $parent_rating = $this->db->get_rating($rating->parent_id);
             if ($parent_rating) {
                 // Apply filter to get parent's max_stars
                 $parent_max_stars = apply_filters('shuriken_rating_max_stars', 5, $parent_rating);

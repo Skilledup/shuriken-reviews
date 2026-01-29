@@ -117,53 +117,47 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Voter Activity Page', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Comprehensive voter tracking and analytics for both members and guests:', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('Full Dependency Injection Adoption', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Complete DI container integration across all services for better testability and flexibility:', 'shuriken-reviews'); ?></p>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Clickable Voter Names', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Click any voter name in Analytics or Item Stats to view their complete voting history', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('87.5% DI Coverage', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All 7 database-dependent services now use constructor injection', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Member & Guest Support', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Track votes from registered users (by user ID) and guests (by IP address)', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Loose Coupling', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Services depend on interfaces, not concrete classes - easily swap implementations', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Voter Statistics', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('View total votes, average rating, and voting tendency (generous/balanced/critical)', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Enhanced Testability', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Inject mock implementations for unit testing without a real database', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Visual Charts', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Star distribution and activity over time charts for each voter', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Explicit Dependencies', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Constructor signatures clearly show what each class needs to function', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('CSV Export', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Export individual voter\'s complete vote history to CSV', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Centralized Wiring', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All service creation happens in the container - single point of configuration', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Date Range Filtering', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Filter voter activity by last 7 days, 30 days, 90 days, or all time', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('100% Backward Compatible', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Helper functions and static methods continue to work unchanged', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
                 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Additional Improvements', 'shuriken-reviews'); ?></h4>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('DI-Ready Services', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
-                    <li>
-                        <strong><?php esc_html_e('Source Column', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Vote History for parent ratings now shows which sub-rating each vote belongs to', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('UI Fixes', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Fixed chart layout gaps and star rating spacing issues', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Dark Mode Support', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Complete dark mode styling for the new Voter Activity page', 'shuriken-reviews'); ?>
-                    </li>
+                    <li><strong>Shuriken_REST_API</strong> - <?php esc_html_e('REST API endpoints', 'shuriken-reviews'); ?></li>
+                    <li><strong>Shuriken_Admin</strong> - <?php esc_html_e('Admin pages (database + analytics)', 'shuriken-reviews'); ?></li>
+                    <li><strong>Shuriken_AJAX</strong> - <?php esc_html_e('Vote submission handler', 'shuriken-reviews'); ?></li>
+                    <li><strong>Shuriken_Block</strong> - <?php esc_html_e('Gutenberg block registration', 'shuriken-reviews'); ?></li>
+                    <li><strong>Shuriken_Shortcodes</strong> - <?php esc_html_e('Shortcode rendering', 'shuriken-reviews'); ?></li>
+                    <li><strong>Shuriken_Analytics</strong> - <?php esc_html_e('Analytics calculations', 'shuriken-reviews'); ?></li>
                 </ul>
                 
                 <p class="new-features-note">
-                    <?php esc_html_e('All improvements maintain 100% backward compatibility. Existing code continues to work unchanged.', 'shuriken-reviews'); ?>
+                    <?php esc_html_e('See the Dependency Injection guide in developer documentation for usage examples and testing patterns.', 'shuriken-reviews'); ?>
                 </p>
             </div>
         </div>

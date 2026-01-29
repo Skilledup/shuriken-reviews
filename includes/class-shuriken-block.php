@@ -28,14 +28,23 @@ class Shuriken_Block {
     private static $instance = null;
 
     /**
+     * @var Shuriken_Database_Interface Database instance
+     */
+    private $db;
+
+    /**
      * Allowed HTML tags for rating title
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
 
     /**
      * Constructor
+     *
+     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    private function __construct() {
+    public function __construct($db = null) {
+        $this->db = $db ?: shuriken_db();
+        
         add_action('init', array($this, 'register_block'));
     }
 
@@ -46,9 +55,18 @@ class Shuriken_Block {
      */
     public static function get_instance() {
         if (null === self::$instance) {
-            self::$instance = new self();
+            self::$instance = new self(shuriken_db());
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database_Interface
+     */
+    public function get_db() {
+        return $this->db;
     }
 
     /**
@@ -185,7 +203,7 @@ class Shuriken_Block {
             return '';
         }
 
-        $rating = shuriken_db()->get_rating($rating_id);
+        $rating = $this->db->get_rating($rating_id);
 
         if (!$rating) {
             return '';
@@ -228,14 +246,14 @@ class Shuriken_Block {
             return '';
         }
 
-        $rating = shuriken_db()->get_rating($rating_id);
+        $rating = $this->db->get_rating($rating_id);
 
         if (!$rating) {
             return '';
         }
 
         // Get child ratings
-        $child_ratings = shuriken_db()->get_sub_ratings($rating_id);
+        $child_ratings = $this->db->get_sub_ratings($rating_id);
 
         // Build CSS variables from custom style attributes
         $style_vars = array();

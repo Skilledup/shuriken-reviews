@@ -28,9 +28,25 @@ class Shuriken_Admin {
     private static $instance = null;
 
     /**
-     * Constructor
+     * @var Shuriken_Database_Interface Database instance
      */
-    private function __construct() {
+    private $db;
+
+    /**
+     * @var Shuriken_Analytics_Interface Analytics instance
+     */
+    private $analytics;
+
+    /**
+     * Constructor
+     *
+     * @param Shuriken_Database_Interface|null  $db        Database instance (optional, for dependency injection).
+     * @param Shuriken_Analytics_Interface|null $analytics Analytics instance (optional, for dependency injection).
+     */
+    public function __construct($db = null, $analytics = null) {
+        $this->db = $db ?: shuriken_db();
+        $this->analytics = $analytics ?: shuriken_analytics();
+        
         add_action('admin_menu', array($this, 'register_menu'));
         add_action('admin_init', array($this, 'handle_rating_forms'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_ratings_scripts'));
@@ -48,9 +64,27 @@ class Shuriken_Admin {
      */
     public static function get_instance() {
         if (null === self::$instance) {
-            self::$instance = new self();
+            self::$instance = new self(shuriken_db(), shuriken_analytics());
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the database instance
+     *
+     * @return Shuriken_Database_Interface
+     */
+    public function get_db() {
+        return $this->db;
+    }
+
+    /**
+     * Get the analytics instance
+     *
+     * @return Shuriken_Analytics_Interface
+     */
+    public function get_analytics() {
+        return $this->analytics;
     }
 
     /**
@@ -182,7 +216,7 @@ class Shuriken_Admin {
             $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
 
             if (!empty($name)) {
-                $result = shuriken_db()->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
+                $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
                 if ($result) {
                     wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                     exit;
@@ -421,7 +455,7 @@ class Shuriken_Admin {
         }
 
         // Get all ratings with their stats
-        $ratings = shuriken_db()->get_ratings_for_export();
+        $ratings = $this->db->get_ratings_for_export();
 
         // Set headers for CSV download
         $filename = 'shuriken-ratings-export-' . date('Y-m-d') . '.csv';
@@ -485,17 +519,15 @@ class Shuriken_Admin {
             wp_die(__('Invalid rating ID', 'shuriken-reviews'));
         }
 
-        $db = shuriken_db();
-
         // Get rating info
-        $rating = $db->get_rating($rating_id);
+        $rating = $this->db->get_rating($rating_id);
 
         if (!$rating) {
             wp_die(__('Rating not found', 'shuriken-reviews'));
         }
 
         // Get all votes for this rating
-        $votes = $db->get_votes_for_export($rating_id);
+        $votes = $this->db->get_votes_for_export($rating_id);
 
         // Set headers for CSV download
         $filename = 'shuriken-votes-' . sanitize_title($rating->name) . '-' . date('Y-m-d') . '.csv';
@@ -567,19 +599,18 @@ class Shuriken_Admin {
             wp_die(__('Invalid voter identifier', 'shuriken-reviews'));
         }
 
-        $analytics = shuriken_analytics();
         $is_member = $user_id > 0;
 
         // Get voter info for filename
         if ($is_member) {
-            $user_info = $analytics->get_user_info($user_id);
+            $user_info = $this->analytics->get_user_info($user_id);
             $voter_name = $user_info ? sanitize_title($user_info->display_name) : 'user-' . $user_id;
         } else {
             $voter_name = 'guest-' . sanitize_title(str_replace('.', '-', $user_ip));
         }
 
         // Get all votes for this voter
-        $votes = $analytics->get_voter_votes_for_export($user_id, $user_ip);
+        $votes = $this->analytics->get_voter_votes_for_export($user_id, $user_ip);
 
         // Set headers for CSV download
         $filename = 'shuriken-voter-votes-' . $voter_name . '-' . date('Y-m-d') . '.csv';

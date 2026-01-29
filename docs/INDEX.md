@@ -51,6 +51,7 @@ Guide to the lightweight DI container for flexible service management and testab
 - Registering services
 - Constructor injection pattern
 - Testing with mocks
+- DI adoption status (87.5% coverage)
 - Best practices
 
 #### [Testing & Testing Utilities](guides/testing.md)
@@ -71,15 +72,7 @@ Comprehensive guide to error handling in Gutenberg blocks with retry functionali
 ### 🏗️ Architecture & Design
 
 #### [Architecture Overview](ARCHITECTURE.md)
-High-level overview of the plugin's structure, design decisions, and module organization.
-
-#### [Software Design Improvements](software-design-improvements.md)
-Detailed summary of v1.7.5 refactoring including:
-- Modular architecture
-- Extensibility system
-- Testing infrastructure
-- Exception handling
-- Dependency injection
+High-level overview of the plugin's structure, design decisions, module organization, and DI container adoption status.
 
 ### 🗺️ Roadmap
 
@@ -112,7 +105,7 @@ Current status of features, implementation progress, and planned work.
 
 ## Roadmap & Status
 
-### Current Version: 1.9.1
+### Current Version: 2.0.0
 
 **Major Features** ✅
 - Rating system with parent-child relationships
@@ -125,7 +118,7 @@ Current status of features, implementation progress, and planned work.
 - Analytics dashboard with CSV export
 - Voter Activity page (member & guest tracking)
 - 20+ WordPress hooks for extensibility
-- Dependency injection container
+- Dependency injection container (87.5% coverage)
 - Comprehensive exception system
 - Interface-based testing support
 
@@ -260,12 +253,18 @@ For support, issues, and contributions:
 
 ## Version History
 
-### v1.7.5-beta1 (Current)
-Major architectural improvements with focus on extensibility, testability, and maintainability.
-See [Software Design Improvements](software-design-improvements.md) for details.
+### v2.0.0 (Current)
+Full dependency injection adoption across all services:
+- 87.5% DI coverage (7 of 8 services)
+- Loose coupling via interfaces
+- Enhanced testability with mock injection
+- Centralized service wiring in container
 
-### v1.7.0
-Initial hooks system implementation.
+### v1.9.x
+Voter Activity page and analytics improvements.
+
+### v1.7.x
+Initial hooks system and DI container implementation.
 
 ### v1.6.0 & Earlier
 See main [README.md](../README.md#changelog) for complete changelog.

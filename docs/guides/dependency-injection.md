@@ -2,6 +2,23 @@
 
 The plugin uses a lightweight dependency injection (DI) container to manage services and their dependencies.
 
+## DI Adoption Status
+
+All services with database dependencies now use constructor injection:
+
+| Service | Dependencies | Status |
+|---------|--------------|--------|
+| `Shuriken_Database` | Foundation | Base singleton |
+| `Shuriken_Analytics` | `database` | ✅ DI-ready |
+| `Shuriken_REST_API` | `database` | ✅ DI-ready |
+| `Shuriken_Admin` | `database`, `analytics` | ✅ DI-ready |
+| `Shuriken_AJAX` | `database` | ✅ DI-ready |
+| `Shuriken_Block` | `database` | ✅ DI-ready |
+| `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
+| `Shuriken_Frontend` | None | No DI needed |
+
+**Coverage:** 87.5% (7 of 8 services)
+
 ## What is Dependency Injection?
 
 Dependency Injection is a design pattern where objects receive their dependencies from external sources rather than creating them internally.
