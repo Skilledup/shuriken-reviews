@@ -453,22 +453,37 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                             </td>
                             <?php endif; ?>
                             <td class="column-voter">
+                                <?php 
+                                $voter_activity_url = $vote->user_id > 0 
+                                    ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_id=' . $vote->user_id)
+                                    : ($vote->user_ip ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_ip=' . urlencode($vote->user_ip)) : '');
+                                ?>
                                 <?php if ($vote->user_id > 0) : ?>
                                     <span class="voter-type member" title="<?php esc_attr_e('Registered Member', 'shuriken-reviews'); ?>">
                                         <span class="dashicons dashicons-admin-users"></span>
                                     </span>
                                     <?php if ($vote->display_name) : ?>
-                                        <strong><?php echo esc_html($vote->display_name); ?></strong>
+                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
+                                            <strong><?php echo esc_html($vote->display_name); ?></strong>
+                                        </a>
                                         <br><small><?php echo esc_html($vote->user_email); ?></small>
                                     <?php else : ?>
-                                        <em><?php esc_html_e('Deleted User', 'shuriken-reviews'); ?></em>
+                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
+                                            <em><?php esc_html_e('Deleted User', 'shuriken-reviews'); ?></em>
+                                        </a>
                                         <br><small><?php printf(esc_html__('User ID: %d', 'shuriken-reviews'), $vote->user_id); ?></small>
                                     <?php endif; ?>
                                 <?php else : ?>
                                     <span class="voter-type guest" title="<?php esc_attr_e('Guest', 'shuriken-reviews'); ?>">
                                         <span class="dashicons dashicons-businessperson"></span>
                                     </span>
-                                    <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
+                                    <?php if ($voter_activity_url) : ?>
+                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
+                                            <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
+                                        </a>
+                                    <?php else : ?>
+                                        <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
                             <td class="column-ip">

@@ -38,6 +38,7 @@ class Shuriken_Admin {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_about_scripts'));
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
         add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
+        add_action('admin_post_shuriken_export_voter_votes', array($this, 'export_voter_votes'));
     }
 
     /**
@@ -126,6 +127,16 @@ class Shuriken_Admin {
             'manage_options',
             'shuriken-reviews-item-stats',
             array($this, 'render_item_stats_page')
+        );
+
+        // Add hidden Voter Activity page (no menu item, accessed via link)
+        add_submenu_page(
+            null, // Hidden - no parent menu
+            __('Voter Activity', 'shuriken-reviews'),
+            __('Voter Activity', 'shuriken-reviews'),
+            'manage_options',
+            'shuriken-reviews-voter-activity',
+            array($this, 'render_voter_activity_page')
         );
 
         // Add About submenu
@@ -258,7 +269,8 @@ class Shuriken_Admin {
         // Check using page slug - works regardless of language/locale
         $allowed_pages = array(
             'shuriken-reviews-analytics',
-            'shuriken-reviews-item-stats'
+            'shuriken-reviews-item-stats',
+            'shuriken-reviews-voter-activity'
         );
         
         if (!$this->is_plugin_page($allowed_pages)) {
@@ -365,6 +377,16 @@ class Shuriken_Admin {
      */
     public function render_item_stats_page() {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/item-stats.php';
+    }
+
+    /**
+     * Render the Voter Activity page
+     *
+     * @return void
+     * @since 1.9.1
+     */
+    public function render_voter_activity_page() {
+        include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/voter-activity.php';
     }
 
     /**
@@ -514,6 +536,84 @@ class Shuriken_Admin {
                 $voter_email,
                 $vote->user_ip,
                 $vote->date_created
+            ));
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    /**
+     * Handle CSV export of voter's votes
+     *
+     * @return void
+     * @since 1.9.1
+     */
+    public function export_voter_votes() {
+        // Check nonce and permissions
+        if (!isset($_POST['shuriken_export_voter_nonce']) || 
+            !wp_verify_nonce($_POST['shuriken_export_voter_nonce'], 'shuriken_export_voter_votes')) {
+            wp_die(__('Security check failed', 'shuriken-reviews'));
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have permission to export data', 'shuriken-reviews'));
+        }
+
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+        $user_ip = isset($_POST['user_ip']) ? sanitize_text_field($_POST['user_ip']) : '';
+
+        if ($user_id <= 0 && empty($user_ip)) {
+            wp_die(__('Invalid voter identifier', 'shuriken-reviews'));
+        }
+
+        $analytics = shuriken_analytics();
+        $is_member = $user_id > 0;
+
+        // Get voter info for filename
+        if ($is_member) {
+            $user_info = $analytics->get_user_info($user_id);
+            $voter_name = $user_info ? sanitize_title($user_info->display_name) : 'user-' . $user_id;
+        } else {
+            $voter_name = 'guest-' . sanitize_title(str_replace('.', '-', $user_ip));
+        }
+
+        // Get all votes for this voter
+        $votes = $analytics->get_voter_votes_for_export($user_id, $user_ip);
+
+        // Set headers for CSV download
+        $filename = 'shuriken-voter-votes-' . $voter_name . '-' . date('Y-m-d') . '.csv';
+        
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        // Create output stream
+        $output = fopen('php://output', 'w');
+
+        // Add BOM for Excel UTF-8 compatibility
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        // Write header row
+        fputcsv($output, array(
+            __('Vote ID', 'shuriken-reviews'),
+            __('Rating Item', 'shuriken-reviews'),
+            __('Rating ID', 'shuriken-reviews'),
+            __('Rating Value', 'shuriken-reviews'),
+            __('Date & Time', 'shuriken-reviews'),
+            __('Last Modified', 'shuriken-reviews')
+        ));
+
+        // Write data rows
+        foreach ($votes as $vote) {
+            fputcsv($output, array(
+                $vote->id,
+                $vote->rating_name,
+                $vote->rating_id,
+                $vote->rating_value,
+                $vote->date_created,
+                $vote->date_modified
             ));
         }
 

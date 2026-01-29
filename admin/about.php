@@ -117,62 +117,50 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Data Retrieval Efficiency', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Major performance optimization for the FSE editor and frontend:', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('Voter Activity Page', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Comprehensive voter tracking and analytics for both members and guests:', 'shuriken-reviews'); ?></p>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Shared Data Store', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All rating blocks now share a single @wordpress/data store - no more duplicate API calls', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Clickable Voter Names', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Click any voter name in Analytics or Item Stats to view their complete voting history', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('AJAX Search Dropdown', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Rating dropdowns now use search-as-you-type instead of loading all ratings upfront', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Member & Guest Support', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Track votes from registered users (by user ID) and guests (by IP address)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Batch Database Queries', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Stats endpoint now uses single query for multiple ratings instead of N queries', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Voter Statistics', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('View total votes, average rating, and voting tendency (generous/balanced/critical)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('New REST Endpoints', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('/ratings/search and /ratings/{id}/children for efficient data fetching', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Visual Charts', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Star distribution and activity over time charts for each voter', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Grouped Rating Improvements', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Child ratings are now fetched via dedicated endpoint on block load', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('CSV Export', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Export individual voter\'s complete vote history to CSV', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Loading State Feedback', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Smooth opacity transition and spinner when refreshing cached data on page load', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Date Range Filtering', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Filter voter activity by last 7 days, 30 days, 90 days, or all time', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
                 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Performance Improvements', 'shuriken-reviews'); ?></h4>
-                <table class="hooks-table" style="margin-top: 0.5em;">
-                    <thead>
-                        <tr>
-                            <th><?php esc_html_e('Scenario', 'shuriken-reviews'); ?></th>
-                            <th><?php esc_html_e('Before', 'shuriken-reviews'); ?></th>
-                            <th><?php esc_html_e('After', 'shuriken-reviews'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><?php esc_html_e('10 rating blocks in FSE', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('30 API calls', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('Shared store + on-demand', 'shuriken-reviews'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php esc_html_e('Dropdown with 1000 ratings', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('All loaded upfront', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('Search-as-you-type (max 20)', 'shuriken-reviews'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php esc_html_e('Frontend stats for 50 ratings', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('50 database queries', 'shuriken-reviews'); ?></td>
-                            <td><?php esc_html_e('1 batch query', 'shuriken-reviews'); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Additional Improvements', 'shuriken-reviews'); ?></h4>
+                <ul class="new-features-list">
+                    <li>
+                        <strong><?php esc_html_e('Source Column', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Vote History for parent ratings now shows which sub-rating each vote belongs to', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('UI Fixes', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Fixed chart layout gaps and star rating spacing issues', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Dark Mode Support', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Complete dark mode styling for the new Voter Activity page', 'shuriken-reviews'); ?>
+                    </li>
+                </ul>
                 
                 <p class="new-features-note">
                     <?php esc_html_e('All improvements maintain 100% backward compatibility. Existing code continues to work unchanged.', 'shuriken-reviews'); ?>

@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.7.5--beta1-blue)
+![Version](https://img.shields.io/badge/version-1.9.1-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple)
@@ -47,6 +47,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Export to CSV**: Download your ratings data for external analysis
 - **Top Performers**: Identify highest-rated and most-voted items
 - **Recent Activity**: Monitor the latest voting activity
+- **Voter Activity Page**: Click any voter to see their complete voting history, stats, and charts (supports both members and guests)
 
 ### Comments Enhancement
 

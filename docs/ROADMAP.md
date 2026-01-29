@@ -1,6 +1,6 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.9.0**
+Current Version: **1.9.1**
 
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
@@ -19,6 +19,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Dependency injection container
 - Parent/child "grouped ratings" block
 - Data retrieval efficiency optimizations (shared store, AJAX search, batch queries)
+- Voter Activity page (member & guest tracking, stats, charts, CSV export)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -36,7 +37,41 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.9.0 (Current)
+## 1.9.1 (Current)
+
+### Voter Activity Page
+
+Comprehensive voter tracking and analytics for both members and guests.
+
+**Features:**
+- **Clickable Voter Names** - Click any voter in Analytics or Item Stats to view their complete voting history
+- **Member & Guest Support** - Track votes from registered users (by user ID) and guests (by IP address)
+- **Voter Statistics** - Total votes, average rating, and voting tendency (generous/balanced/critical)
+- **Visual Charts** - Star distribution and activity over time using Chart.js
+- **CSV Export** - Export individual voter's complete vote history
+- **Date Range Filtering** - Filter by last 7 days, 30 days, 90 days, or all time
+- **Source Column** - Vote History for parent ratings shows which sub-rating each vote belongs to
+- **Dark Mode Support** - Complete dark mode styling for the new page
+
+**Files Added:**
+- `admin/voter-activity.php` - Voter activity page template
+
+**Files Changed:**
+- `includes/class-shuriken-analytics.php` - New voter methods:
+  - `get_voter_votes_paginated()` - Paginated vote history
+  - `get_voter_stats()` - Summary statistics
+  - `get_voter_rating_distribution()` - Star distribution data
+  - `get_voter_activity_over_time()` - Activity trend data
+  - `get_user_info()` - Get user details by ID
+  - `get_voter_votes_for_export()` - CSV export data
+- `includes/class-shuriken-admin.php` - Voter activity page registration and export handler
+- `admin/item-stats.php` - Added Source column, clickable voter names
+- `admin/analytics.php` - Clickable voter names in Recent Activity
+- `assets/css/admin-analytics.css` - Voter activity page styles (light & dark mode)
+
+---
+
+## 1.9.0 (Released)
 
 ### Data Retrieval Efficiency
 

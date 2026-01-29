@@ -221,6 +221,15 @@
     font-weight: 500;
 }
 
+.shuriken-stat-card .stat-content small.effective-rating-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+    cursor: help;
+}
+
 /* Stat Change Indicator */
 .stat-change {
     font-size: 13px;
@@ -744,6 +753,184 @@
     margin: 0;
 }
 
+/* =========================================================================
+   Voter Activity Page Styles
+   ========================================================================= */
+
+.shuriken-voter-activity .shuriken-charts-row {
+    grid-template-columns: 1fr 2fr;
+}
+
+/* Voter Info Card */
+.shuriken-voter-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.voter-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voter-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.voter-avatar.deleted,
+.voter-avatar.guest {
+    color: #64748b;
+}
+
+.voter-avatar .dashicons {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+}
+
+.voter-details {
+    flex: 1;
+}
+
+.voter-details h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.voter-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 12px 0;
+    flex-wrap: wrap;
+}
+
+.voter-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.voter-type-badge.member {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+}
+
+.voter-type-badge.guest {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #64748b;
+}
+
+.voter-type-badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.voter-email {
+    color: #64748b;
+}
+
+.voter-ip code {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.voter-extra {
+    display: flex;
+    gap: 20px;
+    margin: 0 0 12px 0;
+    flex-wrap: wrap;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.voter-extra strong {
+    color: #1e293b;
+}
+
+.voter-actions {
+    margin: 0;
+}
+
+.voter-actions .button .dashicons {
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* Voter Link Styles */
+.voter-link {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+.voter-link:hover {
+    color: #667eea;
+}
+
+.voter-link strong {
+    color: inherit;
+}
+
+/* Voting Tendency Colors */
+.tendency-generous {
+    color: #059669 !important;
+}
+
+.tendency-balanced {
+    color: #667eea !important;
+}
+
+.tendency-critical {
+    color: #dc2626 !important;
+}
+
+.tendency-none {
+    color: #64748b !important;
+}
+
+/* Column for Rating Item */
+.column-item {
+    width: auto;
+}
+
+.sub-rating-indicator {
+    display: inline-block;
+    color: #667eea;
+    margin-left: 4px;
+}
+
+.sub-rating-indicator .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+}
+
 /* Responsive Adjustments */
 @media screen and (max-width: 782px) {
     .shuriken-analytics {
@@ -776,6 +963,16 @@
         grid-template-columns: 1fr;
     }
     
+    .shuriken-voter-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .voter-meta,
+    .voter-extra {
+        justify-content: center;
+    }
 }
 
 /* Print Styles */
@@ -1359,6 +1556,10 @@ body.rtl .current-range-label .clear-filter {
         color: #94a3b8;
     }
     
+    .shuriken-stat-card .stat-content small.effective-rating-note {
+        color: #64748b;
+    }
+    
     .shuriken-table-card .table-description {
         color: #94a3b8;
     }
@@ -1622,5 +1823,71 @@ body.rtl .current-range-label .clear-filter {
     /* Empty table messages */
     .shuriken-table-card table tbody td[colspan] {
         color: #94a3b8 !important;
+    }
+    
+    /* Voter Activity Page Dark Mode */
+    .shuriken-voter-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-color: #334155;
+    }
+    
+    .voter-avatar {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    }
+    
+    .voter-avatar.deleted,
+    .voter-avatar.guest {
+        color: #94a3b8;
+    }
+    
+    .voter-details h2 {
+        color: #f1f5f9;
+    }
+    
+    .voter-type-badge.member {
+        background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+        color: #d1fae5;
+    }
+    
+    .voter-type-badge.guest {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        color: #94a3b8;
+    }
+    
+    .voter-email {
+        color: #94a3b8;
+    }
+    
+    .voter-ip code {
+        background: #0f172a;
+        color: #a5b4fc;
+    }
+    
+    .voter-extra {
+        color: #94a3b8;
+    }
+    
+    .voter-extra strong {
+        color: #f1f5f9;
+    }
+    
+    .voter-link:hover {
+        color: #a5b4fc;
+    }
+    
+    .tendency-generous {
+        color: #34d399 !important;
+    }
+    
+    .tendency-balanced {
+        color: #a5b4fc !important;
+    }
+    
+    .tendency-critical {
+        color: #f87171 !important;
+    }
+    
+    .sub-rating-indicator {
+        color: #a5b4fc;
     }
 }

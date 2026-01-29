@@ -112,7 +112,7 @@ Current status of features, implementation progress, and planned work.
 
 ## Roadmap & Status
 
-### Current Version: 1.9.0
+### Current Version: 1.9.1
 
 **Major Features** ✅
 - Rating system with parent-child relationships
@@ -123,6 +123,7 @@ Current status of features, implementation progress, and planned work.
 - Shortcode support
 - REST API endpoints
 - Analytics dashboard with CSV export
+- Voter Activity page (member & guest tracking)
 - 20+ WordPress hooks for extensibility
 - Dependency injection container
 - Comprehensive exception system

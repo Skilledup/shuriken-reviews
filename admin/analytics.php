@@ -438,8 +438,19 @@ $guest_votes         = $vote_counts->guest_votes;
                                     </span>
                                 </td>
                                 <td>
+                                    <?php 
+                                    $voter_activity_url = $vote->user_id > 0 
+                                        ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_id=' . $vote->user_id)
+                                        : ($vote->user_ip ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_ip=' . urlencode($vote->user_ip)) : '');
+                                    ?>
                                     <?php if ($vote->user_id > 0) : ?>
-                                        <?php echo $vote->display_name ? esc_html($vote->display_name) : __('Deleted User', 'shuriken-reviews'); ?>
+                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
+                                            <?php echo $vote->display_name ? esc_html($vote->display_name) : __('Deleted User', 'shuriken-reviews'); ?>
+                                        </a>
+                                    <?php elseif ($voter_activity_url) : ?>
+                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
+                                            <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
+                                        </a>
                                     <?php else : ?>
                                         <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
                                     <?php endif; ?>

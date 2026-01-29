@@ -28,7 +28,8 @@ shuriken-reviews/
 │   ├── comments.php               # Comments settings page
 │   ├── ratings.php                # Ratings management page
 │   ├── settings.php               # Plugin settings page
-│   └── item-stats.php             # Per-item statistics page
+│   ├── item-stats.php             # Per-item statistics page
+│   └── voter-activity.php         # Voter activity details page
 │
 ├── assets/                        # CSS and JavaScript files
 │   ├── css/
