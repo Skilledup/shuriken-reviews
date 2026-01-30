@@ -27,20 +27,25 @@ shuriken-reviews/
 │   ├── analytics.php              # Analytics dashboard page
 │   ├── comments.php               # Comments settings page
 │   ├── ratings.php                # Ratings management page
-│   ├── settings.php               # Plugin settings page
+│   ├── settings.php               # Plugin settings (tabbed router)
 │   ├── item-stats.php             # Per-item statistics page
-│   └── voter-activity.php         # Voter activity details page
+│   ├── voter-activity.php         # Voter activity details page
+│   └── partials/                  # Settings tab partials
+│       ├── settings-general.php       # General settings tab
+│       └── settings-rate-limiting.php # Rate limiting settings tab
 │
 ├── assets/                        # CSS and JavaScript files
 │   ├── css/
 │   │   ├── shuriken-reviews.css           # Frontend styles
 │   │   ├── admin-analytics.css            # Analytics page styles
 │   │   ├── admin-ratings.css              # Ratings page styles
-│   │   └── admin-about.css                # About page styles
+│   │   ├── admin-about.css                # About page styles
+│   │   └── admin-settings.css             # Settings page styles
 │   ├── js/
 │   │   ├── shuriken-reviews.js            # Frontend vote submission
 │   │   ├── admin-analytics.js             # Analytics chart.js
-│   │   └── admin-ratings.js               # Ratings page interactions
+│   │   ├── admin-ratings.js               # Ratings page interactions
+│   │   └── admin-settings.js              # Settings page interactions
 │   └── images/                    # UI images and icons
 │
 ├── blocks/                        # Gutenberg block definitions
@@ -61,7 +66,8 @@ shuriken-reviews/
 │   │
 │   ├── interfaces/                # Service contracts
 │   │   ├── interface-shuriken-database.php
-│   │   └── interface-shuriken-analytics.php
+│   │   ├── interface-shuriken-analytics.php
+│   │   └── interface-shuriken-rate-limiter.php
 │   │
 │   └── exceptions/                # Error handling
 │       ├── class-shuriken-exception.php (base)
@@ -129,6 +135,7 @@ shuriken-reviews/
 ```php
 database      → Shuriken_Database (implements Shuriken_Database_Interface)
 analytics     → Shuriken_Analytics (implements Shuriken_Analytics_Interface)
+rate_limiter  → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
 rest_api      → Shuriken_REST_API
 shortcodes    → Shuriken_Shortcodes
 block         → Shuriken_Block
@@ -178,7 +185,35 @@ Throws `Shuriken_Database_Exception` on failures instead of returning false.
 - `get_vote_distribution($rating_id)` - Votes per rating value
 - `get_votes_over_time($rating_id, $interval)` - Trend data
 
-### 5. Exception Handler (`class-shuriken-exception-handler.php`)
+### 5. Rate Limiter Service (`class-shuriken-rate-limiter.php`)
+
+**Implements:** `Shuriken_Rate_Limiter_Interface`
+
+**Responsibilities:**
+- Enforce vote rate limits (cooldown, hourly, daily)
+- Track user voting activity
+- Provide bypass rules for administrators
+- Fire hooks for custom rate limiting logic
+
+**Key Methods:**
+- `can_vote($user_id, $user_ip, $rating_id)` - Check if user can vote (throws exception if blocked)
+- `get_limits($user_id)` - Get current rate limit settings
+- `get_usage($user_id, $user_ip)` - Get current voting usage statistics
+- `get_cooldown_remaining($user_id, $user_ip, $rating_id)` - Seconds until cooldown expires
+- `should_bypass($user_id, $user_ip)` - Check if user bypasses rate limiting
+
+**Settings (configurable via admin):**
+- `shuriken_rate_limiting_enabled` - Enable/disable rate limiting
+- `shuriken_vote_cooldown` - Seconds between votes on same rating (default: 60)
+- `shuriken_hourly_vote_limit` - Max votes per hour for members (default: 30)
+- `shuriken_daily_vote_limit` - Max votes per day for members (default: 100)
+- `shuriken_guest_hourly_limit` - Max votes per hour for guests (default: 10)
+- `shuriken_guest_daily_limit` - Max votes per day for guests (default: 30)
+
+**Exception Handling:**
+Throws `Shuriken_Rate_Limit_Exception` with specific error codes and retry-after times.
+
+### 6. Exception Handler (`class-shuriken-exception-handler.php`)
 
 **Purpose:** Unified error handling across contexts
 

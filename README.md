@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.9.1-blue)
+![Version](https://img.shields.io/badge/version-1.10.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple)
@@ -19,6 +19,15 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Display-Only Ratings**: Create aggregate ratings calculated from sub-ratings
 - **Guest Voting**: Optional support for non-logged-in users to submit ratings
 - **Cache-Proof Voting**: Always displays up-to-date ratings and allows voting even with full-page caching (see below)
+
+### Rate Limiting (New in 1.10.0)
+
+- **Cooldown Period**: Configurable delay between votes on the same rating (default: 60 seconds)
+- **Hourly Limits**: Maximum votes per hour for members (30) and guests (10)
+- **Daily Limits**: Maximum votes per day for members (100) and guests (30)
+- **Admin Bypass**: Administrators automatically bypass rate limits for testing
+- **Developer Hooks**: 5 dedicated hooks for customizing rate limiting behavior
+- **Disabled by Default**: Enable in Settings → Rate Limiting tab when needed
 
 
 ### Integration Options
@@ -56,7 +65,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 
 ### Developer Features
 
-- **20+ WordPress Hooks**: Extend and customize with filters and actions
+- **25+ WordPress Hooks**: Extend and customize with filters and actions
 - **Interfaces for Testing**: Mock implementations for unit testing
 - **Dependency Injection**: Flexible service container for better testability
 - **Exception System**: Comprehensive error handling with specific exception types
@@ -87,8 +96,8 @@ Shuriken Reviews is built with developers in mind. The plugin provides extensive
 
 ### Key Features for Developers
 
-- **20+ WordPress Hooks** (12 filters + 8 actions) for complete customization
-- **Interface-Based Testing** with `Shuriken_Database_Interface` and `Shuriken_Analytics_Interface`
+- **25+ WordPress Hooks** (15 filters + 10 actions) for complete customization
+- **Interface-Based Testing** with `Shuriken_Database_Interface`, `Shuriken_Analytics_Interface`, and `Shuriken_Rate_Limiter_Interface`
 - **Dependency Injection** container for flexible service management
 - **Exception System** with 9 specific exception types
 - **Mock Implementations** for unit testing without database
@@ -179,7 +188,14 @@ Access detailed statistics at **Shuriken Reviews > Analytics**:
 
 Configure plugin behavior at **Shuriken Reviews > Settings**:
 
+#### General Tab
 - **Guest Voting**: Allow non-logged-in users to vote (tracked by IP)
+
+#### Rate Limiting Tab
+- **Enable Rate Limiting**: Toggle vote rate limiting on/off (disabled by default)
+- **Cooldown Period**: Seconds between votes on the same rating (default: 60)
+- **Hourly Limits**: Maximum votes per hour for members (30) and guests (10)
+- **Daily Limits**: Maximum votes per day for members (100) and guests (30)
 
 ## Requirements
 
@@ -187,6 +203,31 @@ Configure plugin behavior at **Shuriken Reviews > Settings**:
 - PHP 7.4 or higher
 
 ## Changelog
+
+### 1.10.0
+
+**Vote Rate Limiting Feature**
+
+- **Rate Limiting System**: Comprehensive protection against vote spam and abuse
+  - Configurable cooldown period between votes on the same rating
+  - Hourly vote limits for members and guests
+  - Daily vote limits for members and guests
+  - Administrator bypass for testing
+- **Modern Tabbed Settings UI**: Settings page redesigned with tabbed navigation
+  - General tab for existing settings
+  - Rate Limiting tab for new rate limiting configuration
+  - Modern toggle switches and collapsible sections
+- **Rate Limiter Service**: New `Shuriken_Rate_Limiter` class with interface
+  - Full dependency injection support
+  - Mock implementation for testing
+- **5 New Rate Limiting Hooks**: Complete developer control
+  - `shuriken_rate_limit_settings` - Modify limits dynamically
+  - `shuriken_bypass_rate_limit` - Control bypass rules
+  - `shuriken_rate_limit_check_result` - Override final decisions
+  - `shuriken_before_rate_limit_check` - Pre-check action
+  - `shuriken_rate_limit_exceeded` - Exceeded action with type info
+- **Voter Activity Enhancement**: "Last Modified" column shows when votes were changed
+- **Bug Fix**: Vote timestamps now update correctly on vote changes
 
 ### 1.7.5-beta1
 

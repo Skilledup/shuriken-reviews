@@ -100,10 +100,18 @@ if (!defined('ABSPATH')) exit;
             
             <div class="feature-card">
                 <div class="feature-icon">
+                    <span class="dashicons dashicons-shield"></span>
+                </div>
+                <h3><?php esc_html_e('Rate Limiting', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Protect ratings from spam with configurable cooldowns, hourly limits, and daily limits for both members and guests.', 'shuriken-reviews'); ?></p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
                     <span class="dashicons dashicons-code-standards"></span>
                 </div>
                 <h3><?php esc_html_e('Developer-Friendly', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('20+ hooks, interfaces for testing, dependency injection, and comprehensive exception handling. Built for extensibility.', 'shuriken-reviews'); ?></p>
+                <p><?php esc_html_e('25+ hooks, interfaces for testing, dependency injection, and comprehensive exception handling. Built for extensibility.', 'shuriken-reviews'); ?></p>
             </div>
         </div>
     </div>
@@ -117,47 +125,58 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Full Dependency Injection Adoption', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Complete DI container integration across all services for better testability and flexibility:', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('Vote Rate Limiting', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Protect your ratings from spam and abuse with comprehensive rate limiting:', 'shuriken-reviews'); ?></p>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('87.5% DI Coverage', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All 7 database-dependent services now use constructor injection', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Cooldown Period', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Configurable delay between votes on the same rating item (default: 60 seconds)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Loose Coupling', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Services depend on interfaces, not concrete classes - easily swap implementations', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Hourly Limits', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Set maximum votes per hour for members (30) and guests (10)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Enhanced Testability', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Inject mock implementations for unit testing without a real database', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Daily Limits', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Set maximum votes per day for members (100) and guests (30)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Explicit Dependencies', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Constructor signatures clearly show what each class needs to function', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Admin Bypass', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Administrators automatically bypass rate limits for testing', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Centralized Wiring', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All service creation happens in the container - single point of configuration', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('100% Backward Compatible', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Helper functions and static methods continue to work unchanged', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Developer Hooks', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('5 dedicated hooks for customizing rate limiting behavior', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
                 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('DI-Ready Services', 'shuriken-reviews'); ?></h4>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Modern Settings UI', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
-                    <li><strong>Shuriken_REST_API</strong> - <?php esc_html_e('REST API endpoints', 'shuriken-reviews'); ?></li>
-                    <li><strong>Shuriken_Admin</strong> - <?php esc_html_e('Admin pages (database + analytics)', 'shuriken-reviews'); ?></li>
-                    <li><strong>Shuriken_AJAX</strong> - <?php esc_html_e('Vote submission handler', 'shuriken-reviews'); ?></li>
-                    <li><strong>Shuriken_Block</strong> - <?php esc_html_e('Gutenberg block registration', 'shuriken-reviews'); ?></li>
-                    <li><strong>Shuriken_Shortcodes</strong> - <?php esc_html_e('Shortcode rendering', 'shuriken-reviews'); ?></li>
-                    <li><strong>Shuriken_Analytics</strong> - <?php esc_html_e('Analytics calculations', 'shuriken-reviews'); ?></li>
+                    <li>
+                        <strong><?php esc_html_e('Tabbed Interface', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Settings now organized in tabs (General, Rate Limiting) for better navigation', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Modern Toggle Switches', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Beautiful toggle switches replace standard checkboxes', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Collapsible Sections', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Advanced settings can be collapsed to reduce visual clutter', 'shuriken-reviews'); ?>
+                    </li>
+                </ul>
+                
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Rate Limiting Hooks', 'shuriken-reviews'); ?></h4>
+                <ul class="new-features-list">
+                    <li><code>shuriken_rate_limit_settings</code> - <?php esc_html_e('Modify rate limit settings dynamically', 'shuriken-reviews'); ?></li>
+                    <li><code>shuriken_bypass_rate_limit</code> - <?php esc_html_e('Control who bypasses rate limiting', 'shuriken-reviews'); ?></li>
+                    <li><code>shuriken_rate_limit_check_result</code> - <?php esc_html_e('Override final rate limit decisions', 'shuriken-reviews'); ?></li>
+                    <li><code>shuriken_before_rate_limit_check</code> - <?php esc_html_e('Action before rate limit check', 'shuriken-reviews'); ?></li>
+                    <li><code>shuriken_rate_limit_exceeded</code> - <?php esc_html_e('Action when rate limit is exceeded', 'shuriken-reviews'); ?></li>
                 </ul>
                 
                 <p class="new-features-note">
-                    <?php esc_html_e('See the Dependency Injection guide in developer documentation for usage examples and testing patterns.', 'shuriken-reviews'); ?>
+                    <?php esc_html_e('Rate limiting is disabled by default. Enable it in Settings → Rate Limiting tab.', 'shuriken-reviews'); ?>
                 </p>
             </div>
         </div>

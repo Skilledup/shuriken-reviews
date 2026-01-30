@@ -316,7 +316,8 @@ $tendency_icons = array(
                     <th class="column-id"><?php esc_html_e('ID', 'shuriken-reviews'); ?></th>
                     <th class="column-item"><?php esc_html_e('Rating Item', 'shuriken-reviews'); ?></th>
                     <th class="column-rating"><?php esc_html_e('Rating Given', 'shuriken-reviews'); ?></th>
-                    <th class="column-date"><?php esc_html_e('Date & Time', 'shuriken-reviews'); ?></th>
+                    <th class="column-date"><?php esc_html_e('Date Created', 'shuriken-reviews'); ?></th>
+                    <th class="column-modified"><?php esc_html_e('Last Modified', 'shuriken-reviews'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -347,11 +348,20 @@ $tendency_icons = array(
                                 <br>
                                 <small class="timeago"><?php echo esc_html($analytics->format_time_ago($vote->date_created)); ?></small>
                             </td>
+                            <td class="column-modified">
+                                <?php if ($vote->date_modified !== $vote->date_created) : ?>
+                                    <?php echo esc_html($analytics->format_date($vote->date_modified)); ?>
+                                    <br>
+                                    <small class="timeago"><?php echo esc_html($analytics->format_time_ago($vote->date_modified)); ?></small>
+                                <?php else : ?>
+                                    <span class="no-modification">—</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else : ?>
                     <tr>
-                        <td colspan="4"><?php esc_html_e('No votes recorded yet', 'shuriken-reviews'); ?></td>
+                        <td colspan="5"><?php esc_html_e('No votes recorded yet', 'shuriken-reviews'); ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>

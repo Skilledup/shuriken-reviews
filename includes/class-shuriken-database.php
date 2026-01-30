@@ -876,12 +876,15 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $this->wpdb->query('START TRANSACTION');
 
         try {
+            $current_time = current_time('mysql');
             $insert_data = array(
                 'rating_id' => $rating_id,
                 'user_id' => $user_id,
-                'rating_value' => $rating_value
+                'rating_value' => $rating_value,
+                'date_created' => $current_time,
+                'date_modified' => $current_time,
             );
-            $format = array('%d', '%d', '%d');
+            $format = array('%d', '%d', '%d', '%s', '%s');
 
             if ($user_id === 0 && $user_ip) {
                 $insert_data['user_ip'] = $user_ip;
@@ -941,12 +944,15 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $this->wpdb->query('START TRANSACTION');
 
         try {
-            // Update the vote
+            // Update the vote - always update date_modified for rate limiting
             $result = $this->wpdb->update(
                 $this->votes_table,
-                array('rating_value' => $new_value),
+                array(
+                    'rating_value' => $new_value,
+                    'date_modified' => current_time('mysql'),
+                ),
                 array('id' => $vote_id),
-                array('%d'),
+                array('%d', '%s'),
                 array('%d')
             );
 
