@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.10.0-blue)
+![Version](https://img.shields.io/badge/version-1.10.1-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
@@ -20,7 +20,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Guest Voting**: Optional support for non-logged-in users to submit ratings
 - **Cache-Proof Voting**: Always displays up-to-date ratings and allows voting even with full-page caching (see below)
 
-### Rate Limiting (New in 1.10.0)
+### Rate Limiting (New in 1.10)
 
 - **Cooldown Period**: Configurable delay between votes on the same rating (default: 60 seconds)
 - **Hourly Limits**: Maximum votes per hour for members (30) and guests (10)
