@@ -112,105 +112,86 @@ $total_pages = $ratings_result->total_pages;
         </div>
     <?php else: ?>
 
-    <!-- Search Box (separate form, above bulk actions) -->
-    <form class="search-form" method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
-        <input type="hidden" name="page" value="shuriken-reviews">
-        <p class="search-box">
-            <label class="screen-reader-text" for="rating-search-input"><?php esc_html_e('Search Ratings:', 'shuriken-reviews'); ?></label>
-            <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>">
-            <input type="submit" id="search-submit" class="button" value="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
-            <?php if (!empty($search)): ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="button"><?php esc_html_e('Clear', 'shuriken-reviews'); ?></a>
+    <!-- Unified Toolbar: flex row with bulk-left, search-right -->
+    <div class="shuriken-ratings-toolbar">
+
+        <div class="toolbar-left">
+            <label for="bulk-action-selector-top" class="screen-reader-text"><?php esc_html_e('Select bulk action', 'shuriken-reviews'); ?></label>
+            <select name="action" id="bulk-action-selector-top" form="ratings-filter">
+                <option value="-1"><?php esc_html_e('Bulk actions', 'shuriken-reviews'); ?></option>
+                <option value="delete"><?php esc_html_e('Delete', 'shuriken-reviews'); ?></option>
+            </select>
+            <input type="submit" form="ratings-filter" id="doaction" class="button action" value="<?php esc_attr_e('Apply', 'shuriken-reviews'); ?>" onclick="return document.querySelectorAll('input[name=\'rating_ids[]\']:checked').length > 0 ? confirm(shurikenRatingsAdmin.i18n.confirmBulkDelete) : (alert('<?php echo esc_js(__('Please select at least one rating.', 'shuriken-reviews')); ?>'), false);">
+            <?php if ($total_items > 0): ?>
+                <span class="displaying-num"><?php printf(esc_html(_n('%s item', '%s items', $total_items, 'shuriken-reviews')), number_format_i18n($total_items)); ?></span>
             <?php endif; ?>
-        </p>
-    </form>
+        </div>
+
+        <div class="toolbar-right">
+            <form class="search-form" method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
+                <input type="hidden" name="page" value="shuriken-reviews">
+                <div class="search-box">
+                    <label class="screen-reader-text" for="rating-search-input"><?php esc_html_e('Search Ratings:', 'shuriken-reviews'); ?></label>
+                    <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>">
+                    <button type="submit" class="search-submit-btn" aria-label="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
+                        <span class="dashicons dashicons-search" aria-hidden="true"></span>
+                    </button>
+                    <?php if (!empty($search)): ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="clear-search-btn" aria-label="<?php esc_attr_e('Clear search', 'shuriken-reviews'); ?>">
+                            <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+
+    </div><!-- /.shuriken-ratings-toolbar -->
 
     <form id="ratings-filter" method="post">
         <?php wp_nonce_field('shuriken_bulk_ratings', 'shuriken_bulk_nonce'); ?>
-        
-        <!-- Top Tablenav -->
-        <div class="tablenav top">
-            <div class="alignleft actions bulkactions">
-                <label for="bulk-action-selector-top" class="screen-reader-text"><?php esc_html_e('Select bulk action', 'shuriken-reviews'); ?></label>
-                <select name="action" id="bulk-action-selector-top">
-                    <option value="-1"><?php esc_html_e('Bulk actions', 'shuriken-reviews'); ?></option>
-                    <option value="delete"><?php esc_html_e('Delete', 'shuriken-reviews'); ?></option>
-                </select>
-                <input type="submit" id="doaction" class="button action" value="<?php esc_attr_e('Apply', 'shuriken-reviews'); ?>" onclick="return document.querySelectorAll('input[name=\'rating_ids[]\']:checked').length > 0 ? confirm(shurikenRatingsAdmin.i18n.confirmBulkDelete) : (alert('<?php echo esc_js(__('Please select at least one rating.', 'shuriken-reviews')); ?>'), false);">
-            </div>
 
-            <?php
-            // Pagination - Top
-            if ($total_pages > 1) {
-                ?>
-                <div class="tablenav-pages">
-                    <span class="displaying-num">
-                        <?php printf(esc_html(_n('%s item', '%s items', $total_items, 'shuriken-reviews')), number_format_i18n($total_items)); ?>
+        <?php if ($total_pages > 1): ?>
+        <div class="tablenav top">
+            <div class="tablenav-pages">
+                <span class="pagination-links">
+                    <?php
+                    if ($current_page > 1) {
+                        printf('<a class="first-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                            esc_url(remove_query_arg('paged')), __('First page'), '&laquo;');
+                    } else {
+                        printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&laquo;');
+                    }
+                    if ($current_page > 1) {
+                        printf('<a class="prev-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                            esc_url(add_query_arg('paged', max(1, $current_page - 1))), __('Previous page'), '&lsaquo;');
+                    } else {
+                        printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&lsaquo;');
+                    }
+                    ?>
+                    <span class="paging-input">
+                        <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e('Current Page'); ?></label>
+                        <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr($current_page); ?>" size="1" aria-describedby="table-paging">
+                        <span class="tablenav-paging-text"><?php esc_html_e('of'); ?> <span class="total-pages"><?php echo number_format_i18n($total_pages); ?></span></span>
                     </span>
-                    <span class="pagination-links">
-                        <?php
-                        // First page
-                        if ($current_page > 1) {
-                            printf('<a class="first-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
-                                esc_url(remove_query_arg('paged')),
-                                __('First page'),
-                                '&laquo;'
-                            );
-                        } else {
-                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&laquo;');
-                        }
-                        
-                        // Previous page
-                        if ($current_page > 1) {
-                            printf('<a class="prev-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
-                                esc_url(add_query_arg('paged', max(1, $current_page - 1))),
-                                __('Previous page'),
-                                '&lsaquo;'
-                            );
-                        } else {
-                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&lsaquo;');
-                        }
-                        ?>
-                        
-                        <span class="paging-input">
-                            <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e('Current Page'); ?></label>
-                            <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr($current_page); ?>" size="1" aria-describedby="table-paging">
-                            <span class="tablenav-paging-text">
-                                <?php esc_html_e('of'); ?>
-                                <span class="total-pages"><?php echo number_format_i18n($total_pages); ?></span>
-                            </span>
-                        </span>
-                        
-                        <?php
-                        // Next page
-                        if ($current_page < $total_pages) {
-                            printf('<a class="next-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
-                                esc_url(add_query_arg('paged', min($total_pages, $current_page + 1))),
-                                __('Next page'),
-                                '&rsaquo;'
-                            );
-                        } else {
-                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&rsaquo;');
-                        }
-                        
-                        // Last page
-                        if ($current_page < $total_pages) {
-                            printf('<a class="last-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
-                                esc_url(add_query_arg('paged', $total_pages)),
-                                __('Last page'),
-                                '&raquo;'
-                            );
-                        } else {
-                            printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&raquo;');
-                        }
-                        ?>
-                    </span>
-                </div>
-                <?php
-            }
-            ?>
+                    <?php
+                    if ($current_page < $total_pages) {
+                        printf('<a class="next-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                            esc_url(add_query_arg('paged', min($total_pages, $current_page + 1))), __('Next page'), '&rsaquo;');
+                    } else {
+                        printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&rsaquo;');
+                    }
+                    if ($current_page < $total_pages) {
+                        printf('<a class="last-page button" href="%s"><span class="screen-reader-text">%s</span><span aria-hidden="true">%s</span></a>',
+                            esc_url(add_query_arg('paged', $total_pages)), __('Last page'), '&raquo;');
+                    } else {
+                        printf('<span class="tablenav-pages-navspan button disabled" aria-hidden="true">%s</span>', '&raquo;');
+                    }
+                    ?>
+                </span>
+            </div>
             <br class="clear">
         </div>
+        <?php endif; ?>
 
         <!-- Ratings Table -->
         <table class="wp-list-table widefat fixed striped table-view-list ratings">

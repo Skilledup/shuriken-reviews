@@ -14,54 +14,159 @@
     margin-bottom: 25px;
 }
 
-/* Search Form */
-.wrap > .search-form {
-    float: right;
-    margin-bottom: 0;
+/* ==========================================================================
+   Toolbar: single flex row — bulk actions left, search right
+   ========================================================================== */
+
+.shuriken-ratings-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
-html[dir=rtl] .wrap > .search-form {
-    float: left;
+.shuriken-ratings-toolbar .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-.wrap > .search-form .search-box {
-    margin: 0;
+.shuriken-ratings-toolbar .toolbar-right {
+    flex-shrink: 0;
 }
 
-.wrap > .search-form .search-box input[type="search"] {
-    padding: 8px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: #f8fafc;
-    transition: all 0.2s ease;
-}
-
-.wrap > .search-form .search-box input[type="search"]:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-    outline: none;
-}
-
-.wrap > .search-form .search-box .button {
-    margin-left: 6px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 8px;
-    font-weight: 600;
+/* Bulk actions select — match WP default height */
+.shuriken-ratings-toolbar select {
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    color: #1e293b;
     cursor: pointer;
-    transition: opacity 0.2s ease;
+    vertical-align: middle;
+}
+
+/* Apply button — exact same height as the select */
+.shuriken-ratings-toolbar input.button.action, #doaction2 {
+    height: 28px;
+    padding: 0 12px;
+    line-height: 26px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: border-color 0.2s ease, color 0.2s ease;
     box-shadow: none;
 }
 
-.wrap > .search-form .search-box .button:hover {
+.shuriken-ratings-toolbar input.button.action:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Item count */
+.shuriken-ratings-toolbar .displaying-num {
+    font-size: 13px;
+    color: #94a3b8;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Search box */
+.shuriken-ratings-toolbar .search-form {
+    margin: 0;
+}
+
+.shuriken-ratings-toolbar .search-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+}
+
+.shuriken-ratings-toolbar .search-box input[type="search"] {
+    width: 210px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+    font-size: 13px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.shuriken-ratings-toolbar .search-box input[type="search"]:focus {
+    border-color: #667eea;
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* Icon search button — same height as the search input */
+.shuriken-ratings-toolbar .search-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.shuriken-ratings-toolbar .search-submit-btn:hover {
     opacity: 0.88;
 }
 
-/* Clear float after search form */
+.shuriken-ratings-toolbar .search-submit-btn .dashicons {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    line-height: 1;
+}
+
+/* Clear ✕ icon */
+.shuriken-ratings-toolbar .clear-search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.shuriken-ratings-toolbar .clear-search-btn:hover {
+    color: #ef4444;
+}
+
+.shuriken-ratings-toolbar .clear-search-btn .dashicons {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    line-height: 1;
+}
+
+/* Remove old float rules — toolbar is now flex, no clear needed */
 .wrap > form#ratings-filter {
-    clear: both;
+    clear: none;
 }
 
 /* Table Column Widths */
@@ -72,8 +177,27 @@ html[dir=rtl] .wrap > .search-form {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+/* Checkbox column — vertical center */
 .wp-list-table.ratings .column-cb {
     width: 2.2em;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.wp-list-table.ratings thead td.check-column,
+.wp-list-table.ratings tfoot td.check-column,
+.wp-list-table.ratings tbody th.check-column {
+    vertical-align: middle;
+    padding-top: 0;
+    padding-bottom: 0;
+    text-align: center;
+}
+
+.wp-list-table.ratings thead td.check-column input[type="checkbox"],
+.wp-list-table.ratings tfoot td.check-column input[type="checkbox"],
+.wp-list-table.ratings tbody th.check-column input[type="checkbox"] {
+    margin: 0;
+    vertical-align: middle;
 }
 
 .wp-list-table.ratings .column-name {
@@ -513,7 +637,7 @@ html[dir=rtl] .shuriken-copy-notification {
     color: #94a3b8;
 }
 
-/* Bulk Action Button */
+/* Bulk Action Button — overrides kept for bottom tablenav (WP default markup) */
 .tablenav .alignleft.actions.bulkactions input.button {
     background: #f8fafc;
     border: 1px solid #d1d5db;
@@ -557,30 +681,28 @@ html[dir=rtl] .shuriken-copy-notification {
         margin-bottom: 16px;
     }
     
-    /* Search Form - Full Width Stack */
-    .wrap > .search-form {
-        float: none;
-        width: 100%;
-        margin-bottom: 16px;
-    }
-    
-    .wrap > .search-form .search-box {
-        display: flex;
+    /* Toolbar - stack vertically on mobile */
+    .shuriken-ratings-toolbar {
         flex-direction: column;
-        gap: 10px;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 12px;
     }
-    
-    .wrap > .search-form .search-box input[type="search"] {
-        width: 100%;
-        padding: 12px 16px;
-        font-size: 16px; /* Prevents iOS zoom */
+
+    .shuriken-ratings-toolbar .toolbar-right {
+        flex-shrink: unset;
     }
-    
-    .wrap > .search-form .search-box .button {
-        margin-left: 0;
+
+    .shuriken-ratings-toolbar .search-box input[type="search"] {
         width: 100%;
-        padding: 12px 20px;
-        font-size: 15px;
+        flex: 1;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        height: 36px;
+    }
+
+    .shuriken-ratings-toolbar .search-submit-btn {
+        width: 36px;
+        height: 36px;
     }
     
     /* Bulk Actions - Stacked */
@@ -1146,19 +1268,27 @@ html[dir=rtl] .shuriken-copy-notification {
         color: #64748b;
     }
     
-    .wrap > .search-form .search-box input[type="search"] {
+    .shuriken-ratings-toolbar .search-box input[type="search"] {
         background: #0f172a;
         border-color: #334155;
         color: #f1f5f9;
     }
-    
-    .wrap > .search-form .search-box input[type="search"]:focus {
+
+    .shuriken-ratings-toolbar .search-box input[type="search"]:focus {
         border-color: #667eea;
         background: #1e293b;
     }
-    
-    .wrap > .search-form .search-box .button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    .shuriken-ratings-toolbar select {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+
+    .shuriken-ratings-toolbar input.button.action {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
     }
     
     .wp-list-table.ratings tbody td strong,
