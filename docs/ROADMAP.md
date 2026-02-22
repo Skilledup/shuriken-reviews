@@ -336,7 +336,3 @@ None planned. Backward compatibility is a goal for upcoming versions.
 Licensed under [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html)
 
 Developed by [Skilledup Hub](https://skilledup.ir)
-
----
-
-Last Updated: January 2026

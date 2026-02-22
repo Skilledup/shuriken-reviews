@@ -238,7 +238,3 @@ wp.apiFetch = function(options) {
 - Check REST API error response format
 - Verify error code mapping in handleApiError
 - Check backend exception handling
-
----
-
-Last Updated: January 2026
