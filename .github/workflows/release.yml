@@ -1,0 +1,36 @@
+name: Generate Installable Plugin, and Upload as Release Asset
+on:
+  release:
+    types: [published]
+jobs:
+  build:
+    name: Upload Release Asset
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: |
+          mkdir build
+
+      - name: Create artifact
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -X -r build/shuriken-reviews.zip . -x *.git* node_modules/\* .* "*/\.*" CODE_OF_CONDUCT.md CONTRIBUTING.md ISSUE_TEMPLATE.md PULL_REQUEST_TEMPLATE.md *.dist *.yml *.neon composer.* dev-helpers** build** wporg-assets** phpunit** docs/** tests/**
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shuriken-reviews
+          path: build/shuriken-reviews.zip
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: build/shuriken-reviews.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
