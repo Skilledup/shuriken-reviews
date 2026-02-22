@@ -14,12 +14,31 @@ jobs:
 
       - name: Build project
         run: |
-          mkdir build
+          mkdir -p build
+          mkdir -p /tmp/plugin/shuriken-reviews
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='.*' \
+            --exclude='CODE_OF_CONDUCT.md' \
+            --exclude='CONTRIBUTING.md' \
+            --exclude='ISSUE_TEMPLATE.md' \
+            --exclude='PULL_REQUEST_TEMPLATE.md' \
+            --exclude='*.dist' \
+            --exclude='*.yml' \
+            --exclude='*.neon' \
+            --exclude='composer.*' \
+            --exclude='dev-helpers' \
+            --exclude='build' \
+            --exclude='wporg-assets' \
+            --exclude='phpunit' \
+            --exclude='docs' \
+            --exclude='tests' \
+            . /tmp/plugin/shuriken-reviews/
 
       - name: Create artifact
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -X -r build/shuriken-reviews.zip . -x *.git* node_modules/\* .* "*/\.*" CODE_OF_CONDUCT.md CONTRIBUTING.md ISSUE_TEMPLATE.md PULL_REQUEST_TEMPLATE.md *.dist *.yml *.neon composer.* dev-helpers** build** wporg-assets** phpunit** docs/** tests/**
+        run: cd /tmp/plugin && zip -X -r $GITHUB_WORKSPACE/build/shuriken-reviews.zip shuriken-reviews
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
