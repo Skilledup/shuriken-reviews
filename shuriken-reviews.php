@@ -7,7 +7,7 @@
  * Requires PHP: 8.1
  * Author: Skilledup Hub
  * Author URI: https://skilledup.ir
- * License: GPL2
+ * License: GPLv3
  * Text Domain: shuriken-reviews
  * Domain Path: /languages
  */

@@ -439,8 +439,8 @@ if (!defined('ABSPATH')) exit;
                 );
                 ?>
             </p>
-            <p class="license-info">
-                <?php esc_html_e('Licensed under GPL v2 or later', 'shuriken-reviews'); ?>
+                <p class="license-info">
+                <?php esc_html_e('Licensed under GPL v3 or later', 'shuriken-reviews'); ?>
             </p>
             <div class="social-links">
                 <a href="https://skilledup.ir" target="_blank" rel="noopener noreferrer" class="social-link">

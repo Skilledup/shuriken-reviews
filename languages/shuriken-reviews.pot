@@ -1,5 +1,5 @@
 # Copyright (C) 2025 Skilledup Hub
-# This file is distributed under the GPL2.
+# This file is distributed under the GPL3.
 #, fuzzy
 msgid ""
 msgstr ""
@@ -799,7 +799,7 @@ msgid "Latest votes received"
 msgstr ""
 
 #: admin/about.php:408
-msgid "Licensed under GPL v2 or later"
+msgid "Licensed under GPL v3 or later"
 msgstr ""
 
 #: admin/analytics.php:357

@@ -273,7 +273,7 @@ See main [README.md](../README.md#changelog) for complete changelog.
 
 ## License
 
-Licensed under [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html)
+Licensed under [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html)
 
 Developed with ❤️ by [Skilledup Hub](https://skilledup.ir)
 

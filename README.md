@@ -3,7 +3,7 @@
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
 ![Version](https://img.shields.io/badge/version-1.10.0-blue)
-![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
+![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
 
@@ -199,60 +199,12 @@ Configure plugin behavior at **Shuriken Reviews > Settings**:
 
 ## Requirements
 
-- WordPress 5.6 or higher
-- PHP 7.4 or higher
-
-## Changelog
-
-### 1.10.0
-
-**Vote Rate Limiting Feature**
-
-- **Rate Limiting System**: Comprehensive protection against vote spam and abuse
-  - Configurable cooldown period between votes on the same rating
-  - Hourly vote limits for members and guests
-  - Daily vote limits for members and guests
-  - Administrator bypass for testing
-- **Modern Tabbed Settings UI**: Settings page redesigned with tabbed navigation
-  - General tab for existing settings
-  - Rate Limiting tab for new rate limiting configuration
-  - Modern toggle switches and collapsible sections
-- **Rate Limiter Service**: New `Shuriken_Rate_Limiter` class with interface
-  - Full dependency injection support
-  - Mock implementation for testing
-- **5 New Rate Limiting Hooks**: Complete developer control
-  - `shuriken_rate_limit_settings` - Modify limits dynamically
-  - `shuriken_bypass_rate_limit` - Control bypass rules
-  - `shuriken_rate_limit_check_result` - Override final decisions
-  - `shuriken_before_rate_limit_check` - Pre-check action
-  - `shuriken_rate_limit_exceeded` - Exceeded action with type info
-- **Voter Activity Enhancement**: "Last Modified" column shows when votes were changed
-- **Bug Fix**: Vote timestamps now update correctly on vote changes
-
-### 1.7.5-beta1
-
-**Major Software Design Improvements**
-
-- **Modular Architecture**: Refactored main plugin file into 8 focused modules (REST API, Shortcodes, Block, AJAX, Frontend, Admin)
-- **20+ WordPress Hooks**: Added comprehensive hooks system (12 filters + 8 actions) for complete extensibility
-- **Interfaces for Testing**: Created `Shuriken_Database_Interface` and `Shuriken_Analytics_Interface` with mock implementations
-- **Exception System**: Implemented 6 custom exception types with unified exception handler
-- **Dependency Injection**: Added lightweight DI container for flexible service management
-- **Unified Star Rating**: Single `shuriken_rating_max_stars` filter with automatic normalization (supports any star count)
-- **Block & Shortcode Consistency**: Gutenberg blocks now use same rendering logic as shortcodes (all hooks work for both)
-- **Fixed Nonce Issues**: Proper REST API authentication for cached pages
-- **Comprehensive Documentation**: Added 2,500+ lines of developer documentation
-
-**Developer Experience**
-- All hooks work consistently for both shortcodes and blocks
-- Easy unit testing with mock implementations (no database required)
-- Type-safe error handling with specific exceptions
-- Flexible dependency injection for testing and customization
-- Complete API documentation with 50+ examples
+- WordPress 6.2 or higher
+- PHP 8.1 or higher
 
 ## License
 
-This plugin is licensed under the [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html).
+This plugin is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
 
 ## Author
 

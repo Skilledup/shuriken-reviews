@@ -333,7 +333,7 @@ None planned. Backward compatibility is a goal for upcoming versions.
 
 ## License
 
-Licensed under [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html)
+Licensed under [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html)
 
 Developed by [Skilledup Hub](https://skilledup.ir)
 
