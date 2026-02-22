@@ -51,12 +51,12 @@ html[dir=rtl] .wrap > .search-form {
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .wrap > .search-form .search-box .button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.88;
 }
 
 /* Clear float after search form */
@@ -335,12 +335,12 @@ tr.mirror-rating .column-name {
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .inline-edit-row-rating .inline-edit-save .button-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.88;
 }
 
 .inline-edit-row-rating .spinner {
@@ -378,6 +378,25 @@ tr.mirror-rating .column-name {
 
 .shuriken-ratings-empty-state p {
     font-size: 15px;
+}
+
+.shuriken-ratings-empty-state .button {
+    display: inline-block;
+    margin-top: 16px;
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
+}
+
+.shuriken-ratings-empty-state .button:hover {
+    opacity: 0.75;
+    color: #667eea;
 }
 
 /* Add New Rating Form */
@@ -429,12 +448,12 @@ tr.mirror-rating .column-name {
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .shuriken-ratings-form-wrap .submit .button-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.88;
 }
 
 /* Copy Notification */
@@ -492,6 +511,24 @@ html[dir=rtl] .shuriken-copy-notification {
 
 .wp-list-table.ratings .row-actions .id {
     color: #94a3b8;
+}
+
+/* Bulk Action Button */
+.tablenav .alignleft.actions.bulkactions input.button {
+    background: #f8fafc;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    box-shadow: none;
+}
+
+.tablenav .alignleft.actions.bulkactions input.button:hover {
+    border-color: #667eea;
+    color: #667eea;
 }
 
 /* Pagination */

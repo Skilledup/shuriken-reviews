@@ -332,27 +332,26 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     color: #fff;
-    padding: 12px 28px;
+    padding: 10px 24px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .shuriken-settings-submit .button-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.45);
+    opacity: 0.88;
 }
 
 .shuriken-settings-submit .button-primary:active {
-    transform: translateY(0);
+    opacity: 0.78;
 }
 
 .shuriken-settings-submit .button-primary:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25), 0 4px 12px rgba(102, 126, 234, 0.35);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
 }
 
 /* ==========================================================================

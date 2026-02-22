@@ -98,12 +98,12 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .custom-date-range .button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.88;
 }
 
 .current-range-label {
@@ -693,12 +693,12 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .shuriken-export-section button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.88;
 }
 
 .shuriken-export-section button .dashicons {
@@ -874,6 +874,26 @@
 
 .voter-actions {
     margin: 0;
+}
+
+.voter-actions .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
+}
+
+.voter-actions .button:hover {
+    opacity: 0.75;
+    color: #667eea;
 }
 
 .voter-actions .button .dashicons {
@@ -1200,13 +1220,15 @@
     margin: 0;
     border-radius: 8px;
     padding: 8px 16px;
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
 }
 
 .view-selector-buttons .button-primary {
     pointer-events: none;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
+    box-shadow: none;
 }
 
 .shuriken-view-selector .view-description {
