@@ -1085,7 +1085,7 @@ add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $u
 
 ## Need Help?
 
-- [GitHub Repository](https://github.com/qasedak/shuriken-reviews)
-- [Report an Issue](https://github.com/qasedak/shuriken-reviews/issues)
+- [GitHub Repository](https://github.com/Skilledup/shuriken-reviews)
+- [Report an Issue](https://github.com/Skilledup/shuriken-reviews/issues)
 
 See [INDEX.md](../INDEX.md) for complete documentation index.

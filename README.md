@@ -212,4 +212,4 @@ Developed with ❤️ by [Skilledup Hub](https://skilledup.ir).
 
 ## Support
 
-For support and feature requests, please visit our [GitHub repository](https://github.com/qasedak/shuriken-reviews).
+For support and feature requests, please visit our [GitHub repository](https://github.com/Skilledup/shuriken-reviews/discussions).

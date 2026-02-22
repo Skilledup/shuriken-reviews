@@ -245,9 +245,9 @@ Contracts that classes implement to ensure testability:
 
 For support, issues, and contributions:
 
-📌 **GitHub Repository:** [github.com/qasedak/shuriken-reviews](https://github.com/qasedak/shuriken-reviews)
+📌 **GitHub Repository:** [github.com/Skilledup/shuriken-reviews](https://github.com/Skilledup/shuriken-reviews)
 
-💬 **Report Issues:** [GitHub Issues](https://github.com/qasedak/shuriken-reviews/issues)
+💬 **Report Issues:** [GitHub Issues](https://github.com/Skilledup/shuriken-reviews/issues)
 
 ---
 

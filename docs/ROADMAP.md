@@ -326,7 +326,7 @@ None planned. Backward compatibility is a goal for upcoming versions.
 
 ## Support
 
-- GitHub Issues: https://github.com/qasedak/shuriken-reviews/issues
+- GitHub Issues: https://github.com/Skilledup/shuriken-reviews/issues
 - Documentation index: [INDEX.md](INDEX.md)
 
 ---
