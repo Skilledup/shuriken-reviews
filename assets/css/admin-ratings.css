@@ -953,7 +953,6 @@ html[dir=rtl] .shuriken-copy-notification {
         border: 2px solid #667eea;
         border-radius: 12px;
         padding: 0;
-        margin-top: -12px;
     }
     
     .wp-list-table.ratings tbody tr.inline-edit-row-rating:not(.hidden) {
@@ -979,8 +978,8 @@ html[dir=rtl] .shuriken-copy-notification {
         margin-bottom: 0 !important;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #fff !important;
-        border-radius: 10px 10px 0 0;
-        margin: -16px -16px 16px -16px !important;
+        border-radius: 10px 0 0 0;
+        margin: -2px -16px 16px -16px !important;
     }
     
     .inline-edit-row-rating label {
