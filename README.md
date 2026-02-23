@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.10.1-blue)
+![Version](https://img.shields.io/badge/version-1.10.3-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
@@ -208,7 +208,7 @@ This plugin is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/
 
 ## Author
 
-Developed with ❤️ by [Skilledup Hub](https://skilledup.ir).
+Developed with ❤️ by [Skilledup](https://skilledup.ir).
 
 ## Support
 

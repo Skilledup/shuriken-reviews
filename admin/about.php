@@ -435,7 +435,7 @@ if (!defined('ABSPATH')) exit;
                 printf(
                     esc_html__('Developed with %s by %s', 'shuriken-reviews'),
                     '<span class="heart">❤️</span>',
-                    '<a href="https://skilledup.ir" target="_blank" rel="noopener noreferrer">Skilledup Hub</a>'
+                    '<a href="https://skilledup.ir" target="_blank" rel="noopener noreferrer">Skilledup</a>'
                 );
                 ?>
             </p>

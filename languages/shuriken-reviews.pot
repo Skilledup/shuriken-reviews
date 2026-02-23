@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Skilledup Hub
+# Copyright (C) 2025 Skilledup
 # This file is distributed under the GPL3.
 #, fuzzy
 msgid ""
@@ -1258,7 +1258,7 @@ msgid ""
 msgstr ""
 
 #. Author of the plugin
-msgid "Skilledup Hub"
+msgid "Skilledup"
 msgstr ""
 
 #: admin/about.php:66

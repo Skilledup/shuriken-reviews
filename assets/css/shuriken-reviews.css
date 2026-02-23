@@ -128,6 +128,175 @@
 }
 
 /* =====================================================
+   Single Rating Styles — Preset System
+   ===================================================== */
+
+/* CSS variable support (scoped to block wrapper to avoid affecting grouped children) */
+.wp-block-shuriken-reviews-rating {
+    --shuriken-accent: var(--shuriken-user-accent, #667eea);
+    --shuriken-star-color: var(--shuriken-user-star-color, #ffd700);
+}
+
+/* =====================================================
+   Preset: Classic (default)
+   Current look — horizontal row, no background.
+   No overrides needed; the base .shuriken-rating styles
+   above are the "classic" preset.
+   ===================================================== */
+
+/* Star colour override only when user sets a custom colour */
+.shuriken-rating.is-style-classic .stars .star.active,
+.wp-block-shuriken-reviews-rating:not([class*="is-style-"]) .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+/* =====================================================
+   Preset: Card
+   White background, shadow, rounded corners, centered
+   ===================================================== */
+.shuriken-rating.is-style-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+}
+
+.shuriken-rating.is-style-card .shuriken-rating-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.shuriken-rating.is-style-card .rating-title {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.shuriken-rating.is-style-card .stars {
+    font-size: 28px;
+}
+
+.shuriken-rating.is-style-card .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating.is-style-card .rating-stats {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+}
+
+.shuriken-rating.is-style-card .display-only-notice {
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-card .login-message {
+    color: #718096 !important;
+}
+
+/* =====================================================
+   Preset: Minimal
+   No background, accent bottom border, stripped down
+   ===================================================== */
+.shuriken-rating.is-style-minimal {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--shuriken-accent);
+    border-radius: 0;
+    padding: 12px 0;
+}
+
+.shuriken-rating.is-style-minimal .rating-title {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.shuriken-rating.is-style-minimal .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating.is-style-minimal .rating-stats {
+    font-size: 13px;
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-minimal .display-only-notice {
+    color: #a0aec0;
+}
+
+/* =====================================================
+   Preset: Dark
+   Dark background, light text, glowing stars
+   ===================================================== */
+.shuriken-rating.is-style-dark {
+    background: #1a202c;
+    border-radius: 12px;
+    border: 1px solid #2d3748;
+    padding: 24px;
+}
+
+.shuriken-rating.is-style-dark .rating-title {
+    color: #f7fafc;
+}
+
+.shuriken-rating.is-style-dark .stars .star {
+    color: #4a5568;
+}
+
+.shuriken-rating.is-style-dark .stars .star.active {
+    color: var(--shuriken-star-color);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.shuriken-rating.is-style-dark .rating-stats {
+    font-size: 14px;
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-dark .display-only-notice {
+    color: #718096;
+}
+
+.shuriken-rating.is-style-dark .login-message {
+    color: #a0aec0 !important;
+}
+
+.shuriken-rating.is-style-dark .login-message a {
+    color: #90cdf4 !important;
+}
+
+/* =====================================================
+   Preset: Outlined
+   Transparent, accent-colour border only
+   ===================================================== */
+.shuriken-rating.is-style-outlined {
+    background: transparent;
+    border-radius: 12px;
+    border: 2px solid var(--shuriken-accent);
+    padding: 20px 24px;
+}
+
+.shuriken-rating.is-style-outlined .rating-title {
+    font-weight: 600;
+    color: var(--shuriken-accent);
+}
+
+.shuriken-rating.is-style-outlined .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating.is-style-outlined .rating-stats {
+    font-size: 14px;
+    color: #718096;
+}
+
+.shuriken-rating.is-style-outlined .display-only-notice {
+    color: #a0aec0;
+}
+
+/* =====================================================
    Grouped Rating Styles — Preset System
    ===================================================== */
 

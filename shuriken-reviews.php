@@ -5,7 +5,7 @@
  * Version: 1.10.3
  * Requires at least: 6.2
  * Requires PHP: 8.1
- * Author: Skilledup Hub
+ * Author: Skilledup
  * Author URI: https://skilledup.ir
  * License: GPLv3
  * Text Domain: shuriken-reviews

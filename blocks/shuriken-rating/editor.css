@@ -26,3 +26,13 @@
     color: #64748b;
     margin-top: 0;
 }
+
+/* Ensure block editor wrapper inherits preset transitions */
+.shuriken-rating-block-editor {
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Disable pointer events on stars in the editor (read-only preview) */
+.shuriken-rating-block-editor .stars {
+    pointer-events: none;
+}

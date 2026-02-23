@@ -2,7 +2,7 @@
     "$schema": "https://schemas.wp.org/trunk/block.json",
     "apiVersion": 3,
     "name": "shuriken-reviews/rating",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "title": "Shuriken Rating",
     "category": "widgets",
     "icon": "star-filled",
@@ -10,8 +10,35 @@
     "keywords": ["rating", "review", "stars", "vote"],
     "supports": {
         "html": false,
-        "align": ["wide", "full"]
+        "align": ["wide", "full"],
+        "spacing": {
+            "padding": true,
+            "margin": true
+        }
     },
+    "styles": [
+        {
+            "name": "classic",
+            "label": "Classic",
+            "isDefault": true
+        },
+        {
+            "name": "card",
+            "label": "Card"
+        },
+        {
+            "name": "minimal",
+            "label": "Minimal"
+        },
+        {
+            "name": "dark",
+            "label": "Dark"
+        },
+        {
+            "name": "outlined",
+            "label": "Outlined"
+        }
+    ],
     "textdomain": "shuriken-reviews",
     "attributes": {
         "ratingId": {
@@ -23,6 +50,14 @@
             "default": "h2"
         },
         "anchorTag": {
+            "type": "string",
+            "default": ""
+        },
+        "accentColor": {
+            "type": "string",
+            "default": ""
+        },
+        "starColor": {
             "type": "string",
             "default": ""
         }

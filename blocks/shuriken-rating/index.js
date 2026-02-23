@@ -1,15 +1,24 @@
 ﻿/**
- * Shuriken Reviews - Rating Block
- * 
- * Updated to use shared data store and AJAX search for improved efficiency.
- * 
+ * Shuriken Reviews - Rating Block (v2)
+ *
+ * Re-designed with style presets and simplified colour settings.
+ * Visual design is handled entirely by CSS presets
+ * (is-style-classic, is-style-card, etc.).
+ *
+ * Settings:
+ *  - ratingId    : which rating to display
+ *  - titleTag    : heading tag for the title
+ *  - anchorTag   : optional anchor ID
+ *  - accentColor : single accent colour driving preset colour scheme
+ *  - starColor   : active star colour
+ *
  * @package Shuriken_Reviews
- * @since 1.9.0
+ * @since 2.0.0
  */
 
 (function (wp) {
     const { registerBlockType } = wp.blocks;
-    const { useBlockProps, InspectorControls } = wp.blockEditor;
+    const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
     const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice } = wp.components;
     const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
     const { __ } = wp.i18n;
@@ -20,8 +29,8 @@
     registerBlockType('shuriken-reviews/rating', {
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { ratingId, titleTag, anchorTag } = attributes;
-            
+            const { ratingId, titleTag, anchorTag, accentColor, starColor } = attributes;
+
             // Local UI state
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -39,17 +48,32 @@
             const [updating, setUpdating] = useState(false);
             const [localError, setLocalError] = useState(null);
             const [lastFailedAction, setLastFailedAction] = useState(null);
-            
+
             // Search state
             const [searchTerm, setSearchTerm] = useState('');
             const searchTimeoutRef = useRef(null);
             const initialFetchDone = useRef(false);
 
-            const blockProps = useBlockProps({
-                className: 'shuriken-rating-block-editor'
-            });
+            // ---- Build CSS variables for accent / star colour ----
+            var cssVars = {};
+            if (accentColor) {
+                cssVars['--shuriken-user-accent'] = accentColor;
+            }
+            if (starColor) {
+                cssVars['--shuriken-user-star-color'] = starColor;
+            }
 
-            // Get data from shared store
+            // ---- Store helpers (MUST be declared BEFORE blockProps) ----
+            const {
+                fetchRating,
+                searchRatings,
+                fetchParentRatings,
+                fetchMirrorableRatings,
+                createRating: storeCreateRating,
+                updateRating: storeUpdateRating,
+                clearError
+            } = useDispatch(STORE_NAME);
+
             const {
                 selectedRating,
                 searchResults,
@@ -60,7 +84,7 @@
                 isLoadingMirrorable,
                 isLoadingRating,
                 storeError
-            } = useSelect(function(select) {
+            } = useSelect(function (select) {
                 const store = select(STORE_NAME);
                 return {
                     selectedRating: ratingId ? store.getRating(ratingId) : null,
@@ -75,16 +99,17 @@
                 };
             }, [ratingId]);
 
-            // Get dispatch actions from store
-            const {
-                fetchRating,
-                searchRatings,
-                fetchParentRatings,
-                fetchMirrorableRatings,
-                createRating: storeCreateRating,
-                updateRating: storeUpdateRating,
-                clearError
-            } = useDispatch(STORE_NAME);
+            // ---- blockProps -- merge .shuriken-rating onto the wrapper
+            //      when a rating is selected so is-style-* and .shuriken-rating
+            //      live on the same DOM element (matching frontend HTML) ----
+            var previewClass = (ratingId && selectedRating)
+                ? ' shuriken-rating'
+                : '';
+
+            const blockProps = useBlockProps({
+                className: 'shuriken-rating-block-editor' + previewClass,
+                style: cssVars
+            });
 
             // Combined error state
             const error = localError || storeError;
@@ -92,9 +117,9 @@
             // Error handling helper
             function handleApiError(err, action) {
                 console.error('Shuriken Reviews API Error:', err);
-                
+
                 var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
-                
+
                 if (err.message) {
                     errorMessage = err.message;
                 } else if (err.data && err.data.message) {
@@ -102,7 +127,7 @@
                 } else if (typeof err === 'string') {
                     errorMessage = err;
                 }
-                
+
                 if (err.code === 'rest_forbidden' || err.code === 'rest_cookie_invalid_nonce') {
                     errorMessage = __('Permission denied. Please refresh the page and try again.', 'shuriken-reviews');
                 } else if (err.code === 'rest_no_route') {
@@ -114,7 +139,7 @@
                 } else if (err.status === 500 || err.code === 'internal_server_error') {
                     errorMessage = __('Server error. Please try again later.', 'shuriken-reviews');
                 }
-                
+
                 setLocalError(errorMessage);
                 setLastFailedAction(action);
             }
@@ -135,52 +160,45 @@
             }
 
             // Fetch selected rating and initial data on mount
-            useEffect(function() {
+            useEffect(function () {
                 if (initialFetchDone.current) {
                     return;
                 }
                 initialFetchDone.current = true;
 
-                // Fetch the selected rating if one is set
                 if (ratingId && !selectedRating) {
                     fetchRating(ratingId);
                 }
 
-                // Fetch parent and mirrorable ratings for modals (shared across all blocks)
                 fetchParentRatings();
                 fetchMirrorableRatings();
-                
-                // Don't search on initial load - wait for user to type
             }, []);
 
             // Fetch rating when ratingId changes
-            useEffect(function() {
+            useEffect(function () {
                 if (ratingId && !selectedRating) {
                     fetchRating(ratingId);
                 }
             }, [ratingId]);
 
             // Debounced search handler
-            const handleSearchChange = useCallback(function(term) {
+            const handleSearchChange = useCallback(function (term) {
                 setSearchTerm(term);
-                
-                // Clear previous timeout
+
                 if (searchTimeoutRef.current) {
                     clearTimeout(searchTimeoutRef.current);
                 }
-                
-                // Only search if user has typed something
+
                 if (term && term.trim().length > 0) {
-                    // Debounce search by 300ms
-                    searchTimeoutRef.current = setTimeout(function() {
+                    searchTimeoutRef.current = setTimeout(function () {
                         searchRatings(term.trim(), 'all', 20);
                     }, 300);
                 }
             }, [searchRatings]);
 
             // Cleanup timeout on unmount
-            useEffect(function() {
-                return function() {
+            useEffect(function () {
+                return function () {
                     if (searchTimeoutRef.current) {
                         clearTimeout(searchTimeoutRef.current);
                     }
@@ -195,10 +213,9 @@
 
                 setCreating(true);
                 setLocalError(null);
-                
+
                 var requestData = { name: newRatingName };
-                
-                // Mirror takes precedence over parent
+
                 if (newRatingMirrorOf) {
                     requestData.mirror_of = parseInt(newRatingMirrorOf, 10);
                 } else {
@@ -208,11 +225,10 @@
                     }
                     requestData.display_only = newRatingDisplayOnly;
                 }
-                
+
                 storeCreateRating(requestData)
-                    .then(function(data) {
+                    .then(function (data) {
                         setAttributes({ ratingId: parseInt(data.id, 10) });
-                        // Reset form
                         setNewRatingName('');
                         setNewRatingMirrorOf('');
                         setNewRatingParentId('');
@@ -221,7 +237,7 @@
                         setIsModalOpen(false);
                         setCreating(false);
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         setCreating(false);
                         handleApiError(err, createNewRating);
                     });
@@ -236,7 +252,6 @@
                 setEditRatingMirrorOf(selectedRating.mirror_of ? String(selectedRating.mirror_of) : '');
                 setEditRatingParentId(selectedRating.parent_id ? String(selectedRating.parent_id) : '');
                 setEditRatingEffectType(selectedRating.effect_type || 'positive');
-                // Normalize display_only
                 var displayOnlyValue = selectedRating.display_only;
                 var isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
                 setEditRatingDisplayOnly(isDisplayOnly);
@@ -251,10 +266,9 @@
 
                 setUpdating(true);
                 setLocalError(null);
-                
+
                 var requestData = { name: editRatingName };
-                
-                // Mirror takes precedence over parent
+
                 if (editRatingMirrorOf) {
                     requestData.mirror_of = parseInt(editRatingMirrorOf, 10);
                     requestData.parent_id = 0;
@@ -270,19 +284,19 @@
                         requestData.display_only = editRatingDisplayOnly;
                     }
                 }
-                
+
                 storeUpdateRating(selectedRating.id, requestData)
-                    .then(function() {
+                    .then(function () {
                         setIsEditModalOpen(false);
                         setUpdating(false);
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         setUpdating(false);
                         handleApiError(err, updateRatingFn);
                     });
             }
 
-            // Handle Enter key in the modal
+            // Handle Enter key in modals
             function handleKeyDown(event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -290,7 +304,6 @@
                 }
             }
 
-            // Handle Enter key in edit modal
             function handleEditKeyDown(event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -299,11 +312,10 @@
             }
 
             // Build rating options for ComboboxControl
-            var ratingOptions = useMemo(function() {
+            var ratingOptions = useMemo(function () {
                 var options = [];
                 var seenIds = {};
-                
-                // Always include selected rating first
+
                 if (selectedRating && selectedRating.id) {
                     seenIds[selectedRating.id] = true;
                     options.push({
@@ -311,11 +323,10 @@
                         value: String(selectedRating.id)
                     });
                 }
-                
-                // Only show search results when user has typed something
+
                 if (searchTerm && searchTerm.trim().length > 0) {
                     var results = Array.isArray(searchResults) ? searchResults : [];
-                    results.forEach(function(rating) {
+                    results.forEach(function (rating) {
                         if (rating && rating.id && !seenIds[rating.id]) {
                             seenIds[rating.id] = true;
                             options.push({
@@ -325,7 +336,7 @@
                         }
                     });
                 }
-                
+
                 return options;
             }, [searchResults, selectedRating, searchTerm]);
 
@@ -355,15 +366,18 @@
             // Loading state
             var loading = isLoadingRating || (ratingId && !selectedRating && !error);
 
+            // ---- Render ----
             return wp.element.createElement(
                 wp.element.Fragment,
                 null,
+                // Inspector Controls
                 wp.element.createElement(
                     InspectorControls,
                     null,
+                    // Settings Panel
                     wp.element.createElement(
                         PanelBody,
-                        { title: __('Rating Settings', 'shuriken-reviews'), initialOpen: true },
+                        { title: __('Settings', 'shuriken-reviews'), initialOpen: true },
                         wp.element.createElement(ComboboxControl, {
                             label: __('Select Rating', 'shuriken-reviews'),
                             value: ratingId ? String(ratingId) : '',
@@ -372,7 +386,7 @@
                                 setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
                             },
                             onFilterValueChange: handleSearchChange,
-                            placeholder: isSearching 
+                            placeholder: isSearching
                                 ? __('Searching...', 'shuriken-reviews')
                                 : __('Type to search ratings...', 'shuriken-reviews')
                         }),
@@ -411,14 +425,31 @@
                             },
                             help: __('Optional anchor ID for linking to this rating.', 'shuriken-reviews')
                         })
-                    )
+                    ),
+                    // Colors Panel
+                    wp.element.createElement(PanelColorSettings, {
+                        title: __('Colors', 'shuriken-reviews'),
+                        initialOpen: false,
+                        colorSettings: [
+                            {
+                                value: accentColor,
+                                onChange: function (value) { setAttributes({ accentColor: value || '' }); },
+                                label: __('Accent Color', 'shuriken-reviews')
+                            },
+                            {
+                                value: starColor,
+                                onChange: function (value) { setAttributes({ starColor: value || '' }); },
+                                label: __('Star Color', 'shuriken-reviews')
+                            }
+                        ]
+                    })
                 ),
                 // Create Rating Modal
                 isModalOpen && wp.element.createElement(
                     Modal,
                     {
                         title: __('Create New Rating', 'shuriken-reviews'),
-                        onRequestClose: function () { 
+                        onRequestClose: function () {
                             setIsModalOpen(false);
                             setNewRatingName('');
                             setNewRatingMirrorOf('');
@@ -567,7 +598,7 @@
                         }, __('Update', 'shuriken-reviews'))
                     )
                 ),
-                // Block content
+                // Block content -- .shuriken-rating is on blockProps, NOT on an inner div
                 wp.element.createElement(
                     'div',
                     blockProps,
@@ -595,25 +626,22 @@
                             )
                             : selectedRating
                                 ? wp.element.createElement(
+                                    // Render wrapper directly inside blockProps (no extra .shuriken-rating div)
                                     'div',
-                                    { className: 'shuriken-rating' },
+                                    { className: 'shuriken-rating-wrapper' },
+                                    wp.element.createElement(titleTag, { className: 'rating-title' }, selectedRating.name),
                                     wp.element.createElement(
                                         'div',
-                                        { className: 'shuriken-rating-wrapper' },
-                                        wp.element.createElement(titleTag, { className: 'rating-title' }, selectedRating.name),
-                                        wp.element.createElement(
-                                            'div',
-                                            { className: 'stars' },
-                                            [1, 2, 3, 4, 5].map(function (i) {
-                                                return wp.element.createElement('span', {
-                                                    key: i,
-                                                    className: 'star' + (i <= average ? ' active' : '')
-                                                }, '\u2605');
-                                            })
-                                        ),
-                                        wp.element.createElement('div', { className: 'rating-stats' },
-                                            __('Average:', 'shuriken-reviews') + ' ' + average + '/5 (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
-                                        )
+                                        { className: 'stars' },
+                                        [1, 2, 3, 4, 5].map(function (i) {
+                                            return wp.element.createElement('span', {
+                                                key: i,
+                                                className: 'star' + (i <= average ? ' active' : '')
+                                            }, '\u2605');
+                                        })
+                                    ),
+                                    wp.element.createElement('div', { className: 'rating-stats' },
+                                        __('Average:', 'shuriken-reviews') + ' ' + average + '/5 (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
                                     )
                                 )
                                 : wp.element.createElement(

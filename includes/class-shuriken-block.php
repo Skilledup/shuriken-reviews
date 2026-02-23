@@ -209,13 +209,20 @@ class Shuriken_Block {
             return '';
         }
 
+        // Build CSS variables from colour attributes
+        $style_vars = array();
+        if (!empty($attributes['accentColor'])) {
+            $style_vars[] = '--shuriken-user-accent: ' . esc_attr($attributes['accentColor']);
+        }
+        if (!empty($attributes['starColor'])) {
+            $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($attributes['starColor']);
+        }
+
         // Use the shared render method from Shortcodes class
-        // This ensures all hooks/filters work for both shortcodes and blocks
         $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag);
 
         // Wrap with block wrapper attributes for proper Gutenberg integration
-        // We need to extract the inner content and re-wrap it with block attributes
-        return $this->wrap_with_block_attributes($html, $rating, $anchor_tag);
+        return $this->wrap_with_block_attributes($html, $rating, $anchor_tag, $style_vars);
     }
 
     /**
@@ -322,21 +329,34 @@ class Shuriken_Block {
      * @param string $html       The rating HTML from shared render method.
      * @param object $rating     The rating object.
      * @param string $anchor_tag Optional anchor ID.
+     * @param array  $style_vars Optional CSS variable declarations (e.g. '--shuriken-user-accent: #ff0000').
      * @return string HTML wrapped with block attributes.
      */
-    private function wrap_with_block_attributes($html, $rating, $anchor_tag = '') {
-        // The shared render method already outputs a complete div with classes
-        // We need to merge the block wrapper attributes with the existing ones
-        
+    private function wrap_with_block_attributes($html, $rating, $anchor_tag = '', $style_vars = array()) {
+        // The shared render method already outputs a complete div with classes.
+        // We need to merge the block wrapper attributes with the existing ones.
+
+        // Trim leading/trailing whitespace produced by ob_start() templates
+        // so the ^ anchor in the regex below matches the opening <div>.
+        $html = trim($html);
+
         // Extract the class from the rendered HTML
         if (preg_match('/class="([^"]*)"/', $html, $matches)) {
             $existing_classes = $matches[1];
             
-            // Get block wrapper attributes with merged classes
-            $wrapper_attributes = get_block_wrapper_attributes(array(
+            // Build wrapper attributes array
+            $wrapper_args = array(
                 'class' => $existing_classes,
                 'data-id' => esc_attr($rating->source_id),
-            ));
+            );
+
+            // Add inline style with CSS variables if any exist
+            if (!empty($style_vars)) {
+                $wrapper_args['style'] = implode('; ', $style_vars) . ';';
+            }
+
+            // Get block wrapper attributes with merged classes
+            $wrapper_attributes = get_block_wrapper_attributes($wrapper_args);
 
             // Add anchor ID if present
             if ($anchor_tag) {

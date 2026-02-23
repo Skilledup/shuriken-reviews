@@ -26,7 +26,7 @@ msgstr "نظرات وردپرس را با قابلیت های اضافه شده 
 
 #. Author of the plugin
 #: shuriken-reviews.php
-msgid "Skilledup Hub"
+msgid "Skilledup"
 msgstr "اسکیلداپ هاب"
 
 #. Author URI of the plugin
