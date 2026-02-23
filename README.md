@@ -32,7 +32,9 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 
 ### Integration Options
 
-- **FSE Block**: Full Site Editor block for seamless Gutenberg integration
+- **FSE Blocks (v2)**: Two Full Site Editor blocks — **Shuriken Rating** and **Shuriken Grouped Rating** — with style presets, colour picker, and live editor preview
+- **Block Style Presets**: Five built-in visual presets per block (Classic, Card, Minimal, Dark, Outlined / Gradient, Minimal, Boxed, Dark, Outlined) selectable from the block styles panel
+- **Custom Colours**: Per-block accent colour and star colour override via the block colour panel
 - **Shortcode**: Display ratings anywhere with `[shuriken_rating]`
 - **AJAX Submissions**: Smooth rating submissions without page reloads
 - **REST API Endpoints**: Fetches fresh rating data and nonces to bypass cache issues
@@ -141,18 +143,30 @@ The plugin adds a **Shuriken Reviews** menu to your WordPress admin with the fol
    - **Display Only**: Check to make it a calculated aggregate
 3. Click **Create Rating**
 
-### FSE Block (Recommended)
+### FSE Blocks (Recommended)
 
-The **Shuriken Rating** block can be added in the WordPress block editor or Full Site Editor:
+#### Shuriken Rating block
 
-1. Add a new block and search for "Shuriken Rating"
-2. Select an existing rating from the searchable dropdown
-3. Optionally create a new rating directly from the block
+Displays a single interactive rating for collecting user votes.
+
+1. Add a new block and search for **"Shuriken Rating"**
+2. Select an existing rating from the searchable dropdown, or create one without leaving the editor
+3. Pick a **visual preset** from the block styles panel in the sidebar (Classic, Card, Minimal, Dark, Outlined)
 4. Configure options in the block sidebar:
-   - **Select Rating**: Choose from existing ratings
-   - **Create New Rating**: Add a new rating without leaving the editor
-   - **Title Tag**: Choose the HTML heading tag (h1-h6, div, p, span)
-   - **Anchor ID**: Optional ID for linking to this rating
+   - **Settings panel**: Select rating, Title Tag (h1-h6, div, p, span), Anchor ID
+   - **Colors panel**: Override Accent Color and Star Color for the selected preset
+
+#### Shuriken Grouped Rating block
+
+Displays a parent rating together with all its child sub-ratings in a unified section.
+
+1. Add a new block and search for **"Shuriken Grouped Rating"**
+2. Select a parent rating from the searchable dropdown
+3. Pick a **visual preset** from the block styles panel (Gradient, Minimal, Boxed, Dark, Outlined)
+4. Configure options in the block sidebar:
+   - **Grouped Rating Settings panel**: Select parent rating, Title Tag, Anchor ID, and manage child sub-ratings inline
+   - **Layout panel**: Switch between Grid (cards) and List (stacked rows) layouts for child ratings
+   - **Colors panel**: Override Accent Color and Star Color
 
 ### Shortcode
 

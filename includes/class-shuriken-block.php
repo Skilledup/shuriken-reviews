@@ -131,11 +131,10 @@ class Shuriken_Block {
             SHURIKEN_REVIEWS_VERSION
         );
 
-        // Register the block with explicit render callback and attach styles
+        // Register the block with explicit render callback
+        // (style/editorStyle/editorScript are declared in block.json)
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-rating', array(
             'render_callback' => array($this, 'render_block'),
-            'style' => 'shuriken-reviews-frontend',
-            'editor_style' => array('shuriken-reviews-frontend', 'shuriken-rating-editor'),
         ));
 
         // Register the grouped rating editor script
@@ -165,10 +164,9 @@ class Shuriken_Block {
         );
 
         // Register the grouped rating block
+        // (style/editorStyle/editorScript are declared in block.json)
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
             'render_callback' => array($this, 'render_grouped_block'),
-            'style' => 'shuriken-reviews-frontend',
-            'editor_style' => array('shuriken-reviews-frontend', 'shuriken-grouped-rating-editor'),
         ));
     }
 

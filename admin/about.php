@@ -125,58 +125,59 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Vote Rate Limiting', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Protect your ratings from spam and abuse with comprehensive rate limiting:', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('FSE Block Redesign — Style Presets (v2)', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Both FSE blocks have been completely redesigned with a clean preset-based system, replacing the previous complex per-attribute settings:', 'shuriken-reviews'); ?></p>
+
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shuriken Rating Block', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Cooldown Period', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Configurable delay between votes on the same rating item (default: 60 seconds)', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('5 Visual Presets', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Classic (default — fully backward-compatible), Card, Minimal, Dark, Outlined', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Hourly Limits', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Set maximum votes per hour for members (30) and guests (10)', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Accent & Star Colour Pickers', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Two colour overrides that cascade through the selected preset via CSS custom properties', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Daily Limits', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Set maximum votes per day for members (100) and guests (30)', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Live Editor Preview', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Preset classes applied directly to the block wrapper so the FSE preview matches the frontend exactly', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Admin Bypass', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Administrators automatically bypass rate limits for testing', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Developer Hooks', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('5 dedicated hooks for customizing rate limiting behavior', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Backward Compatible', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Existing blocks without a style class automatically render as Classic — no content migration needed', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
-                
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Modern Settings UI', 'shuriken-reviews'); ?></h4>
+
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shuriken Grouped Rating Block', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Tabbed Interface', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Settings now organized in tabs (General, Rate Limiting) for better navigation', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('5 Visual Presets', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Gradient (default), Minimal, Boxed, Dark, Outlined — each with distinct parent and child card styles', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Modern Toggle Switches', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Beautiful toggle switches replace standard checkboxes', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Grid / List Layout', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Switch child ratings between a responsive card grid and a full-width stacked list from the Layout panel', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Collapsible Sections', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Advanced settings can be collapsed to reduce visual clutter', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Accent & Star Colour Pickers', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Same colour override system as the single rating block, applied to parent and child cards', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Simplified Settings Panels', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Reduced from 5 inspector panels to 3 (Settings, Layout, Colors) for a cleaner editing experience', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
-                
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Rate Limiting Hooks', 'shuriken-reviews'); ?></h4>
+
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('How Presets Work', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
-                    <li><code>shuriken_rate_limit_settings</code> - <?php esc_html_e('Modify rate limit settings dynamically', 'shuriken-reviews'); ?></li>
-                    <li><code>shuriken_bypass_rate_limit</code> - <?php esc_html_e('Control who bypasses rate limiting', 'shuriken-reviews'); ?></li>
-                    <li><code>shuriken_rate_limit_check_result</code> - <?php esc_html_e('Override final rate limit decisions', 'shuriken-reviews'); ?></li>
-                    <li><code>shuriken_before_rate_limit_check</code> - <?php esc_html_e('Action before rate limit check', 'shuriken-reviews'); ?></li>
-                    <li><code>shuriken_rate_limit_exceeded</code> - <?php esc_html_e('Action when rate limit is exceeded', 'shuriken-reviews'); ?></li>
+                    <li><?php esc_html_e('Select a preset from the block styles panel (the palette icon in the inspector)', 'shuriken-reviews'); ?></li>
+                    <li><?php esc_html_e('WordPress adds an is-style-{name} class to the block wrapper', 'shuriken-reviews'); ?></li>
+                    <li><?php esc_html_e('CSS scoped to that class handles all visual differences — no inline styles per attribute', 'shuriken-reviews'); ?></li>
+                    <li><?php esc_html_e('Addon colours flow through --shuriken-user-accent and --shuriken-user-star-color CSS variables', 'shuriken-reviews'); ?></li>
                 </ul>
-                
+
                 <p class="new-features-note">
-                    <?php esc_html_e('Rate limiting is disabled by default. Enable it in Settings → Rate Limiting tab.', 'shuriken-reviews'); ?>
+                    <?php esc_html_e('The Classic preset is the default for the single rating block and matches the previous visual style exactly — existing shortcode and block output is unchanged.', 'shuriken-reviews'); ?>
                 </p>
             </div>
         </div>

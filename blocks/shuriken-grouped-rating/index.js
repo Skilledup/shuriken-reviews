@@ -36,8 +36,8 @@
     const { __ } = wp.i18n;
     const { useSelect, useDispatch } = wp.data;
 
-    // Store name constant
-    const STORE_NAME = 'shuriken-reviews';
+    // Store name constant (match single rating block's fallback pattern)
+    const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
 
     registerBlockType('shuriken-reviews/grouped-rating', {
         edit: function (props) {
@@ -93,7 +93,8 @@
                 fetchChildRatings,
                 createRating,
                 updateRating,
-                deleteRating
+                deleteRating,
+                clearError
             } = useDispatch(STORE_NAME);
 
             const {
@@ -131,6 +132,9 @@
 
             const loading = isLoadingParents && parentRatings.length === 0;
 
+            // Combined error state (local UI errors + store-level errors)
+            const combinedError = error || storeError;
+
             // ---- Error handling ----
             function handleApiError(err, action) {
                 console.error('Shuriken Reviews API Error:', err);
@@ -159,6 +163,7 @@
 
             function retryLastAction() {
                 setError(null);
+                clearError();
                 if (lastFailedAction) {
                     lastFailedAction();
                     setLastFailedAction(null);
@@ -167,6 +172,7 @@
 
             function dismissError() {
                 setError(null);
+                clearError();
                 setLastFailedAction(null);
             }
 
@@ -726,7 +732,7 @@
                 wp.element.createElement(
                     'div',
                     blockProps,
-                    error && wp.element.createElement(
+                    combinedError && wp.element.createElement(
                         Notice,
                         {
                             status: 'error',
@@ -734,7 +740,7 @@
                             isDismissible: true,
                             actions: lastFailedAction ? [{ label: __('Retry', 'shuriken-reviews'), onClick: retryLastAction }] : []
                         },
-                        error
+                        combinedError
                     ),
                     loading
                         ? wp.element.createElement(Spinner, null)

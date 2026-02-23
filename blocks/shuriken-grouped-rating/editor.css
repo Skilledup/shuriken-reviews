@@ -27,12 +27,6 @@
     margin-top: 0;
 }
 
-/* Ensure the editor preview uses the same structure as the frontend */
-.shuriken-grouped-rating-block-editor .shuriken-rating-group {
-    display: flex;
-    flex-direction: column;
-}
-
 /* Disable pointer events on stars in editor (preview only, no voting) */
 .shuriken-grouped-rating-block-editor .stars {
     pointer-events: none;

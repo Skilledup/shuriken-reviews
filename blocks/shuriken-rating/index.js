@@ -80,8 +80,6 @@
                 parentRatings,
                 mirrorableRatings,
                 isSearching,
-                isLoadingParents,
-                isLoadingMirrorable,
                 isLoadingRating,
                 storeError
             } = useSelect(function (select) {
@@ -92,8 +90,6 @@
                     parentRatings: store.getParentRatings(),
                     mirrorableRatings: store.getMirrorableRatings(),
                     isSearching: store.isSearching(),
-                    isLoadingParents: store.isLoadingParents(),
-                    isLoadingMirrorable: store.isLoadingMirrorable(),
                     isLoadingRating: ratingId ? store.isLoadingRating(ratingId) : false,
                     storeError: store.getLastError(),
                 };

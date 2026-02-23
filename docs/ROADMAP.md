@@ -1,6 +1,6 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.10.0**
+Current Version: **1.10.3**
 
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
@@ -21,6 +21,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Data retrieval efficiency optimizations (shared store, AJAX search, batch queries)
 - Voter Activity page (member & guest tracking, stats, charts, CSV export)
 - Vote rate limiting with modern settings UI
+- FSE block v2 — style presets for both single and grouped rating blocks
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -38,7 +39,35 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.10.0 (Current)
+## 1.10.3 (Current)
+
+### FSE Block Redesign — Style Presets (v2)
+
+Both Gutenberg blocks redesigned with a preset-based visual system, replacing the previous large set of granular style attributes.
+
+**Changes:**
+- **Style presets per block** — WordPress Block Styles API (`styles` array in block.json) drives visual variants
+- **Single Rating Block** (5 presets): Classic (default, backward-compatible), Card, Minimal, Dark, Outlined
+- **Grouped Rating Block** (5 presets): Gradient (default), Minimal, Boxed, Dark, Outlined
+- **CSS custom properties**: Two user-overridable variables (`--shuriken-user-accent`, `--shuriken-user-star-color`) fed via colour picker attributes (`accentColor`, `starColor`)
+- **Simplified inspector panels**: Single rating → 2 panels (Settings, Colors); Grouped → 3 panels (Settings, Layout, Colors)
+- **Live editor preview fix**: Block wrapper and frontend output share the same element, ensuring `is-style-*` classes target the correct DOM node in both contexts
+- **PHP trim fix**: `wrap_with_block_attributes()` now `trim()`s `ob_start()` output before regex matching
+- **Code cleanup**: Removed unused store selectors, unified `STORE_NAME` fallback pattern, surfaced `storeError` in grouped block, removed dead CSS rule in grouped editor.css, removed duplicate `style`/`editor_style` args from `register_block_type()` PHP calls
+
+**Files Changed:**
+- `blocks/shuriken-rating/block.json` — v2.0.0, 5 style presets, 5 attributes (ratingId, titleTag, anchorTag, accentColor, starColor)
+- `blocks/shuriken-rating/index.js` — Rewritten editor UI with preset-aware blockProps, PanelColorSettings
+- `blocks/shuriken-rating/editor.css` — Minimal editor-only overrides (transition, pointer-events)
+- `blocks/shuriken-grouped-rating/block.json` — v2.0.0, 5 style presets, 6 attributes (adds childLayout)
+- `blocks/shuriken-grouped-rating/index.js` — Rewritten editor UI with merged blockProps, Layout panel
+- `blocks/shuriken-grouped-rating/editor.css` — Removed dead descendant selector
+- `assets/css/shuriken-reviews.css` — Added full preset CSS for both blocks (~600 new lines)
+- `includes/class-shuriken-block.php` — CSS variable injection, `trim()` fix, simplified `register_block_type()` calls
+
+---
+
+## 1.10.0 (Released)
 
 ### Vote Rate Limiting
 
