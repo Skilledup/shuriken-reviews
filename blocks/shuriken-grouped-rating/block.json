@@ -2,7 +2,7 @@
     "$schema": "https://schemas.wp.org/trunk/block.json",
     "apiVersion": 3,
     "name": "shuriken-reviews/grouped-rating",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "title": "Shuriken Grouped Rating",
     "category": "widgets",
     "icon": "networking",
@@ -11,30 +11,34 @@
     "supports": {
         "html": false,
         "align": ["wide", "full"],
-        "color": {
-            "background": true,
-            "text": true,
-            "link": false
-        },
-        "typography": {
-            "fontSize": true,
-            "lineHeight": true,
-            "fontFamily": true,
-            "fontWeight": true,
-            "textTransform": true,
-            "letterSpacing": true
-        },
         "spacing": {
             "padding": true,
             "margin": true
-        },
-        "__experimentalBorder": {
-            "color": true,
-            "radius": true,
-            "style": true,
-            "width": true
         }
     },
+    "styles": [
+        {
+            "name": "gradient",
+            "label": "Gradient",
+            "isDefault": true
+        },
+        {
+            "name": "minimal",
+            "label": "Minimal"
+        },
+        {
+            "name": "boxed",
+            "label": "Boxed"
+        },
+        {
+            "name": "dark",
+            "label": "Dark"
+        },
+        {
+            "name": "outlined",
+            "label": "Outlined"
+        }
+    ],
     "textdomain": "shuriken-reviews",
     "attributes": {
         "ratingId": {
@@ -49,101 +53,17 @@
             "type": "string",
             "default": ""
         },
-        "titleColor": {
+        "accentColor": {
             "type": "string",
             "default": ""
         },
-        "textColor": {
+        "starColor": {
             "type": "string",
             "default": ""
         },
-        "parentTitleColor": {
+        "childLayout": {
             "type": "string",
-            "default": ""
-        },
-        "childTitleColor": {
-            "type": "string",
-            "default": ""
-        },
-        "parentBackgroundColor": {
-            "type": "string",
-            "default": ""
-        },
-        "childBackgroundColor": {
-            "type": "string",
-            "default": ""
-        },
-        "starActiveColor": {
-            "type": "string",
-            "default": ""
-        },
-        "starInactiveColor": {
-            "type": "string",
-            "default": ""
-        },
-        "parentBorderColor": {
-            "type": "string",
-            "default": ""
-        },
-        "parentBorderWidth": {
-            "type": "string",
-            "default": ""
-        },
-        "parentBorderStyle": {
-            "type": "string",
-            "default": "solid"
-        },
-        "parentBorderRadius": {
-            "type": "string",
-            "default": ""
-        },
-        "childBorderColor": {
-            "type": "string",
-            "default": ""
-        },
-        "childBorderWidth": {
-            "type": "string",
-            "default": ""
-        },
-        "childBorderStyle": {
-            "type": "string",
-            "default": "solid"
-        },
-        "childBorderRadius": {
-            "type": "string",
-            "default": ""
-        },
-        "parentTitleFontSize": {
-            "type": "string",
-            "default": ""
-        },
-        "parentTitleFontWeight": {
-            "type": "string",
-            "default": ""
-        },
-        "childTitleFontSize": {
-            "type": "string",
-            "default": ""
-        },
-        "childTitleFontWeight": {
-            "type": "string",
-            "default": ""
-        },
-        "textFontSize": {
-            "type": "string",
-            "default": ""
-        },
-        "parentPadding": {
-            "type": "string",
-            "default": ""
-        },
-        "childPadding": {
-            "type": "string",
-            "default": ""
-        },
-        "gapBetweenRatings": {
-            "type": "string",
-            "default": ""
+            "default": "grid"
         }
     },
     "editorScript": "shuriken-grouped-rating-editor",

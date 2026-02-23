@@ -127,23 +127,17 @@
     }
 }
 
-/* Grouped Rating Styles */
+/* =====================================================
+   Grouped Rating Styles — Preset System
+   ===================================================== */
+
+/* Base layout for all presets */
 .shuriken-rating-group {
     margin: 30px 0;
     padding: 0;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-}
-
-.shuriken-rating-group .parent-rating {
-    padding: 24px 28px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-    margin-bottom: 24px;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--shuriken-gap, 24px);
 }
 
 .shuriken-rating-group .parent-rating .shuriken-rating-wrapper {
@@ -152,40 +146,99 @@
     gap: 12px;
 }
 
-.shuriken-rating-group .parent-rating .rating-title {
-    font-size: 1.75em;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 4px !important;
+.shuriken-child-ratings .child-rating .shuriken-rating-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
 }
 
-.shuriken-rating-group .parent-rating .stars {
-    font-size: 36px;
-}
-
-.shuriken-rating-group .parent-rating .stars .star {
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.shuriken-rating-group .parent-rating .stars .star.active {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-
-.shuriken-rating-group .parent-rating .rating-stats {
-    font-size: 15px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.95);
-}
-
-.shuriken-child-ratings {
+/* Child ratings grid layout (default) */
+.shuriken-rating-group .shuriken-child-ratings {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 14px;
     margin-top: 0;
 }
 
-.shuriken-child-ratings .child-rating {
+/* Child ratings list layout */
+.shuriken-rating-group.is-layout-list .shuriken-child-ratings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.shuriken-rating-group.is-layout-list .shuriken-child-ratings .child-rating .shuriken-rating-wrapper {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Display only indicator base */
+.shuriken-rating-group .parent-rating.display-only .display-only-notice {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+}
+
+/* Accent color variable support */
+.shuriken-rating-group {
+    --shuriken-accent: var(--shuriken-user-accent, #667eea);
+    --shuriken-star-color: var(--shuriken-user-star-color, #ffd700);
+}
+
+/* =====================================================
+   Preset: Gradient (default / is-style-gradient)
+   Purple gradient parent, card children with hover fx
+   ===================================================== */
+.shuriken-rating-group.is-style-gradient .parent-rating,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating {
+    padding: 24px 28px;
+    background: linear-gradient(135deg, var(--shuriken-accent) 0%, color-mix(in srgb, var(--shuriken-accent), #764ba2 50%) 100%);
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .rating-title,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .rating-title {
+    font-size: 1.75em;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .stars,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .stars {
+    font-size: 36px;
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .stars .star,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .stars .star {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .stars .star.active,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .rating-stats,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .rating-stats {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.shuriken-rating-group.is-style-gradient .parent-rating .display-only-notice,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .display-only-notice {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.shuriken-rating-group.is-style-gradient .child-rating,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating {
     padding: 18px;
     background: #ffffff;
     border-radius: 8px;
@@ -195,68 +248,342 @@
     position: relative;
 }
 
-.shuriken-child-ratings .child-rating::before {
+.shuriken-rating-group.is-style-gradient .child-rating::before,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, var(--shuriken-accent) 0%, color-mix(in srgb, var(--shuriken-accent), #764ba2 50%) 100%);
     border-radius: 8px 8px 0 0;
     opacity: 0;
     transition: opacity 0.25s ease;
 }
 
-.shuriken-child-ratings .child-rating:hover {
-    border-color: #667eea;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+.shuriken-rating-group.is-style-gradient .child-rating:hover,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating:hover {
+    border-color: var(--shuriken-accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     transform: translateY(-3px);
 }
 
-.shuriken-child-ratings .child-rating:hover::before {
+.shuriken-rating-group.is-style-gradient .child-rating:hover::before,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating:hover::before {
     opacity: 1;
 }
 
-.shuriken-child-ratings .child-rating .shuriken-rating-wrapper {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-.shuriken-child-ratings .child-rating .rating-title {
+.shuriken-rating-group.is-style-gradient .child-rating .rating-title,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating .rating-title {
     font-size: 1.05em;
     font-weight: 600;
     color: #1a202c;
-    margin-bottom: 0 !important;
-    line-height: 1.3;
 }
 
-.shuriken-child-ratings .child-rating .stars {
+.shuriken-rating-group.is-style-gradient .child-rating .stars,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating .stars {
     font-size: 22px;
-    margin: 0;
 }
 
-.shuriken-child-ratings .child-rating .rating-stats {
+.shuriken-rating-group.is-style-gradient .child-rating .stars .star.active,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-gradient .child-rating .rating-stats,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating .rating-stats {
     font-size: 13px;
     font-weight: 500;
     color: #718096;
-    margin: 0;
 }
 
-/* Display only indicator for parent ratings */
-.shuriken-rating-group .parent-rating.display-only::before {
-    content: "Overall Rating";
-    display: block;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.8);
+/* =====================================================
+   Preset: Minimal
+   No backgrounds, subtle bottom borders, clean & light
+   ===================================================== */
+.shuriken-rating-group.is-style-minimal .parent-rating {
+    padding: 16px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--shuriken-accent);
+    border-radius: 0;
+    text-align: center;
+}
+
+.shuriken-rating-group.is-style-minimal .parent-rating .rating-title {
+    font-size: 1.5em;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 8px;
+    color: #1a202c;
 }
 
-/* Mobile responsive for grouped ratings */
+.shuriken-rating-group.is-style-minimal .parent-rating .stars {
+    font-size: 32px;
+}
+
+.shuriken-rating-group.is-style-minimal .parent-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-minimal .parent-rating .rating-stats {
+    font-size: 14px;
+    color: #718096;
+}
+
+.shuriken-rating-group.is-style-minimal .parent-rating .display-only-notice {
+    color: #a0aec0;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating {
+    padding: 12px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 0;
+    transition: border-color 0.2s ease;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating:hover {
+    border-bottom-color: var(--shuriken-accent);
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .rating-title {
+    font-size: 1em;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .stars {
+    font-size: 20px;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .rating-stats {
+    font-size: 13px;
+    color: #a0aec0;
+}
+
+/* =====================================================
+   Preset: Boxed
+   Flat solid-color card backgrounds, no gradients
+   ===================================================== */
+.shuriken-rating-group.is-style-boxed .parent-rating {
+    padding: 24px;
+    background: var(--shuriken-accent);
+    border-radius: 8px;
+    border: none;
+    text-align: center;
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .rating-title {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .stars {
+    font-size: 32px;
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .stars .star {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .rating-stats {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.shuriken-rating-group.is-style-boxed .parent-rating .display-only-notice {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating {
+    padding: 16px 20px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating:hover {
+    border-color: var(--shuriken-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating .rating-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating .stars {
+    font-size: 22px;
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-boxed .child-rating .rating-stats {
+    font-size: 13px;
+    color: #718096;
+}
+
+/* =====================================================
+   Preset: Dark
+   Dark background, light text, gold stars
+   ===================================================== */
+.shuriken-rating-group.is-style-dark .parent-rating {
+    padding: 24px 28px;
+    background: #1a202c;
+    border-radius: 12px;
+    border: 1px solid #2d3748;
+    text-align: center;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .rating-title {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: #f7fafc;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .stars {
+    font-size: 34px;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .stars .star {
+    color: #4a5568;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .rating-stats {
+    font-size: 14px;
+    font-weight: 500;
+    color: #a0aec0;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .display-only-notice {
+    color: #718096;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating {
+    padding: 16px 20px;
+    background: #2d3748;
+    border-radius: 8px;
+    border: 1px solid #4a5568;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating:hover {
+    border-color: var(--shuriken-accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .rating-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .stars {
+    font-size: 22px;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .stars .star {
+    color: #4a5568;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .rating-stats {
+    font-size: 13px;
+    color: #a0aec0;
+}
+
+/* =====================================================
+   Preset: Outlined
+   Border-only containers, transparent backgrounds
+   ===================================================== */
+.shuriken-rating-group.is-style-outlined .parent-rating {
+    padding: 20px 24px;
+    background: transparent;
+    border-radius: 12px;
+    border: 2px solid var(--shuriken-accent);
+    text-align: center;
+}
+
+.shuriken-rating-group.is-style-outlined .parent-rating .rating-title {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--shuriken-accent);
+}
+
+.shuriken-rating-group.is-style-outlined .parent-rating .stars {
+    font-size: 32px;
+}
+
+.shuriken-rating-group.is-style-outlined .parent-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-outlined .parent-rating .rating-stats {
+    font-size: 14px;
+    color: #718096;
+}
+
+.shuriken-rating-group.is-style-outlined .parent-rating .display-only-notice {
+    color: #a0aec0;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating {
+    padding: 14px 18px;
+    background: transparent;
+    border-radius: 8px;
+    border: 1px solid #cbd5e0;
+    transition: border-color 0.2s ease;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating:hover {
+    border-color: var(--shuriken-accent);
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .rating-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .stars {
+    font-size: 22px;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .stars .star.active {
+    color: var(--shuriken-star-color);
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .rating-stats {
+    font-size: 13px;
+    color: #718096;
+}
+
+/* =====================================================
+   Grouped Rating — Responsive
+   ===================================================== */
 @media (max-width: 768px) {
     .shuriken-rating-group .parent-rating {
         padding: 20px;
@@ -270,95 +597,24 @@
         font-size: 30px;
     }
 
-    .shuriken-child-ratings {
+    .shuriken-rating-group .shuriken-child-ratings {
         grid-template-columns: 1fr;
         gap: 12px;
     }
 
-    .shuriken-child-ratings .child-rating {
+    .shuriken-rating-group .shuriken-child-ratings .child-rating {
         padding: 16px;
     }
 }
 
-/* Tablet responsive */
 @media (min-width: 769px) and (max-width: 1024px) {
-    .shuriken-child-ratings {
+    .shuriken-rating-group .shuriken-child-ratings {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* Large screens - 3 columns max */
 @media (min-width: 1200px) {
-    .shuriken-child-ratings {
+    .shuriken-rating-group .shuriken-child-ratings {
         grid-template-columns: repeat(3, 1fr);
     }
-}
-/* Custom Style Settings Support - CSS Variables */
-/* Apply CSS variable overrides for custom block styling */
-
-/* Gap between ratings */
-.shuriken-rating-group {
-    gap: var(--shuriken-gap, 24px);
-}
-
-.shuriken-rating-group .parent-rating .shuriken-rating-wrapper {
-    gap: var(--shuriken-gap, 12px);
-}
-
-/* Parent Rating Styles */
-.shuriken-rating-group .parent-rating {
-    background-color: var(--shuriken-parent-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-    border-color: var(--shuriken-parent-border-color, transparent);
-    border-width: var(--shuriken-parent-border-width, 0);
-    border-style: var(--shuriken-parent-border-style, solid);
-    border-radius: var(--shuriken-parent-border-radius, 12px);
-    padding: var(--shuriken-parent-padding, 24px 28px);
-}
-
-.shuriken-rating-group .parent-rating .rating-title {
-    color: var(--shuriken-parent-title-color, #ffffff);
-    font-size: var(--shuriken-parent-title-font-size, 1.75em);
-    font-weight: var(--shuriken-parent-title-font-weight, 700);
-}
-
-.shuriken-rating-group .parent-rating .rating-stats {
-    color: var(--shuriken-text-color, rgba(255, 255, 255, 0.95));
-    font-size: var(--shuriken-text-font-size, 15px);
-}
-
-.shuriken-rating-group .parent-rating .stars .star {
-    color: var(--shuriken-star-inactive, rgba(255, 255, 255, 0.3));
-}
-
-.shuriken-rating-group .parent-rating .stars .star.active {
-    color: var(--shuriken-star-active, #ffd700);
-}
-
-/* Child Rating Styles */
-.shuriken-child-ratings .child-rating {
-    background-color: var(--shuriken-child-bg, #ffffff);
-    border-color: var(--shuriken-child-border-color, #e2e8f0);
-    border-width: var(--shuriken-child-border-width, 2px);
-    border-style: var(--shuriken-child-border-style, solid);
-    border-radius: var(--shuriken-child-border-radius, 8px);
-    padding: var(--shuriken-child-padding, 18px);
-}
-
-.shuriken-child-ratings .child-rating .rating-title {
-    color: var(--shuriken-child-title-color, #1a202c);
-    font-size: var(--shuriken-child-title-font-size, 1.05em);
-    font-weight: var(--shuriken-child-title-font-weight, 600);
-}
-
-.shuriken-child-ratings .child-rating .rating-stats {
-    color: var(--shuriken-text-color, #718096);
-    font-size: var(--shuriken-text-font-size, 13px);
-}
-
-.shuriken-child-ratings .child-rating .stars .star {
-    color: var(--shuriken-star-inactive, #ddd);
-}
-
-.shuriken-child-ratings .child-rating .stars .star.active {
-    color: var(--shuriken-star-active, #ffd700);
 }

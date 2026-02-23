@@ -1,10 +1,39 @@
+/**
+ * Shuriken Reviews — Grouped Rating Block (v2)
+ *
+ * Re-designed with style presets and simplified settings.
+ * The heavy visual design is handled entirely by CSS presets
+ * (is-style-gradient, is-style-minimal, etc.).
+ *
+ * Settings:
+ *  - ratingId      : which parent rating to show
+ *  - titleTag      : heading tag for the parent title
+ *  - anchorTag     : optional anchor ID
+ *  - accentColor   : single accent color driving the preset's colour scheme
+ *  - starColor     : active star colour
+ *  - childLayout   : "grid" (default) or "list"
+ *
+ * @package Shuriken_Reviews
+ * @since 2.0.0
+ */
+
 (function (wp) {
     const { registerBlockType } = wp.blocks;
     const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
-    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice, RangeControl, __experimentalUnitControl: UnitControl, __experimentalDivider: Divider } = wp.components;
+    const {
+        PanelBody,
+        TextControl,
+        Button,
+        Spinner,
+        Modal,
+        ComboboxControl,
+        SelectControl,
+        CheckboxControl,
+        Notice,
+        __experimentalDivider: Divider
+    } = wp.components;
     const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
     const { __ } = wp.i18n;
-    const apiFetch = wp.apiFetch;
     const { useSelect, useDispatch } = wp.data;
 
     // Store name constant
@@ -13,37 +42,16 @@
     registerBlockType('shuriken-reviews/grouped-rating', {
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { 
-                ratingId, 
-                titleTag, 
+            const {
+                ratingId,
+                titleTag,
                 anchorTag,
-                titleColor,
-                textColor,
-                parentTitleColor,
-                childTitleColor,
-                parentBackgroundColor,
-                childBackgroundColor,
-                starActiveColor,
-                starInactiveColor,
-                parentBorderColor,
-                parentBorderWidth,
-                parentBorderStyle,
-                parentBorderRadius,
-                childBorderColor,
-                childBorderWidth,
-                childBorderStyle,
-                childBorderRadius,
-                parentTitleFontSize,
-                parentTitleFontWeight,
-                childTitleFontSize,
-                childTitleFontWeight,
-                textFontSize,
-                parentPadding,
-                childPadding,
-                gapBetweenRatings
+                accentColor,
+                starColor,
+                childLayout
             } = attributes;
-            
-            // Local UI state (not shared)
+
+            // ---- Local UI state ----
             const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
             const [isEditModalOpen, setIsEditModalOpen] = useState(false);
             const [isManageChildrenModalOpen, setIsManageChildrenModalOpen] = useState(false);
@@ -61,17 +69,24 @@
             const [savingChildren, setSavingChildren] = useState(false);
             const [error, setError] = useState(null);
             const [lastFailedAction, setLastFailedAction] = useState(null);
-            
+
             // Search state for AJAX dropdown
             const [searchTerm, setSearchTerm] = useState('');
             const searchTimeoutRef = useRef(null);
 
-            const blockProps = useBlockProps({
-                className: 'shuriken-grouped-rating-block-editor'
-            });
+            // ---- Build CSS variables for accent/star colour ----
+            var cssVars = {};
+            if (accentColor) {
+                cssVars['--shuriken-user-accent'] = accentColor;
+            }
+            if (starColor) {
+                cssVars['--shuriken-user-star-color'] = starColor;
+            }
 
-            // Get shared store dispatch
-            const { 
+            var layoutClass = childLayout === 'list' ? ' is-layout-list' : '';
+
+            // ---- Shared store helpers (must be declared before blockProps) ----
+            const {
                 fetchRating,
                 searchRatings,
                 fetchParentRatings,
@@ -81,8 +96,7 @@
                 deleteRating
             } = useDispatch(STORE_NAME);
 
-            // Get data from shared store
-            const { 
+            const {
                 selectedRating,
                 allRatingsById,
                 parentRatings,
@@ -103,16 +117,24 @@
                 };
             }, [ratingId]);
 
-            // Determine loading state from store
+            // Add shuriken-rating-group to blockProps so that is-style-* and
+            // shuriken-rating-group end up on the SAME element — matching
+            // the frontend HTML structure and making preset CSS work.
+            var previewClass = (ratingId && selectedRating)
+                ? ' shuriken-rating-group'
+                : '';
+
+            const blockProps = useBlockProps({
+                className: 'shuriken-grouped-rating-block-editor' + previewClass + layoutClass,
+                style: cssVars
+            });
+
             const loading = isLoadingParents && parentRatings.length === 0;
 
-            // Error handling helper
+            // ---- Error handling ----
             function handleApiError(err, action) {
                 console.error('Shuriken Reviews API Error:', err);
-                
                 var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
-                
-                // Parse REST API error response
                 if (err.message) {
                     errorMessage = err.message;
                 } else if (err.data && err.data.message) {
@@ -120,8 +142,6 @@
                 } else if (typeof err === 'string') {
                     errorMessage = err;
                 }
-                
-                // Map common error codes to user-friendly messages
                 if (err.code === 'rest_forbidden' || err.code === 'rest_cookie_invalid_nonce') {
                     errorMessage = __('Permission denied. Please refresh the page and try again.', 'shuriken-reviews');
                 } else if (err.code === 'rest_no_route') {
@@ -133,7 +153,6 @@
                 } else if (err.status === 500 || err.code === 'internal_server_error') {
                     errorMessage = __('Server error. Please try again later.', 'shuriken-reviews');
                 }
-                
                 setError(errorMessage);
                 setLastFailedAction(action);
             }
@@ -151,16 +170,12 @@
                 setLastFailedAction(null);
             }
 
-            // Handle search input change with debouncing
+            // ---- Search ----
             const handleSearchChange = useCallback(function (value) {
                 setSearchTerm(value);
-                
-                // Clear previous timeout
                 if (searchTimeoutRef.current) {
                     clearTimeout(searchTimeoutRef.current);
                 }
-                
-                // Debounce search by 300ms
                 searchTimeoutRef.current = setTimeout(function () {
                     if (value && value.trim().length > 0) {
                         searchRatings(value.trim(), 'parents', 20);
@@ -168,18 +183,13 @@
                 }, 300);
             }, [searchRatings]);
 
-            // Fetch parent ratings and selected rating on mount
+            // ---- Data fetching ----
             useEffect(function () {
-                // Fetch parent ratings for the dropdown
                 fetchParentRatings();
-                
-                // If we have a selected rating, fetch it and its children
                 if (ratingId) {
                     fetchRating(ratingId);
                     fetchChildRatings(ratingId);
                 }
-                
-                // Cleanup timeout on unmount
                 return function () {
                     if (searchTimeoutRef.current) {
                         clearTimeout(searchTimeoutRef.current);
@@ -187,19 +197,15 @@
                 };
             }, []);
 
-            // Fetch child ratings when ratingId changes
             useEffect(function () {
                 if (ratingId) {
                     fetchChildRatings(ratingId);
                 }
             }, [ratingId]);
 
-            // Find child ratings from the store
+            // ---- Child ratings from store ----
             const childRatings = useMemo(function () {
-                if (!ratingId) {
-                    return [];
-                }
-                // Get children from the store's allRatingsById
+                if (!ratingId) return [];
                 var children = [];
                 var ratingsObj = allRatingsById || {};
                 Object.values(ratingsObj).forEach(function (r) {
@@ -210,22 +216,14 @@
                 return children;
             }, [ratingId, allRatingsById]);
 
+            // ---- CRUD helpers (unchanged logic) ----
             function createNewParentRating() {
-                if (!newParentName.trim() || creating) {
-                    return;
-                }
-
+                if (!newParentName.trim() || creating) return;
                 setCreating(true);
-                
-                createRating({ 
-                    name: newParentName,
-                    display_only: newParentDisplayOnly
-                })
+                createRating({ name: newParentName, display_only: newParentDisplayOnly })
                     .then(function (data) {
                         setAttributes({ ratingId: parseInt(data.id, 10) });
-                        // Refresh parent ratings to include new one
                         fetchParentRatings();
-                        // Reset form
                         setNewParentName('');
                         setNewParentDisplayOnly(true);
                         setIsCreateModalOpen(false);
@@ -239,29 +237,18 @@
             }
 
             function openEditParentModal() {
-                if (!selectedRating) {
-                    return;
-                }
+                if (!selectedRating) return;
                 setEditParentName(selectedRating.name || '');
-                var displayOnlyValue = selectedRating.display_only;
-                var isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
-                setEditParentDisplayOnly(isDisplayOnly);
+                var dv = selectedRating.display_only;
+                setEditParentDisplayOnly(dv === true || dv === 'true' || parseInt(dv, 10) === 1);
                 setIsEditModalOpen(true);
             }
 
             function updateParentRating() {
-                if (!editParentName.trim() || updating || !selectedRating) {
-                    return;
-                }
-
+                if (!editParentName.trim() || updating || !selectedRating) return;
                 setUpdating(true);
-                
-                updateRating(selectedRating.id, {
-                    name: editParentName,
-                    display_only: editParentDisplayOnly
-                })
-                    .then(function (data) {
-                        // Refresh parent ratings to reflect update
+                updateRating(selectedRating.id, { name: editParentName, display_only: editParentDisplayOnly })
+                    .then(function () {
                         fetchParentRatings();
                         setIsEditModalOpen(false);
                         setUpdating(false);
@@ -274,21 +261,15 @@
             }
 
             function openManageChildrenModal() {
-                if (!selectedRating) {
-                    return;
-                }
+                if (!selectedRating) return;
                 setChildrenToManage(childRatings.slice());
                 setChildrenLocalEdits({});
                 setIsManageChildrenModalOpen(true);
             }
 
             function addNewChild() {
-                if (!newChildName.trim() || managingChildren || !selectedRating) {
-                    return;
-                }
-
+                if (!newChildName.trim() || managingChildren || !selectedRating) return;
                 setManagingChildren(true);
-                
                 createRating({
                     name: newChildName,
                     parent_id: parseInt(selectedRating.id, 10),
@@ -296,9 +277,7 @@
                     display_only: false
                 })
                     .then(function (data) {
-                        setChildrenToManage(function (prev) {
-                            return [data].concat(prev);
-                        });
+                        setChildrenToManage(function (prev) { return [data].concat(prev); });
                         setNewChildName('');
                         setNewChildEffectType('positive');
                         setManagingChildren(false);
@@ -310,53 +289,35 @@
                     });
             }
 
-            // Update child in local state (not saved to server yet)
             function updateChildLocally(childId, updates) {
                 setChildrenLocalEdits(function (prev) {
                     var existing = prev[childId] || {};
                     var merged = {};
-                    for (var key in existing) {
-                        merged[key] = existing[key];
-                    }
-                    for (var key in updates) {
-                        merged[key] = updates[key];
-                    }
-                    var newEdits = {};
-                    for (var key in prev) {
-                        newEdits[key] = prev[key];
-                    }
-                    newEdits[childId] = merged;
-                    return newEdits;
+                    for (var k in existing) merged[k] = existing[k];
+                    for (var k in updates) merged[k] = updates[k];
+                    var next = {};
+                    for (var k in prev) next[k] = prev[k];
+                    next[childId] = merged;
+                    return next;
                 });
             }
 
-            // Apply all pending child edits to server
             function applyChildrenEdits() {
                 var editIds = Object.keys(childrenLocalEdits);
-                if (editIds.length === 0) {
-                    return;
-                }
-
+                if (editIds.length === 0) return;
                 setSavingChildren(true);
                 setError(null);
-
-                // Update all edited children in sequence using store
-                var updatePromises = editIds.map(function (childId) {
-                    return updateRating(childId, childrenLocalEdits[childId]);
-                });
-
-                Promise.all(updatePromises)
+                Promise.all(editIds.map(function (id) {
+                    return updateRating(id, childrenLocalEdits[id]);
+                }))
                     .then(function (results) {
-                        // Update children list with fresh data
                         setChildrenToManage(function (prev) {
                             var updated = prev.slice();
                             results.forEach(function (data) {
                                 var idx = updated.findIndex(function (r) {
                                     return parseInt(r.id, 10) === parseInt(data.id, 10);
                                 });
-                                if (idx !== -1) {
-                                    updated[idx] = data;
-                                }
+                                if (idx !== -1) updated[idx] = data;
                             });
                             return updated;
                         });
@@ -371,80 +332,42 @@
             }
 
             function deleteChild(childId) {
-                if (!confirm(__('Are you sure you want to delete this sub-rating?', 'shuriken-reviews'))) {
-                    return;
-                }
-
-                var retryAction = function() { deleteChild(childId); };
-
+                if (!confirm(__('Are you sure you want to delete this sub-rating?', 'shuriken-reviews'))) return;
+                var retry = function () { deleteChild(childId); };
                 deleteRating(childId)
                     .then(function () {
                         setChildrenToManage(function (prev) {
-                            return prev.filter(function (r) {
-                                return parseInt(r.id, 10) !== parseInt(childId, 10);
-                            });
+                            return prev.filter(function (r) { return parseInt(r.id, 10) !== parseInt(childId, 10); });
                         });
                         setError(null);
                     })
-                    .catch(function (err) {
-                        handleApiError(err, retryAction);
-                    });
+                    .catch(function (err) { handleApiError(err, retry); });
             }
 
-            // Handle Enter key in the modals
-            function handleCreateKeyDown(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    createNewParentRating();
-                }
-            }
+            // Keyboard handlers
+            function handleCreateKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); createNewParentRating(); } }
+            function handleEditKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); updateParentRating(); } }
+            function handleChildKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); addNewChild(); } }
 
-            function handleEditKeyDown(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    updateParentRating();
-                }
-            }
-
-            function handleChildKeyDown(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    addNewChild();
-                }
-            }
-
-            // Build parent rating options for ComboboxControl (AJAX search based)
+            // ---- Dropdown options ----
             var ratingOptions = useMemo(function () {
                 var options = [];
-                var seenIds = {};
-                
-                // Always include selected rating first
+                var seen = {};
                 if (selectedRating && selectedRating.id) {
-                    seenIds[selectedRating.id] = true;
-                    options.push({
-                        label: selectedRating.name + ' (ID: ' + selectedRating.id + ')',
-                        value: String(selectedRating.id)
-                    });
+                    seen[selectedRating.id] = true;
+                    options.push({ label: selectedRating.name + ' (ID: ' + selectedRating.id + ')', value: String(selectedRating.id) });
                 }
-                
-                // Only show search results when user has typed something
                 if (searchTerm && searchTerm.trim().length > 0) {
-                    var results = Array.isArray(searchResults) ? searchResults : [];
-                    results.forEach(function (rating) {
-                        if (rating && rating.id && !seenIds[rating.id]) {
-                            seenIds[rating.id] = true;
-                            options.push({
-                                label: rating.name + ' (ID: ' + rating.id + ')',
-                                value: String(rating.id)
-                            });
+                    (Array.isArray(searchResults) ? searchResults : []).forEach(function (r) {
+                        if (r && r.id && !seen[r.id]) {
+                            seen[r.id] = true;
+                            options.push({ label: r.name + ' (ID: ' + r.id + ')', value: String(r.id) });
                         }
                     });
                 }
-                
                 return options;
             }, [searchResults, selectedRating, searchTerm]);
 
-            // Title tag options
             var titleTagOptions = [
                 { label: 'H1', value: 'h1' },
                 { label: 'H2', value: 'h2' },
@@ -457,21 +380,25 @@
                 { label: 'SPAN', value: 'span' }
             ];
 
-            // Calculate average for preview
             function calculateAverage(rating) {
-                var totalVotes = parseInt(rating.total_votes, 10) || 0;
-                if (totalVotes > 0) {
-                    return Math.round((parseInt(rating.total_rating, 10) / totalVotes) * 10) / 10;
-                }
+                var tv = parseInt(rating.total_votes, 10) || 0;
+                if (tv > 0) return Math.round((parseInt(rating.total_rating, 10) / tv) * 10) / 10;
                 return 0;
             }
 
+            // ===================================================================
+            // Render
+            // ===================================================================
             return wp.element.createElement(
                 wp.element.Fragment,
                 null,
+
+                // --- Inspector Controls ---
                 wp.element.createElement(
                     InspectorControls,
                     null,
+
+                    // Panel 1 — Rating Selection
                     wp.element.createElement(
                         PanelBody,
                         { title: __('Grouped Rating Settings', 'shuriken-reviews'), initialOpen: true },
@@ -486,13 +413,12 @@
                                     options: ratingOptions,
                                     onChange: function (value) {
                                         setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
-                                        // Fetch the selected rating if not already in store
-                                        if (value) {
-                                            fetchRating(parseInt(value, 10));
-                                        }
+                                        if (value) fetchRating(parseInt(value, 10));
                                     },
                                     onFilterValueChange: handleSearchChange,
-                                    placeholder: isSearching ? __('Searching...', 'shuriken-reviews') : __('Search parent ratings...', 'shuriken-reviews')
+                                    placeholder: isSearching
+                                        ? __('Searching...', 'shuriken-reviews')
+                                        : __('Search parent ratings...', 'shuriken-reviews')
                                 }),
                                 wp.element.createElement(
                                     'div',
@@ -515,279 +441,61 @@
                             label: __('Title Tag', 'shuriken-reviews'),
                             value: titleTag,
                             options: titleTagOptions,
-                            onChange: function (value) {
-                                setAttributes({ titleTag: value || 'h2' });
-                            },
+                            onChange: function (value) { setAttributes({ titleTag: value || 'h2' }); },
                             onFilterValueChange: function () {}
                         }),
                         wp.element.createElement(TextControl, {
                             label: __('Anchor ID', 'shuriken-reviews'),
                             value: anchorTag,
-                            onChange: function (value) {
-                                setAttributes({ anchorTag: value });
-                            },
+                            onChange: function (value) { setAttributes({ anchorTag: value }); },
                             help: __('Optional anchor ID for linking to this rating group.', 'shuriken-reviews')
                         })
                     ),
+
+                    // Panel 2 — Layout
+                    wp.element.createElement(
+                        PanelBody,
+                        { title: __('Layout', 'shuriken-reviews'), initialOpen: false },
+                        wp.element.createElement(SelectControl, {
+                            label: __('Child Ratings Layout', 'shuriken-reviews'),
+                            value: childLayout || 'grid',
+                            options: [
+                                { label: __('Grid (cards)', 'shuriken-reviews'), value: 'grid' },
+                                { label: __('List (stacked rows)', 'shuriken-reviews'), value: 'list' }
+                            ],
+                            onChange: function (value) { setAttributes({ childLayout: value }); },
+                            help: __('Grid shows children as cards in columns. List shows them as full-width rows.', 'shuriken-reviews')
+                        })
+                    ),
+
+                    // Panel 3 — Colors (simple: accent + star)
                     wp.element.createElement(
                         PanelColorSettings,
                         {
-                            title: __('Color Settings', 'shuriken-reviews'),
+                            title: __('Colors', 'shuriken-reviews'),
                             initialOpen: false,
                             colorSettings: [
                                 {
-                                    label: __('Parent Title Color', 'shuriken-reviews'),
-                                    value: parentTitleColor,
-                                    onChange: function (value) { setAttributes({ parentTitleColor: value }); }
+                                    label: __('Accent Color', 'shuriken-reviews'),
+                                    value: accentColor || undefined,
+                                    onChange: function (value) { setAttributes({ accentColor: value || '' }); }
                                 },
                                 {
-                                    label: __('Child Title Color', 'shuriken-reviews'),
-                                    value: childTitleColor,
-                                    onChange: function (value) { setAttributes({ childTitleColor: value }); }
-                                },
-                                {
-                                    label: __('Text Color', 'shuriken-reviews'),
-                                    value: textColor,
-                                    onChange: function (value) { setAttributes({ textColor: value }); }
-                                },
-                                {
-                                    label: __('Parent Background', 'shuriken-reviews'),
-                                    value: parentBackgroundColor,
-                                    onChange: function (value) { setAttributes({ parentBackgroundColor: value }); }
-                                },
-                                {
-                                    label: __('Child Background', 'shuriken-reviews'),
-                                    value: childBackgroundColor,
-                                    onChange: function (value) { setAttributes({ childBackgroundColor: value }); }
-                                },
-                                {
-                                    label: __('Active Star Color', 'shuriken-reviews'),
-                                    value: starActiveColor,
-                                    onChange: function (value) { setAttributes({ starActiveColor: value }); }
-                                },
-                                {
-                                    label: __('Inactive Star Color', 'shuriken-reviews'),
-                                    value: starInactiveColor,
-                                    onChange: function (value) { setAttributes({ starInactiveColor: value }); }
+                                    label: __('Star Color', 'shuriken-reviews'),
+                                    value: starColor || undefined,
+                                    onChange: function (value) { setAttributes({ starColor: value || '' }); }
                                 }
                             ]
                         }
-                    ),
-                    wp.element.createElement(
-                        PanelBody,
-                        { title: __('Parent Rating Border', 'shuriken-reviews'), initialOpen: false },
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Border Width', 'shuriken-reviews'),
-                            value: parentBorderWidth,
-                            onChange: function (value) { setAttributes({ parentBorderWidth: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        wp.element.createElement(SelectControl, {
-                            label: __('Border Style', 'shuriken-reviews'),
-                            value: parentBorderStyle,
-                            options: [
-                                { label: __('Solid', 'shuriken-reviews'), value: 'solid' },
-                                { label: __('Dashed', 'shuriken-reviews'), value: 'dashed' },
-                                { label: __('Dotted', 'shuriken-reviews'), value: 'dotted' },
-                                { label: __('Double', 'shuriken-reviews'), value: 'double' },
-                                { label: __('None', 'shuriken-reviews'), value: 'none' }
-                            ],
-                            onChange: function (value) { setAttributes({ parentBorderStyle: value }); }
-                        }),
-                        wp.element.createElement(
-                            PanelColorSettings,
-                            {
-                                title: __('Border Color', 'shuriken-reviews'),
-                                initialOpen: false,
-                                colorSettings: [
-                                    {
-                                        label: __('Parent Border Color', 'shuriken-reviews'),
-                                        value: parentBorderColor,
-                                        onChange: function (value) { setAttributes({ parentBorderColor: value }); }
-                                    }
-                                ]
-                            }
-                        ),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Border Radius', 'shuriken-reviews'),
-                            value: parentBorderRadius,
-                            onChange: function (value) { setAttributes({ parentBorderRadius: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: '%', label: '%' }
-                            ]
-                        })
-                    ),
-                    wp.element.createElement(
-                        PanelBody,
-                        { title: __('Child Rating Border', 'shuriken-reviews'), initialOpen: false },
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Border Width', 'shuriken-reviews'),
-                            value: childBorderWidth,
-                            onChange: function (value) { setAttributes({ childBorderWidth: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        wp.element.createElement(SelectControl, {
-                            label: __('Border Style', 'shuriken-reviews'),
-                            value: childBorderStyle,
-                            options: [
-                                { label: __('Solid', 'shuriken-reviews'), value: 'solid' },
-                                { label: __('Dashed', 'shuriken-reviews'), value: 'dashed' },
-                                { label: __('Dotted', 'shuriken-reviews'), value: 'dotted' },
-                                { label: __('Double', 'shuriken-reviews'), value: 'double' },
-                                { label: __('None', 'shuriken-reviews'), value: 'none' }
-                            ],
-                            onChange: function (value) { setAttributes({ childBorderStyle: value }); }
-                        }),
-                        wp.element.createElement(
-                            PanelColorSettings,
-                            {
-                                title: __('Border Color', 'shuriken-reviews'),
-                                initialOpen: false,
-                                colorSettings: [
-                                    {
-                                        label: __('Child Border Color', 'shuriken-reviews'),
-                                        value: childBorderColor,
-                                        onChange: function (value) { setAttributes({ childBorderColor: value }); }
-                                    }
-                                ]
-                            }
-                        ),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Border Radius', 'shuriken-reviews'),
-                            value: childBorderRadius,
-                            onChange: function (value) { setAttributes({ childBorderRadius: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: '%', label: '%' }
-                            ]
-                        })
-                    ),
-                    wp.element.createElement(
-                        PanelBody,
-                        { title: __('Typography', 'shuriken-reviews'), initialOpen: false },
-                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginBottom: '8px' } }, 
-                            __('Parent Title', 'shuriken-reviews')
-                        ),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Font Size', 'shuriken-reviews'),
-                            value: parentTitleFontSize,
-                            onChange: function (value) { setAttributes({ parentTitleFontSize: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        wp.element.createElement(SelectControl, {
-                            label: __('Font Weight', 'shuriken-reviews'),
-                            value: parentTitleFontWeight,
-                            options: [
-                                { label: __('Default', 'shuriken-reviews'), value: '' },
-                                { label: __('100 - Thin', 'shuriken-reviews'), value: '100' },
-                                { label: __('300 - Light', 'shuriken-reviews'), value: '300' },
-                                { label: __('400 - Normal', 'shuriken-reviews'), value: '400' },
-                                { label: __('500 - Medium', 'shuriken-reviews'), value: '500' },
-                                { label: __('600 - Semi Bold', 'shuriken-reviews'), value: '600' },
-                                { label: __('700 - Bold', 'shuriken-reviews'), value: '700' },
-                                { label: __('900 - Black', 'shuriken-reviews'), value: '900' }
-                            ],
-                            onChange: function (value) { setAttributes({ parentTitleFontWeight: value }); }
-                        }),
-                        Divider && wp.element.createElement(Divider, null),
-                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginTop: '16px', marginBottom: '8px' } }, 
-                            __('Child Title', 'shuriken-reviews')
-                        ),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Font Size', 'shuriken-reviews'),
-                            value: childTitleFontSize,
-                            onChange: function (value) { setAttributes({ childTitleFontSize: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        wp.element.createElement(SelectControl, {
-                            label: __('Font Weight', 'shuriken-reviews'),
-                            value: childTitleFontWeight,
-                            options: [
-                                { label: __('Default', 'shuriken-reviews'), value: '' },
-                                { label: __('100 - Thin', 'shuriken-reviews'), value: '100' },
-                                { label: __('300 - Light', 'shuriken-reviews'), value: '300' },
-                                { label: __('400 - Normal', 'shuriken-reviews'), value: '400' },
-                                { label: __('500 - Medium', 'shuriken-reviews'), value: '500' },
-                                { label: __('600 - Semi Bold', 'shuriken-reviews'), value: '600' },
-                                { label: __('700 - Bold', 'shuriken-reviews'), value: '700' },
-                                { label: __('900 - Black', 'shuriken-reviews'), value: '900' }
-                            ],
-                            onChange: function (value) { setAttributes({ childTitleFontWeight: value }); }
-                        }),
-                        Divider && wp.element.createElement(Divider, null),
-                        wp.element.createElement('h3', { style: { fontSize: '13px', fontWeight: 600, marginTop: '16px', marginBottom: '8px' } }, 
-                            __('Stats Text', 'shuriken-reviews')
-                        ),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Font Size', 'shuriken-reviews'),
-                            value: textFontSize,
-                            onChange: function (value) { setAttributes({ textFontSize: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        })
-                    ),
-                    wp.element.createElement(
-                        PanelBody,
-                        { title: __('Spacing', 'shuriken-reviews'), initialOpen: false },
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Parent Padding', 'shuriken-reviews'),
-                            value: parentPadding,
-                            onChange: function (value) { setAttributes({ parentPadding: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Child Padding', 'shuriken-reviews'),
-                            value: childPadding,
-                            onChange: function (value) { setAttributes({ childPadding: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        }),
-                        UnitControl && wp.element.createElement(UnitControl, {
-                            label: __('Gap Between Ratings', 'shuriken-reviews'),
-                            value: gapBetweenRatings,
-                            onChange: function (value) { setAttributes({ gapBetweenRatings: value }); },
-                            units: [
-                                { value: 'px', label: 'px' },
-                                { value: 'em', label: 'em' },
-                                { value: 'rem', label: 'rem' }
-                            ]
-                        })
                     )
                 ),
+
+                // --- Create Modal ---
                 isCreateModalOpen && wp.element.createElement(
                     Modal,
                     {
                         title: __('Create New Parent Rating', 'shuriken-reviews'),
-                        onRequestClose: function () { 
+                        onRequestClose: function () {
                             setIsCreateModalOpen(false);
                             setNewParentName('');
                             setNewParentDisplayOnly(true);
@@ -813,7 +521,7 @@
                         { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
                         wp.element.createElement(Button, {
                             variant: 'secondary',
-                            onClick: function () { 
+                            onClick: function () {
                                 setIsCreateModalOpen(false);
                                 setNewParentName('');
                                 setNewParentDisplayOnly(true);
@@ -827,13 +535,13 @@
                         }, __('Create', 'shuriken-reviews'))
                     )
                 ),
+
+                // --- Edit Modal ---
                 isEditModalOpen && wp.element.createElement(
                     Modal,
                     {
                         title: __('Edit Parent Rating', 'shuriken-reviews'),
-                        onRequestClose: function () { 
-                            setIsEditModalOpen(false);
-                        },
+                        onRequestClose: function () { setIsEditModalOpen(false); },
                         style: { width: '500px' }
                     },
                     wp.element.createElement(TextControl, {
@@ -854,9 +562,7 @@
                         { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
                         wp.element.createElement(Button, {
                             variant: 'secondary',
-                            onClick: function () { 
-                                setIsEditModalOpen(false);
-                            }
+                            onClick: function () { setIsEditModalOpen(false); }
                         }, __('Cancel', 'shuriken-reviews')),
                         wp.element.createElement(Button, {
                             variant: 'primary',
@@ -866,15 +572,15 @@
                         }, __('Update', 'shuriken-reviews'))
                     )
                 ),
+
+                // --- Manage Children Modal ---
                 isManageChildrenModalOpen && wp.element.createElement(
                     Modal,
                     {
                         title: __('Manage Sub-Ratings', 'shuriken-reviews'),
                         onRequestClose: function () {
                             var hasUnsaved = Object.keys(childrenLocalEdits).length > 0;
-                            if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) {
-                                return;
-                            }
+                            if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) return;
                             setIsManageChildrenModalOpen(false);
                             setNewChildName('');
                             setNewChildEffectType('positive');
@@ -886,7 +592,7 @@
                     selectedRating && wp.element.createElement(
                         'div',
                         { style: { marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-                        wp.element.createElement('p', { style: { fontSize: '14px', color: '#666', marginTop: 0, marginBottom: 0 } }, 
+                        wp.element.createElement('p', { style: { fontSize: '14px', color: '#666', marginTop: 0, marginBottom: 0 } },
                             __('Managing sub-ratings for: ', 'shuriken-reviews') + selectedRating.name
                         ),
                         Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(
@@ -928,7 +634,7 @@
                         )
                     ),
                     Divider && wp.element.createElement(Divider, null),
-                    wp.element.createElement('h4', { style: { fontSize: '14px', marginBottom: '12px' } }, 
+                    wp.element.createElement('h4', { style: { fontSize: '14px', marginBottom: '12px' } },
                         __('Existing Sub-Ratings', 'shuriken-reviews') + ' (' + childrenToManage.length + ')'
                     ),
                     childrenToManage.length === 0 && wp.element.createElement(
@@ -939,15 +645,15 @@
                     childrenToManage.map(function (child) {
                         return wp.element.createElement(
                             'div',
-                            { 
-                                key: child.id, 
-                                style: { 
-                                    padding: '12px', 
-                                    marginBottom: '12px', 
-                                    border: childrenLocalEdits[child.id] ? '2px solid #667eea' : '1px solid #ddd', 
+                            {
+                                key: child.id,
+                                style: {
+                                    padding: '12px',
+                                    marginBottom: '12px',
+                                    border: childrenLocalEdits[child.id] ? '2px solid #667eea' : '1px solid #ddd',
                                     borderRadius: '4px',
                                     backgroundColor: childrenLocalEdits[child.id] ? '#f0f4ff' : '#fff'
-                                } 
+                                }
                             },
                             wp.element.createElement(
                                 'div',
@@ -966,9 +672,7 @@
                                 wp.element.createElement(TextControl, {
                                     label: __('Name', 'shuriken-reviews'),
                                     value: (childrenLocalEdits[child.id] && childrenLocalEdits[child.id].name) || child.name,
-                                    onChange: function (value) {
-                                        updateChildLocally(child.id, { name: value });
-                                    },
+                                    onChange: function (value) { updateChildLocally(child.id, { name: value }); },
                                     style: { marginBottom: 0 }
                                 }),
                                 wp.element.createElement(SelectControl, {
@@ -978,9 +682,7 @@
                                         { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
                                         { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
                                     ],
-                                    onChange: function (value) {
-                                        updateChildLocally(child.id, { effect_type: value });
-                                    }
+                                    onChange: function (value) { updateChildLocally(child.id, { effect_type: value }); }
                                 })
                             ),
                             wp.element.createElement(
@@ -1009,9 +711,7 @@
                             variant: Object.keys(childrenLocalEdits).length > 0 ? 'secondary' : 'primary',
                             onClick: function () {
                                 var hasUnsaved = Object.keys(childrenLocalEdits).length > 0;
-                                if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) {
-                                    return;
-                                }
+                                if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) return;
                                 setIsManageChildrenModalOpen(false);
                                 setNewChildName('');
                                 setNewChildEffectType('positive');
@@ -1021,6 +721,8 @@
                         }, __('Close', 'shuriken-reviews'))
                     )
                 ),
+
+                // --- Block Preview ---
                 wp.element.createElement(
                     'div',
                     blockProps,
@@ -1030,12 +732,7 @@
                             status: 'error',
                             onRemove: dismissError,
                             isDismissible: true,
-                            actions: lastFailedAction ? [
-                                {
-                                    label: __('Retry', 'shuriken-reviews'),
-                                    onClick: retryLastAction
-                                }
-                            ] : []
+                            actions: lastFailedAction ? [{ label: __('Retry', 'shuriken-reviews'), onClick: retryLastAction }] : []
                         },
                         error
                     ),
@@ -1050,130 +747,73 @@
                             )
                             : selectedRating
                                 ? wp.element.createElement(
-                                    'div',
-                                    { 
-                                        className: 'shuriken-rating-group',
-                                        style: {
-                                            gap: gapBetweenRatings || undefined
-                                        }
-                                    },
+                                    wp.element.Fragment,
+                                    null,
+                                    // Parent rating — rendered directly inside blockProps
+                                    // (blockProps already has .shuriken-rating-group)
                                     wp.element.createElement(
                                         'div',
-                                        { 
-                                            className: 'shuriken-rating-wrapper parent-rating',
-                                            style: {
-                                                backgroundColor: parentBackgroundColor || undefined,
-                                                borderColor: parentBorderColor || undefined,
-                                                borderWidth: parentBorderWidth || undefined,
-                                                borderStyle: (parentBorderWidth && parentBorderStyle) ? parentBorderStyle : undefined,
-                                                borderRadius: parentBorderRadius || undefined,
-                                                padding: parentPadding || undefined
-                                            }
-                                        },
-                                        wp.element.createElement(
-                                            titleTag,
-                                            { 
-                                                className: 'rating-title',
-                                                style: {
-                                                    color: parentTitleColor || titleColor || undefined,
-                                                    fontSize: parentTitleFontSize || undefined,
-                                                    fontWeight: parentTitleFontWeight || undefined
-                                                }
-                                            },
-                                            selectedRating.name
-                                        ),
+                                        { className: 'shuriken-rating parent-rating' + (selectedRating.display_only ? ' display-only' : '') },
                                         wp.element.createElement(
                                             'div',
-                                            { className: 'stars' },
-                                            [1, 2, 3, 4, 5].map(function (i) {
-                                                var isActive = i <= calculateAverage(selectedRating);
-                                                return wp.element.createElement(
-                                                    'span',
-                                                    {
-                                                        key: i,
-                                                        className: 'star' + (isActive ? ' active' : ''),
-                                                        style: {
-                                                            color: isActive 
-                                                                ? (starActiveColor || undefined)
-                                                                : (starInactiveColor || undefined)
-                                                        }
-                                                    },
-                                                    '★'
-                                                );
-                                            })
-                                        ),
-                                        wp.element.createElement(
-                                            'div',
-                                            { 
-                                                className: 'rating-stats',
-                                                style: {
-                                                    color: textColor || undefined,
-                                                    fontSize: textFontSize || undefined
-                                                }
-                                            },
-                                            __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(selectedRating) + '/5 (' + (selectedRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
+                                            { className: 'shuriken-rating-wrapper' },
+                                            wp.element.createElement(
+                                                titleTag,
+                                                { className: 'rating-title' },
+                                                selectedRating.name
+                                            ),
+                                            wp.element.createElement(
+                                                'div',
+                                                { className: 'stars display-only-stars' },
+                                                [1, 2, 3, 4, 5].map(function (i) {
+                                                    var isActive = i <= calculateAverage(selectedRating);
+                                                    return wp.element.createElement(
+                                                        'span',
+                                                        { key: i, className: 'star' + (isActive ? ' active' : '') },
+                                                        '\u2605'
+                                                    );
+                                                })
+                                            ),
+                                            wp.element.createElement(
+                                                'div',
+                                                { className: 'rating-stats' },
+                                                __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(selectedRating) + '/5 (' + (selectedRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
+                                            )
                                         )
                                     ),
+                                    // Child ratings
                                     childRatings.length > 0 && wp.element.createElement(
                                         'div',
                                         { className: 'shuriken-child-ratings' },
-                                        childRatings.map(function(child) {
+                                        childRatings.map(function (child) {
                                             return wp.element.createElement(
                                                 'div',
-                                                { 
-                                                    key: child.id, 
-                                                    className: 'shuriken-rating-wrapper child-rating',
-                                                    style: {
-                                                        backgroundColor: childBackgroundColor || undefined,
-                                                        borderColor: childBorderColor || undefined,
-                                                        borderWidth: childBorderWidth || undefined,
-                                                        borderStyle: (childBorderWidth && childBorderStyle) ? childBorderStyle : undefined,
-                                                        borderRadius: childBorderRadius || undefined,
-                                                        padding: childPadding || undefined
-                                                    }
-                                                },
-                                                wp.element.createElement(
-                                                    'h4',
-                                                    { 
-                                                        className: 'rating-title',
-                                                        style: {
-                                                            color: childTitleColor || titleColor || undefined,
-                                                            fontSize: childTitleFontSize || undefined,
-                                                            fontWeight: childTitleFontWeight || undefined
-                                                        }
-                                                    },
-                                                    child.name
-                                                ),
+                                                { key: child.id, className: 'shuriken-rating child-rating' },
                                                 wp.element.createElement(
                                                     'div',
-                                                    { className: 'stars' },
-                                                    [1, 2, 3, 4, 5].map(function (i) {
-                                                        var isActive = i <= calculateAverage(child);
-                                                        return wp.element.createElement(
-                                                            'span',
-                                                            {
-                                                                key: i,
-                                                                className: 'star' + (isActive ? ' active' : ''),
-                                                                style: {
-                                                                    color: isActive 
-                                                                        ? (starActiveColor || undefined)
-                                                                        : (starInactiveColor || undefined)
-                                                                }
-                                                            },
-                                                            '★'
-                                                        );
-                                                    })
-                                                ),
-                                                wp.element.createElement(
-                                                    'div',
-                                                    { 
-                                                        className: 'rating-stats',
-                                                        style: {
-                                                            color: textColor || undefined,
-                                                            fontSize: textFontSize || undefined
-                                                        }
-                                                    },
-                                                    calculateAverage(child) + '/5'
+                                                    { className: 'shuriken-rating-wrapper' },
+                                                    wp.element.createElement(
+                                                        'h4',
+                                                        { className: 'rating-title' },
+                                                        child.name
+                                                    ),
+                                                    wp.element.createElement(
+                                                        'div',
+                                                        { className: 'stars display-only-stars' },
+                                                        [1, 2, 3, 4, 5].map(function (i) {
+                                                            var isActive = i <= calculateAverage(child);
+                                                            return wp.element.createElement(
+                                                                'span',
+                                                                { key: i, className: 'star' + (isActive ? ' active' : '') },
+                                                                '\u2605'
+                                                            );
+                                                        })
+                                                    ),
+                                                    wp.element.createElement(
+                                                        'div',
+                                                        { className: 'rating-stats' },
+                                                        calculateAverage(child) + '/5'
+                                                    )
                                                 )
                                             );
                                         })
@@ -1190,7 +830,7 @@
         },
 
         save: function () {
-            // Dynamic block - rendered on server
+            // Dynamic block — rendered on server
             return null;
         }
     });
