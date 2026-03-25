@@ -100,6 +100,11 @@
             // Search state for AJAX dropdown
             const [searchTerm, setSearchTerm] = useState('');
 
+            // Track whether initial batch of mirror data has loaded
+            const [subMirrorDataReady, setSubMirrorDataReady] = useState(
+                !(subRatings || []).some(function(sr) { return sr.mirrorId; })
+            );
+
             // ---- Build CSS variables for accent/star colour ----
             var cssVars = {};
             if (accentColor) {
@@ -114,6 +119,7 @@
             // ---- Shared store helpers (must be declared before blockProps) ----
             const {
                 fetchRating,
+                fetchRatingsBatch,
                 searchRatings,
                 fetchParentRatings,
                 fetchMirrorableRatings,
@@ -168,8 +174,10 @@
             });
 
             const loading = (isLoadingParents && parentRatings.length === 0) ||
-                // Wait for mirror data to prevent flash of parent data
-                (mirrorId && !allRatingsById[mirrorId]);
+                // Wait for parent mirror data (lift once mirror fetch finishes)
+                (mirrorId && !allRatingsById[mirrorId] && (parentMirrors === null || parentMirrorsLoading)) ||
+                // Wait for sub-rating mirror data
+                !subMirrorDataReady;
 
             // Combined error state (local UI errors + store-level errors)
             const combinedError = error || storeError;
@@ -342,22 +350,19 @@
                 return selectedRating;
             }, [selectedRating, mirrorId, allRatingsById]);
 
-            // Fetch mirror rating data if mirrorId is set
+            // Batch-fetch all mirror IDs in a single API call on mount.
+            // This replaces N individual fetchRating calls with 1 batch request.
             useEffect(function () {
-                if (mirrorId) {
-                    fetchRating(mirrorId);
-                }
-            }, [mirrorId]);
-
-            // Fetch each sub-rating's mirror data
-            useEffect(function () {
-                var currentSubRatings = subRatings || [];
-                currentSubRatings.forEach(function (sr) {
-                    if (sr.mirrorId) {
-                        fetchRating(sr.mirrorId);
-                    }
+                var ids = [];
+                if (mirrorId) ids.push(mirrorId);
+                (subRatings || []).forEach(function (sr) {
+                    if (sr.mirrorId) ids.push(sr.mirrorId);
                 });
-            }, [subRatings]);
+                if (ids.length === 0) return;
+                fetchRatingsBatch(ids).then(function () {
+                    setSubMirrorDataReady(true);
+                });
+            }, []);
 
             // ---- CRUD helpers ----
             function createNewParentRating() {

@@ -335,6 +335,39 @@
             };
         },
 
+        /**
+         * Batch-fetch multiple ratings by ID in a single API call.
+         * Skips IDs already in cache. Returns array of fetched ratings.
+         */
+        fetchRatingsBatch: function(ids) {
+            return function(args) {
+                if (!ids || !ids.length) {
+                    return Promise.resolve([]);
+                }
+
+                // Filter out IDs already in cache
+                var missing = ids.filter(function(id) {
+                    return !args.select.getRating(id);
+                });
+
+                if (missing.length === 0) {
+                    return Promise.resolve([]);
+                }
+
+                return apiFetch({
+                    path: '/shuriken-reviews/v1/ratings/batch?ids=' + missing.join(','),
+                    method: 'GET',
+                }).then(function(ratings) {
+                    var arr = Array.isArray(ratings) ? ratings : [];
+                    args.dispatch.setRatings(arr);
+                    return arr;
+                }).catch(function(error) {
+                    console.error('fetchRatingsBatch error:', error);
+                    return [];
+                });
+            };
+        },
+
         fetchMirrorsForRating: function(ratingId) {
             return function(args) {
                 if (!ratingId) {

@@ -233,6 +233,21 @@ class Shuriken_REST_API {
             ),
         ));
 
+        // Batch ratings endpoint (fetch multiple by IDs, editor only)
+        register_rest_route(self::NAMESPACE, '/ratings/batch', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'get_ratings_batch'),
+            'permission_callback' => array($this, 'can_edit_posts'),
+            'args'                => array(
+                'ids' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'description'       => 'Comma-separated list of rating IDs (max 50)',
+                ),
+            ),
+        ));
+
         // Public stats endpoint (bypasses cache)
         register_rest_route(self::NAMESPACE, '/ratings/stats', array(
             'methods'             => 'GET',
@@ -658,6 +673,37 @@ class Shuriken_REST_API {
             
             $ratings = $this->db->search_ratings($search_term, $limit, $type);
             return rest_ensure_response($ratings);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        }
+    }
+
+    /**
+     * Batch-fetch multiple ratings by ID
+     *
+     * Returns full rating objects with mirror vote data resolved.
+     * Capped at 50 IDs per request to prevent abuse.
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response|WP_Error
+     * @since 1.11.1
+     */
+    public function get_ratings_batch($request) {
+        try {
+            $ids_string = $request->get_param('ids');
+            $ids = array_map('intval', explode(',', $ids_string));
+            $ids = array_filter($ids);
+
+            if (empty($ids)) {
+                throw Shuriken_Validation_Exception::required_field('ids');
+            }
+
+            if (count($ids) > 50) {
+                throw Shuriken_Validation_Exception::out_of_range('ids count', count($ids), 1, 50);
+            }
+
+            $ratings = $this->db->get_ratings_by_ids($ids);
+            return rest_ensure_response(array_values($ratings));
         } catch (Shuriken_Exception $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
