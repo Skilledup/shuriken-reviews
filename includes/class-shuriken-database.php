@@ -737,6 +737,10 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             case 'parents':
                 $where_clause = 'WHERE parent_id IS NULL AND mirror_of IS NULL';
                 break;
+            case 'parents_and_mirrors':
+                // Parents (no parent, no mirror) + mirrors whose source is a parent
+                $where_clause = "WHERE (parent_id IS NULL AND mirror_of IS NULL) OR (mirror_of IS NOT NULL AND mirror_of IN (SELECT id FROM {$this->ratings_table} WHERE parent_id IS NULL AND mirror_of IS NULL))";
+                break;
             case 'mirrorable':
                 $where_clause = 'WHERE mirror_of IS NULL';
                 break;
@@ -766,9 +770,41 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             ));
         }
 
-        // Calculate averages
+        // Calculate averages and resolve mirrors
+        $mirror_source_ids = array();
         foreach ($ratings as &$rating) {
             $rating->source_id = $rating->id;
+            if (!empty($rating->mirror_of)) {
+                $mirror_source_ids[$rating->mirror_of] = true;
+            }
+        }
+        unset($rating);
+
+        // Batch-fetch source ratings for any mirrors in the results
+        if (!empty($mirror_source_ids)) {
+            $source_ids = array_keys($mirror_source_ids);
+            $placeholders = implode(',', array_fill(0, count($source_ids), '%d'));
+            $source_ratings = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($placeholders)",
+                ...$source_ids
+            ));
+            $source_map = array();
+            foreach ($source_ratings as $src) {
+                $source_map[(int) $src->id] = $src;
+            }
+            foreach ($ratings as &$rating) {
+                if (!empty($rating->mirror_of) && isset($source_map[(int) $rating->mirror_of])) {
+                    $original = $source_map[(int) $rating->mirror_of];
+                    $rating->total_votes = $original->total_votes;
+                    $rating->total_rating = $original->total_rating;
+                    $rating->display_only = $original->display_only;
+                    $rating->source_id = $original->id;
+                }
+            }
+            unset($rating);
+        }
+
+        foreach ($ratings as &$rating) {
             $rating->average = $rating->total_votes > 0 
                 ? round($rating->total_rating / $rating->total_votes, 1) 
                 : 0;

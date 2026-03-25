@@ -197,7 +197,7 @@ class Shuriken_REST_API {
                     'required'          => false,
                     'type'              => 'string',
                     'default'           => 'all',
-                    'enum'              => array('all', 'parents', 'mirrorable'),
+                    'enum'              => array('all', 'parents', 'mirrorable', 'parents_and_mirrors'),
                     'description'       => 'Filter by rating type',
                 ),
             ),
@@ -646,9 +646,9 @@ class Shuriken_REST_API {
             $type = $request->get_param('type');
             
             // Validate type parameter
-            $valid_types = array('all', 'parents', 'mirrorable');
+            $valid_types = array('all', 'parents', 'mirrorable', 'parents_and_mirrors');
             if (!in_array($type, $valid_types, true)) {
-                throw Shuriken_Validation_Exception::invalid_value('type', $type, 'all, parents, or mirrorable');
+                throw Shuriken_Validation_Exception::invalid_value('type', $type, 'all, parents, mirrorable, or parents_and_mirrors');
             }
             
             // Validate limit

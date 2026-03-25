@@ -35,12 +35,19 @@
         Icon,
         __experimentalDivider: Divider
     } = wp.components;
-    const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
+    const { useState, useEffect, useMemo, useCallback } = wp.element;
     const { __ } = wp.i18n;
     const { useSelect, useDispatch } = wp.data;
 
     // Store name constant (match single rating block's fallback pattern)
     const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
+    const {
+        makeErrorHandler,
+        makeErrorDismissers,
+        useSearchHandler,
+        titleTagOptions,
+        calculateAverage
+    } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/grouped-rating', {
         edit: function (props) {
@@ -86,10 +93,12 @@
             const [creatingMirror, setCreatingMirror] = useState(false);
             const [newChildMirrorNames, setNewChildMirrorNames] = useState({});
             const [creatingChildMirrorId, setCreatingChildMirrorId] = useState(null);
+            // Mirror rename state: { [mirrorId]: newName }
+            const [editingMirrorNames, setEditingMirrorNames] = useState({});
+            const [savingMirrorId, setSavingMirrorId] = useState(null);
 
             // Search state for AJAX dropdown
             const [searchTerm, setSearchTerm] = useState('');
-            const searchTimeoutRef = useRef(null);
 
             // ---- Build CSS variables for accent/star colour ----
             var cssVars = {};
@@ -163,59 +172,17 @@
             // Combined error state (local UI errors + store-level errors)
             const combinedError = error || storeError;
 
-            // ---- Error handling ----
-            function handleApiError(err, action) {
-                console.error('Shuriken Reviews API Error:', err);
-                var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
-                if (err.message) {
-                    errorMessage = err.message;
-                } else if (err.data && err.data.message) {
-                    errorMessage = err.data.message;
-                } else if (typeof err === 'string') {
-                    errorMessage = err;
-                }
-                if (err.code === 'rest_forbidden' || err.code === 'rest_cookie_invalid_nonce') {
-                    errorMessage = __('Permission denied. Please refresh the page and try again.', 'shuriken-reviews');
-                } else if (err.code === 'rest_no_route') {
-                    errorMessage = __('API endpoint not found. Please ensure the plugin is properly installed.', 'shuriken-reviews');
-                } else if (err.status === 429 || err.code === 'rate_limit_exceeded') {
-                    errorMessage = __('Too many requests. Please wait a moment and try again.', 'shuriken-reviews');
-                } else if (err.status === 404 || err.code === 'not_found') {
-                    errorMessage = __('The requested resource was not found.', 'shuriken-reviews');
-                } else if (err.status === 500 || err.code === 'internal_server_error') {
-                    errorMessage = __('Server error. Please try again later.', 'shuriken-reviews');
-                }
-                setError(errorMessage);
-                setLastFailedAction(action);
-            }
+            // ---- Error handling (shared) ----
+            const handleApiError = makeErrorHandler(setError, setLastFailedAction);
+            const { retryLastAction: _retry, dismissError } = makeErrorDismissers(setError, setLastFailedAction, clearError);
+            function retryLastAction() { _retry(lastFailedAction); }
 
-            function retryLastAction() {
-                setError(null);
-                clearError();
-                if (lastFailedAction) {
-                    lastFailedAction();
-                    setLastFailedAction(null);
-                }
-            }
-
-            function dismissError() {
-                setError(null);
-                clearError();
-                setLastFailedAction(null);
-            }
-
-            // ---- Search ----
+            // ---- Search (shared — searches parents + mirrors together) ----
+            const _debouncedSearch = useSearchHandler(searchRatings, 'parents_and_mirrors', 20);
             const handleSearchChange = useCallback(function (value) {
                 setSearchTerm(value);
-                if (searchTimeoutRef.current) {
-                    clearTimeout(searchTimeoutRef.current);
-                }
-                searchTimeoutRef.current = setTimeout(function () {
-                    if (value && value.trim().length > 0) {
-                        searchRatings(value.trim(), 'parents', 20);
-                    }
-                }, 300);
-            }, [searchRatings]);
+                _debouncedSearch(value);
+            }, [_debouncedSearch]);
 
             // ---- Data fetching ----
             useEffect(function () {
@@ -226,11 +193,6 @@
                     fetchChildRatings(ratingId);
                     fetchMirrorsForRating(ratingId);
                 }
-                return function () {
-                    if (searchTimeoutRef.current) {
-                        clearTimeout(searchTimeoutRef.current);
-                    }
-                };
             }, []);
 
             useEffect(function () {
@@ -606,40 +568,91 @@
                     });
             }
 
+            function startEditMirror(mId, currentName) {
+                setEditingMirrorNames(function (prev) {
+                    var next = {};
+                    for (var k in prev) next[k] = prev[k];
+                    next[mId] = currentName;
+                    return next;
+                });
+            }
+
+            function cancelEditMirror(mId) {
+                setEditingMirrorNames(function (prev) {
+                    var next = {};
+                    for (var k in prev) {
+                        if (String(k) !== String(mId)) next[k] = prev[k];
+                    }
+                    return next;
+                });
+            }
+
+            function saveMirrorName(mId, sourceId) {
+                var newName = (editingMirrorNames[mId] || '').trim();
+                if (!newName || savingMirrorId) return;
+                setSavingMirrorId(parseInt(mId, 10));
+                updateRating(mId, { name: newName })
+                    .then(function () {
+                        invalidateMirrorsCache(sourceId);
+                        fetchMirrorsForRating(sourceId);
+                        cancelEditMirror(mId);
+                        setSavingMirrorId(null);
+                        setError(null);
+                    })
+                    .catch(function (err) {
+                        setSavingMirrorId(null);
+                        handleApiError(err, function () { saveMirrorName(mId, sourceId); });
+                    });
+            }
+
+            function updateEditingMirrorName(mId, value) {
+                setEditingMirrorNames(function (prev) {
+                    var next = {};
+                    for (var k in prev) next[k] = prev[k];
+                    next[mId] = value;
+                    return next;
+                });
+            }
+
             // Keyboard handlers
             function handleCreateKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); createNewParentRating(); } }
             function handleEditKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); updateParentRating(); } }
             function handleChildKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); addNewChild(); } }
 
             // ---- Dropdown options ----
+            // ---- Dropdown options: parents + mirrors of parents in one list ----
             var ratingOptions = useMemo(function () {
                 var options = [];
                 var seen = {};
+
+                // Always include the currently selected parent + mirror combo
                 if (selectedRating && selectedRating.id) {
                     seen[selectedRating.id] = true;
                     options.push({ label: selectedRating.name + ' (ID: ' + selectedRating.id + ')', value: String(selectedRating.id) });
                 }
+                if (mirrorId && allRatingsById[mirrorId]) {
+                    var mRating = allRatingsById[mirrorId];
+                    if (!seen[mRating.id]) {
+                        seen[mRating.id] = true;
+                        options.push({ label: mRating.name + ' — ' + __('Mirror', 'shuriken-reviews') + ' (ID: ' + mRating.id + ')', value: String(mRating.id) });
+                    }
+                }
+
+                // Add search results (comes back with parents + mirrors of parents)
                 if (searchTerm && searchTerm.trim().length > 0) {
                     (Array.isArray(searchResults) ? searchResults : []).forEach(function (r) {
                         if (r && r.id && !seen[r.id]) {
                             seen[r.id] = true;
-                            options.push({ label: r.name + ' (ID: ' + r.id + ')', value: String(r.id) });
+                            var label = r.name + ' (ID: ' + r.id + ')';
+                            if (r.mirror_of) {
+                                label = r.name + ' — ' + __('Mirror', 'shuriken-reviews') + ' (ID: ' + r.id + ')';
+                            }
+                            options.push({ label: label, value: String(r.id) });
                         }
                     });
                 }
                 return options;
-            }, [searchResults, selectedRating, searchTerm]);
-
-            // ---- Parent mirror options ----
-            var parentMirrorOptions = useMemo(function () {
-                var opts = [{ label: __('None (use original)', 'shuriken-reviews'), value: '0' }];
-                if (Array.isArray(parentMirrors)) {
-                    parentMirrors.forEach(function (m) {
-                        opts.push({ label: m.name + ' (ID: ' + m.id + ')', value: String(m.id) });
-                    });
-                }
-                return opts;
-            }, [parentMirrors]);
+            }, [searchResults, selectedRating, mirrorId, allRatingsById, searchTerm]);
 
             // ---- Mirrorable options (for Create Modal mirror source picker) ----
             var mirrorableOptions = useMemo(function () {
@@ -653,24 +666,6 @@
                 });
                 return options;
             }, [mirrorableRatings]);
-
-            var titleTagOptions = [
-                { label: 'H1', value: 'h1' },
-                { label: 'H2', value: 'h2' },
-                { label: 'H3', value: 'h3' },
-                { label: 'H4', value: 'h4' },
-                { label: 'H5', value: 'h5' },
-                { label: 'H6', value: 'h6' },
-                { label: 'DIV', value: 'div' },
-                { label: 'P', value: 'p' },
-                { label: 'SPAN', value: 'span' }
-            ];
-
-            function calculateAverage(rating) {
-                var tv = parseInt(rating.total_votes, 10) || 0;
-                if (tv > 0) return Math.round((parseInt(rating.total_rating, 10) / tv) * 10) / 10;
-                return 0;
-            }
 
             // ===================================================================
             // Render
@@ -695,36 +690,42 @@
                                 null,
                                 wp.element.createElement(ComboboxControl, {
                                     label: __('Select Parent Rating', 'shuriken-reviews'),
-                                    value: ratingId ? String(ratingId) : '',
+                                    value: mirrorId ? String(mirrorId) : (ratingId ? String(ratingId) : ''),
                                     options: ratingOptions,
                                     onChange: function (value) {
-                                        var newId = value ? parseInt(value, 10) : 0;
-                                        setAttributes({ ratingId: newId, mirrorId: 0, subRatings: [] });
-                                        if (newId) {
-                                            fetchRating(newId);
-                                            fetchMirrorsForRating(newId);
+                                        var pickedId = value ? parseInt(value, 10) : 0;
+                                        if (!pickedId) {
+                                            setAttributes({ ratingId: 0, mirrorId: 0, subRatings: [] });
+                                            return;
+                                        }
+                                        // Check if the picked rating is a mirror
+                                        var picked = allRatingsById[pickedId];
+                                        if (picked && picked.mirror_of) {
+                                            // Mirror selected — resolve to source parent + set mirrorId
+                                            var sourceId = parseInt(picked.mirror_of, 10);
+                                            setAttributes({
+                                                ratingId: sourceId,
+                                                mirrorId: pickedId,
+                                                subRatings: []
+                                            });
+                                            fetchRating(sourceId);
+                                            fetchChildRatings(sourceId);
+                                            fetchMirrorsForRating(sourceId);
+                                        } else {
+                                            // Regular parent selected
+                                            setAttributes({ ratingId: pickedId, mirrorId: 0, subRatings: [] });
+                                            fetchRating(pickedId);
+                                            fetchChildRatings(pickedId);
+                                            fetchMirrorsForRating(pickedId);
                                         }
                                     },
                                     onFilterValueChange: handleSearchChange,
                                     placeholder: isSearching
                                         ? __('Searching...', 'shuriken-reviews')
-                                        : __('Search parent ratings...', 'shuriken-reviews')
-                                }),
-
-                                // Parent mirror selector
-                                ratingId && selectedRating && wp.element.createElement(SelectControl, {
-                                    label: __('Parent Mirror', 'shuriken-reviews'),
-                                    value: String(mirrorId || 0),
-                                    options: parentMirrorOptions,
-                                    onChange: function (value) {
-                                        var newMirrorId = parseInt(value, 10) || 0;
-                                        setAttributes({ mirrorId: newMirrorId });
-                                    },
-                                    help: parentMirrorsLoading
-                                        ? __('Loading mirrors...', 'shuriken-reviews')
-                                        : (Array.isArray(parentMirrors) && parentMirrors.length === 0)
-                                            ? __('No mirrors exist for this rating.', 'shuriken-reviews')
-                                            : __('Display a mirror\'s name instead of the original parent.', 'shuriken-reviews')
+                                        : __('Search parent ratings or mirrors...', 'shuriken-reviews'),
+                                    help: mirrorId
+                                        ? __('A mirror is selected — the block uses the mirror\'s name but the original parent\'s sub-ratings.', 'shuriken-reviews')
+                                        : null
                                 }),
 
                                 wp.element.createElement(
@@ -877,72 +878,76 @@
                             setNewRatingIsMirror(false);
                             setNewMirrorSourceId(0);
                         },
-                        style: { width: '500px' }
+                        className: 'shuriken-modal shuriken-create-modal'
                     },
-                    wp.element.createElement(CheckboxControl, {
-                        label: __('Create as Mirror of Existing Rating', 'shuriken-reviews'),
-                        checked: newRatingIsMirror,
-                        onChange: function (val) {
-                            setNewRatingIsMirror(val);
-                            if (!val) setNewMirrorSourceId(0);
-                        },
-                        help: newRatingIsMirror
-                            ? __('The new rating will share vote data with the source rating.', 'shuriken-reviews')
-                            : __('Enable to create a mirror instead of an independent parent.', 'shuriken-reviews')
-                    }),
-                    newRatingIsMirror && wp.element.createElement(ComboboxControl, {
-                        label: __('Source Rating', 'shuriken-reviews'),
-                        value: newMirrorSourceId ? String(newMirrorSourceId) : '',
-                        options: mirrorableOptions,
-                        onChange: function (value) {
-                            setNewMirrorSourceId(value ? parseInt(value, 10) : 0);
-                        },
-                        onFilterValueChange: function () {},
-                        placeholder: isLoadingMirrorable
-                            ? __('Loading...', 'shuriken-reviews')
-                            : __('Search ratings...', 'shuriken-reviews')
-                    }),
-                    wp.element.createElement(TextControl, {
-                        label: newRatingIsMirror
-                            ? __('Mirror Name', 'shuriken-reviews')
-                            : __('Parent Rating Name', 'shuriken-reviews'),
-                        value: newParentName,
-                        onChange: setNewParentName,
-                        onKeyDown: handleCreateKeyDown,
-                        placeholder: newRatingIsMirror
-                            ? __('e.g., Product Quality (Page 2)', 'shuriken-reviews')
-                            : __('e.g., Overall Product Quality', 'shuriken-reviews'),
-                        help: newRatingIsMirror
-                            ? __('A display name for this mirror.', 'shuriken-reviews')
-                            : __('This will be the main rating that groups sub-ratings.', 'shuriken-reviews')
-                    }),
-                    !newRatingIsMirror && wp.element.createElement(CheckboxControl, {
-                        label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
-                        checked: newParentDisplayOnly,
-                        onChange: setNewParentDisplayOnly,
-                        help: __('When enabled, users can only vote on sub-ratings. The parent shows the calculated average.', 'shuriken-reviews')
-                    }),
                     wp.element.createElement(
                         'div',
-                        { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
-                        wp.element.createElement(Button, {
-                            variant: 'secondary',
-                            onClick: function () {
-                                setIsCreateModalOpen(false);
-                                setNewParentName('');
-                                setNewParentDisplayOnly(true);
-                                setNewRatingIsMirror(false);
-                                setNewMirrorSourceId(0);
-                            }
-                        }, __('Cancel', 'shuriken-reviews')),
-                        wp.element.createElement(Button, {
-                            variant: 'primary',
-                            onClick: createNewParentRating,
-                            isBusy: creating,
-                            disabled: creating || !newParentName.trim() || (newRatingIsMirror && !newMirrorSourceId)
-                        }, newRatingIsMirror
-                            ? __('Create Mirror', 'shuriken-reviews')
-                            : __('Create', 'shuriken-reviews'))
+                        { className: 'shuriken-modal-section' },
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Create as Mirror of Existing Rating', 'shuriken-reviews'),
+                            checked: newRatingIsMirror,
+                            onChange: function (val) {
+                                setNewRatingIsMirror(val);
+                                if (!val) setNewMirrorSourceId(0);
+                            },
+                            help: newRatingIsMirror
+                                ? __('The new rating will share vote data with the source rating.', 'shuriken-reviews')
+                                : __('Enable to create a mirror instead of an independent parent.', 'shuriken-reviews')
+                        }),
+                        newRatingIsMirror && wp.element.createElement(ComboboxControl, {
+                            label: __('Source Rating', 'shuriken-reviews'),
+                            value: newMirrorSourceId ? String(newMirrorSourceId) : '',
+                            options: mirrorableOptions,
+                            onChange: function (value) {
+                                setNewMirrorSourceId(value ? parseInt(value, 10) : 0);
+                            },
+                            onFilterValueChange: function () {},
+                            placeholder: isLoadingMirrorable
+                                ? __('Loading...', 'shuriken-reviews')
+                                : __('Search ratings...', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(TextControl, {
+                            label: newRatingIsMirror
+                                ? __('Mirror Name', 'shuriken-reviews')
+                                : __('Parent Rating Name', 'shuriken-reviews'),
+                            value: newParentName,
+                            onChange: setNewParentName,
+                            onKeyDown: handleCreateKeyDown,
+                            placeholder: newRatingIsMirror
+                                ? __('e.g., Product Quality (Page 2)', 'shuriken-reviews')
+                                : __('e.g., Overall Product Quality', 'shuriken-reviews'),
+                            help: newRatingIsMirror
+                                ? __('A display name for this mirror.', 'shuriken-reviews')
+                                : __('This will be the main rating that groups sub-ratings.', 'shuriken-reviews')
+                        }),
+                        !newRatingIsMirror && wp.element.createElement(CheckboxControl, {
+                            label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
+                            checked: newParentDisplayOnly,
+                            onChange: setNewParentDisplayOnly,
+                            help: __('When enabled, users can only vote on sub-ratings. The parent shows the calculated average.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-modal-actions' },
+                            wp.element.createElement(Button, {
+                                variant: 'secondary',
+                                onClick: function () {
+                                    setIsCreateModalOpen(false);
+                                    setNewParentName('');
+                                    setNewParentDisplayOnly(true);
+                                    setNewRatingIsMirror(false);
+                                    setNewMirrorSourceId(0);
+                                }
+                            }, __('Cancel', 'shuriken-reviews')),
+                            wp.element.createElement(Button, {
+                                variant: 'primary',
+                                onClick: createNewParentRating,
+                                isBusy: creating,
+                                disabled: creating || !newParentName.trim() || (newRatingIsMirror && !newMirrorSourceId)
+                            }, newRatingIsMirror
+                                ? __('Create Mirror', 'shuriken-reviews')
+                                : __('Create', 'shuriken-reviews'))
+                        )
                     )
                 ),
 
@@ -954,101 +959,160 @@
                         onRequestClose: function () {
                             setIsEditModalOpen(false);
                             setNewMirrorName('');
+                            setEditingMirrorNames({});
+                            setSavingMirrorId(null);
                         },
-                        style: { width: '550px' }
+                        className: 'shuriken-modal shuriken-edit-modal'
                     },
-                    wp.element.createElement(TextControl, {
-                        label: __('Parent Rating Name', 'shuriken-reviews'),
-                        value: editParentName,
-                        onChange: setEditParentName,
-                        onKeyDown: handleEditKeyDown,
-                        placeholder: __('Enter rating name...', 'shuriken-reviews')
-                    }),
-                    wp.element.createElement(CheckboxControl, {
-                        label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
-                        checked: editParentDisplayOnly,
-                        onChange: setEditParentDisplayOnly,
-                        help: __('When enabled, users can only vote on sub-ratings. The parent shows the calculated average.', 'shuriken-reviews')
-                    }),
+                    // --- Parent fields section ---
                     wp.element.createElement(
                         'div',
-                        { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
-                        wp.element.createElement(Button, {
-                            variant: 'secondary',
-                            onClick: function () {
-                                setIsEditModalOpen(false);
-                                setNewMirrorName('');
-                            }
-                        }, __('Cancel', 'shuriken-reviews')),
-                        wp.element.createElement(Button, {
-                            variant: 'primary',
-                            onClick: updateParentRating,
-                            isBusy: updating,
-                            disabled: updating || !editParentName.trim()
-                        }, __('Update', 'shuriken-reviews'))
+                        { className: 'shuriken-modal-section' },
+                        wp.element.createElement(TextControl, {
+                            label: __('Parent Rating Name', 'shuriken-reviews'),
+                            value: editParentName,
+                            onChange: setEditParentName,
+                            onKeyDown: handleEditKeyDown,
+                            placeholder: __('Enter rating name...', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
+                            checked: editParentDisplayOnly,
+                            onChange: setEditParentDisplayOnly,
+                            help: __('When enabled, users can only vote on sub-ratings.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-modal-actions' },
+                            wp.element.createElement(Button, {
+                                variant: 'secondary',
+                                onClick: function () {
+                                    setIsEditModalOpen(false);
+                                    setNewMirrorName('');
+                                    setEditingMirrorNames({});
+                                }
+                            }, __('Cancel', 'shuriken-reviews')),
+                            wp.element.createElement(Button, {
+                                variant: 'primary',
+                                onClick: updateParentRating,
+                                isBusy: updating,
+                                disabled: updating || !editParentName.trim()
+                            }, __('Update', 'shuriken-reviews'))
+                        )
                     ),
 
                     // --- Mirrors management section ---
                     Divider && wp.element.createElement(Divider, null),
-                    wp.element.createElement('h4', { style: { fontSize: '14px', marginBottom: '12px', marginTop: '8px' } },
-                        __('Mirrors', 'shuriken-reviews') +
-                        (Array.isArray(parentMirrors) ? ' (' + parentMirrors.length + ')' : '')
-                    ),
-                    parentMirrorsLoading && wp.element.createElement(Spinner, null),
-                    Array.isArray(parentMirrors) && parentMirrors.length === 0 && !parentMirrorsLoading && wp.element.createElement(
-                        'p',
-                        { style: { color: '#666', fontStyle: 'italic', fontSize: '13px', margin: '0 0 12px 0' } },
-                        __('No mirrors yet. Create one below.', 'shuriken-reviews')
-                    ),
-                    Array.isArray(parentMirrors) && parentMirrors.map(function (m) {
-                        return wp.element.createElement(
-                            'div',
-                            {
-                                key: m.id,
-                                style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '8px 12px',
-                                    marginBottom: '8px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px',
-                                    backgroundColor: '#f9f9f9'
-                                }
-                            },
-                            wp.element.createElement('span', { style: { fontSize: '13px' } }, m.name + ' (ID: ' + m.id + ')'),
-                            wp.element.createElement(Button, {
-                                variant: 'tertiary',
-                                isDestructive: true,
-                                onClick: function () { deleteMirror(m.id, parseInt(selectedRating.id, 10)); },
-                                style: { padding: '4px 8px', fontSize: '12px' }
-                            }, __('Delete', 'shuriken-reviews'))
-                        );
-                    }),
                     wp.element.createElement(
                         'div',
-                        { style: { display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '8px' } },
+                        { className: 'shuriken-modal-section' },
                         wp.element.createElement(
                             'div',
-                            { style: { flex: 1 } },
+                            { className: 'shuriken-section-header' },
+                            wp.element.createElement('h4', null,
+                                __('Mirrors', 'shuriken-reviews')
+                            ),
+                            Array.isArray(parentMirrors) && wp.element.createElement(
+                                'span',
+                                { className: 'shuriken-badge' },
+                                parentMirrors.length
+                            )
+                        ),
+                        parentMirrorsLoading && wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-loading-row' },
+                            wp.element.createElement(Spinner, null)
+                        ),
+                        Array.isArray(parentMirrors) && parentMirrors.length === 0 && !parentMirrorsLoading && wp.element.createElement(
+                            'p',
+                            { className: 'shuriken-empty-message' },
+                            __('No mirrors yet. Create one below.', 'shuriken-reviews')
+                        ),
+                        // Mirror list items
+                        Array.isArray(parentMirrors) && parentMirrors.map(function (m) {
+                            var isEditing = editingMirrorNames.hasOwnProperty(m.id);
+                            var isSaving = savingMirrorId === parseInt(m.id, 10);
+
+                            if (isEditing) {
+                                return wp.element.createElement(
+                                    'div',
+                                    { key: m.id, className: 'shuriken-mirror-card is-editing' },
+                                    wp.element.createElement(TextControl, {
+                                        value: editingMirrorNames[m.id],
+                                        onChange: function (val) { updateEditingMirrorName(m.id, val); },
+                                        onKeyDown: function (e) {
+                                            if (e.key === 'Enter') { e.preventDefault(); saveMirrorName(m.id, parseInt(selectedRating.id, 10)); }
+                                            if (e.key === 'Escape') { cancelEditMirror(m.id); }
+                                        },
+                                        className: 'shuriken-mirror-edit-input'
+                                    }),
+                                    wp.element.createElement(
+                                        'div',
+                                        { className: 'shuriken-mirror-card-actions' },
+                                        wp.element.createElement(Button, {
+                                            variant: 'primary',
+                                            isSmall: true,
+                                            onClick: function () { saveMirrorName(m.id, parseInt(selectedRating.id, 10)); },
+                                            isBusy: isSaving,
+                                            disabled: isSaving || !(editingMirrorNames[m.id] || '').trim()
+                                        }, __('Save', 'shuriken-reviews')),
+                                        wp.element.createElement(Button, {
+                                            variant: 'tertiary',
+                                            isSmall: true,
+                                            onClick: function () { cancelEditMirror(m.id); },
+                                            disabled: isSaving
+                                        }, __('Cancel', 'shuriken-reviews'))
+                                    )
+                                );
+                            }
+
+                            return wp.element.createElement(
+                                'div',
+                                { key: m.id, className: 'shuriken-mirror-card' },
+                                wp.element.createElement('span', { className: 'shuriken-mirror-name' },
+                                    m.name,
+                                    wp.element.createElement('span', { className: 'shuriken-id-badge' }, '#' + m.id)
+                                ),
+                                wp.element.createElement(
+                                    'div',
+                                    { className: 'shuriken-mirror-card-actions' },
+                                    wp.element.createElement(Button, {
+                                        icon: 'edit',
+                                        label: __('Rename', 'shuriken-reviews'),
+                                        isSmall: true,
+                                        onClick: function () { startEditMirror(m.id, m.name); }
+                                    }),
+                                    wp.element.createElement(Button, {
+                                        icon: 'trash',
+                                        label: __('Delete', 'shuriken-reviews'),
+                                        isSmall: true,
+                                        isDestructive: true,
+                                        onClick: function () { deleteMirror(m.id, parseInt(selectedRating.id, 10)); }
+                                    })
+                                )
+                            );
+                        }),
+                        // Create new mirror inline
+                        wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-inline-create' },
                             wp.element.createElement(TextControl, {
-                                label: __('New Mirror Name', 'shuriken-reviews'),
                                 value: newMirrorName,
                                 onChange: setNewMirrorName,
                                 onKeyDown: function (e) {
                                     if (e.key === 'Enter') { e.preventDefault(); createMirrorForParent(); }
                                 },
-                                placeholder: __('e.g., Mirror for Page X', 'shuriken-reviews'),
-                                style: { marginBottom: 0 }
-                            })
-                        ),
-                        wp.element.createElement(Button, {
-                            variant: 'secondary',
-                            onClick: createMirrorForParent,
-                            isBusy: creatingMirror,
-                            disabled: creatingMirror || !newMirrorName.trim(),
-                            style: { marginBottom: '8px' }
-                        }, __('Create Mirror', 'shuriken-reviews'))
+                                placeholder: __('New mirror name...', 'shuriken-reviews'),
+                                className: 'shuriken-inline-create-input'
+                            }),
+                            wp.element.createElement(Button, {
+                                variant: 'secondary',
+                                isSmall: true,
+                                onClick: createMirrorForParent,
+                                isBusy: creatingMirror,
+                                disabled: creatingMirror || !newMirrorName.trim()
+                            }, __('Add', 'shuriken-reviews'))
+                        )
                     )
                 ),
 
@@ -1065,26 +1129,36 @@
                             setNewChildEffectType('positive');
                             setChildrenLocalEdits({});
                             setNewChildMirrorNames({});
+                            setEditingMirrorNames({});
+                            setSavingMirrorId(null);
                         },
-                        style: { width: '600px', maxWidth: '90vw' },
-                        className: 'shuriken-manage-children-modal'
+                        className: 'shuriken-modal shuriken-manage-children-modal'
                     },
+
+                    // --- Header info ---
                     selectedRating && wp.element.createElement(
                         'div',
-                        { style: { marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-                        wp.element.createElement('p', { style: { fontSize: '14px', color: '#666', marginTop: 0, marginBottom: 0 } },
-                            __('Managing sub-ratings for: ', 'shuriken-reviews') + selectedRating.name
+                        { className: 'shuriken-modal-header-info' },
+                        wp.element.createElement('p', null,
+                            __('Managing sub-ratings for: ', 'shuriken-reviews'),
+                            wp.element.createElement('strong', null, selectedRating.name)
                         ),
                         Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(
                             'span',
-                            { style: { fontSize: '12px', color: '#667eea', fontWeight: '500', backgroundColor: '#f0f4ff', padding: '4px 8px', borderRadius: '4px' } },
+                            { className: 'shuriken-badge is-info' },
                             Object.keys(childrenLocalEdits).length + ' ' + __('unsaved', 'shuriken-reviews')
                         )
                     ),
+
+                    // --- Add New Sub-Rating section ---
                     wp.element.createElement(
                         'div',
-                        { style: { marginBottom: '20px', padding: '16px', backgroundColor: '#f0f0f0', borderRadius: '4px' } },
-                        wp.element.createElement('h4', { style: { marginTop: 0, fontSize: '14px' } }, __('Add New Sub-Rating', 'shuriken-reviews')),
+                        { className: 'shuriken-modal-section shuriken-create-section' },
+                        wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-section-header' },
+                            wp.element.createElement('h4', null, __('Add New Sub-Rating', 'shuriken-reviews'))
+                        ),
                         wp.element.createElement(TextControl, {
                             label: __('Sub-Rating Name', 'shuriken-reviews'),
                             value: newChildName,
@@ -1104,7 +1178,7 @@
                         }),
                         wp.element.createElement(
                             'div',
-                            { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '12px' } },
+                            { className: 'shuriken-modal-actions' },
                             wp.element.createElement(Button, {
                                 variant: 'primary',
                                 onClick: addNewChild,
@@ -1113,116 +1187,161 @@
                             }, __('Add Sub-Rating', 'shuriken-reviews'))
                         )
                     ),
+
+                    // --- Existing Sub-Ratings ---
                     Divider && wp.element.createElement(Divider, null),
-                    wp.element.createElement('h4', { style: { fontSize: '14px', marginBottom: '12px' } },
-                        __('Existing Sub-Ratings', 'shuriken-reviews') + ' (' + childrenToManage.length + ')'
-                    ),
-                    childrenToManage.length === 0 && wp.element.createElement(
-                        'p',
-                        { style: { color: '#666', fontStyle: 'italic' } },
-                        __('No sub-ratings yet. Add one above.', 'shuriken-reviews')
-                    ),
-                    childrenToManage.map(function (child) {
-                        return wp.element.createElement(
+                    wp.element.createElement(
+                        'div',
+                        { className: 'shuriken-modal-section' },
+                        wp.element.createElement(
                             'div',
-                            {
-                                key: child.id,
-                                style: {
-                                    padding: '12px',
-                                    marginBottom: '12px',
-                                    border: childrenLocalEdits[child.id] ? '2px solid #667eea' : '1px solid #ddd',
-                                    borderRadius: '4px',
-                                    backgroundColor: childrenLocalEdits[child.id] ? '#f0f4ff' : '#fff'
-                                }
-                            },
-                            wp.element.createElement(
+                            { className: 'shuriken-section-header' },
+                            wp.element.createElement('h4', null, __('Existing Sub-Ratings', 'shuriken-reviews')),
+                            wp.element.createElement('span', { className: 'shuriken-badge' }, childrenToManage.length)
+                        ),
+                        childrenToManage.length === 0 && wp.element.createElement(
+                            'p',
+                            { className: 'shuriken-empty-message' },
+                            __('No sub-ratings yet. Add one above.', 'shuriken-reviews')
+                        ),
+                        childrenToManage.map(function (child) {
+                            var hasEdits = !!childrenLocalEdits[child.id];
+                            return wp.element.createElement(
                                 'div',
-                                { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' } },
-                                wp.element.createElement('strong', { style: { fontSize: '14px' } }, child.name),
-                                wp.element.createElement(Button, {
-                                    variant: 'tertiary',
-                                    isDestructive: true,
-                                    onClick: function () { deleteChild(child.id); },
-                                    style: { padding: '4px 8px', fontSize: '12px' }
-                                }, __('Delete', 'shuriken-reviews'))
-                            ),
-                            wp.element.createElement(
-                                'div',
-                                { style: { display: 'grid', gap: '8px' } },
-                                wp.element.createElement(TextControl, {
-                                    label: __('Name', 'shuriken-reviews'),
-                                    value: (childrenLocalEdits[child.id] && childrenLocalEdits[child.id].name) || child.name,
-                                    onChange: function (value) { updateChildLocally(child.id, { name: value }); },
-                                    style: { marginBottom: 0 }
-                                }),
-                                wp.element.createElement(SelectControl, {
-                                    label: __('Effect Type', 'shuriken-reviews'),
-                                    value: (childrenLocalEdits[child.id] && childrenLocalEdits[child.id].effect_type) || child.effect_type || 'positive',
-                                    options: [
-                                        { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
-                                        { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
-                                    ],
-                                    onChange: function (value) { updateChildLocally(child.id, { effect_type: value }); }
-                                })
-                            ),
-                            wp.element.createElement(
-                                'div',
-                                { style: { fontSize: '12px', color: '#666', marginTop: '8px' } },
-                                __('Votes: ', 'shuriken-reviews') + (child.total_votes || 0) + ' | ' +
-                                __('Average: ', 'shuriken-reviews') + calculateAverage(child) + '/5'
-                            ),
-                            // --- Mirrors for this child ---
-                            (function () {
-                                var cMirrors = childMirrorsMap[child.id];
-                                var cHasMirrors = Array.isArray(cMirrors);
-                                var cMirrorName = newChildMirrorNames[child.id] || '';
-                                return wp.element.createElement(
+                                {
+                                    key: child.id,
+                                    className: 'shuriken-child-card' + (hasEdits ? ' is-modified' : '')
+                                },
+                                // Child header row
+                                wp.element.createElement(
                                     'div',
-                                    { style: { marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' } },
-                                    wp.element.createElement('h5', { style: { fontSize: '12px', fontWeight: '600', margin: '0 0 8px 0', color: '#555' } },
-                                        __('Mirrors', 'shuriken-reviews') + (cHasMirrors ? ' (' + cMirrors.length + ')' : '')
-                                    ),
-                                    !cHasMirrors && wp.element.createElement(
-                                        'p',
-                                        { style: { color: '#999', fontSize: '12px', fontStyle: 'italic', margin: 0 } },
-                                        __('Loading...', 'shuriken-reviews')
-                                    ),
-                                    cHasMirrors && cMirrors.length === 0 && wp.element.createElement(
-                                        'p',
-                                        { style: { color: '#999', fontSize: '12px', fontStyle: 'italic', margin: '0 0 8px 0' } },
-                                        __('No mirrors.', 'shuriken-reviews')
-                                    ),
-                                    cHasMirrors && cMirrors.map(function (cm) {
-                                        return wp.element.createElement(
-                                            'div',
-                                            {
-                                                key: cm.id,
-                                                style: {
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    padding: '4px 8px',
-                                                    marginBottom: '4px',
-                                                    backgroundColor: '#f0f0f0',
-                                                    borderRadius: '3px',
-                                                    fontSize: '12px'
-                                                }
-                                            },
-                                            wp.element.createElement('span', null, cm.name + ' (#' + cm.id + ')'),
-                                            wp.element.createElement(Button, {
-                                                variant: 'tertiary',
-                                                isDestructive: true,
-                                                onClick: function () { deleteMirror(cm.id, parseInt(child.id, 10)); },
-                                                style: { padding: '2px 6px', fontSize: '11px', minHeight: 'auto' }
-                                            }, __('Delete', 'shuriken-reviews'))
-                                        );
-                                    }),
+                                    { className: 'shuriken-child-card-header' },
+                                    wp.element.createElement('strong', null, child.name),
                                     wp.element.createElement(
                                         'div',
-                                        { style: { display: 'flex', gap: '6px', alignItems: 'flex-end', marginTop: '6px' } },
+                                        { className: 'shuriken-child-card-meta' },
+                                        wp.element.createElement('span', { className: 'shuriken-stat-text' },
+                                            calculateAverage(child) + '/5 (' + (child.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
+                                        ),
+                                        wp.element.createElement(Button, {
+                                            icon: 'trash',
+                                            label: __('Delete Sub-Rating', 'shuriken-reviews'),
+                                            isSmall: true,
+                                            isDestructive: true,
+                                            onClick: function () { deleteChild(child.id); }
+                                        })
+                                    )
+                                ),
+                                // Edit fields
+                                wp.element.createElement(
+                                    'div',
+                                    { className: 'shuriken-child-card-fields' },
+                                    wp.element.createElement(TextControl, {
+                                        label: __('Name', 'shuriken-reviews'),
+                                        value: (hasEdits && childrenLocalEdits[child.id].name) || child.name,
+                                        onChange: function (value) { updateChildLocally(child.id, { name: value }); }
+                                    }),
+                                    wp.element.createElement(SelectControl, {
+                                        label: __('Effect Type', 'shuriken-reviews'),
+                                        value: (hasEdits && childrenLocalEdits[child.id].effect_type) || child.effect_type || 'positive',
+                                        options: [
+                                            { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
+                                            { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
+                                        ],
+                                        onChange: function (value) { updateChildLocally(child.id, { effect_type: value }); }
+                                    })
+                                ),
+                                // --- Mirrors for this child ---
+                                (function () {
+                                    var cMirrors = childMirrorsMap[child.id];
+                                    var cHasMirrors = Array.isArray(cMirrors);
+                                    var cMirrorName = newChildMirrorNames[child.id] || '';
+                                    return wp.element.createElement(
+                                        'div',
+                                        { className: 'shuriken-child-mirrors-section' },
                                         wp.element.createElement(
                                             'div',
-                                            { style: { flex: 1 } },
+                                            { className: 'shuriken-section-header' },
+                                            wp.element.createElement('h5', null, __('Mirrors', 'shuriken-reviews')),
+                                            cHasMirrors && wp.element.createElement('span', { className: 'shuriken-badge' }, cMirrors.length)
+                                        ),
+                                        !cHasMirrors && wp.element.createElement(
+                                            'div',
+                                            { className: 'shuriken-loading-row' },
+                                            wp.element.createElement(Spinner, null)
+                                        ),
+                                        cHasMirrors && cMirrors.length === 0 && wp.element.createElement(
+                                            'p',
+                                            { className: 'shuriken-empty-message' },
+                                            __('No mirrors.', 'shuriken-reviews')
+                                        ),
+                                        cHasMirrors && cMirrors.map(function (cm) {
+                                            var isEditing = editingMirrorNames.hasOwnProperty(cm.id);
+                                            var isSaving = savingMirrorId === parseInt(cm.id, 10);
+
+                                            if (isEditing) {
+                                                return wp.element.createElement(
+                                                    'div',
+                                                    { key: cm.id, className: 'shuriken-mirror-card is-editing' },
+                                                    wp.element.createElement(TextControl, {
+                                                        value: editingMirrorNames[cm.id],
+                                                        onChange: function (val) { updateEditingMirrorName(cm.id, val); },
+                                                        onKeyDown: function (e) {
+                                                            if (e.key === 'Enter') { e.preventDefault(); saveMirrorName(cm.id, parseInt(child.id, 10)); }
+                                                            if (e.key === 'Escape') { cancelEditMirror(cm.id); }
+                                                        },
+                                                        className: 'shuriken-mirror-edit-input'
+                                                    }),
+                                                    wp.element.createElement(
+                                                        'div',
+                                                        { className: 'shuriken-mirror-card-actions' },
+                                                        wp.element.createElement(Button, {
+                                                            variant: 'primary',
+                                                            isSmall: true,
+                                                            onClick: function () { saveMirrorName(cm.id, parseInt(child.id, 10)); },
+                                                            isBusy: isSaving,
+                                                            disabled: isSaving || !(editingMirrorNames[cm.id] || '').trim()
+                                                        }, __('Save', 'shuriken-reviews')),
+                                                        wp.element.createElement(Button, {
+                                                            variant: 'tertiary',
+                                                            isSmall: true,
+                                                            onClick: function () { cancelEditMirror(cm.id); },
+                                                            disabled: isSaving
+                                                        }, __('Cancel', 'shuriken-reviews'))
+                                                    )
+                                                );
+                                            }
+
+                                            return wp.element.createElement(
+                                                'div',
+                                                { key: cm.id, className: 'shuriken-mirror-card' },
+                                                wp.element.createElement('span', { className: 'shuriken-mirror-name' },
+                                                    cm.name,
+                                                    wp.element.createElement('span', { className: 'shuriken-id-badge' }, '#' + cm.id)
+                                                ),
+                                                wp.element.createElement(
+                                                    'div',
+                                                    { className: 'shuriken-mirror-card-actions' },
+                                                    wp.element.createElement(Button, {
+                                                        icon: 'edit',
+                                                        label: __('Rename', 'shuriken-reviews'),
+                                                        isSmall: true,
+                                                        onClick: function () { startEditMirror(cm.id, cm.name); }
+                                                    }),
+                                                    wp.element.createElement(Button, {
+                                                        icon: 'trash',
+                                                        label: __('Delete', 'shuriken-reviews'),
+                                                        isSmall: true,
+                                                        isDestructive: true,
+                                                        onClick: function () { deleteMirror(cm.id, parseInt(child.id, 10)); }
+                                                    })
+                                                )
+                                            );
+                                        }),
+                                        // Create new child mirror inline
+                                        wp.element.createElement(
+                                            'div',
+                                            { className: 'shuriken-inline-create' },
                                             wp.element.createElement(TextControl, {
                                                 value: cMirrorName,
                                                 onChange: function (value) {
@@ -1236,50 +1355,54 @@
                                                 onKeyDown: function (e) {
                                                     if (e.key === 'Enter') { e.preventDefault(); createMirrorForChild(child.id); }
                                                 },
-                                                placeholder: __('Mirror name...', 'shuriken-reviews'),
-                                                style: { marginBottom: 0 }
-                                            })
-                                        ),
-                                        wp.element.createElement(Button, {
-                                            variant: 'secondary',
-                                            onClick: function () { createMirrorForChild(child.id); },
-                                            isBusy: creatingChildMirrorId === parseInt(child.id, 10),
-                                            disabled: creatingChildMirrorId !== null || !cMirrorName.trim(),
-                                            isSmall: true,
-                                            style: { marginBottom: '8px' }
-                                        }, __('Add', 'shuriken-reviews'))
-                                    )
-                                );
-                            })()
-                        );
-                    }),
-                    Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(
-                        Notice,
-                        { status: 'info', isDismissible: false, style: { marginTop: '16px' } },
-                        __('You have unsaved changes. Click "Apply Changes" to save.', 'shuriken-reviews')
-                    ),
-                    wp.element.createElement(
-                        'div',
-                        { style: { marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
-                        Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(Button, {
-                            variant: 'primary',
-                            onClick: applyChildrenEdits,
-                            isBusy: savingChildren,
-                            disabled: savingChildren
-                        }, __('Apply Changes', 'shuriken-reviews')),
-                        wp.element.createElement(Button, {
-                            variant: Object.keys(childrenLocalEdits).length > 0 ? 'secondary' : 'primary',
-                            onClick: function () {
-                                var hasUnsaved = Object.keys(childrenLocalEdits).length > 0;
-                                if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) return;
-                                setIsManageChildrenModalOpen(false);
-                                setNewChildName('');
-                                setNewChildEffectType('positive');
-                                setChildrenLocalEdits({});
-                                setNewChildMirrorNames({});
-                            },
-                            disabled: savingChildren
-                        }, __('Close', 'shuriken-reviews'))
+                                                placeholder: __('New mirror name...', 'shuriken-reviews'),
+                                                className: 'shuriken-inline-create-input'
+                                            }),
+                                            wp.element.createElement(Button, {
+                                                variant: 'secondary',
+                                                isSmall: true,
+                                                onClick: function () { createMirrorForChild(child.id); },
+                                                isBusy: creatingChildMirrorId === parseInt(child.id, 10),
+                                                disabled: creatingChildMirrorId !== null || !cMirrorName.trim()
+                                            }, __('Add', 'shuriken-reviews'))
+                                        )
+                                    );
+                                })()
+                            );
+                        }),
+
+                        // Unsaved changes notice
+                        Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(
+                            Notice,
+                            { status: 'info', isDismissible: false, className: 'shuriken-unsaved-notice' },
+                            __('You have unsaved changes. Click "Apply Changes" to save.', 'shuriken-reviews')
+                        ),
+
+                        // Footer actions
+                        wp.element.createElement(
+                            'div',
+                            { className: 'shuriken-modal-actions' },
+                            Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(Button, {
+                                variant: 'primary',
+                                onClick: applyChildrenEdits,
+                                isBusy: savingChildren,
+                                disabled: savingChildren
+                            }, __('Apply Changes', 'shuriken-reviews')),
+                            wp.element.createElement(Button, {
+                                variant: Object.keys(childrenLocalEdits).length > 0 ? 'secondary' : 'primary',
+                                onClick: function () {
+                                    var hasUnsaved = Object.keys(childrenLocalEdits).length > 0;
+                                    if (hasUnsaved && !confirm(__('You have unsaved changes. Close without saving?', 'shuriken-reviews'))) return;
+                                    setIsManageChildrenModalOpen(false);
+                                    setNewChildName('');
+                                    setNewChildEffectType('positive');
+                                    setChildrenLocalEdits({});
+                                    setNewChildMirrorNames({});
+                                    setEditingMirrorNames({});
+                                },
+                                disabled: savingChildren
+                            }, __('Close', 'shuriken-reviews'))
+                        )
                     )
                 ),
 

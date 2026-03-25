@@ -40,6 +40,12 @@
         }
     ],
     "textdomain": "shuriken-reviews",
+    "example": {
+        "viewportWidth": 300,
+        "attributes": {
+            "ratingId": 0
+        }
+    },
     "attributes": {
         "ratingId": {
             "type": "number",

@@ -97,6 +97,18 @@ class Shuriken_Block {
             true
         );
 
+        // Register shared block helpers (error handling, search, etc.)
+        wp_register_script(
+            'shuriken-block-helpers',
+            plugins_url('blocks/shared/block-helpers.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-element',
+                'wp-i18n'
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
         // Register the editor script with proper dependencies
         wp_register_script(
             'shuriken-rating-editor',
@@ -109,7 +121,8 @@ class Shuriken_Block {
                 'wp-i18n',
                 'wp-api-fetch',
                 'wp-data',
-                'shuriken-ratings-store'
+                'shuriken-ratings-store',
+                'shuriken-block-helpers'
             ),
             SHURIKEN_REVIEWS_VERSION,
             true
@@ -149,7 +162,8 @@ class Shuriken_Block {
                 'wp-i18n',
                 'wp-api-fetch',
                 'wp-data',
-                'shuriken-ratings-store'
+                'shuriken-ratings-store',
+                'shuriken-block-helpers'
             ),
             SHURIKEN_REVIEWS_VERSION,
             true

@@ -188,7 +188,8 @@
                     return resultsArray;
                 }).catch(function(error) {
                     console.error('searchRatings error:', error);
-                    args.dispatch.setError(error.message || 'Search failed');
+                    // Only log search errors — do not set store-level error
+                    // to avoid propagating to every block instance.
                     args.dispatch.setSearchResults([]);
                     args.dispatch.setIsSearching(false);
                     return [];

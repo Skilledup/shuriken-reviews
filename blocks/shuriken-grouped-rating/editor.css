@@ -114,3 +114,240 @@
     padding: 4px 8px;
     min-height: 28px;
 }
+
+/* ---- Modal Styles ---- */
+
+.shuriken-modal .components-modal__content {
+    width: 560px;
+    max-width: 90vw;
+}
+
+.shuriken-manage-children-modal .components-modal__content {
+    width: 620px;
+}
+
+.shuriken-modal-section {
+    margin-bottom: 16px;
+}
+
+.shuriken-modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.shuriken-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.shuriken-section-header h4,
+.shuriken-section-header h5 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.shuriken-section-header h5 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+}
+
+/* Badge (count / label) */
+.shuriken-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    padding: 0 6px;
+    height: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+    background-color: #e0e0e0;
+    color: #444;
+}
+
+.shuriken-badge.is-info {
+    background-color: #e8eeff;
+    color: #3858e9;
+}
+
+/* Empty / loading states */
+.shuriken-empty-message {
+    color: #757575;
+    font-style: italic;
+    font-size: 13px;
+    margin: 0 0 12px 0;
+}
+
+.shuriken-loading-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+/* ---- Mirror Cards ---- */
+
+.shuriken-mirror-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.shuriken-mirror-card:hover {
+    border-color: #c0c0c0;
+    background-color: #f5f5f5;
+}
+
+.shuriken-mirror-card.is-editing {
+    padding: 6px 8px;
+    border-color: #667eea;
+    background-color: #f6f8ff;
+    gap: 8px;
+}
+
+.shuriken-mirror-card.is-editing .components-base-control {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.shuriken-mirror-edit-input {
+    margin-bottom: 0 !important;
+}
+
+.shuriken-mirror-edit-input .components-base-control__field {
+    margin-bottom: 0;
+}
+
+.shuriken-mirror-name {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shuriken-id-badge {
+    font-size: 11px;
+    color: #999;
+    font-weight: 400;
+}
+
+.shuriken-mirror-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+/* ---- Inline Create Row ---- */
+
+.shuriken-inline-create {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+}
+
+.shuriken-inline-create-input {
+    flex: 1;
+    margin-bottom: 0 !important;
+}
+
+.shuriken-inline-create-input .components-base-control__field {
+    margin-bottom: 0;
+}
+
+.shuriken-inline-create > .components-button {
+    margin-bottom: 8px;
+}
+
+/* ---- Child Cards (Manage Sub-Ratings) ---- */
+
+.shuriken-modal-header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.shuriken-modal-header-info p {
+    font-size: 14px;
+    color: #555;
+    margin: 0;
+}
+
+.shuriken-create-section {
+    padding: 16px;
+    background-color: #f6f6f6;
+    border-radius: 6px;
+    border: 1px solid #e8e8e8;
+}
+
+.shuriken-child-card {
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fff;
+    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.shuriken-child-card.is-modified {
+    border-color: #667eea;
+    background-color: #fafbff;
+    box-shadow: 0 0 0 1px #667eea;
+}
+
+.shuriken-child-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.shuriken-child-card-header strong {
+    font-size: 14px;
+}
+
+.shuriken-child-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shuriken-stat-text {
+    font-size: 12px;
+    color: #757575;
+}
+
+.shuriken-child-card-fields {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.shuriken-child-mirrors-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.shuriken-unsaved-notice {
+    margin-top: 16px;
+}

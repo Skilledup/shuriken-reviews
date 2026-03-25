@@ -20,11 +20,18 @@
     const { registerBlockType } = wp.blocks;
     const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
     const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice } = wp.components;
-    const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
+    const { useState, useEffect, useMemo, useCallback } = wp.element;
     const { __ } = wp.i18n;
     const { useSelect, useDispatch } = wp.data;
 
     const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
+    const {
+        makeErrorHandler,
+        makeErrorDismissers,
+        useSearchHandler,
+        titleTagOptions,
+        calculateAverage
+    } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/rating', {
         edit: function (props) {
@@ -51,8 +58,6 @@
 
             // Search state
             const [searchTerm, setSearchTerm] = useState('');
-            const searchTimeoutRef = useRef(null);
-            const initialFetchDone = useRef(false);
 
             // ---- Build CSS variables for accent / star colour ----
             var cssVars = {};
@@ -110,58 +115,22 @@
             // Combined error state
             const error = localError || storeError;
 
-            // Error handling helper
-            function handleApiError(err, action) {
-                console.error('Shuriken Reviews API Error:', err);
+            // Error handling helpers (shared)
+            const handleApiError = makeErrorHandler(setLocalError, setLastFailedAction);
+            const { retryLastAction: _retry, dismissError } = makeErrorDismissers(setLocalError, setLastFailedAction, clearError);
+            function retryLastAction() { _retry(lastFailedAction); }
 
-                var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
+            // Debounced search handler (shared)
+            const handleSearchChange = useSearchHandler(searchRatings, 'all', 20);
 
-                if (err.message) {
-                    errorMessage = err.message;
-                } else if (err.data && err.data.message) {
-                    errorMessage = err.data.message;
-                } else if (typeof err === 'string') {
-                    errorMessage = err;
-                }
-
-                if (err.code === 'rest_forbidden' || err.code === 'rest_cookie_invalid_nonce') {
-                    errorMessage = __('Permission denied. Please refresh the page and try again.', 'shuriken-reviews');
-                } else if (err.code === 'rest_no_route') {
-                    errorMessage = __('API endpoint not found. Please ensure the plugin is properly installed.', 'shuriken-reviews');
-                } else if (err.status === 429 || err.code === 'rate_limit_exceeded') {
-                    errorMessage = __('Too many requests. Please wait a moment and try again.', 'shuriken-reviews');
-                } else if (err.status === 404 || err.code === 'not_found') {
-                    errorMessage = __('The requested resource was not found.', 'shuriken-reviews');
-                } else if (err.status === 500 || err.code === 'internal_server_error') {
-                    errorMessage = __('Server error. Please try again later.', 'shuriken-reviews');
-                }
-
-                setLocalError(errorMessage);
-                setLastFailedAction(action);
-            }
-
-            function retryLastAction() {
-                setLocalError(null);
-                clearError();
-                if (lastFailedAction) {
-                    lastFailedAction();
-                    setLastFailedAction(null);
-                }
-            }
-
-            function dismissError() {
-                setLocalError(null);
-                clearError();
-                setLastFailedAction(null);
-            }
+            // Track search term for option building
+            const handleSearchWithTerm = useCallback(function (term) {
+                setSearchTerm(term);
+                handleSearchChange(term);
+            }, [handleSearchChange]);
 
             // Fetch selected rating and initial data on mount
             useEffect(function () {
-                if (initialFetchDone.current) {
-                    return;
-                }
-                initialFetchDone.current = true;
-
                 if (ratingId && !selectedRating) {
                     fetchRating(ratingId);
                 }
@@ -176,30 +145,6 @@
                     fetchRating(ratingId);
                 }
             }, [ratingId]);
-
-            // Debounced search handler
-            const handleSearchChange = useCallback(function (term) {
-                setSearchTerm(term);
-
-                if (searchTimeoutRef.current) {
-                    clearTimeout(searchTimeoutRef.current);
-                }
-
-                if (term && term.trim().length > 0) {
-                    searchTimeoutRef.current = setTimeout(function () {
-                        searchRatings(term.trim(), 'all', 20);
-                    }, 300);
-                }
-            }, [searchRatings]);
-
-            // Cleanup timeout on unmount
-            useEffect(function () {
-                return function () {
-                    if (searchTimeoutRef.current) {
-                        clearTimeout(searchTimeoutRef.current);
-                    }
-                };
-            }, []);
 
             // Create new rating
             function createNewRating() {
@@ -336,19 +281,6 @@
                 return options;
             }, [searchResults, selectedRating, searchTerm]);
 
-            // Title tag options
-            var titleTagOptions = [
-                { label: 'H1', value: 'h1' },
-                { label: 'H2', value: 'h2' },
-                { label: 'H3', value: 'h3' },
-                { label: 'H4', value: 'h4' },
-                { label: 'H5', value: 'h5' },
-                { label: 'H6', value: 'h6' },
-                { label: 'DIV', value: 'div' },
-                { label: 'P', value: 'p' },
-                { label: 'SPAN', value: 'span' }
-            ];
-
             // Calculate average for preview
             var average = 0;
             var totalVotes = 0;
@@ -381,7 +313,7 @@
                             onChange: function (value) {
                                 setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
                             },
-                            onFilterValueChange: handleSearchChange,
+                            onFilterValueChange: handleSearchWithTerm,
                             placeholder: isSearching
                                 ? __('Searching...', 'shuriken-reviews')
                                 : __('Type to search ratings...', 'shuriken-reviews')
