@@ -169,8 +169,7 @@
 
             const loading = (isLoadingParents && parentRatings.length === 0) ||
                 // Wait for mirror data to prevent flash of parent data
-                (mirrorId && !allRatingsById[mirrorId]) ||
-                (mirrorId && allRatingsById[mirrorId] && !allRatingsById[mirrorId].source_id);
+                (mirrorId && !allRatingsById[mirrorId]);
 
             // Combined error state (local UI errors + store-level errors)
             const combinedError = error || storeError;

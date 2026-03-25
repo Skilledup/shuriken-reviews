@@ -137,10 +137,9 @@
                     return Promise.resolve(null);
                 }
 
-                // Check cache first — but skip for mirrors that may have
-                // been cached from list endpoints without resolved vote data
+                // Check cache first
                 var cached = args.select.getRating(ratingId);
-                if (cached && !cached.mirror_of) {
+                if (cached) {
                     return Promise.resolve(cached);
                 }
 
