@@ -119,6 +119,7 @@ Shuriken Reviews is built with developers in mind. The plugin provides extensive
 - `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - List mirrorable ratings
 - `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - List child ratings
 - `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - List mirrors of a rating
+- `GET /wp-json/shuriken-reviews/v1/ratings/batch?ids=1,2,3` - Batch-fetch ratings by ID
 - `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` - Get fresh stats
 - `GET /wp-json/shuriken-reviews/v1/nonce` - Get fresh nonce
 

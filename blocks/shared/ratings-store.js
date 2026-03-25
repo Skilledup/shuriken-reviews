@@ -362,7 +362,12 @@
                     args.dispatch.setRatings(arr);
                     return arr;
                 }).catch(function(error) {
-                    console.error('fetchRatingsBatch error:', error);
+                    // Batch endpoint may not exist yet (new install / stale cache).
+                    // Fall back to individual fetches so mirrors still load.
+                    console.warn('fetchRatingsBatch unavailable, falling back to individual fetches:', error.code || error.message);
+                    missing.forEach(function(id) {
+                        args.dispatch(thunks.fetchRating(id));
+                    });
                     return [];
                 });
             };
@@ -393,8 +398,11 @@
                     args.dispatch.setIsLoadingMirrors(ratingId, false);
                     return mirrorsArray;
                 }).catch(function(error) {
-                    console.error('fetchMirrorsForRating error:', error);
-                    args.dispatch.setError(error.message || 'Failed to fetch mirrors');
+                    // Mirrors endpoint may return invalid JSON on stale cache / new install.
+                    // Don't set a store-level error — mirrors are non-critical for the block.
+                    // Cache empty array so the request isn't retried every render.
+                    console.warn('fetchMirrorsForRating failed for ' + ratingId + ':', error.code || error.message);
+                    args.dispatch.setMirrorsForRating(ratingId, []);
                     args.dispatch.setIsLoadingMirrors(ratingId, false);
                     return [];
                 });

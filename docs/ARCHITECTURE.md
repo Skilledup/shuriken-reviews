@@ -4,103 +4,12 @@ This document provides a high-level overview of the plugin's structure, design d
 
 ## Table of Contents
 
-- [Directory Structure](#directory-structure)
 - [Core Components](#core-components)
 - [Module Responsibilities](#module-responsibilities)
 - [Data Flow](#data-flow)
 - [Design Patterns](#design-patterns)
 - [Service Container](#service-container)
 - [Entry Points](#entry-points)
-
----
-
-## Directory Structure
-
-```
-shuriken-reviews/
-│
-├── shuriken-reviews.php          # Main plugin file - orchestration only
-├── README.md                      # User documentation & quick start
-│
-├── admin/                         # Admin pages (rendered templates)
-│   ├── about.php                  # About page with quick start
-│   ├── analytics.php              # Analytics dashboard page
-│   ├── comments.php               # Comments settings page
-│   ├── ratings.php                # Ratings management page
-│   ├── settings.php               # Plugin settings (tabbed router)
-│   ├── item-stats.php             # Per-item statistics page
-│   ├── voter-activity.php         # Voter activity details page
-│   └── partials/                  # Settings tab partials
-│       ├── settings-general.php       # General settings tab
-│       └── settings-rate-limiting.php # Rate limiting settings tab
-│
-├── assets/                        # CSS and JavaScript files
-│   ├── css/
-│   │   ├── shuriken-reviews.css           # Frontend styles
-│   │   ├── admin-analytics.css            # Analytics page styles
-│   │   ├── admin-ratings.css              # Ratings page styles
-│   │   ├── admin-about.css                # About page styles
-│   │   └── admin-settings.css             # Settings page styles
-│   ├── js/
-│   │   ├── shuriken-reviews.js            # Frontend vote submission
-│   │   ├── admin-analytics.js             # Analytics chart.js
-│   │   ├── admin-ratings.js               # Ratings page interactions
-│   │   └── admin-settings.js              # Settings page interactions
-│   └── images/                    # UI images and icons
-│
-├── blocks/                        # Gutenberg block definitions
-│   ├── shared/
-│   │   ├── ratings-store.js       # Shared @wordpress/data store
-│   │   └── block-helpers.js       # Shared utilities (error handling, search, etc.)
-│   ├── shuriken-rating/
-│   │   ├── index.js               # Block registration & editor
-│   │   ├── block.json             # Block metadata
-│   │   └── editor.css             # Editor-only styles
-│   └── shuriken-grouped-rating/
-│       ├── index.js               # Grouped rating block
-│       ├── block.json             # Block metadata
-│       └── editor.css             # Editor-only styles
-│
-├── includes/                      # Core PHP classes
-│   ├── class-shuriken-*.php       # Feature modules
-│   ├── comments.php               # Comment-related utilities
-│   │
-│   ├── interfaces/                # Service contracts
-│   │   ├── interface-shuriken-database.php
-│   │   ├── interface-shuriken-analytics.php
-│   │   └── interface-shuriken-rate-limiter.php
-│   │
-│   └── exceptions/                # Error handling
-│       ├── class-shuriken-exception.php (base)
-│       ├── class-shuriken-database-exception.php
-│       ├── class-shuriken-validation-exception.php
-│       ├── class-shuriken-not-found-exception.php
-│       ├── class-shuriken-permission-exception.php
-│       ├── class-shuriken-logic-exception.php
-│       ├── class-shuriken-configuration-exception.php
-│       ├── class-shuriken-rate-limit-exception.php
-│       └── class-shuriken-integration-exception.php
-│
-├── docs/                          # Developer documentation
-│   ├── INDEX.md                   # Documentation index & quick start
-│   ├── ARCHITECTURE.md            # This file
-│   ├── ROADMAP.md                 # Feature roadmap & status
-│   └── guides/
-│       ├── hooks-reference.md          # All 20 hooks documented
-│       ├── dependency-injection.md     # DI container guide + adoption status
-│       ├── exception-handling.md       # Exception usage guide
-│       ├── helper-functions.md         # Helper functions reference
-│       ├── rest-api.md                 # REST API reference
-│       ├── error-handling-blocks.md    # Block error handling
-│       └── testing.md                  # Testing with mocks
-│
-├── languages/                     # Internationalization
-│   ├── shuriken-reviews.pot       # Translation template
-│   └── shuriken-reviews-fa_IR.* # Farsi translations
-│
-└── tests/                         # Testing utilities
-    └── example-mock-database.php  # Mock implementation
-```
 
 ---
 
@@ -303,6 +212,7 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 - `GET /wp-json/shuriken-reviews/v1/ratings/search` - AJAX autocomplete search
 - `GET /wp-json/shuriken-reviews/v1/ratings/parents` - Parent ratings only
 - `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - Mirrorable ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/batch` - Batch-fetch by IDs (max 50)
 - `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - Child ratings
 - `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - Mirror ratings
 - `POST /wp-json/shuriken-reviews/v1/votes`
@@ -355,7 +265,8 @@ Centralized state management for all rating blocks using `@wordpress/data`.
 - `isLoadingMirrors(id)` - Mirror loading state
 
 **Key Actions:**
-- `fetchRating(id)` - Fetch single rating
+- `fetchRating(id)` - Fetch single rating (cache-first)
+- `fetchRatingsBatch(ids)` - Batch-fetch multiple ratings in one API call (skips cached)
 - `searchRatings(term, type, limit)` - AJAX search
 - `fetchParentRatings()` - Load parent ratings
 - `fetchMirrorsForRating(id)` - Fetch mirrors for a rating

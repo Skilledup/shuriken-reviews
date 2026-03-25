@@ -2,8 +2,6 @@
 
 This document lists all available hooks (actions and filters) in the Shuriken Reviews plugin. Use these hooks to extend and customize the plugin's functionality.
 
-> **Version:** 1.10.0+
-
 > **Note:** All rating display hooks work consistently for both **Shortcodes** (`[shuriken_rating]`) and **Gutenberg Blocks**. The block renderer uses the same underlying render method as shortcodes, ensuring your customizations apply everywhere.
 
 ---
@@ -385,8 +383,6 @@ add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $i
 ---
 
 ### Rate Limiting Filters
-
-> **Since:** 1.10.0
 
 #### `shuriken_rate_limit_settings`
 
@@ -827,8 +823,6 @@ add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalize
 ---
 
 ### Rate Limiting Actions
-
-> **Since:** 1.10.0
 
 #### `shuriken_before_rate_limit_check`
 

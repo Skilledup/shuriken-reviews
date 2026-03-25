@@ -50,29 +50,18 @@ Full mirror CRUD and management integrated into the Grouped Rating block editor,
 - **Unified Rating Selector** — Single `ComboboxControl` dropdown searches both parent ratings and mirrors (`parents_and_mirrors` search type). Selecting a mirror auto-decomposes into `ratingId` (source) + `mirrorId` (display override)
 - **Mirror CRUD in Modals** — Create, rename, and delete mirrors for the parent rating (Edit Parent modal) and for each sub-rating (Manage Sub-Ratings modal)
 - **Inline Rename** — Click the edit icon on any mirror card to rename it in-place; supports Enter to save, Escape to cancel, with busy indicator
-- **Shared Block Helpers** — Common utilities extracted to `blocks/shared/block-helpers.js`: `formatApiError()`, `makeErrorHandler()`, `makeErrorDismissers()`, `useSearchHandler()`, `titleTagOptions`, `calculateAverage()`
+- **Shared Block Helpers** — Common utilities extracted to `blocks/shared/block-helpers.js`
 - **Polished Modal UI** — All three modals (Create, Edit Parent, Manage Sub-Ratings) redesigned with CSS classes, card-based mirror rows, section headers with count badges, consistent empty/loading states
 - **Block Inserter Preview** — Both blocks now provide an `example` property in block.json for a proper inserter thumbnail
+- **Batch Mirror Fetching** — New `GET /ratings/batch?ids=…` endpoint and `fetchRatingsBatch()` store thunk load all mirror data in one API call, replacing N+1 individual requests
+- **Graceful Error Recovery** — Mirror/batch fetch failures no longer show user-facing errors; batch falls back to individual fetches for compatibility with stale caches
 
-**New REST Endpoint:**
+**New REST Endpoints:**
 - `GET /ratings/{id}/mirrors` — Returns all mirrors of a given rating (permission: `edit_posts`)
+- `GET /ratings/batch?ids=1,2,3` — Batch-fetch multiple ratings by ID with mirror vote data resolved (permission: `edit_posts`, max 50)
 
 **New Search Type:**
 - `parents_and_mirrors` — Search type for `/ratings/search` that returns parent ratings plus mirrors whose source is a parent, with vote data batch-resolved from source ratings
-
-**Files Added:**
-- `blocks/shared/block-helpers.js` — Shared utilities for both blocks (~175 lines)
-
-**Files Changed:**
-- `blocks/shuriken-grouped-rating/index.js` — Major overhaul: unified dropdown, mirror CRUD with inline rename, polished modals
-- `blocks/shuriken-grouped-rating/editor.css` — ~180 lines of new modal/card CSS classes
-- `blocks/shuriken-grouped-rating/block.json` — Added `mirrorId`, `subRatings` attributes, `example` property
-- `blocks/shuriken-rating/index.js` — Refactored to use shared helpers, removed duplicate code
-- `blocks/shuriken-rating/block.json` — Added `example` property
-- `blocks/shared/ratings-store.js` — Added `mirrorsById` state, `fetchMirrorsForRating`/`invalidateMirrorsCache` thunks, mirror selectors
-- `includes/class-shuriken-rest-api.php` — Added `/ratings/{id}/mirrors` endpoint, `parents_and_mirrors` to search route enum
-- `includes/class-shuriken-database.php` — Added `parents_and_mirrors` search type with batch mirror resolution
-- `includes/class-shuriken-block.php` — Mirror resolution in `render_grouped_block()`, registered `shuriken-block-helpers` script
 
 ---
 
@@ -197,95 +186,15 @@ Comprehensive voter tracking and analytics for both members and guests.
 
 Major performance optimization for FSE editor and frontend.
 
-**Problem Solved:**
-- Each block instance was making 3 separate API calls fetching ALL ratings
-- No shared state between block instances in FSE editor
-- REST stats endpoint made N database queries for N ratings
+**What was done:**
+- Shared `@wordpress/data` store prevents duplicate API calls across block instances
+- AJAX search-as-you-type dropdown replaces loading all ratings upfront
+- Batch `get_ratings_by_ids()` DB method — single query for stats endpoint
+- `/ratings/search` and `/ratings/{id}/children` REST endpoints
+- Loading state feedback when cached data refreshes
 
-#### Phase 1: Database Foundation ✅
-
-| # | Task | Status |
-|---|------|--------|
-| 1 | Add batch database method `get_ratings_by_ids($ids)` | ✅ Done |
-| 2 | Add search database method `search_ratings($term, $limit, $type)` | ✅ Done |
-| 9 | Update database interface with new signatures | ✅ Done |
-| - | *Bonus:* Add `get_child_ratings($parent_id)` for grouped blocks | ✅ Done |
-
-#### Phase 2: REST API Improvements ✅
-
-| # | Task | Status |
-|---|------|--------|
-| 3 | Add `/ratings/search` endpoint for AJAX autocomplete | ✅ Done |
-| 4 | Optimize `/ratings/stats` to use batch query | ✅ Done |
-| - | *Bonus:* Add `/ratings/{id}/children` endpoint | ✅ Done |
-
-#### Phase 3: FSE Editor Optimization ✅
-
-| # | Task | Status |
-|---|------|--------|
-| 5 | Create shared `@wordpress/data` store | ✅ Done |
-| 6 | Convert rating dropdown to AJAX (search only when typing) | ✅ Done |
-| 7 | Update grouped-rating block with same patterns | ✅ Done |
-
-#### Phase 4: Server-side Optimization 🚧
-
-| # | Task | Status |
-|---|------|--------|
-| 8 | Add server-side render pre-fetch | 🚧 Pending |
-
-**Goal:** On frontend page render, collect all rating block IDs, execute single batch query, distribute data to blocks.
-
-**Implementation checklist:**
-- [ ] Hook into block render to collect rating IDs
-- [ ] After all blocks collected, batch fetch via `get_ratings_by_ids()`
-- [ ] Pass pre-fetched data to individual block renders
-- [ ] Avoid duplicate queries on pages with many rating blocks
-
-#### Phase 5: Validation ✅
-
-| # | Task | Status |
-|---|------|--------|
-| 10 | Test and validate all optimizations | ✅ Done |
-| - | *Bonus:* Add loading state feedback for data refresh | ✅ Done |
-
-**UX Enhancement:** When cached data is refreshed on page load, ratings now show a subtle opacity fade and spinner indicator for better user feedback.
-
-**Dependency Graph:**
-```
-[1] Batch DB method ──┬──► [4] Optimize stats endpoint ✅
-                      │
-                      └──► [8] Server-side pre-fetch 🚧
-
-[2] Search DB method ────► [3] REST search endpoint ✅ ────► [6] AJAX dropdown ✅
-                                                             │
-                                                             └──► [7] Grouped block ✅
-
-[5] Shared data store ✅ ──► [6] AJAX dropdown ✅
-                             │
-                             └──► [7] Grouped block ✅
-
-[9] Update interface ✅ ────► (parallel with 1 & 2)
-```
-
-**Performance Improvements Achieved:**
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| 10 rating blocks in FSE | 30 API calls (all fetching ALL ratings) | 1 shared store + on-demand fetches |
-| Rating dropdown with 1000 ratings | All 1000 loaded upfront | Search-as-you-type, max 20 results |
-| Frontend stats for 50 ratings | 50 database queries | 1 batch query |
-| Grouped block children | Not fetched on load | Fetched via dedicated endpoint |
-
-**Files Changed:**
-- `includes/class-shuriken-database.php` - Batch/search/children methods
-- `includes/interfaces/interface-shuriken-database.php` - Interface updates
-- `includes/class-shuriken-rest-api.php` - Search + children endpoints, optimized stats
-- `includes/class-shuriken-block.php` - Shared store registration
-- `blocks/shared/ratings-store.js` - Centralized data store with thunks
-- `blocks/shuriken-rating/index.js` - Rewritten for shared store + AJAX search
-- `blocks/shuriken-grouped-rating/index.js` - Updated for shared store + child fetching
-- `assets/css/shuriken-reviews.css` - Loading state styles with opacity transition
-- `assets/js/shuriken-reviews.js` - Refreshing state feedback on data fetch
+**Still pending:**
+- Server-side render pre-fetch (collect all block IDs, one batch query for frontend pages)
 
 ---
 

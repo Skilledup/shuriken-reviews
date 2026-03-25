@@ -159,11 +159,15 @@ if (!defined('ABSPATH')) exit;
                     </li>
                 </ul>
 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('New REST Endpoint', 'shuriken-reviews'); ?></h4>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('New REST Endpoints', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
                     <li>
                         <code>GET /ratings/{id}/mirrors</code> —
                         <?php esc_html_e('Returns all mirrors of a given rating, used by the block editor to populate mirror lists', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <code>GET /ratings/batch?ids=…</code> —
+                        <?php esc_html_e('Batch-fetches multiple ratings in one request with mirror vote data resolved, replacing many individual API calls', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
             </div>

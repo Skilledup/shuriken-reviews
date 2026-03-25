@@ -182,8 +182,6 @@ Retrieve all child ratings of a parent rating.
 
 **Response:** Array of child rating objects.
 
-**Since:** 1.9.0
-
 ---
 
 #### GET `/ratings/{id}/mirrors`
@@ -199,8 +197,6 @@ Retrieve all mirrors of a rating.
 | `id` | integer | Yes | Rating ID |
 
 **Response:** Array of mirror rating objects (ratings where `mirror_of` equals the given ID).
-
-**Since:** 1.11.0
 
 ---
 
@@ -231,11 +227,34 @@ GET /wp-json/shuriken-reviews/v1/ratings/search?q=quality&limit=10&type=parents_
 
 **Response:** Array of matching rating objects.
 
-**Since:** 1.9.0
-
 ---
 
 ### Public Endpoints
+
+These endpoints do not require authentication and are designed to bypass page caching.
+
+#### GET `/ratings/batch`
+
+Batch-fetch multiple ratings by ID in a single request. Returns full rating objects with mirror vote data resolved.
+
+**Permission:** `edit_posts`
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `ids` | string | Yes | Comma-separated list of rating IDs (max 50) |
+
+**Example:**
+```
+GET /wp-json/shuriken-reviews/v1/ratings/batch?ids=5,12,18
+```
+
+**Response:** Array of rating objects.
+
+---
+
+### Cache-Bypass Endpoints
 
 These endpoints do not require authentication and are designed to bypass page caching.
 
@@ -394,18 +413,8 @@ curl -X GET "https://example.com/wp-json/shuriken-reviews/v1/ratings/stats?ids=1
 
 2. **Refresh Nonces** - For long-lived pages, periodically call `/nonce` to get fresh authentication tokens.
 
-3. **Batch Requests** - Use `/ratings/stats` with multiple IDs instead of individual calls for better performance.
+3. **Batch Requests** - Use `/ratings/batch` for editor contexts (full objects) and `/ratings/stats` for frontend contexts (lightweight stats). Both accept comma-separated IDs.
 
 4. **Error Handling** - Always check for `WP_Error` responses and handle them appropriately.
 
 5. **Rate Limiting** - Be mindful of request frequency, especially for public endpoints.
-
----
-
-## Version History
-
-| Version | Changes |
-|---------|---------|
-| 1.11.0 | Added `/ratings/{id}/mirrors` endpoint, `parents_and_mirrors` search type |
-| 1.9.0 | Added `/ratings/search` and `/ratings/{id}/children` endpoints |
-| 1.7.0 | Initial REST API implementation |

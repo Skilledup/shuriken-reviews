@@ -210,7 +210,7 @@ Shuriken_Rate_Limit_Exception::api_limit_exceeded($retry_after, $limit);
 Shuriken_Rate_Limit_Exception::too_many_failures($action, $retry_after);
 ```
 
-**Status:** Reserved for future implementation (v1.8.0+)
+**Status:** Reserved for future implementation
 
 ### 9. `Shuriken_Integration_Exception`
 
