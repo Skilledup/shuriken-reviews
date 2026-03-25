@@ -79,6 +79,14 @@
             const [dragIndex, setDragIndex] = useState(null);
             const [dragOverIndex, setDragOverIndex] = useState(null);
 
+            // Mirror management state
+            const [newRatingIsMirror, setNewRatingIsMirror] = useState(false);
+            const [newMirrorSourceId, setNewMirrorSourceId] = useState(0);
+            const [newMirrorName, setNewMirrorName] = useState('');
+            const [creatingMirror, setCreatingMirror] = useState(false);
+            const [newChildMirrorNames, setNewChildMirrorNames] = useState({});
+            const [creatingChildMirrorId, setCreatingChildMirrorId] = useState(null);
+
             // Search state for AJAX dropdown
             const [searchTerm, setSearchTerm] = useState('');
             const searchTimeoutRef = useRef(null);
@@ -99,8 +107,10 @@
                 fetchRating,
                 searchRatings,
                 fetchParentRatings,
+                fetchMirrorableRatings,
                 fetchChildRatings,
                 fetchMirrorsForRating,
+                invalidateMirrorsCache,
                 createRating,
                 updateRating,
                 deleteRating,
@@ -111,6 +121,8 @@
                 selectedRating,
                 allRatingsById,
                 parentRatings,
+                mirrorableRatings,
+                isLoadingMirrorable,
                 searchResults,
                 isSearching,
                 isLoadingParents,
@@ -123,6 +135,8 @@
                     selectedRating: ratingId ? store.getRating(ratingId) : null,
                     allRatingsById: store.getRatingsById ? store.getRatingsById() : {},
                     parentRatings: store.getParentRatings(),
+                    mirrorableRatings: store.getMirrorableRatings(),
+                    isLoadingMirrorable: store.isLoadingMirrorable(),
                     searchResults: store.getSearchResults(),
                     isSearching: store.isSearching(),
                     isLoadingParents: store.isLoadingParents(),
@@ -206,6 +220,7 @@
             // ---- Data fetching ----
             useEffect(function () {
                 fetchParentRatings();
+                fetchMirrorableRatings();
                 if (ratingId) {
                     fetchRating(ratingId);
                     fetchChildRatings(ratingId);
@@ -370,9 +385,33 @@
                 }
             }, [mirrorId]);
 
-            // ---- CRUD helpers (unchanged logic) ----
+            // ---- CRUD helpers ----
             function createNewParentRating() {
                 if (!newParentName.trim() || creating) return;
+
+                // Mirror creation mode
+                if (newRatingIsMirror) {
+                    if (!newMirrorSourceId) return;
+                    setCreating(true);
+                    createRating({ name: newParentName, mirror_of: newMirrorSourceId })
+                        .then(function (data) {
+                            invalidateMirrorsCache(newMirrorSourceId);
+                            fetchMirrorsForRating(newMirrorSourceId);
+                            setNewParentName('');
+                            setNewRatingIsMirror(false);
+                            setNewMirrorSourceId(0);
+                            setIsCreateModalOpen(false);
+                            setCreating(false);
+                            setError(null);
+                        })
+                        .catch(function (err) {
+                            setCreating(false);
+                            handleApiError(err, createNewParentRating);
+                        });
+                    return;
+                }
+
+                // Normal parent creation
                 setCreating(true);
                 createRating({ name: newParentName, display_only: newParentDisplayOnly })
                     .then(function (data) {
@@ -501,6 +540,72 @@
                     .catch(function (err) { handleApiError(err, retry); });
             }
 
+            // ---- Mirror CRUD helpers ----
+            function createMirrorForParent() {
+                if (!newMirrorName.trim() || creatingMirror || !selectedRating) return;
+                setCreatingMirror(true);
+                var sourceId = parseInt(selectedRating.id, 10);
+                createRating({ name: newMirrorName, mirror_of: sourceId })
+                    .then(function () {
+                        invalidateMirrorsCache(sourceId);
+                        fetchMirrorsForRating(sourceId);
+                        setNewMirrorName('');
+                        setCreatingMirror(false);
+                        setError(null);
+                    })
+                    .catch(function (err) {
+                        setCreatingMirror(false);
+                        handleApiError(err, createMirrorForParent);
+                    });
+            }
+
+            function deleteMirror(mirrorIdToDelete, sourceId) {
+                if (!confirm(__('Are you sure you want to delete this mirror?', 'shuriken-reviews'))) return;
+                var retry = function () { deleteMirror(mirrorIdToDelete, sourceId); };
+                deleteRating(mirrorIdToDelete)
+                    .then(function () {
+                        invalidateMirrorsCache(sourceId);
+                        fetchMirrorsForRating(sourceId);
+                        // Reset parent mirror attribute if it was the deleted one
+                        if (parseInt(mirrorIdToDelete, 10) === mirrorId) {
+                            setAttributes({ mirrorId: 0 });
+                        }
+                        // Reset any sub-rating mirrors that referenced the deleted mirror
+                        var updatedSR = (subRatings || []).map(function (sr) {
+                            if (sr.mirrorId === parseInt(mirrorIdToDelete, 10)) {
+                                return { id: sr.id, mirrorId: 0, visible: sr.visible };
+                            }
+                            return sr;
+                        });
+                        setAttributes({ subRatings: updatedSR });
+                        setError(null);
+                    })
+                    .catch(function (err) { handleApiError(err, retry); });
+            }
+
+            function createMirrorForChild(childId) {
+                var name = (newChildMirrorNames[childId] || '').trim();
+                if (!name || creatingChildMirrorId) return;
+                setCreatingChildMirrorId(parseInt(childId, 10));
+                createRating({ name: name, mirror_of: parseInt(childId, 10) })
+                    .then(function () {
+                        invalidateMirrorsCache(parseInt(childId, 10));
+                        fetchMirrorsForRating(parseInt(childId, 10));
+                        setNewChildMirrorNames(function (prev) {
+                            var next = {};
+                            for (var k in prev) next[k] = prev[k];
+                            delete next[childId];
+                            return next;
+                        });
+                        setCreatingChildMirrorId(null);
+                        setError(null);
+                    })
+                    .catch(function (err) {
+                        setCreatingChildMirrorId(null);
+                        handleApiError(err, function () { createMirrorForChild(childId); });
+                    });
+            }
+
             // Keyboard handlers
             function handleCreateKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); createNewParentRating(); } }
             function handleEditKeyDown(e) { if (e.key === 'Enter') { e.preventDefault(); updateParentRating(); } }
@@ -535,6 +640,19 @@
                 }
                 return opts;
             }, [parentMirrors]);
+
+            // ---- Mirrorable options (for Create Modal mirror source picker) ----
+            var mirrorableOptions = useMemo(function () {
+                var options = [];
+                (Array.isArray(mirrorableRatings) ? mirrorableRatings : []).forEach(function (r) {
+                    if (r && r.id) {
+                        var label = r.name + ' (ID: ' + r.id + ')';
+                        if (r.parent_id) label = '  ↳ ' + label;
+                        options.push({ label: label, value: String(r.id) });
+                    }
+                });
+                return options;
+            }, [mirrorableRatings]);
 
             var titleTagOptions = [
                 { label: 'H1', value: 'h1' },
@@ -749,23 +867,56 @@
                 isCreateModalOpen && wp.element.createElement(
                     Modal,
                     {
-                        title: __('Create New Parent Rating', 'shuriken-reviews'),
+                        title: newRatingIsMirror
+                            ? __('Create New Mirror', 'shuriken-reviews')
+                            : __('Create New Parent Rating', 'shuriken-reviews'),
                         onRequestClose: function () {
                             setIsCreateModalOpen(false);
                             setNewParentName('');
                             setNewParentDisplayOnly(true);
+                            setNewRatingIsMirror(false);
+                            setNewMirrorSourceId(0);
                         },
                         style: { width: '500px' }
                     },
+                    wp.element.createElement(CheckboxControl, {
+                        label: __('Create as Mirror of Existing Rating', 'shuriken-reviews'),
+                        checked: newRatingIsMirror,
+                        onChange: function (val) {
+                            setNewRatingIsMirror(val);
+                            if (!val) setNewMirrorSourceId(0);
+                        },
+                        help: newRatingIsMirror
+                            ? __('The new rating will share vote data with the source rating.', 'shuriken-reviews')
+                            : __('Enable to create a mirror instead of an independent parent.', 'shuriken-reviews')
+                    }),
+                    newRatingIsMirror && wp.element.createElement(ComboboxControl, {
+                        label: __('Source Rating', 'shuriken-reviews'),
+                        value: newMirrorSourceId ? String(newMirrorSourceId) : '',
+                        options: mirrorableOptions,
+                        onChange: function (value) {
+                            setNewMirrorSourceId(value ? parseInt(value, 10) : 0);
+                        },
+                        onFilterValueChange: function () {},
+                        placeholder: isLoadingMirrorable
+                            ? __('Loading...', 'shuriken-reviews')
+                            : __('Search ratings...', 'shuriken-reviews')
+                    }),
                     wp.element.createElement(TextControl, {
-                        label: __('Parent Rating Name', 'shuriken-reviews'),
+                        label: newRatingIsMirror
+                            ? __('Mirror Name', 'shuriken-reviews')
+                            : __('Parent Rating Name', 'shuriken-reviews'),
                         value: newParentName,
                         onChange: setNewParentName,
                         onKeyDown: handleCreateKeyDown,
-                        placeholder: __('e.g., Overall Product Quality', 'shuriken-reviews'),
-                        help: __('This will be the main rating that groups sub-ratings.', 'shuriken-reviews')
+                        placeholder: newRatingIsMirror
+                            ? __('e.g., Product Quality (Page 2)', 'shuriken-reviews')
+                            : __('e.g., Overall Product Quality', 'shuriken-reviews'),
+                        help: newRatingIsMirror
+                            ? __('A display name for this mirror.', 'shuriken-reviews')
+                            : __('This will be the main rating that groups sub-ratings.', 'shuriken-reviews')
                     }),
-                    wp.element.createElement(CheckboxControl, {
+                    !newRatingIsMirror && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
                         checked: newParentDisplayOnly,
                         onChange: setNewParentDisplayOnly,
@@ -780,14 +931,18 @@
                                 setIsCreateModalOpen(false);
                                 setNewParentName('');
                                 setNewParentDisplayOnly(true);
+                                setNewRatingIsMirror(false);
+                                setNewMirrorSourceId(0);
                             }
                         }, __('Cancel', 'shuriken-reviews')),
                         wp.element.createElement(Button, {
                             variant: 'primary',
                             onClick: createNewParentRating,
                             isBusy: creating,
-                            disabled: creating || !newParentName.trim()
-                        }, __('Create', 'shuriken-reviews'))
+                            disabled: creating || !newParentName.trim() || (newRatingIsMirror && !newMirrorSourceId)
+                        }, newRatingIsMirror
+                            ? __('Create Mirror', 'shuriken-reviews')
+                            : __('Create', 'shuriken-reviews'))
                     )
                 ),
 
@@ -796,8 +951,11 @@
                     Modal,
                     {
                         title: __('Edit Parent Rating', 'shuriken-reviews'),
-                        onRequestClose: function () { setIsEditModalOpen(false); },
-                        style: { width: '500px' }
+                        onRequestClose: function () {
+                            setIsEditModalOpen(false);
+                            setNewMirrorName('');
+                        },
+                        style: { width: '550px' }
                     },
                     wp.element.createElement(TextControl, {
                         label: __('Parent Rating Name', 'shuriken-reviews'),
@@ -817,7 +975,10 @@
                         { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
                         wp.element.createElement(Button, {
                             variant: 'secondary',
-                            onClick: function () { setIsEditModalOpen(false); }
+                            onClick: function () {
+                                setIsEditModalOpen(false);
+                                setNewMirrorName('');
+                            }
                         }, __('Cancel', 'shuriken-reviews')),
                         wp.element.createElement(Button, {
                             variant: 'primary',
@@ -825,6 +986,69 @@
                             isBusy: updating,
                             disabled: updating || !editParentName.trim()
                         }, __('Update', 'shuriken-reviews'))
+                    ),
+
+                    // --- Mirrors management section ---
+                    Divider && wp.element.createElement(Divider, null),
+                    wp.element.createElement('h4', { style: { fontSize: '14px', marginBottom: '12px', marginTop: '8px' } },
+                        __('Mirrors', 'shuriken-reviews') +
+                        (Array.isArray(parentMirrors) ? ' (' + parentMirrors.length + ')' : '')
+                    ),
+                    parentMirrorsLoading && wp.element.createElement(Spinner, null),
+                    Array.isArray(parentMirrors) && parentMirrors.length === 0 && !parentMirrorsLoading && wp.element.createElement(
+                        'p',
+                        { style: { color: '#666', fontStyle: 'italic', fontSize: '13px', margin: '0 0 12px 0' } },
+                        __('No mirrors yet. Create one below.', 'shuriken-reviews')
+                    ),
+                    Array.isArray(parentMirrors) && parentMirrors.map(function (m) {
+                        return wp.element.createElement(
+                            'div',
+                            {
+                                key: m.id,
+                                style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 12px',
+                                    marginBottom: '8px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#f9f9f9'
+                                }
+                            },
+                            wp.element.createElement('span', { style: { fontSize: '13px' } }, m.name + ' (ID: ' + m.id + ')'),
+                            wp.element.createElement(Button, {
+                                variant: 'tertiary',
+                                isDestructive: true,
+                                onClick: function () { deleteMirror(m.id, parseInt(selectedRating.id, 10)); },
+                                style: { padding: '4px 8px', fontSize: '12px' }
+                            }, __('Delete', 'shuriken-reviews'))
+                        );
+                    }),
+                    wp.element.createElement(
+                        'div',
+                        { style: { display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '8px' } },
+                        wp.element.createElement(
+                            'div',
+                            { style: { flex: 1 } },
+                            wp.element.createElement(TextControl, {
+                                label: __('New Mirror Name', 'shuriken-reviews'),
+                                value: newMirrorName,
+                                onChange: setNewMirrorName,
+                                onKeyDown: function (e) {
+                                    if (e.key === 'Enter') { e.preventDefault(); createMirrorForParent(); }
+                                },
+                                placeholder: __('e.g., Mirror for Page X', 'shuriken-reviews'),
+                                style: { marginBottom: 0 }
+                            })
+                        ),
+                        wp.element.createElement(Button, {
+                            variant: 'secondary',
+                            onClick: createMirrorForParent,
+                            isBusy: creatingMirror,
+                            disabled: creatingMirror || !newMirrorName.trim(),
+                            style: { marginBottom: '8px' }
+                        }, __('Create Mirror', 'shuriken-reviews'))
                     )
                 ),
 
@@ -840,6 +1064,7 @@
                             setNewChildName('');
                             setNewChildEffectType('positive');
                             setChildrenLocalEdits({});
+                            setNewChildMirrorNames({});
                         },
                         style: { width: '600px', maxWidth: '90vw' },
                         className: 'shuriken-manage-children-modal'
@@ -945,7 +1170,87 @@
                                 { style: { fontSize: '12px', color: '#666', marginTop: '8px' } },
                                 __('Votes: ', 'shuriken-reviews') + (child.total_votes || 0) + ' | ' +
                                 __('Average: ', 'shuriken-reviews') + calculateAverage(child) + '/5'
-                            )
+                            ),
+                            // --- Mirrors for this child ---
+                            (function () {
+                                var cMirrors = childMirrorsMap[child.id];
+                                var cHasMirrors = Array.isArray(cMirrors);
+                                var cMirrorName = newChildMirrorNames[child.id] || '';
+                                return wp.element.createElement(
+                                    'div',
+                                    { style: { marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' } },
+                                    wp.element.createElement('h5', { style: { fontSize: '12px', fontWeight: '600', margin: '0 0 8px 0', color: '#555' } },
+                                        __('Mirrors', 'shuriken-reviews') + (cHasMirrors ? ' (' + cMirrors.length + ')' : '')
+                                    ),
+                                    !cHasMirrors && wp.element.createElement(
+                                        'p',
+                                        { style: { color: '#999', fontSize: '12px', fontStyle: 'italic', margin: 0 } },
+                                        __('Loading...', 'shuriken-reviews')
+                                    ),
+                                    cHasMirrors && cMirrors.length === 0 && wp.element.createElement(
+                                        'p',
+                                        { style: { color: '#999', fontSize: '12px', fontStyle: 'italic', margin: '0 0 8px 0' } },
+                                        __('No mirrors.', 'shuriken-reviews')
+                                    ),
+                                    cHasMirrors && cMirrors.map(function (cm) {
+                                        return wp.element.createElement(
+                                            'div',
+                                            {
+                                                key: cm.id,
+                                                style: {
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '4px 8px',
+                                                    marginBottom: '4px',
+                                                    backgroundColor: '#f0f0f0',
+                                                    borderRadius: '3px',
+                                                    fontSize: '12px'
+                                                }
+                                            },
+                                            wp.element.createElement('span', null, cm.name + ' (#' + cm.id + ')'),
+                                            wp.element.createElement(Button, {
+                                                variant: 'tertiary',
+                                                isDestructive: true,
+                                                onClick: function () { deleteMirror(cm.id, parseInt(child.id, 10)); },
+                                                style: { padding: '2px 6px', fontSize: '11px', minHeight: 'auto' }
+                                            }, __('Delete', 'shuriken-reviews'))
+                                        );
+                                    }),
+                                    wp.element.createElement(
+                                        'div',
+                                        { style: { display: 'flex', gap: '6px', alignItems: 'flex-end', marginTop: '6px' } },
+                                        wp.element.createElement(
+                                            'div',
+                                            { style: { flex: 1 } },
+                                            wp.element.createElement(TextControl, {
+                                                value: cMirrorName,
+                                                onChange: function (value) {
+                                                    setNewChildMirrorNames(function (prev) {
+                                                        var next = {};
+                                                        for (var k in prev) next[k] = prev[k];
+                                                        next[child.id] = value;
+                                                        return next;
+                                                    });
+                                                },
+                                                onKeyDown: function (e) {
+                                                    if (e.key === 'Enter') { e.preventDefault(); createMirrorForChild(child.id); }
+                                                },
+                                                placeholder: __('Mirror name...', 'shuriken-reviews'),
+                                                style: { marginBottom: 0 }
+                                            })
+                                        ),
+                                        wp.element.createElement(Button, {
+                                            variant: 'secondary',
+                                            onClick: function () { createMirrorForChild(child.id); },
+                                            isBusy: creatingChildMirrorId === parseInt(child.id, 10),
+                                            disabled: creatingChildMirrorId !== null || !cMirrorName.trim(),
+                                            isSmall: true,
+                                            style: { marginBottom: '8px' }
+                                        }, __('Add', 'shuriken-reviews'))
+                                    )
+                                );
+                            })()
                         );
                     }),
                     Object.keys(childrenLocalEdits).length > 0 && wp.element.createElement(
@@ -971,6 +1276,7 @@
                                 setNewChildName('');
                                 setNewChildEffectType('positive');
                                 setChildrenLocalEdits({});
+                                setNewChildMirrorNames({});
                             },
                             disabled: savingChildren
                         }, __('Close', 'shuriken-reviews'))

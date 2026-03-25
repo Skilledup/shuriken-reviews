@@ -61,6 +61,7 @@
         REMOVE_FROM_LISTS: 'REMOVE_FROM_LISTS',
         SET_MIRRORS_FOR_RATING: 'SET_MIRRORS_FOR_RATING',
         SET_IS_LOADING_MIRRORS: 'SET_IS_LOADING_MIRRORS',
+        INVALIDATE_MIRRORS_CACHE: 'INVALIDATE_MIRRORS_CACHE',
     };
 
     // Simple action creators (synchronous only)
@@ -121,6 +122,9 @@
         },
         setIsLoadingMirrors(ratingId, isLoading) {
             return { type: ACTIONS.SET_IS_LOADING_MIRRORS, ratingId, isLoading };
+        },
+        invalidateMirrorsCache(ratingId) {
+            return { type: ACTIONS.INVALIDATE_MIRRORS_CACHE, ratingId };
         },
     };
 
@@ -560,6 +564,14 @@
                         ...state.isLoadingMirrors,
                         [action.ratingId]: action.isLoading,
                     },
+                };
+
+            case ACTIONS.INVALIDATE_MIRRORS_CACHE:
+                var clearedMirrors = { ...state.mirrorsById };
+                delete clearedMirrors[action.ratingId];
+                return {
+                    ...state,
+                    mirrorsById: clearedMirrors,
                 };
 
             default:
