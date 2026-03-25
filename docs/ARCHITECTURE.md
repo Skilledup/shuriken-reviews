@@ -50,7 +50,8 @@ shuriken-reviews/
 │
 ├── blocks/                        # Gutenberg block definitions
 │   ├── shared/
-│   │   └── ratings-store.js       # Shared @wordpress/data store
+│   │   ├── ratings-store.js       # Shared @wordpress/data store
+│   │   └── block-helpers.js       # Shared utilities (error handling, search, etc.)
 │   ├── shuriken-rating/
 │   │   ├── index.js               # Block registration & editor
 │   │   ├── block.json             # Block metadata
@@ -302,6 +303,8 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 - `GET /wp-json/shuriken-reviews/v1/ratings/search` - AJAX autocomplete search
 - `GET /wp-json/shuriken-reviews/v1/ratings/parents` - Parent ratings only
 - `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - Mirrorable ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - Child ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - Mirror ratings
 - `POST /wp-json/shuriken-reviews/v1/votes`
 - `GET /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized)
 - `GET /wp-json/shuriken-reviews/v1/nonce`
@@ -347,15 +350,33 @@ Centralized state management for all rating blocks using `@wordpress/data`.
 - `getRating(id)` - Get cached rating
 - `getSearchResults()` - Current search results
 - `getParentRatings()` - All parent ratings
+- `getMirrorsForRating(id)` - Get cached mirrors for a rating
 - `isSearching()` - Search loading state
+- `isLoadingMirrors(id)` - Mirror loading state
 
 **Key Actions:**
 - `fetchRating(id)` - Fetch single rating
 - `searchRatings(term, type, limit)` - AJAX search
 - `fetchParentRatings()` - Load parent ratings
+- `fetchMirrorsForRating(id)` - Fetch mirrors for a rating
+- `invalidateMirrorsCache(id)` - Clear cached mirrors
 - `createRating(data)` - Create new rating
 - `updateRating(id, data)` - Update rating
 - `deleteRating(id)` - Delete rating
+
+### Shared Block Helpers (`blocks/shared/block-helpers.js`)
+
+Reusable utilities shared between both block editors.
+
+**Exposed via:** `window.ShurikenBlockHelpers`
+
+**Functions:**
+- `formatApiError(error)` - Format API errors for display
+- `makeErrorHandler(setError, setLastFailed)` - Create error handler callbacks
+- `makeErrorDismissers(setError, setLastFailed, clearError)` - Create dismiss/retry helpers
+- `useSearchHandler(searchFn, type, limit, delay)` - Debounced search hook
+- `titleTagOptions` - Shared array of title tag select options
+- `calculateAverage(rating)` - Calculate rating average from total_rating/total_votes
 
 ### AJAX Module (`class-shuriken-ajax.php`)
 

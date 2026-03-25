@@ -125,60 +125,47 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('FSE Block Redesign — Style Presets (v2)', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Both FSE blocks have been completely redesigned with a clean preset-based system, replacing the previous complex per-attribute settings:', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('Mirror Management in Block Editor', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('The Grouped Rating block now provides full mirror management directly inside the editor — no need to leave the block to manage mirrors:', 'shuriken-reviews'); ?></p>
 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shuriken Rating Block', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('5 Visual Presets', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Classic (default — fully backward-compatible), Card, Minimal, Dark, Outlined', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Unified Rating Selector', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('A single searchable dropdown that shows both parent ratings and their mirrors, automatically decomposing the selection into the correct rating and mirror IDs', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Accent & Star Colour Pickers', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Two colour overrides that cascade through the selected preset via CSS custom properties', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Inline Mirror CRUD', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Create, rename, and delete mirrors for both the parent rating and each sub-rating from the Edit Parent and Manage Sub-Ratings modals', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Live Editor Preview', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Preset classes applied directly to the block wrapper so the FSE preview matches the frontend exactly', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Inline Rename', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Click the edit icon on any mirror card to rename it in place with keyboard support (Enter to save, Escape to cancel)', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Backward Compatible', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Existing blocks without a style class automatically render as Classic — no content migration needed', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Polished Modal UI', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All modal dialogs (Create, Edit Parent, Manage Sub-Ratings) have been redesigned with consistent card layouts, section headers, badges, and hover states', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shuriken Grouped Rating Block', 'shuriken-reviews'); ?></h4>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shared Block Helpers', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('5 Visual Presets', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Gradient (default), Minimal, Boxed, Dark, Outlined — each with distinct parent and child card styles', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Code Sharing', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Common utilities (error handling, search debounce, title tag options, average calculation) extracted into a shared helpers module used by both blocks', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Grid / List Layout', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Switch child ratings between a responsive card grid and a full-width stacked list from the Layout panel', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Accent & Star Colour Pickers', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Same colour override system as the single rating block, applied to parent and child cards', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Simplified Settings Panels', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Reduced from 5 inspector panels to 3 (Settings, Layout, Colors) for a cleaner editing experience', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('New Search Type', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('The REST search endpoint now supports a "parents_and_mirrors" type that returns parent ratings alongside their mirrors, with vote data automatically resolved', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
 
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('How Presets Work', 'shuriken-reviews'); ?></h4>
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('New REST Endpoint', 'shuriken-reviews'); ?></h4>
                 <ul class="new-features-list">
-                    <li><?php esc_html_e('Select a preset from the block styles panel (the palette icon in the inspector)', 'shuriken-reviews'); ?></li>
-                    <li><?php esc_html_e('WordPress adds an is-style-{name} class to the block wrapper', 'shuriken-reviews'); ?></li>
-                    <li><?php esc_html_e('CSS scoped to that class handles all visual differences — no inline styles per attribute', 'shuriken-reviews'); ?></li>
-                    <li><?php esc_html_e('Addon colours flow through --shuriken-user-accent and --shuriken-user-star-color CSS variables', 'shuriken-reviews'); ?></li>
+                    <li>
+                        <code>GET /ratings/{id}/mirrors</code> —
+                        <?php esc_html_e('Returns all mirrors of a given rating, used by the block editor to populate mirror lists', 'shuriken-reviews'); ?>
+                    </li>
                 </ul>
-
-                <p class="new-features-note">
-                    <?php esc_html_e('The Classic preset is the default for the single rating block and matches the previous visual style exactly — existing shortcode and block output is unchanged.', 'shuriken-reviews'); ?>
-                </p>
             </div>
         </div>
     </div>

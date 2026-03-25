@@ -105,29 +105,32 @@ Current status of features, implementation progress, and planned work.
 
 ## Roadmap & Status
 
-### Current Version: 2.0.0
+### Current Version: 1.11.1
 
 **Major Features** ✅
 - Rating system with parent-child relationships
 - Mirror ratings with vote synchronization
 - Display-only aggregate ratings
 - Guest voting support
-- FSE Block integration
+- FSE Block integration with style presets
+- Mirror management in block editor (CRUD + inline rename)
+- Shared block helpers and unified rating search
 - Shortcode support
 - REST API endpoints
 - Analytics dashboard with CSV export
 - Voter Activity page (member & guest tracking)
-- 20+ WordPress hooks for extensibility
+- Vote rate limiting with modern settings UI
+- 25+ WordPress hooks for extensibility
 - Dependency injection container (87.5% coverage)
 - Comprehensive exception system
 - Interface-based testing support
 
 **Planned Features** 🚧
-- Vote cooldown / rate limiting
-- Vote caching optimization
+- Server-side render pre-fetch (batch query for frontend pages)
+- Statistics caching
+- Rate limit performance caching
 - Email notifications
 - Webhook integration
-- Advanced caching strategies
 
 See [ROADMAP.md](ROADMAP.md) for detailed implementation status.
 
@@ -140,6 +143,18 @@ The plugin uses a **modular architecture** with clear separation of concerns:
 ```
 shuriken-reviews/
 ├── shuriken-reviews.php          # Main plugin file (orchestration)
+├── blocks/
+│   ├── shared/
+│   │   ├── ratings-store.js            # Shared @wordpress/data store
+│   │   └── block-helpers.js            # Shared utilities
+│   ├── shuriken-rating/
+│   │   ├── index.js                    # Single rating block
+│   │   ├── block.json                  # Block metadata
+│   │   └── editor.css                  # Editor-only styles
+│   └── shuriken-grouped-rating/
+│       ├── index.js                    # Grouped rating block
+│       ├── block.json                  # Block metadata
+│       └── editor.css                  # Editor-only styles
 ├── includes/
 │   ├── class-shuriken-rest-api.php      # REST API endpoints
 │   ├── class-shuriken-shortcodes.php    # Shortcode rendering
@@ -153,7 +168,8 @@ shuriken-reviews/
 │   ├── class-shuriken-exception-handler.php  # Error handling
 │   ├── interfaces/
 │   │   ├── interface-shuriken-database.php
-│   │   └── interface-shuriken-analytics.php
+│   │   ├── interface-shuriken-analytics.php
+│   │   └── interface-shuriken-rate-limiter.php
 │   └── exceptions/
 │       ├── class-shuriken-exception.php
 │       ├── class-shuriken-database-exception.php
@@ -172,6 +188,9 @@ shuriken-reviews/
         ├── hooks-reference.md
         ├── dependency-injection.md
         ├── exception-handling.md
+        ├── rest-api.md
+        ├── error-handling-blocks.md
+        ├── helper-functions.md
         └── testing.md
 ```
 
@@ -253,21 +272,26 @@ For support, issues, and contributions:
 
 ## Version History
 
-### v2.0.0 (Current)
-Full dependency injection adoption across all services:
-- 87.5% DI coverage (7 of 8 services)
-- Loose coupling via interfaces
-- Enhanced testability with mock injection
-- Centralized service wiring in container
+### v1.11.x (Current)
+Mirror management in block editor:
+- Full mirror CRUD (create, rename, delete) in grouped block modals
+- Unified rating/mirror search dropdown
+- Shared block helpers module
+- New `/ratings/{id}/mirrors` REST endpoint
+- `parents_and_mirrors` search type
+- Polished modal UI with CSS classes
+
+### v1.10.x
+FSE block v2 with style presets, vote rate limiting, voter activity page.
 
 ### v1.9.x
-Voter Activity page and analytics improvements.
+Data retrieval efficiency, shared store, AJAX search, batch queries.
 
 ### v1.7.x
-Initial hooks system and DI container implementation.
+Initial hooks system, DI container, and REST API implementation.
 
 ### v1.6.0 & Earlier
-See main [README.md](../README.md#changelog) for complete changelog.
+See main [README.md](../README.md) for complete changelog.
 
 ---
 

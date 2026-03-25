@@ -2,7 +2,7 @@
 
 Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
 
-![Version](https://img.shields.io/badge/version-1.10.3-blue)
+![Version](https://img.shields.io/badge/version-1.11.1-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
@@ -14,7 +14,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 
 - **Unlimited Ratings**: Create as many ratings as you need for any content
 - **Parent-Child Relationships**: Organize ratings hierarchically with parent and sub-ratings
-- **Mirror Ratings**: Link ratings together so votes are synchronized
+- **Mirror Ratings**: Link ratings together so votes are synchronized, with full CRUD and inline rename in the block editor
 - **Effect Types**: Configure positive or negative effect on parent ratings
 - **Display-Only Ratings**: Create aggregate ratings calculated from sub-ratings
 - **Guest Voting**: Optional support for non-logged-in users to submit ratings
@@ -35,6 +35,8 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **FSE Blocks (v2)**: Two Full Site Editor blocks — **Shuriken Rating** and **Shuriken Grouped Rating** — with style presets, colour picker, and live editor preview
 - **Block Style Presets**: Five built-in visual presets per block (Classic, Card, Minimal, Dark, Outlined / Gradient, Minimal, Boxed, Dark, Outlined) selectable from the block styles panel
 - **Custom Colours**: Per-block accent colour and star colour override via the block colour panel
+- **Unified Rating Search**: Single searchable dropdown for selecting parent ratings or mirrors across both blocks
+- **Inline Mirror Management**: Create, rename, and delete mirrors directly from the block editor modals
 - **Shortcode**: Display ratings anywhere with `[shuriken_rating]`
 - **AJAX Submissions**: Smooth rating submissions without page reloads
 - **REST API Endpoints**: Fetches fresh rating data and nonces to bypass cache issues
@@ -111,6 +113,12 @@ Shuriken Reviews is built with developers in mind. The plugin provides extensive
 - `GET /wp-json/shuriken-reviews/v1/ratings/{id}` - Get single rating
 - `POST /wp-json/shuriken-reviews/v1/ratings` - Create rating
 - `PUT /wp-json/shuriken-reviews/v1/ratings/{id}` - Update rating
+- `DELETE /wp-json/shuriken-reviews/v1/ratings/{id}` - Delete rating
+- `GET /wp-json/shuriken-reviews/v1/ratings/search` - Search ratings by name
+- `GET /wp-json/shuriken-reviews/v1/ratings/parents` - List parent ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - List mirrorable ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - List child ratings
+- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - List mirrors of a rating
 - `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` - Get fresh stats
 - `GET /wp-json/shuriken-reviews/v1/nonce` - Get fresh nonce
 
@@ -164,7 +172,8 @@ Displays a parent rating together with all its child sub-ratings in a unified se
 2. Select a parent rating from the searchable dropdown
 3. Pick a **visual preset** from the block styles panel (Gradient, Minimal, Boxed, Dark, Outlined)
 4. Configure options in the block sidebar:
-   - **Grouped Rating Settings panel**: Select parent rating, Title Tag, Anchor ID, and manage child sub-ratings inline
+   - **Grouped Rating Settings panel**: Select parent rating or mirror from a unified searchable dropdown, Title Tag, Anchor ID, and manage child sub-ratings inline
+   - **Mirror Management**: Create, rename, and delete mirrors for the parent and each sub-rating directly from the Edit and Manage Sub-Ratings modals
    - **Layout panel**: Switch between Grid (cards) and List (stacked rows) layouts for child ratings
    - **Colors panel**: Override Accent Color and Star Color
 

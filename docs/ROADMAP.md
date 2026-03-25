@@ -1,6 +1,6 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.10.3**
+Current Version: **1.11.1**
 
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
@@ -22,6 +22,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Voter Activity page (member & guest tracking, stats, charts, CSV export)
 - Vote rate limiting with modern settings UI
 - FSE block v2 — style presets for both single and grouped rating blocks
+- Mirror management in block editor (CRUD + inline rename, unified search, shared helpers)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -39,7 +40,43 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.10.3 (Current)
+## 1.11.x (Current)
+
+### Mirror Management in Block Editor
+
+Full mirror CRUD and management integrated into the Grouped Rating block editor, eliminating the need to use the admin Ratings page for mirror operations.
+
+**Features:**
+- **Unified Rating Selector** — Single `ComboboxControl` dropdown searches both parent ratings and mirrors (`parents_and_mirrors` search type). Selecting a mirror auto-decomposes into `ratingId` (source) + `mirrorId` (display override)
+- **Mirror CRUD in Modals** — Create, rename, and delete mirrors for the parent rating (Edit Parent modal) and for each sub-rating (Manage Sub-Ratings modal)
+- **Inline Rename** — Click the edit icon on any mirror card to rename it in-place; supports Enter to save, Escape to cancel, with busy indicator
+- **Shared Block Helpers** — Common utilities extracted to `blocks/shared/block-helpers.js`: `formatApiError()`, `makeErrorHandler()`, `makeErrorDismissers()`, `useSearchHandler()`, `titleTagOptions`, `calculateAverage()`
+- **Polished Modal UI** — All three modals (Create, Edit Parent, Manage Sub-Ratings) redesigned with CSS classes, card-based mirror rows, section headers with count badges, consistent empty/loading states
+- **Block Inserter Preview** — Both blocks now provide an `example` property in block.json for a proper inserter thumbnail
+
+**New REST Endpoint:**
+- `GET /ratings/{id}/mirrors` — Returns all mirrors of a given rating (permission: `edit_posts`)
+
+**New Search Type:**
+- `parents_and_mirrors` — Search type for `/ratings/search` that returns parent ratings plus mirrors whose source is a parent, with vote data batch-resolved from source ratings
+
+**Files Added:**
+- `blocks/shared/block-helpers.js` — Shared utilities for both blocks (~175 lines)
+
+**Files Changed:**
+- `blocks/shuriken-grouped-rating/index.js` — Major overhaul: unified dropdown, mirror CRUD with inline rename, polished modals
+- `blocks/shuriken-grouped-rating/editor.css` — ~180 lines of new modal/card CSS classes
+- `blocks/shuriken-grouped-rating/block.json` — Added `mirrorId`, `subRatings` attributes, `example` property
+- `blocks/shuriken-rating/index.js` — Refactored to use shared helpers, removed duplicate code
+- `blocks/shuriken-rating/block.json` — Added `example` property
+- `blocks/shared/ratings-store.js` — Added `mirrorsById` state, `fetchMirrorsForRating`/`invalidateMirrorsCache` thunks, mirror selectors
+- `includes/class-shuriken-rest-api.php` — Added `/ratings/{id}/mirrors` endpoint, `parents_and_mirrors` to search route enum
+- `includes/class-shuriken-database.php` — Added `parents_and_mirrors` search type with batch mirror resolution
+- `includes/class-shuriken-block.php` — Mirror resolution in `render_grouped_block()`, registered `shuriken-block-helpers` script
+
+---
+
+## 1.10.3
 
 ### FSE Block Redesign — Style Presets (v2)
 

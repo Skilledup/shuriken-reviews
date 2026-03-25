@@ -186,6 +186,24 @@ Retrieve all child ratings of a parent rating.
 
 ---
 
+#### GET `/ratings/{id}/mirrors`
+
+Retrieve all mirrors of a rating.
+
+**Permission:** `edit_posts`
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Rating ID |
+
+**Response:** Array of mirror rating objects (ratings where `mirror_of` equals the given ID).
+
+**Since:** 1.11.0
+
+---
+
 #### GET `/ratings/search`
 
 Search ratings by name (for autocomplete functionality).
@@ -198,11 +216,17 @@ Search ratings by name (for autocomplete functionality).
 |-----------|------|----------|---------|-------------|
 | `q` | string | No | `""` | Search term to match against rating names |
 | `limit` | integer | No | `20` | Maximum results (1-100) |
-| `type` | string | No | `all` | Filter type: `all`, `parents`, or `mirrorable` |
+| `type` | string | No | `all` | Filter type: `all`, `parents`, `mirrorable`, or `parents_and_mirrors` |
+
+**Type Values:**
+- `all` — All ratings matching the search term
+- `parents` — Only parent ratings (no parent_id, no mirror_of)
+- `mirrorable` — Ratings that can be used as mirror sources
+- `parents_and_mirrors` — Parent ratings plus mirrors whose source is a parent, with vote data resolved from the source rating
 
 **Example:**
 ```
-GET /wp-json/shuriken-reviews/v1/ratings/search?q=quality&limit=10&type=all
+GET /wp-json/shuriken-reviews/v1/ratings/search?q=quality&limit=10&type=parents_and_mirrors
 ```
 
 **Response:** Array of matching rating objects.
@@ -382,5 +406,6 @@ curl -X GET "https://example.com/wp-json/shuriken-reviews/v1/ratings/stats?ids=1
 
 | Version | Changes |
 |---------|---------|
+| 1.11.0 | Added `/ratings/{id}/mirrors` endpoint, `parents_and_mirrors` search type |
 | 1.9.0 | Added `/ratings/search` and `/ratings/{id}/children` endpoints |
 | 1.7.0 | Initial REST API implementation |
