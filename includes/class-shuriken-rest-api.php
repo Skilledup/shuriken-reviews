@@ -218,6 +218,21 @@ class Shuriken_REST_API {
             ),
         ));
 
+        // Get mirrors of a rating
+        register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/mirrors', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'get_rating_mirrors'),
+            'permission_callback' => array($this, 'can_edit_posts'),
+            'args'                => array(
+                'id' => array(
+                    'required'          => true,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                    'description'       => 'Rating ID to get mirrors for',
+                ),
+            ),
+        ));
+
         // Public stats endpoint (bypasses cache)
         register_rest_route(self::NAMESPACE, '/ratings/stats', array(
             'methods'             => 'GET',
@@ -584,6 +599,34 @@ class Shuriken_REST_API {
             
             $ratings = $this->db->get_child_ratings($parent_id);
             return rest_ensure_response($ratings);
+        } catch (Shuriken_Exception $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        }
+    }
+
+    /**
+     * Get mirrors of a rating
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response|WP_Error
+     * @since 2.1.0
+     */
+    public function get_rating_mirrors($request) {
+        try {
+            $id = $request->get_param('id');
+
+            if (!$id) {
+                throw Shuriken_Validation_Exception::required_field('id');
+            }
+
+            // Verify rating exists
+            $rating = $this->db->get_rating($id);
+            if (!$rating) {
+                throw Shuriken_Not_Found_Exception::rating($id);
+            }
+
+            $mirrors = $this->db->get_mirrors($id);
+            return rest_ensure_response($mirrors);
         } catch (Shuriken_Exception $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }

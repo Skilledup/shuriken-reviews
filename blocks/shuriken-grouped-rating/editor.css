@@ -31,3 +31,86 @@
 .shuriken-grouped-rating-block-editor .stars {
     pointer-events: none;
 }
+
+/* ---- Sub-Ratings Display panel (drag-to-reorder) ---- */
+
+.shuriken-sub-rating-row {
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    transition: border-color 0.15s, background-color 0.15s, opacity 0.15s;
+    cursor: grab;
+}
+
+.shuriken-sub-rating-row:active {
+    cursor: grabbing;
+}
+
+.shuriken-sub-rating-row.is-dragging {
+    opacity: 0.4;
+}
+
+.shuriken-sub-rating-row.is-drag-over {
+    border-color: #667eea;
+    background-color: #f0f4ff;
+}
+
+.shuriken-sub-rating-row.is-hidden {
+    opacity: 0.5;
+    background-color: #f8f8f8;
+}
+
+.shuriken-sub-rating-row-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.shuriken-drag-handle {
+    cursor: grab;
+    color: #999;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.shuriken-drag-handle:hover {
+    color: #667eea;
+}
+
+.shuriken-sub-rating-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shuriken-visibility-toggle {
+    flex-shrink: 0;
+    padding: 2px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+}
+
+.shuriken-visibility-toggle.is-hidden-icon {
+    color: #999 !important;
+}
+
+.shuriken-sub-mirror-select {
+    margin-top: 6px;
+    margin-bottom: 0;
+}
+
+.shuriken-sub-mirror-select .components-base-control__field {
+    margin-bottom: 0;
+}
+
+.shuriken-sub-mirror-select select {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-height: 28px;
+}

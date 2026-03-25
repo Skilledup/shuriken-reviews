@@ -25,11 +25,14 @@
         parentRatings: [],
         // Mirrorable ratings cache
         mirrorableRatings: [],
+        // Mirrors cache keyed by source rating ID
+        mirrorsById: {},
         // Loading states
         isSearching: false,
         isLoadingParents: false,
         isLoadingMirrorable: false,
         isLoadingRating: {},
+        isLoadingMirrors: {},
         // Flags to track if initial data has been fetched
         parentsFetched: false,
         mirrorableFetched: false,
@@ -56,6 +59,8 @@
         ADD_TO_MIRRORABLE_RATINGS: 'ADD_TO_MIRRORABLE_RATINGS',
         UPDATE_RATING_IN_LISTS: 'UPDATE_RATING_IN_LISTS',
         REMOVE_FROM_LISTS: 'REMOVE_FROM_LISTS',
+        SET_MIRRORS_FOR_RATING: 'SET_MIRRORS_FOR_RATING',
+        SET_IS_LOADING_MIRRORS: 'SET_IS_LOADING_MIRRORS',
     };
 
     // Simple action creators (synchronous only)
@@ -110,6 +115,12 @@
         },
         removeFromLists(ratingId) {
             return { type: ACTIONS.REMOVE_FROM_LISTS, ratingId };
+        },
+        setMirrorsForRating(ratingId, mirrors) {
+            return { type: ACTIONS.SET_MIRRORS_FOR_RATING, ratingId, mirrors };
+        },
+        setIsLoadingMirrors(ratingId, isLoading) {
+            return { type: ACTIONS.SET_IS_LOADING_MIRRORS, ratingId, isLoading };
         },
     };
 
@@ -318,6 +329,39 @@
                 });
             };
         },
+
+        fetchMirrorsForRating: function(ratingId) {
+            return function(args) {
+                if (!ratingId) {
+                    return Promise.resolve([]);
+                }
+
+                // Check cache first
+                var cached = args.select.getMirrorsForRating(ratingId);
+                if (cached !== null) {
+                    return Promise.resolve(cached);
+                }
+
+                args.dispatch.setIsLoadingMirrors(ratingId, true);
+
+                return apiFetch({
+                    path: '/shuriken-reviews/v1/ratings/' + ratingId + '/mirrors',
+                    method: 'GET',
+                }).then(function(mirrors) {
+                    var mirrorsArray = Array.isArray(mirrors) ? mirrors : [];
+                    // Also cache each mirror in ratingsById
+                    args.dispatch.setRatings(mirrorsArray);
+                    args.dispatch.setMirrorsForRating(ratingId, mirrorsArray);
+                    args.dispatch.setIsLoadingMirrors(ratingId, false);
+                    return mirrorsArray;
+                }).catch(function(error) {
+                    console.error('fetchMirrorsForRating error:', error);
+                    args.dispatch.setError(error.message || 'Failed to fetch mirrors');
+                    args.dispatch.setIsLoadingMirrors(ratingId, false);
+                    return [];
+                });
+            };
+        },
     };
 
     // Combine simple actions and thunks
@@ -500,6 +544,24 @@
                     }),
                 };
 
+            case ACTIONS.SET_MIRRORS_FOR_RATING:
+                return {
+                    ...state,
+                    mirrorsById: {
+                        ...state.mirrorsById,
+                        [action.ratingId]: Array.isArray(action.mirrors) ? action.mirrors : [],
+                    },
+                };
+
+            case ACTIONS.SET_IS_LOADING_MIRRORS:
+                return {
+                    ...state,
+                    isLoadingMirrors: {
+                        ...state.isLoadingMirrors,
+                        [action.ratingId]: action.isLoading,
+                    },
+                };
+
             default:
                 return state;
         }
@@ -542,6 +604,16 @@
         },
         getLastError(state) {
             return state.lastError;
+        },
+        getMirrorsForRating(state, ratingId) {
+            // Returns null if not yet fetched (distinguishes from empty array)
+            if (state.mirrorsById.hasOwnProperty(ratingId)) {
+                return state.mirrorsById[ratingId];
+            }
+            return null;
+        },
+        isLoadingMirrors(state, ratingId) {
+            return (state.isLoadingMirrors && state.isLoadingMirrors[ratingId]) || false;
         },
     };
 

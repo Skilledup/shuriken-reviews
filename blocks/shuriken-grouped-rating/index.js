@@ -1,5 +1,5 @@
 /**
- * Shuriken Reviews — Grouped Rating Block (v2)
+ * Shuriken Reviews — Grouped Rating Block (v2.1)
  *
  * Re-designed with style presets and simplified settings.
  * The heavy visual design is handled entirely by CSS presets
@@ -12,9 +12,11 @@
  *  - accentColor   : single accent color driving the preset's colour scheme
  *  - starColor     : active star colour
  *  - childLayout   : "grid" (default) or "list"
+ *  - mirrorId      : mirror of parent rating to display (0 = use original)
+ *  - subRatings    : ordered array of { id, mirrorId, visible } controlling child display
  *
  * @package Shuriken_Reviews
- * @since 2.0.0
+ * @since 2.1.0
  */
 
 (function (wp) {
@@ -30,6 +32,7 @@
         SelectControl,
         CheckboxControl,
         Notice,
+        Icon,
         __experimentalDivider: Divider
     } = wp.components;
     const { useState, useEffect, useMemo, useRef, useCallback } = wp.element;
@@ -48,7 +51,9 @@
                 anchorTag,
                 accentColor,
                 starColor,
-                childLayout
+                childLayout,
+                mirrorId,
+                subRatings
             } = attributes;
 
             // ---- Local UI state ----
@@ -69,6 +74,10 @@
             const [savingChildren, setSavingChildren] = useState(false);
             const [error, setError] = useState(null);
             const [lastFailedAction, setLastFailedAction] = useState(null);
+
+            // Drag state for sub-rating reorder
+            const [dragIndex, setDragIndex] = useState(null);
+            const [dragOverIndex, setDragOverIndex] = useState(null);
 
             // Search state for AJAX dropdown
             const [searchTerm, setSearchTerm] = useState('');
@@ -91,6 +100,7 @@
                 searchRatings,
                 fetchParentRatings,
                 fetchChildRatings,
+                fetchMirrorsForRating,
                 createRating,
                 updateRating,
                 deleteRating,
@@ -104,7 +114,9 @@
                 searchResults,
                 isSearching,
                 isLoadingParents,
-                storeError
+                storeError,
+                parentMirrors,
+                parentMirrorsLoading
             } = useSelect(function (select) {
                 var store = select(STORE_NAME);
                 return {
@@ -114,7 +126,9 @@
                     searchResults: store.getSearchResults(),
                     isSearching: store.isSearching(),
                     isLoadingParents: store.isLoadingParents(),
-                    storeError: store.getLastError ? store.getLastError() : null
+                    storeError: store.getLastError ? store.getLastError() : null,
+                    parentMirrors: ratingId ? store.getMirrorsForRating(ratingId) : null,
+                    parentMirrorsLoading: ratingId ? store.isLoadingMirrors(ratingId) : false
                 };
             }, [ratingId]);
 
@@ -195,6 +209,7 @@
                 if (ratingId) {
                     fetchRating(ratingId);
                     fetchChildRatings(ratingId);
+                    fetchMirrorsForRating(ratingId);
                 }
                 return function () {
                     if (searchTimeoutRef.current) {
@@ -206,6 +221,7 @@
             useEffect(function () {
                 if (ratingId) {
                     fetchChildRatings(ratingId);
+                    fetchMirrorsForRating(ratingId);
                 }
             }, [ratingId]);
 
@@ -222,13 +238,145 @@
                 return children;
             }, [ratingId, allRatingsById]);
 
+            // ---- Fetch mirrors for each child rating ----
+            useEffect(function () {
+                if (childRatings.length > 0) {
+                    childRatings.forEach(function (child) {
+                        fetchMirrorsForRating(child.id);
+                    });
+                }
+            }, [childRatings.length]);
+
+            // ---- Get mirrors for child ratings from store ----
+            const childMirrorsMap = useSelect(function (select) {
+                var store = select(STORE_NAME);
+                var map = {};
+                childRatings.forEach(function (child) {
+                    map[child.id] = store.getMirrorsForRating(child.id);
+                });
+                return map;
+            }, [childRatings]);
+
+            // ---- Auto-populate subRatings from child list when empty ----
+            useEffect(function () {
+                if (!ratingId || childRatings.length === 0) return;
+                var currentSubRatings = subRatings || [];
+
+                if (currentSubRatings.length === 0) {
+                    // First time — seed from all children
+                    var seeded = childRatings.map(function (child) {
+                        return { id: parseInt(child.id, 10), mirrorId: 0, visible: true };
+                    });
+                    setAttributes({ subRatings: seeded });
+                } else {
+                    // Merge — add any new children not yet in subRatings
+                    var existingIds = {};
+                    currentSubRatings.forEach(function (sr) { existingIds[sr.id] = true; });
+                    var newEntries = [];
+                    childRatings.forEach(function (child) {
+                        var cid = parseInt(child.id, 10);
+                        if (!existingIds[cid]) {
+                            newEntries.push({ id: cid, mirrorId: 0, visible: true });
+                        }
+                    });
+                    if (newEntries.length > 0) {
+                        setAttributes({ subRatings: currentSubRatings.concat(newEntries) });
+                    }
+                }
+            }, [ratingId, childRatings.length]);
+
+            // ---- SubRatings helpers ----
+            function updateSubRating(subId, updates) {
+                var updated = (subRatings || []).map(function (sr) {
+                    if (sr.id === subId) {
+                        var merged = {};
+                        for (var k in sr) merged[k] = sr[k];
+                        for (var k in updates) merged[k] = updates[k];
+                        return merged;
+                    }
+                    return sr;
+                });
+                setAttributes({ subRatings: updated });
+            }
+
+            function moveSubRating(fromIndex, toIndex) {
+                var arr = (subRatings || []).slice();
+                if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) return;
+                var item = arr.splice(fromIndex, 1)[0];
+                arr.splice(toIndex, 0, item);
+                setAttributes({ subRatings: arr });
+            }
+
+            function resetSubRatings() {
+                setAttributes({ subRatings: [] });
+            }
+
+            // ---- Drag handlers for sub-rating reorder ----
+            function handleDragStart(e, index) {
+                setDragIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(index));
+            }
+
+            function handleDragOver(e, index) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverIndex(index);
+            }
+
+            function handleDragEnd() {
+                if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+                    moveSubRating(dragIndex, dragOverIndex);
+                }
+                setDragIndex(null);
+                setDragOverIndex(null);
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                handleDragEnd();
+            }
+
+            // ---- Ordered child ratings for preview (respects subRatings order + visibility) ----
+            const orderedVisibleChildren = useMemo(function () {
+                var currentSubRatings = subRatings || [];
+                if (currentSubRatings.length === 0) return childRatings;
+
+                var result = [];
+                currentSubRatings.forEach(function (sr) {
+                    if (!sr.visible) return;
+                    var displayId = sr.mirrorId || sr.id;
+                    var rating = allRatingsById[displayId] || allRatingsById[sr.id];
+                    if (rating) {
+                        result.push(rating);
+                    }
+                });
+                return result;
+            }, [subRatings, childRatings, allRatingsById]);
+
+            // ---- Parent display rating (mirror or original) ----
+            const parentDisplayRating = useMemo(function () {
+                if (!selectedRating) return null;
+                if (mirrorId && allRatingsById[mirrorId]) {
+                    return allRatingsById[mirrorId];
+                }
+                return selectedRating;
+            }, [selectedRating, mirrorId, allRatingsById]);
+
+            // Fetch mirror rating data if mirrorId is set
+            useEffect(function () {
+                if (mirrorId) {
+                    fetchRating(mirrorId);
+                }
+            }, [mirrorId]);
+
             // ---- CRUD helpers (unchanged logic) ----
             function createNewParentRating() {
                 if (!newParentName.trim() || creating) return;
                 setCreating(true);
                 createRating({ name: newParentName, display_only: newParentDisplayOnly })
                     .then(function (data) {
-                        setAttributes({ ratingId: parseInt(data.id, 10) });
+                        setAttributes({ ratingId: parseInt(data.id, 10), mirrorId: 0, subRatings: [] });
                         fetchParentRatings();
                         setNewParentName('');
                         setNewParentDisplayOnly(true);
@@ -345,6 +493,9 @@
                         setChildrenToManage(function (prev) {
                             return prev.filter(function (r) { return parseInt(r.id, 10) !== parseInt(childId, 10); });
                         });
+                        // Also remove from subRatings attribute
+                        var updated = (subRatings || []).filter(function (sr) { return sr.id !== parseInt(childId, 10); });
+                        setAttributes({ subRatings: updated });
                         setError(null);
                     })
                     .catch(function (err) { handleApiError(err, retry); });
@@ -373,6 +524,17 @@
                 }
                 return options;
             }, [searchResults, selectedRating, searchTerm]);
+
+            // ---- Parent mirror options ----
+            var parentMirrorOptions = useMemo(function () {
+                var opts = [{ label: __('None (use original)', 'shuriken-reviews'), value: '0' }];
+                if (Array.isArray(parentMirrors)) {
+                    parentMirrors.forEach(function (m) {
+                        opts.push({ label: m.name + ' (ID: ' + m.id + ')', value: String(m.id) });
+                    });
+                }
+                return opts;
+            }, [parentMirrors]);
 
             var titleTagOptions = [
                 { label: 'H1', value: 'h1' },
@@ -418,14 +580,35 @@
                                     value: ratingId ? String(ratingId) : '',
                                     options: ratingOptions,
                                     onChange: function (value) {
-                                        setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
-                                        if (value) fetchRating(parseInt(value, 10));
+                                        var newId = value ? parseInt(value, 10) : 0;
+                                        setAttributes({ ratingId: newId, mirrorId: 0, subRatings: [] });
+                                        if (newId) {
+                                            fetchRating(newId);
+                                            fetchMirrorsForRating(newId);
+                                        }
                                     },
                                     onFilterValueChange: handleSearchChange,
                                     placeholder: isSearching
                                         ? __('Searching...', 'shuriken-reviews')
                                         : __('Search parent ratings...', 'shuriken-reviews')
                                 }),
+
+                                // Parent mirror selector
+                                ratingId && selectedRating && wp.element.createElement(SelectControl, {
+                                    label: __('Parent Mirror', 'shuriken-reviews'),
+                                    value: String(mirrorId || 0),
+                                    options: parentMirrorOptions,
+                                    onChange: function (value) {
+                                        var newMirrorId = parseInt(value, 10) || 0;
+                                        setAttributes({ mirrorId: newMirrorId });
+                                    },
+                                    help: parentMirrorsLoading
+                                        ? __('Loading mirrors...', 'shuriken-reviews')
+                                        : (Array.isArray(parentMirrors) && parentMirrors.length === 0)
+                                            ? __('No mirrors exist for this rating.', 'shuriken-reviews')
+                                            : __('Display a mirror\'s name instead of the original parent.', 'shuriken-reviews')
+                                }),
+
                                 wp.element.createElement(
                                     'div',
                                     { style: { display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '16px', flexWrap: 'wrap' } },
@@ -458,7 +641,73 @@
                         })
                     ),
 
-                    // Panel 2 — Layout
+                    // Panel 2 — Sub-Ratings Visibility & Order
+                    ratingId && selectedRating && (subRatings || []).length > 0 && wp.element.createElement(
+                        PanelBody,
+                        { title: __('Sub-Ratings Display', 'shuriken-reviews'), initialOpen: false },
+                        wp.element.createElement('p', { style: { fontSize: '12px', color: '#666', marginTop: 0 } },
+                            __('Drag to reorder, toggle visibility, and optionally pick a mirror for each sub-rating.', 'shuriken-reviews')
+                        ),
+                        (subRatings || []).map(function (sr, index) {
+                            var childRating = allRatingsById[sr.id];
+                            var childName = childRating ? childRating.name : __('Loading...', 'shuriken-reviews');
+                            var mirrors = childMirrorsMap[sr.id];
+                            var hasMirrors = Array.isArray(mirrors) && mirrors.length > 0;
+                            var isDragging = dragIndex === index;
+                            var isDragOver = dragOverIndex === index;
+
+                            return wp.element.createElement(
+                                'div',
+                                {
+                                    key: sr.id,
+                                    className: 'shuriken-sub-rating-row' + (isDragging ? ' is-dragging' : '') + (isDragOver ? ' is-drag-over' : '') + (!sr.visible ? ' is-hidden' : ''),
+                                    draggable: true,
+                                    onDragStart: function (e) { handleDragStart(e, index); },
+                                    onDragOver: function (e) { handleDragOver(e, index); },
+                                    onDragEnd: handleDragEnd,
+                                    onDrop: handleDrop
+                                },
+                                wp.element.createElement(
+                                    'div',
+                                    { className: 'shuriken-sub-rating-row-header' },
+                                    wp.element.createElement(
+                                        'span',
+                                        { className: 'shuriken-drag-handle', title: __('Drag to reorder', 'shuriken-reviews') },
+                                        wp.element.createElement(Icon, { icon: 'menu' })
+                                    ),
+                                    wp.element.createElement('span', { className: 'shuriken-sub-rating-name' }, childName),
+                                    wp.element.createElement(Button, {
+                                        icon: sr.visible ? 'visibility' : 'hidden',
+                                        label: sr.visible ? __('Hide', 'shuriken-reviews') : __('Show', 'shuriken-reviews'),
+                                        onClick: function () { updateSubRating(sr.id, { visible: !sr.visible }); },
+                                        className: 'shuriken-visibility-toggle' + (sr.visible ? '' : ' is-hidden-icon')
+                                    })
+                                ),
+                                sr.visible && hasMirrors && wp.element.createElement(SelectControl, {
+                                    value: String(sr.mirrorId || 0),
+                                    options: [{ label: __('Original', 'shuriken-reviews'), value: '0' }].concat(
+                                        mirrors.map(function (m) {
+                                            return { label: m.name + ' (ID: ' + m.id + ')', value: String(m.id) };
+                                        })
+                                    ),
+                                    onChange: function (value) { updateSubRating(sr.id, { mirrorId: parseInt(value, 10) || 0 }); },
+                                    className: 'shuriken-sub-mirror-select'
+                                })
+                            );
+                        }),
+                        wp.element.createElement(
+                            'div',
+                            { style: { marginTop: '12px', display: 'flex', justifyContent: 'flex-end' } },
+                            wp.element.createElement(Button, {
+                                variant: 'tertiary',
+                                isDestructive: true,
+                                onClick: resetSubRatings,
+                                style: { fontSize: '12px' }
+                            }, __('Reset to Defaults', 'shuriken-reviews'))
+                        )
+                    ),
+
+                    // Panel 3 — Layout
                     wp.element.createElement(
                         PanelBody,
                         { title: __('Layout', 'shuriken-reviews'), initialOpen: false },
@@ -474,7 +723,7 @@
                         })
                     ),
 
-                    // Panel 3 — Colors (simple: accent + star)
+                    // Panel 4 — Colors (simple: accent + star)
                     wp.element.createElement(
                         PanelColorSettings,
                         {
@@ -759,20 +1008,20 @@
                                     // (blockProps already has .shuriken-rating-group)
                                     wp.element.createElement(
                                         'div',
-                                        { className: 'shuriken-rating parent-rating' + (selectedRating.display_only ? ' display-only' : '') },
+                                        { className: 'shuriken-rating parent-rating' + (parentDisplayRating.display_only ? ' display-only' : '') },
                                         wp.element.createElement(
                                             'div',
                                             { className: 'shuriken-rating-wrapper' },
                                             wp.element.createElement(
                                                 titleTag,
                                                 { className: 'rating-title' },
-                                                selectedRating.name
+                                                parentDisplayRating.name
                                             ),
                                             wp.element.createElement(
                                                 'div',
                                                 { className: 'stars display-only-stars' },
                                                 [1, 2, 3, 4, 5].map(function (i) {
-                                                    var isActive = i <= calculateAverage(selectedRating);
+                                                    var isActive = i <= calculateAverage(parentDisplayRating);
                                                     return wp.element.createElement(
                                                         'span',
                                                         { key: i, className: 'star' + (isActive ? ' active' : '') },
@@ -783,15 +1032,15 @@
                                             wp.element.createElement(
                                                 'div',
                                                 { className: 'rating-stats' },
-                                                __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(selectedRating) + '/5 (' + (selectedRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
+                                                __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(parentDisplayRating) + '/5 (' + (parentDisplayRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
                                             )
                                         )
                                     ),
-                                    // Child ratings
-                                    childRatings.length > 0 && wp.element.createElement(
+                                    // Child ratings — using ordered visible children
+                                    orderedVisibleChildren.length > 0 && wp.element.createElement(
                                         'div',
                                         { className: 'shuriken-child-ratings' },
-                                        childRatings.map(function (child) {
+                                        orderedVisibleChildren.map(function (child) {
                                             return wp.element.createElement(
                                                 'div',
                                                 { key: child.id, className: 'shuriken-rating child-rating' },

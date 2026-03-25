@@ -242,6 +242,8 @@ class Shuriken_Block {
         $title_tag = isset($attributes['titleTag']) ? sanitize_key($attributes['titleTag']) : 'h2';
         $anchor_tag = isset($attributes['anchorTag']) ? sanitize_html_class($attributes['anchorTag']) : '';
         $child_layout = isset($attributes['childLayout']) ? sanitize_key($attributes['childLayout']) : 'grid';
+        $mirror_id = isset($attributes['mirrorId']) ? absint($attributes['mirrorId']) : 0;
+        $sub_ratings_config = isset($attributes['subRatings']) && is_array($attributes['subRatings']) ? $attributes['subRatings'] : array();
 
         // Validate title tag
         if (!in_array($title_tag, self::ALLOWED_TITLE_TAGS, true)) {
@@ -252,14 +254,52 @@ class Shuriken_Block {
             return '';
         }
 
-        $rating = $this->db->get_rating($rating_id);
+        // Resolve parent display rating (mirror or original)
+        $parent_display_rating = null;
+        if ($mirror_id > 0) {
+            $parent_display_rating = $this->db->get_rating($mirror_id);
+        }
+        // Fall back to original if mirror not found or not set
+        if (!$parent_display_rating) {
+            $parent_display_rating = $this->db->get_rating($rating_id);
+        }
 
-        if (!$rating) {
+        if (!$parent_display_rating) {
             return '';
         }
 
-        // Get child ratings
-        $child_ratings = $this->db->get_sub_ratings($rating_id);
+        // Also fetch the original parent for source_id (used for data-parent-id on the wrapper)
+        $original_parent = ($mirror_id > 0) ? $this->db->get_rating($rating_id) : $parent_display_rating;
+
+        // Resolve child ratings based on subRatings config
+        $child_ratings = array();
+        if (!empty($sub_ratings_config)) {
+            // Use the ordered, filtered config
+            foreach ($sub_ratings_config as $sr_config) {
+                // Ensure required keys exist
+                if (!isset($sr_config['id'])) continue;
+
+                $visible = isset($sr_config['visible']) ? (bool) $sr_config['visible'] : true;
+                if (!$visible) continue;
+
+                $sr_mirror_id = isset($sr_config['mirrorId']) ? absint($sr_config['mirrorId']) : 0;
+                $child = null;
+
+                if ($sr_mirror_id > 0) {
+                    $child = $this->db->get_rating($sr_mirror_id);
+                }
+                if (!$child) {
+                    $child = $this->db->get_rating(absint($sr_config['id']));
+                }
+
+                if ($child) {
+                    $child_ratings[] = $child;
+                }
+            }
+        } else {
+            // Fallback: show all sub-ratings (backwards-compatible default)
+            $child_ratings = $this->db->get_sub_ratings($rating_id);
+        }
 
         // Build CSS variables from simplified attributes (accent + star color)
         $style_vars = array();
@@ -277,7 +317,7 @@ class Shuriken_Block {
         // Render parent rating
         $html = '<div class="shuriken-rating-group' . esc_attr($layout_class) . '">';
         // Add parent-rating class to the wrapper of the parent rating
-        $parent_html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag);
+        $parent_html = shuriken_shortcodes()->render_rating_html($parent_display_rating, $title_tag, $anchor_tag);
         $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
 
         // Render child ratings
@@ -295,7 +335,7 @@ class Shuriken_Block {
         // Prepare wrapper attributes with CSS variables
         $wrapper_attrs = array(
             'class' => 'shuriken-rating-group' . $layout_class,
-            'data-parent-id' => esc_attr($rating->source_id),
+            'data-parent-id' => esc_attr($original_parent ? $original_parent->source_id : $parent_display_rating->source_id),
         );
 
         // Add style attribute with CSS variables if any exist

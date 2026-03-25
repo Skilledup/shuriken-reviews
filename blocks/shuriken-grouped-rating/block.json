@@ -64,6 +64,14 @@
         "childLayout": {
             "type": "string",
             "default": "grid"
+        },
+        "mirrorId": {
+            "type": "number",
+            "default": 0
+        },
+        "subRatings": {
+            "type": "array",
+            "default": []
         }
     },
     "editorScript": "shuriken-grouped-rating-editor",
