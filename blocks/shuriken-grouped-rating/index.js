@@ -167,7 +167,10 @@
                 style: cssVars
             });
 
-            const loading = isLoadingParents && parentRatings.length === 0;
+            const loading = (isLoadingParents && parentRatings.length === 0) ||
+                // Wait for mirror data to prevent flash of parent data
+                (mirrorId && !allRatingsById[mirrorId]) ||
+                (mirrorId && allRatingsById[mirrorId] && !allRatingsById[mirrorId].source_id);
 
             // Combined error state (local UI errors + store-level errors)
             const combinedError = error || storeError;
@@ -346,6 +349,16 @@
                     fetchRating(mirrorId);
                 }
             }, [mirrorId]);
+
+            // Fetch each sub-rating's mirror data
+            useEffect(function () {
+                var currentSubRatings = subRatings || [];
+                currentSubRatings.forEach(function (sr) {
+                    if (sr.mirrorId) {
+                        fetchRating(sr.mirrorId);
+                    }
+                });
+            }, [subRatings]);
 
             // ---- CRUD helpers ----
             function createNewParentRating() {

@@ -580,12 +580,30 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      */
     public function get_mirrors($rating_id) {
         $fields = self::RATING_FIELDS;
-        return $this->wpdb->get_results($this->wpdb->prepare(
+        $mirrors = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} 
              WHERE mirror_of = %d 
              ORDER BY name ASC",
             $rating_id
         ));
+
+        if (!empty($mirrors)) {
+            // Fetch the source rating once and copy vote data to all mirrors
+            $source = $this->get_original_rating($rating_id);
+            foreach ($mirrors as $mirror) {
+                $mirror->source_id = $source ? (int) $source->id : (int) $rating_id;
+                if ($source) {
+                    $mirror->total_votes  = $source->total_votes;
+                    $mirror->total_rating = $source->total_rating;
+                    $mirror->display_only = $source->display_only;
+                }
+                $mirror->average = $mirror->total_votes > 0
+                    ? round($mirror->total_rating / $mirror->total_votes, 1)
+                    : 0;
+            }
+        }
+
+        return $mirrors;
     }
 
     /**
