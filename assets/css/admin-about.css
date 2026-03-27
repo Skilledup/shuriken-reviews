@@ -15,7 +15,7 @@
 .shuriken-about-hero {
     border-radius: 16px;
     margin-bottom: 40px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     background-size: cover;
     background-position: right center;
     background-repeat: no-repeat;
@@ -24,6 +24,7 @@
     min-height: 280px;
     display: flex;
     align-items: center;
+    border: 2px solid #e5e7eb;
 }
 
 @media screen and (min-width: 782px) {
@@ -688,5 +689,9 @@
 
     .shortcode-reference > h3 {
         color: #f1f5f9;
+    }
+
+    .shuriken-about-hero {
+        border-color: #334155;
     }
 }
