@@ -56,7 +56,7 @@ if (!defined('ABSPATH')) exit;
                     <span class="dashicons dashicons-shortcode"></span>
                 </div>
                 <h3><?php esc_html_e('Shortcode Support', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('Display ratings anywhere using the flexible [shuriken_rating] shortcode with customizable parameters.', 'shuriken-reviews'); ?></p>
+                <p><?php esc_html_e('Display ratings anywhere using [shuriken_rating] and [shuriken_grouped_rating] shortcodes with preset styles, custom colors, and layout options.', 'shuriken-reviews'); ?></p>
             </div>
             
             <div class="feature-card">
@@ -171,6 +171,22 @@ if (!defined('ABSPATH')) exit;
                         <?php esc_html_e('Batch-fetches multiple ratings in one request with mirror vote data resolved, replacing many individual API calls', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
+
+                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shortcode Extensions', 'shuriken-reviews'); ?></h4>
+                <ul class="new-features-list">
+                    <li>
+                        <strong><?php esc_html_e('Grouped Rating Shortcode', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('New [shuriken_grouped_rating] shortcode displays a parent rating with all its sub-ratings, supporting grid and list layouts', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Preset Styles', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Both shortcodes now accept a style parameter to apply the same preset styles available in the block editor (e.g. card, dark, gradient)', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Custom Colors', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Use accent_color and star_color parameters to customize colors directly from the shortcode', 'shuriken-reviews'); ?>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -224,6 +240,8 @@ if (!defined('ABSPATH')) exit;
         </h2>
         
         <div class="shortcode-reference">
+            <h3><?php esc_html_e('Single Rating — [shuriken_rating]', 'shuriken-reviews'); ?></h3>
+
             <div class="shortcode-box">
                 <h4><?php esc_html_e('Basic Usage', 'shuriken-reviews'); ?></h4>
                 <code>[shuriken_rating id="1"]</code>
@@ -241,11 +259,31 @@ if (!defined('ABSPATH')) exit;
                 <code>[shuriken_rating id="1" anchor_tag="my-rating"]</code>
                 <p class="shortcode-desc"><?php esc_html_e('Add an anchor ID for linking', 'shuriken-reviews'); ?></p>
             </div>
-            
+
+            <div class="shortcode-box">
+                <h4><?php esc_html_e('Preset Style + Colors', 'shuriken-reviews'); ?></h4>
+                <code>[shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]</code>
+                <p class="shortcode-desc"><?php esc_html_e('Apply a preset (classic, card, minimal, dark, outlined) with custom accent and star colors', 'shuriken-reviews'); ?></p>
+            </div>
+
+            <h3 style="margin-top: 1.5em;"><?php esc_html_e('Grouped Rating — [shuriken_grouped_rating]', 'shuriken-reviews'); ?></h3>
+
+            <div class="shortcode-box">
+                <h4><?php esc_html_e('Basic Grouped', 'shuriken-reviews'); ?></h4>
+                <code>[shuriken_grouped_rating id="1"]</code>
+                <p class="shortcode-desc"><?php esc_html_e('Display a parent rating with all its sub-ratings in grid layout', 'shuriken-reviews'); ?></p>
+            </div>
+
+            <div class="shortcode-box">
+                <h4><?php esc_html_e('List Layout + Preset', 'shuriken-reviews'); ?></h4>
+                <code>[shuriken_grouped_rating id="1" style="dark" layout="list"]</code>
+                <p class="shortcode-desc"><?php esc_html_e('Presets: gradient, minimal, boxed, dark, outlined. Layouts: grid, list', 'shuriken-reviews'); ?></p>
+            </div>
+
             <div class="shortcode-box">
                 <h4><?php esc_html_e('Full Example', 'shuriken-reviews'); ?></h4>
-                <code>[shuriken_rating id="5" tag="h4" anchor_tag="product-rating"]</code>
-                <p class="shortcode-desc"><?php esc_html_e('Complete shortcode with all parameters', 'shuriken-reviews'); ?></p>
+                <code>[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" layout="list"]</code>
+                <p class="shortcode-desc"><?php esc_html_e('Complete grouped shortcode with all parameters', 'shuriken-reviews'); ?></p>
             </div>
         </div>
     </div>

@@ -132,7 +132,8 @@
    ===================================================== */
 
 /* CSS variable support (scoped to block wrapper to avoid affecting grouped children) */
-.wp-block-shuriken-reviews-rating {
+.wp-block-shuriken-reviews-rating,
+.shuriken-rating[style*="--shuriken"] {
     --shuriken-accent: var(--shuriken-user-accent, #667eea);
     --shuriken-star-color: var(--shuriken-user-star-color, #ffd700);
 }

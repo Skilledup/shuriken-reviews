@@ -64,6 +64,15 @@ Full mirror CRUD and management integrated into the Grouped Rating block editor,
 **New Search Type:**
 - `parents_and_mirrors` — Search type for `/ratings/search` that returns parent ratings plus mirrors whose source is a parent, with vote data batch-resolved from source ratings
 
+### Shortcode Extensions
+
+Shortcode system expanded to match block editor capabilities.
+
+**Features:**
+- **Grouped Rating Shortcode** — New `[shuriken_grouped_rating]` shortcode renders a parent rating with all sub-ratings, supporting `grid` and `list` layouts
+- **Preset Styles** — Both `[shuriken_rating]` and `[shuriken_grouped_rating]` accept a `style` parameter to apply the same presets available in blocks (e.g. `card`, `dark`, `gradient`, `boxed`)
+- **Custom Colors** — `accent_color` and `star_color` parameters inject CSS custom properties (`--shuriken-user-accent`, `--shuriken-user-star-color`) for per-shortcode color overrides
+
 ---
 
 ## 1.10.3

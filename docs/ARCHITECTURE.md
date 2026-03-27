@@ -221,12 +221,12 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 
 ### Shortcodes Module (`class-shuriken-shortcodes.php`)
 
-Handles `[shuriken_rating]` shortcode registration and rendering.
+Handles `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcode registration and rendering.
 
 **Responsibility:**
-- Parse shortcode attributes
+- Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout)
 - Validate input
-- Render rating with hooks
+- Render single or grouped ratings with preset style classes and CSS custom properties
 - Return HTML
 
 ### Block Module (`class-shuriken-block.php`)

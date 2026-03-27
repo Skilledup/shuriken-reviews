@@ -37,7 +37,7 @@ Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your 
 - **Custom Colours**: Per-block accent colour and star colour override via the block colour panel
 - **Unified Rating Search**: Single searchable dropdown for selecting parent ratings or mirrors across both blocks
 - **Inline Mirror Management**: Create, rename, and delete mirrors directly from the block editor modals
-- **Shortcode**: Display ratings anywhere with `[shuriken_rating]`
+- **Shortcodes**: Display ratings anywhere with `[shuriken_rating]` and `[shuriken_grouped_rating]`, including preset styles and custom colors
 - **AJAX Submissions**: Smooth rating submissions without page reloads
 - **REST API Endpoints**: Fetches fresh rating data and nonces to bypass cache issues
 ### Caching & Nonce Handling
@@ -178,7 +178,9 @@ Displays a parent rating together with all its child sub-ratings in a unified se
    - **Layout panel**: Switch between Grid (cards) and List (stacked rows) layouts for child ratings
    - **Colors panel**: Override Accent Color and Star Color
 
-### Shortcode
+### Shortcodes
+
+#### Single Rating
 
 Use `[shuriken_rating]` to display ratings anywhere:
 
@@ -187,6 +189,9 @@ Use `[shuriken_rating]` to display ratings anywhere:
 | `id` | Rating ID (required) | - | Any valid rating ID |
 | `tag` | HTML tag for title | `h2` | h1, h2, h3, h4, h5, h6, div, p, span |
 | `anchor_tag` | Anchor ID for linking | - | Any valid HTML ID |
+| `style` | Preset style | - | classic, card, minimal, dark, outlined |
+| `accent_color` | Accent hex color | - | Any hex color (e.g. `#e74c3c`) |
+| `star_color` | Star hex color | - | Any hex color (e.g. `#f39c12`) |
 
 **Examples:**
 
@@ -194,6 +199,29 @@ Use `[shuriken_rating]` to display ratings anywhere:
 [shuriken_rating id="1"]
 [shuriken_rating id="1" tag="h3"]
 [shuriken_rating id="1" tag="h4" anchor_tag="product-rating"]
+[shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
+```
+
+#### Grouped Rating
+
+Use `[shuriken_grouped_rating]` to display a parent rating with its sub-ratings:
+
+| Parameter | Description | Default | Options |
+|-----------|-------------|---------|---------|
+| `id` | Parent rating ID (required) | - | Any valid parent rating ID |
+| `tag` | HTML tag for parent title | `h2` | h1, h2, h3, h4, h5, h6, div, p, span |
+| `anchor_tag` | Anchor ID for linking | - | Any valid HTML ID |
+| `style` | Preset style | - | gradient, minimal, boxed, dark, outlined |
+| `accent_color` | Accent hex color | - | Any hex color (e.g. `#667eea`) |
+| `star_color` | Star hex color | - | Any hex color (e.g. `#ffd700`) |
+| `layout` | Child ratings layout | `grid` | grid, list |
+
+**Examples:**
+
+```shortcode
+[shuriken_grouped_rating id="1"]
+[shuriken_grouped_rating id="1" style="dark" layout="list"]
+[shuriken_grouped_rating id="1" style="boxed" accent_color="#e74c3c" star_color="#f39c12"]
 ```
 
 ### Analytics

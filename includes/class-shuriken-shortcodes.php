@@ -46,6 +46,7 @@ class Shuriken_Shortcodes {
         $this->db = $db ?: shuriken_db();
         
         add_shortcode('shuriken_rating', array($this, 'render_rating'));
+        add_shortcode('shuriken_grouped_rating', array($this, 'render_grouped_rating'));
     }
 
     /**
@@ -86,21 +87,28 @@ class Shuriken_Shortcodes {
      * @param array $atts {
      *     Shortcode attributes.
      *     
-     *     @type int    $id         Required. The ID of the rating to display.
-     *     @type string $tag        Optional. HTML tag to wrap the rating title. Default 'h2'.
-     *     @type string $anchor_tag Optional. ID attribute for anchor linking. Default empty.
+     *     @type int    $id           Required. The ID of the rating to display.
+     *     @type string $tag          Optional. HTML tag to wrap the rating title. Default 'h2'.
+     *     @type string $anchor_tag   Optional. ID attribute for anchor linking. Default empty.
+     *     @type string $style        Optional. Preset style name (classic, card, minimal, dark, outlined). Default empty.
+     *     @type string $accent_color Optional. Hex color for accent elements. Default empty.
+     *     @type string $star_color   Optional. Hex color for active stars. Default empty.
      * }
      * @return string HTML content for the rating interface.
      * @since 1.1.0
      * 
      * @example [shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
+     * @example [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
      */
     public function render_rating($atts) {
         // Validate and sanitize attributes with proper defaults and parsing
         $atts = shortcode_atts(array(
             'id' => 0,
             'tag' => 'h2',
-            'anchor_tag' => ''
+            'anchor_tag' => '',
+            'style' => '',
+            'accent_color' => '',
+            'star_color' => '',
         ), $atts, 'shuriken_rating');
 
         // Validate ID is numeric and positive
@@ -122,7 +130,9 @@ class Shuriken_Shortcodes {
             return '';
         }
 
-        return $this->render_rating_html($rating, $tag, $anchor_id);
+        $html = $this->render_rating_html($rating, $tag, $anchor_id);
+
+        return $this->wrap_with_style_attributes($html, $atts);
     }
 
     /**
@@ -262,6 +272,161 @@ class Shuriken_Shortcodes {
          * @param string $anchor_id The anchor ID.
          */
         return apply_filters('shuriken_rating_html', $html, $rating, $tag, $anchor_id);
+    }
+
+    /**
+     * Render the [shuriken_grouped_rating] shortcode
+     *
+     * Displays a parent rating with its sub-ratings in a grouped layout.
+     *
+     * @param array $atts {
+     *     Shortcode attributes.
+     *
+     *     @type int    $id           Required. The ID of the parent rating to display.
+     *     @type string $tag          Optional. HTML tag for the parent title. Default 'h2'.
+     *     @type string $anchor_tag   Optional. ID attribute for anchor linking. Default empty.
+     *     @type string $style        Optional. Preset style (gradient, minimal, boxed, dark, outlined). Default empty.
+     *     @type string $accent_color Optional. Hex color for accent elements. Default empty.
+     *     @type string $star_color   Optional. Hex color for active stars. Default empty.
+     *     @type string $layout       Optional. Child layout: 'grid' or 'list'. Default 'grid'.
+     * }
+     * @return string HTML content for the grouped rating interface.
+     *
+     * @example [shuriken_grouped_rating id="1"]
+     * @example [shuriken_grouped_rating id="1" style="dark" layout="list" accent_color="#e74c3c"]
+     */
+    public function render_grouped_rating($atts) {
+        $atts = shortcode_atts(array(
+            'id'           => 0,
+            'tag'          => 'h2',
+            'anchor_tag'   => '',
+            'style'        => '',
+            'accent_color' => '',
+            'star_color'   => '',
+            'layout'       => 'grid',
+        ), $atts, 'shuriken_grouped_rating');
+
+        $id = absint($atts['id']);
+        if (!$id) {
+            return '';
+        }
+
+        $tag = in_array(strtolower($atts['tag']), self::ALLOWED_TITLE_TAGS, true) ? $atts['tag'] : 'h2';
+        $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
+        $layout = ($atts['layout'] === 'list') ? 'list' : 'grid';
+
+        $parent = $this->db->get_rating($id);
+        if (!$parent) {
+            return '';
+        }
+
+        $child_ratings = $this->db->get_sub_ratings($id);
+
+        // Build layout class
+        $layout_class = ($layout === 'list') ? ' is-layout-list' : '';
+
+        // Build CSS variables
+        $style_vars = $this->build_style_vars($atts);
+        $style_attr = $style_vars ? ' style="' . esc_attr($style_vars) . '"' : '';
+
+        // Build preset class
+        $style_class = $this->get_preset_class($atts['style']);
+
+        // Build wrapper
+        $html = '<div class="shuriken-rating-group' . esc_attr($layout_class . $style_class) . '"'
+              . ($anchor_id ? ' id="' . esc_attr($anchor_id) . '"' : '')
+              . $style_attr . '>';
+
+        // Render parent
+        $parent_html = $this->render_rating_html($parent, $tag);
+        $parent_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
+        $html .= $parent_html;
+
+        // Render children
+        if (!empty($child_ratings)) {
+            $html .= '<div class="shuriken-child-ratings">';
+            foreach ($child_ratings as $child) {
+                $child_html = $this->render_rating_html($child, 'h4');
+                $child_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
+                $html .= $child_html;
+            }
+            $html .= '</div>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * Wrap shortcode HTML with preset style class and CSS custom properties.
+     *
+     * @param string $html The rendered rating HTML.
+     * @param array  $atts Shortcode attributes containing style, accent_color, star_color.
+     * @return string Modified HTML with style attributes applied.
+     */
+    private function wrap_with_style_attributes($html, $atts) {
+        $style_class = $this->get_preset_class(!empty($atts['style']) ? $atts['style'] : '');
+        $style_vars = $this->build_style_vars($atts);
+
+        if (!$style_class && !$style_vars) {
+            return $html;
+        }
+
+        // Add preset class to the outer div
+        if ($style_class) {
+            $html = preg_replace(
+                '/class="shuriken-rating/',
+                'class="shuriken-rating' . esc_attr($style_class),
+                $html,
+                1
+            );
+        }
+
+        // Add inline CSS variables
+        if ($style_vars) {
+            $html = preg_replace(
+                '/(<div\s+class="shuriken-rating[^"]*")/',
+                '$1 style="' . esc_attr($style_vars) . '"',
+                $html,
+                1
+            );
+        }
+
+        return $html;
+    }
+
+    /**
+     * Build CSS custom property string from shortcode color attributes.
+     *
+     * @param array $atts Shortcode attributes.
+     * @return string CSS custom properties string, e.g. "--shuriken-user-accent: #e74c3c; --shuriken-user-star-color: #f39c12;"
+     */
+    private function build_style_vars($atts) {
+        $vars = array();
+
+        if (!empty($atts['accent_color']) && sanitize_hex_color($atts['accent_color'])) {
+            $vars[] = '--shuriken-user-accent: ' . sanitize_hex_color($atts['accent_color']);
+        }
+        if (!empty($atts['star_color']) && sanitize_hex_color($atts['star_color'])) {
+            $vars[] = '--shuriken-user-star-color: ' . sanitize_hex_color($atts['star_color']);
+        }
+
+        return $vars ? implode('; ', $vars) . ';' : '';
+    }
+
+    /**
+     * Get the is-style-* class string for a preset name.
+     *
+     * @param string $style Preset name.
+     * @return string CSS class string with leading space, or empty string.
+     */
+    private function get_preset_class($style) {
+        if (empty($style)) {
+            return '';
+        }
+        $style = sanitize_html_class($style);
+        return $style ? ' is-style-' . $style : '';
     }
 }
 
