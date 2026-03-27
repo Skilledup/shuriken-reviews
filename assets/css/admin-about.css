@@ -267,6 +267,15 @@
     gap: 20px;
 }
 
+.shortcode-reference > h3 {
+    grid-column: 1 / -1;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    padding-bottom: 8px;
+}
+
 .shortcode-box {
     background: #f8fafc;
     border-radius: 10px;
@@ -675,5 +684,9 @@
     .new-feature-highlight > p,
     .whats-new-content p {
         color: #94a3b8;
+    }
+
+    .shortcode-reference > h3 {
+        color: #f1f5f9;
     }
 }
