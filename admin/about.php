@@ -126,6 +126,34 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
+                <h3><?php esc_html_e('Editor Request Optimization & CDN Compatibility', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('This release drastically reduces the number of REST API requests fired by block editor instances, preventing server resource exhaustion on shared hosting and improving compatibility with Cloudflare and other CDNs.', 'shuriken-reviews'); ?></p>
+
+                <ul class="new-features-list">
+                    <li>
+                        <strong><?php esc_html_e('Request Deduplication', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('When multiple Shuriken blocks mount simultaneously, shared data requests (parent ratings, mirrorable ratings) are now deduplicated at the promise level — only one network request is made regardless of block count', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Automatic Batch Fetching', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Individual rating fetches from multiple blocks are automatically collected and sent as a single batch request, replacing N individual calls with one', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('CDN-Safe REST Headers', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('All Shuriken REST API responses now include Cache-Control and CDN-Cache-Control no-store headers to prevent Cloudflare and other CDNs from caching or transforming JSON responses', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Output Buffer Protection', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('A pre-serve filter discards any stray PHP output (warnings from other plugins) before JSON encoding, preventing "invalid JSON response" errors', 'shuriken-reviews'); ?>
+                    </li>
+                    <li>
+                        <strong><?php esc_html_e('Authentication Fix', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('The REST authentication filter has been scoped to only bypass nonce verification for the two public endpoints (/nonce and /ratings/stats), instead of globally overriding authentication for all REST endpoints', 'shuriken-reviews'); ?>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="new-feature-highlight" style="margin-top: 2em;">
                 <h3><?php esc_html_e('Mirror Management in Block Editor', 'shuriken-reviews'); ?></h3>
                 <p><?php esc_html_e('The Grouped Rating block now provides full mirror management directly inside the editor — no need to leave the block to manage mirrors:', 'shuriken-reviews'); ?></p>
 

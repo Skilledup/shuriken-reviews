@@ -26,6 +26,20 @@ Most endpoints require authentication. The API supports:
 | Write | `manage_options` | POST, PUT, DELETE endpoints |
 | Public | None | `/nonce`, `/ratings/stats` |
 
+> **Auth bypass scope (v1.11.4+):** The `rest_authentication_errors` filter only bypasses nonce verification for the two public endpoints listed above. All other endpoints require standard WordPress cookie + nonce authentication.
+
+### CDN Compatibility
+
+All Shuriken REST responses include headers to prevent CDN caching and content transformation:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Cache-Control` | `no-store` | Prevents browser & proxy caching |
+| `CDN-Cache-Control` | `no-store` | Tells Cloudflare & compatible CDNs not to cache |
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing of JSON responses |
+
+Additionally, a `rest_pre_serve_request` filter cleans any stray output buffer content on Shuriken routes before JSON serialization, preventing "invalid JSON response" errors caused by PHP notices from other plugins.
+
 ---
 
 ## Endpoints

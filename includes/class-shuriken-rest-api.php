@@ -49,39 +49,44 @@ class Shuriken_REST_API {
         
         // Skip nonce verification for public endpoints BEFORE authentication runs
         add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 5, 1);
+        
+        // Clean stray PHP output before JSON is sent (prevents invalid_json errors)
+        add_filter('rest_pre_serve_request', array($this, 'clean_rest_buffer'), 1, 4);
+        
+        // Add CDN-friendly no-cache headers to prevent Cloudflare from caching/transforming responses
+        add_filter('rest_post_dispatch', array($this, 'set_rest_cache_headers'), 10, 3);
     }
     
     /**
      * Handle REST API authentication errors
      * 
-     * Bypasses nonce verification for public endpoints like /nonce and /ratings/stats
-     * that need to work without authentication (e.g., for cached pages with stale nonces)
+     * Bypasses nonce verification ONLY for Shuriken's public endpoints (/nonce and /ratings/stats)
+     * that need to work without authentication (e.g., for cached pages with stale nonces).
+     *
+     * All other endpoints (including editor endpoints) use WordPress's default
+     * cookie + nonce authentication, which the block editor handles automatically.
      *
      * @param WP_Error|null|bool $result Authentication result.
      * @return WP_Error|null|bool
      */
     public function rest_authentication_errors($result) {
-        // Check if this is a request to our public endpoints
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
-        
-        // Allow public endpoints to bypass nonce verification entirely
-        if (strpos($request_uri, '/shuriken-reviews/v1/nonce') !== false ||
-            strpos($request_uri, '/shuriken-reviews/v1/ratings/stats') !== false) {
-            // Return true to allow the request without authentication
-            return true;
-        }
-        
-        // If there's already a result, use it
+        // If there's already a result from a previous filter, respect it
         if ($result !== null) {
             return $result;
         }
+
+        // Check if this is a request to our public endpoints
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
         
-        // If user is logged in via cookie, allow it
-        if (is_user_logged_in()) {
+        // Allow ONLY Shuriken's public endpoints to bypass nonce verification.
+        // These endpoints use '__return_true' as permission_callback and must work
+        // even when a cached page sends a stale nonce.
+        if (strpos($request_uri, '/shuriken-reviews/v1/nonce') !== false ||
+            strpos($request_uri, '/shuriken-reviews/v1/ratings/stats') !== false) {
             return true;
         }
         
-        // Otherwise, let WordPress handle it
+        // Let WordPress handle authentication for all other endpoints
         return null;
     }
 
@@ -744,6 +749,58 @@ class Shuriken_REST_API {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
+
+    // =========================================================================
+    // REST Response Filters
+    // =========================================================================
+
+    /**
+     * Clean output buffer before serving Shuriken REST responses
+     *
+     * Any stray PHP output (warnings, notices, whitespace from other plugins)
+     * in the buffer will be prepended to the JSON body, making it unparseable.
+     * This discards that pollution right before WordPress outputs the JSON.
+     *
+     * @param bool             $served  Whether the request has already been served.
+     * @param WP_HTTP_Response $result  Result to send to the client.
+     * @param WP_REST_Request  $request Request used to generate the response.
+     * @param WP_REST_Server   $server  Server instance.
+     * @return bool
+     */
+    public function clean_rest_buffer($served, $result, $request, $server) {
+        if (strpos($request->get_route(), '/shuriken-reviews/') === 0) {
+            if (ob_get_level() > 0 && ob_get_length() > 0) {
+                ob_clean();
+            }
+        }
+        return $served;
+    }
+
+    /**
+     * Set cache-control headers for Shuriken REST API responses
+     *
+     * Prevents CDNs (especially Cloudflare) from caching or transforming
+     * REST API responses. Without these headers Cloudflare may cache the
+     * JSON or apply HTML-oriented features (Rocket Loader, Auto Minify,
+     * Email Obfuscation) that corrupt the response body.
+     *
+     * @param WP_REST_Response $response Response object.
+     * @param WP_REST_Server   $server   Server instance.
+     * @param WP_REST_Request  $request  Request object.
+     * @return WP_REST_Response
+     */
+    public function set_rest_cache_headers($response, $server, $request) {
+        if (strpos($request->get_route(), '/shuriken-reviews/') === 0) {
+            $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->header('CDN-Cache-Control', 'no-store');
+            $response->header('X-Content-Type-Options', 'nosniff');
+        }
+        return $response;
+    }
+
+    // =========================================================================
+    // Public Endpoint Callbacks
+    // =========================================================================
 
     /**
      * Get a fresh nonce (bypasses cache)

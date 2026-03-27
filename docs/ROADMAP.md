@@ -1,7 +1,5 @@
 # Shuriken Reviews Roadmap
 
-Current Version: **1.11.1**
-
 This document is a high-level roadmap (what’s done + what’s next). For deep details, use:
 - Hooks/API details: [guides/hooks-reference.md](guides/hooks-reference.md)
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -23,6 +21,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Vote rate limiting with modern settings UI
 - FSE block v2 — style presets for both single and grouped rating blocks
 - Mirror management in block editor (CRUD + inline rename, unified search, shared helpers)
+- Editor request deduplication & CDN compatibility (1.11.4)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -62,6 +61,22 @@ Full mirror CRUD and management integrated into the Grouped Rating block editor,
 - `GET /ratings/batch?ids=1,2,3` — Batch-fetch multiple ratings by ID with mirror vote data resolved (permission: `edit_posts`, max 50)
 
 **New Search Type:**
+- `parents_and_mirrors` — Search type for `/ratings/search` that returns parent ratings plus mirrors whose source is a parent, with vote data batch-resolved from source ratings
+
+### 1.11.4 — Editor Request Optimization & CDN Compatibility
+
+Addresses HTTP 508 (Resource Limit) errors on LiteSpeed/shared hosting when editing posts with multiple Shuriken blocks, and prevents Cloudflare/CDN from caching or transforming REST API JSON responses.
+
+**Root Cause:** When N blocks mount simultaneously in the block editor, each dispatches `fetchRating`, `fetchParentRatings`, and `fetchMirrorableRatings` in the same React render tick — before any response arrives. This produces 3×N concurrent requests plus WordPress's own ~10 editor API calls, overwhelming PHP process limits.
+
+**Fixes:**
+- **Promise-level deduplication** (`dedup()`) — An in-flight map ensures only one network request per unique key runs at a time. Subsequent calls for the same key receive the existing promise. Applied to all five store thunks.
+- **Automatic batch scheduling** (`scheduleBatchFetch()` / `flushBatchFetch()`) — Individual `fetchRating(id)` calls across blocks are collected during a `setTimeout(0)` microtask tick and flushed as a single `GET /ratings/batch?ids=…` request.
+- **Scoped authentication filter** — `rest_authentication_errors` filter now only bypasses nonce verification for the two public endpoints (`/nonce` and `/ratings/stats`), instead of globally returning `true` for all logged-in users on all REST endpoints.
+- **CDN-safe response headers** — `rest_post_dispatch` adds `Cache-Control: no-store`, `CDN-Cache-Control: no-store`, and `X-Content-Type-Options: nosniff` to all Shuriken REST responses.
+- **Output buffer cleaning** — `rest_pre_serve_request` discards stray PHP output (from other plugins) before JSON serialization on Shuriken routes.
+
+**Net Effect:** A post with 5 blocks now makes 3 Shuriken API requests (1 batch + 1 parents + 1 mirrorable) instead of 15+.
 - `parents_and_mirrors` — Search type for `/ratings/search` that returns parent ratings plus mirrors whose source is a parent, with vote data batch-resolved from source ratings
 
 ### Shortcode Extensions

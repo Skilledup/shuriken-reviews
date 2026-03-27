@@ -253,6 +253,8 @@ Centralized state management for all rating blocks using `@wordpress/data`.
 - Caches fetched ratings by ID
 - Debounced AJAX search for rating selection
 - Shared state between all block instances
+- **Promise-level deduplication** — `dedup(key, fn)` maintains an `_inflight` map of in-progress promises. If a request for the same key is already in flight, the existing promise is returned instead of starting a new network call. Applied to all async thunks (`fetchRating`, `fetchParentRatings`, `fetchMirrorableRatings`, `fetchChildRatings`, `fetchMirrorsForRating`).
+- **Automatic batch scheduling** — `scheduleBatchFetch(ratingId, args)` collects individual rating IDs during the current microtask tick via `setTimeout(0)`. When the tick flushes (`flushBatchFetch`), all collected IDs are fetched in a single `GET /ratings/batch?ids=…` request, with results dispatched individually. Falls back to a single-ID fetch when only one rating is queued.
 
 **Store Name:** `shuriken-reviews`
 
