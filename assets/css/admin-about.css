@@ -13,111 +13,94 @@
 
 /* Hero Section */
 .shuriken-about-hero {
-    background: linear-gradient(35deg, #6e7cd2 0%, #a09ee9 100%);
     border-radius: 16px;
-    padding: 60px 40px;
-    text-align: center;
     margin-bottom: 40px;
-    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    background-size: cover;
+    background-position: right center;
+    background-repeat: no-repeat;
     position: relative;
     overflow: hidden;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+}
+
+@media screen and (min-width: 782px) {
+    .shuriken-about-hero {
+        background-position: right -115px;
+    }
 }
 
 .shuriken-about-hero::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-    animation: pulse 15s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    inset: 0;
+    background: linear-gradient(
+        to right,
+        rgba(10, 8, 35, 0.92) 0%,
+        rgba(10, 8, 35, 0.75) 55%,
+        rgba(10, 8, 35, 0.1) 100%
+    );
+    pointer-events: none;
 }
 
 .hero-content {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 48px 56px;
+    max-width: 560px;
 }
 
-.hero-icon {
+.hero-eyebrow {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
+    gap: 7px;
+    color: #a5b4fc;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
 }
 
-.hero-icon .dashicons {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    color: #fff;
+.hero-eyebrow .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #fbbf24;
 }
 
 .shuriken-about-hero h1 {
     color: #fff;
-    font-size: 42px;
-    font-weight: 700;
-    margin: 0 0 15px 0;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 40px;
+    font-weight: 800;
+    margin: 0 0 12px 0;
+    letter-spacing: -1px;
+    line-height: 1.05;
+}
+
+.hero-tagline {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 15px;
+    margin: 0 0 20px 0;
+    line-height: 1.6;
 }
 
 .version-badge {
     display: inline-block;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    padding: 8px 20px;
-    border-radius: 50px;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    backdrop-filter: blur(10px);
-}
-
-.hero-tagline {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 18px;
-    margin: 0;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-/* Mascot image: positioned bottom-left or full-background when needed */
-.shuriken-about-hero.mascot-hero::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 395px;
-    background-image: url("../images/shuriken-mascot.jpg");
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-position: left bottom;
-    opacity: 0.95;
-    z-index: 0;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0), rgba(0,0,0,1) 80px, rgba(0,0,0,1) 100%);
-    mask-image: linear-gradient(to left, rgba(0,0,0,0), rgba(0,0,0,1) 80px, rgba(0,0,0,1) 100%);
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-}
-
-@media screen and (max-width: 782px) {
-    .shuriken-about-hero.mascot-hero::after {
-        width: 334px;
-    }
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    letter-spacing: 0.5px;
 }
 
 /* Section Styles */
@@ -587,16 +570,16 @@
         margin: 10px;
     }
     
-    .shuriken-about-hero {
-        padding: 40px 20px;
+    .hero-mascot-bg {
+        object-position: center center;
     }
-    
+
+    .hero-content {
+        padding: 32px 20px;
+    }
+
     .shuriken-about-hero h1 {
-        font-size: 28px;
-    }
-    
-    .hero-tagline {
-        font-size: 16px;
+        font-size: 26px;
     }
     
     .shuriken-about-section {

@@ -30,6 +30,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Rate limit performance caching
 
 🚧 Later:
+- Mirror vote tracking (engagement analytics for mirrors vs. originals)
 - Rating notes/comments
 - Votes/notes management UI
 - Alternative calendar display hook (Jalali/Shamsi)
@@ -240,6 +241,18 @@ Implementation checklist:
 - [ ] Add cache get/set to analytics layer (TTL)
 - [ ] Invalidate cache on vote changes
 - [ ] (Optional) Redis support
+
+### Mirror Vote Tracking
+Goal: let admins see how voters engage with mirrors vs. original (parent) ratings — compare vote volume, averages, and trends across mirrors and their sources.
+
+Implementation checklist:
+- [ ] Analytics query methods for mirror vs. original vote breakdown
+- [ ] Per-mirror stats: vote count, average rating, trend over time
+- [ ] Comparison view: side-by-side mirror vs. original engagement
+- [ ] Admin UI page/tab for mirror vote analytics
+- [ ] Charts (mirror vs. original distribution, activity over time)
+- [ ] CSV export for mirror engagement data
+- [ ] Hooks for extending mirror analytics (`shuriken_mirror_vote_stats`, etc.)
 
 ### Rating Notes / Comments
 Goal: let users attach notes/comments to ratings.

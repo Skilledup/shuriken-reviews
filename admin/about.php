@@ -11,18 +11,19 @@ if (!defined('ABSPATH')) exit;
 
 <div class="wrap shuriken-about-wrap">
     <!-- Hero Section -->
-    <div class="shuriken-about-hero mascot-hero">
+    <div class="shuriken-about-hero" style="background-image: url('<?php echo esc_url(plugins_url('assets/images/mascot.avif', SHURIKEN_REVIEWS_PLUGIN_FILE)); ?>')">
         <div class="hero-content">
-            <div class="hero-icon">
+            <span class="hero-eyebrow">
                 <span class="dashicons dashicons-star-filled"></span>
-            </div>
+                <?php esc_html_e('WordPress Rating Plugin', 'shuriken-reviews'); ?>
+            </span>
             <h1><?php esc_html_e('Shuriken Reviews', 'shuriken-reviews'); ?></h1>
-            <p class="version-badge">
-                <?php printf(esc_html__('Version %s', 'shuriken-reviews'), SHURIKEN_REVIEWS_VERSION); ?>
-            </p>
             <p class="hero-tagline">
                 <?php esc_html_e('A powerful and flexible rating system for WordPress', 'shuriken-reviews'); ?>
             </p>
+            <span class="version-badge">
+                <?php printf(esc_html__('v%s', 'shuriken-reviews'), SHURIKEN_REVIEWS_VERSION); ?>
+            </span>
         </div>
     </div>
 
