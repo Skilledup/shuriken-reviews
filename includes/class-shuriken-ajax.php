@@ -134,31 +134,50 @@ class Shuriken_AJAX {
              * Filter the maximum number of stars displayed and accepted for voting.
              *
              * This should match the filter used in the shortcode/block rendering.
-             * Votes are normalized to a 1-5 scale internally.
+             * Votes are normalized to a 1-5 scale internally (for stars/numeric types).
              *
              * @since 1.7.0
              * @param int    $max_stars The maximum number of stars. Default 5.
              * @param object $rating    The rating object.
              */
-            $max_stars_filtered = apply_filters('shuriken_rating_max_stars', 5, $rating);
+            $max_stars_filtered = apply_filters('shuriken_rating_max_stars', intval($rating->scale), $rating);
             $max_stars_filtered = max(1, intval($max_stars_filtered));
             
             // Use the filtered value (server-side filter takes precedence)
             // This ensures security even if client sends wrong max_stars
             $max_stars = $max_stars_filtered;
 
-            // Validate rating value against the max stars
-            if ($rating_value < 1 || $rating_value > $max_stars) {
-                throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, $max_stars);
-            }
+            // Type-aware validation and normalization
+            $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
 
-            // Normalize the rating value to 1-5 scale for storage
-            // e.g., 8 out of 10 stars → 4 out of 5
-            $normalized_value = ($rating_value / $max_stars) * 5;
-            $normalized_value = round($normalized_value, 2);
-            
-            // Ensure normalized value is within bounds
-            $normalized_value = max(1, min(5, $normalized_value));
+            if ($rating_type === 'like_dislike') {
+                // Like/dislike: value must be 0 (dislike) or 1 (like)
+                $rating_value = intval($rating_value);
+                if ($rating_value !== 0 && $rating_value !== 1) {
+                    throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
+                }
+                $normalized_value = $rating_value; // Store as-is (0 or 1)
+            } elseif ($rating_type === 'approval') {
+                // Approval: value must be 1 (upvote)
+                $rating_value = intval($rating_value);
+                if ($rating_value !== 1) {
+                    throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
+                }
+                $normalized_value = 1;
+            } else {
+                // Stars/numeric: validate against scale, normalize to 1-5
+                if ($rating_value < 1 || $rating_value > $max_stars) {
+                    throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, $max_stars);
+                }
+
+                // Normalize the rating value to 1-5 scale for storage
+                // e.g., 8 out of 10 stars → 4 out of 5
+                $normalized_value = ($rating_value / $max_stars) * 5;
+                $normalized_value = round($normalized_value, 2);
+                
+                // Ensure normalized value is within bounds
+                $normalized_value = max(1, min(5, $normalized_value));
+            }
 
             // Check if this rating is display-only
             if (!empty($rating->display_only)) {
@@ -270,15 +289,25 @@ class Shuriken_AJAX {
             return;
         }
 
-        // Calculate scaled average for the response
-        $scaled_average = round(($updated_rating->average / 5) * $max_stars, 1);
+        // Calculate scaled average for the response (type-aware)
+        if ($rating_type === 'like_dislike') {
+            // For like/dislike: total_rating = like count, average = approval rate
+            $scaled_average = $updated_rating->total_votes > 0 
+                ? round(($updated_rating->total_rating / $updated_rating->total_votes) * 100) 
+                : 0;
+        } elseif ($rating_type === 'approval') {
+            $scaled_average = $updated_rating->total_votes;
+        } else {
+            $scaled_average = round(($updated_rating->average / 5) * $max_stars, 1);
+        }
 
         // Build response data with both normalized and scaled values
         $response_data = array(
             'new_average' => $updated_rating->average,           // Normalized (1-5 scale)
             'new_scaled_average' => $scaled_average,             // Scaled to max_stars
             'new_total_votes' => $updated_rating->total_votes,
-            'max_stars' => $max_stars
+            'max_stars' => $max_stars,
+            'rating_type' => $rating_type,
         );
 
         // Also send parent data if applicable
@@ -286,7 +315,7 @@ class Shuriken_AJAX {
             $parent_rating = $this->db->get_rating($rating->parent_id);
             if ($parent_rating) {
                 // Apply filter to get parent's max_stars
-                $parent_max_stars = apply_filters('shuriken_rating_max_stars', 5, $parent_rating);
+                $parent_max_stars = apply_filters('shuriken_rating_max_stars', intval($parent_rating->scale), $parent_rating);
                 $parent_scaled_average = round(($parent_rating->average / 5) * $parent_max_stars, 1);
                 
                 $response_data['parent_id'] = $parent_rating->id;

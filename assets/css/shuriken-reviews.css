@@ -788,3 +788,136 @@
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* =====================================================
+   Like / Dislike Rating Type
+   ===================================================== */
+.shuriken-like-dislike {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shuriken-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: #f7fafc;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    color: #4a5568;
+}
+
+button.shuriken-btn {
+    font-family: inherit;
+}
+
+button.shuriken-btn:hover {
+    border-color: #cbd5e0;
+    background: #edf2f7;
+}
+
+.shuriken-like-btn:hover,
+.shuriken-like-btn.shuriken-voted {
+    border-color: #48bb78;
+    background: #f0fff4;
+    color: #276749;
+}
+
+.shuriken-dislike-btn:hover,
+.shuriken-dislike-btn.shuriken-voted {
+    border-color: #fc8181;
+    background: #fff5f5;
+    color: #9b2c2c;
+}
+
+.shuriken-thumb {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.shuriken-count {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* Display-only like/dislike */
+span.shuriken-btn {
+    cursor: default;
+}
+
+span.shuriken-btn:hover {
+    border-color: #e2e8f0;
+    background: #f7fafc;
+}
+
+/* =====================================================
+   Approval (Upvote) Rating Type
+   ===================================================== */
+.shuriken-approval {
+    display: flex;
+    align-items: center;
+}
+
+.shuriken-upvote-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: #f7fafc;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    color: #4a5568;
+}
+
+button.shuriken-upvote-btn {
+    font-family: inherit;
+}
+
+button.shuriken-upvote-btn:hover,
+.shuriken-upvote-btn.shuriken-voted {
+    border-color: #667eea;
+    background: #ebf4ff;
+    color: #434190;
+}
+
+.shuriken-upvote-btn .shuriken-thumb {
+    font-size: 14px;
+}
+
+/* =====================================================
+   Dark preset overrides for Like/Dislike & Approval
+   ===================================================== */
+.shuriken-rating.is-style-dark .shuriken-btn,
+.shuriken-rating.is-style-dark .shuriken-upvote-btn {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-dark .shuriken-like-btn:hover {
+    background: #22543d;
+    border-color: #48bb78;
+    color: #9ae6b4;
+}
+
+.shuriken-rating.is-style-dark .shuriken-dislike-btn:hover {
+    background: #742a2a;
+    border-color: #fc8181;
+    color: #fed7d7;
+}
+
+.shuriken-rating.is-style-dark button.shuriken-upvote-btn:hover {
+    background: #2a4365;
+    border-color: #667eea;
+    color: #bee3f8;
+}

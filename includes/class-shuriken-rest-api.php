@@ -356,6 +356,18 @@ class Shuriken_REST_API {
                 'type'              => 'boolean',
                 'default'           => false,
             ),
+            'rating_type' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => 'stars',
+                'enum'              => array('stars', 'like_dislike', 'numeric', 'approval'),
+            ),
+            'scale' => array(
+                'required'          => false,
+                'type'              => 'integer',
+                'default'           => 5,
+                'sanitize_callback' => 'absint',
+            ),
         );
     }
 
@@ -395,6 +407,16 @@ class Shuriken_REST_API {
                 'required'          => false,
                 'type'              => 'boolean',
             ),
+            'rating_type' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'enum'              => array('stars', 'like_dislike', 'numeric', 'approval'),
+            ),
+            'scale' => array(
+                'required'          => false,
+                'type'              => 'integer',
+                'sanitize_callback' => 'absint',
+            ),
         );
     }
 
@@ -426,12 +448,14 @@ class Shuriken_REST_API {
             $mirror_of = $request->get_param('mirror_of');
             $effect_type = $request->get_param('effect_type') ?: 'positive';
             $display_only = $request->get_param('display_only') ?: false;
+            $rating_type = $request->get_param('rating_type') ?: 'stars';
+            $scale = $request->get_param('scale') ?: 5;
             
             // Convert 0 to null for parent_id and mirror_of
             $parent_id = $parent_id ? intval($parent_id) : null;
             $mirror_of = $mirror_of ? intval($mirror_of) : null;
             
-            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
+            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
             
             if ($new_id === false) {
                 throw Shuriken_Database_Exception::insert_failed('ratings');
@@ -505,6 +529,14 @@ class Shuriken_REST_API {
             
             if ($request->has_param('display_only')) {
                 $update_data['display_only'] = $request->get_param('display_only');
+            }
+            
+            if ($request->has_param('rating_type')) {
+                $update_data['rating_type'] = $request->get_param('rating_type');
+            }
+            
+            if ($request->has_param('scale')) {
+                $update_data['scale'] = $request->get_param('scale');
             }
             
             if (empty($update_data)) {
@@ -740,6 +772,7 @@ class Shuriken_REST_API {
                 $stats[$id] = array(
                     'average' => $rating->average,
                     'total_votes' => $rating->total_votes,
+                    'total_rating' => $rating->total_rating,
                     'source_id' => $rating->source_id,
                 );
             }

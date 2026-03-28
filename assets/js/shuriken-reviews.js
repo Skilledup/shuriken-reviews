@@ -99,27 +99,39 @@ jQuery(document).ready(function($) {
                             var $ratings = $('.shuriken-rating[data-id="' + ratingId + '"]');
                             $ratings.each(function() {
                                 var $rating = $(this);
+                                var ratingType = $rating.data('rating-type') || 'stars';
                                 var $statsEl = $rating.find('.rating-stats');
                                 var maxStars = parseInt($rating.data('max-stars')) || 5;
                                 
-                                // Calculate scaled average from normalized (1-5 scale)
-                                var normalizedAverage = parseFloat(stats.average) || 0;
-                                var scaledAverage = (normalizedAverage / 5) * maxStars;
-                                scaledAverage = Math.round(scaledAverage * 10) / 10; // Round to 1 decimal
-                                
-                                // Update data attributes
-                                $statsEl.data('average', stats.average);
-                                $statsEl.data('scaled-average', scaledAverage);
-                                
-                                // Update displayed text with scaled values
-                                var text = shurikenReviews.i18n.averageRating
-                                    .replace('%1$s', scaledAverage)
-                                    .replace('%2$s', maxStars)
-                                    .replace('%3$s', stats.total_votes);
-                                $statsEl.html(text);
-                                
-                                // Update stars using scaled average
-                                updateStars($rating, scaledAverage);
+                                if (ratingType === 'like_dislike') {
+                                    // Update like/dislike counts
+                                    var totalVotes = parseInt(stats.total_votes) || 0;
+                                    var totalRating = parseInt(stats.total_rating) || 0;
+                                    $rating.find('.shuriken-like-count').text(totalRating);
+                                    $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
+                                } else if (ratingType === 'approval') {
+                                    // Update upvote count
+                                    $rating.find('.shuriken-upvote-count').text(stats.total_votes);
+                                } else {
+                                    // Stars/numeric: calculate scaled average from normalized (1-5 scale)
+                                    var normalizedAverage = parseFloat(stats.average) || 0;
+                                    var scaledAverage = (normalizedAverage / 5) * maxStars;
+                                    scaledAverage = Math.round(scaledAverage * 10) / 10; // Round to 1 decimal
+                                    
+                                    // Update data attributes
+                                    $statsEl.data('average', stats.average);
+                                    $statsEl.data('scaled-average', scaledAverage);
+                                    
+                                    // Update displayed text with scaled values
+                                    var text = shurikenReviews.i18n.averageRating
+                                        .replace('%1$s', scaledAverage)
+                                        .replace('%2$s', maxStars)
+                                        .replace('%3$s', stats.total_votes);
+                                    $statsEl.html(text);
+                                    
+                                    // Update stars using scaled average
+                                    updateStars($rating, scaledAverage);
+                                }
                                 
                                 // Remove refreshing state with slight delay for smooth transition
                                 $rating.removeClass('shuriken-refreshing');
@@ -150,9 +162,16 @@ jQuery(document).ready(function($) {
     // Fetch fresh data on page load (bypasses cache)
     fetchFreshData();
 
-    // Initialize stars based on average rating
+    // Initialize stars based on average rating (only for stars/numeric types)
     $('.shuriken-rating').each(function() {
         var $rating = $(this);
+        var ratingType = $rating.data('rating-type') || 'stars';
+        
+        // Skip non-star types for star initialization
+        if (ratingType === 'like_dislike' || ratingType === 'approval') {
+            return;
+        }
+        
         var $stats = $rating.find('.rating-stats');
         var maxStars = parseInt($rating.data('max-stars')) || 5;
         
@@ -423,5 +442,138 @@ jQuery(document).ready(function($) {
             e.preventDefault();
             $(this).click();
         }
+    });
+
+    /**
+     * Submit a like/dislike or approval vote
+     */
+    function submitBinaryRating($rating, value, retryCount) {
+        retryCount = retryCount || 0;
+        
+        var ratingId = $rating.data('id');
+        var ratingType = $rating.data('rating-type');
+        
+        $.ajax({
+            url: shurikenReviews.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'submit_rating',
+                rating_id: ratingId,
+                rating_value: value,
+                max_stars: 1,
+                nonce: shurikenReviews.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    if (ratingType === 'like_dislike') {
+                        var likes = response.data.new_total_votes > 0 
+                            ? Math.round((response.data.new_average) * response.data.new_total_votes / (response.data.new_average > 0 ? 1 : 1))
+                            : 0;
+                        // total_rating stores like count directly for like_dislike
+                        // Server returns new_average which is total_rating/total_votes
+                        // We need: likes = total_rating, dislikes = total_votes - total_rating
+                        // But the response gives normalized_average. Let's use the raw counts from response
+                        // Actually new_scaled_average is the approval %, total_votes is total_votes
+                        // For like_dislike, the AJAX response sends rating_type, we can compute from total_votes and new_scaled_average
+                        var totalVotes = response.data.new_total_votes;
+                        var approvalPct = response.data.new_scaled_average; // This is actually likes/(likes+dislikes)*100
+                        var likeCount = Math.round(totalVotes * approvalPct / 100);
+                        var dislikeCount = totalVotes - likeCount;
+                        
+                        $rating.find('.shuriken-like-count').text(likeCount);
+                        $rating.find('.shuriken-dislike-count').text(dislikeCount);
+                    } else if (ratingType === 'approval') {
+                        $rating.find('.shuriken-upvote-count').text(response.data.new_total_votes);
+                    }
+                    
+                    // Brief visual feedback
+                    $rating.find('.shuriken-btn').addClass('shuriken-voted');
+                    setTimeout(function() {
+                        $rating.find('.shuriken-btn').removeClass('shuriken-voted');
+                    }, 1500);
+                } else {
+                    // Handle nonce retry for binary ratings
+                    if (response.data && typeof response.data === 'string' && 
+                        response.data.toLowerCase().indexOf('nonce') !== -1 && retryCount === 0) {
+                        $.ajax({
+                            url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
+                            type: 'GET',
+                            cache: false,
+                            success: function(nonceResponse) {
+                                if (nonceResponse && nonceResponse.nonce) {
+                                    shurikenReviews.nonce = nonceResponse.nonce;
+                                    submitBinaryRating($rating, value, 1);
+                                }
+                            }
+                        });
+                        return;
+                    }
+                    console.error('Binary rating error:', response.data);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Binary rating submission error:', error);
+            },
+            complete: function() {
+                $rating.find('.shuriken-btn').css('pointer-events', 'auto');
+            }
+        });
+    }
+
+    // Like/Dislike button click handler
+    $('.shuriken-rating:not(.display-only) .shuriken-like-btn, .shuriken-rating:not(.display-only) .shuriken-dislike-btn').on('click', function(e) {
+        e.preventDefault();
+        var $rating = $(this).closest('.shuriken-rating');
+        var value = parseInt($(this).data('value'));
+
+        // Check if voting is allowed
+        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        
+        if (!isLoggedIn && !guestVotingAllowed) {
+            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            if (!$rating.find('.login-message').length) {
+                $rating.find('.shuriken-like-dislike').after(
+                    '<div class="login-message">[' + 
+                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
+                    ']</div>'
+                );
+            }
+            $rating.find('.login-message').show();
+            return;
+        }
+        
+        // Disable buttons while processing
+        $rating.find('.shuriken-btn').css('pointer-events', 'none');
+        
+        submitBinaryRating($rating, value, 0);
+    });
+
+    // Approval (upvote) button click handler
+    $('.shuriken-rating:not(.display-only) .shuriken-upvote-btn').on('click', function(e) {
+        e.preventDefault();
+        var $rating = $(this).closest('.shuriken-rating');
+
+        // Check if voting is allowed
+        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        
+        if (!isLoggedIn && !guestVotingAllowed) {
+            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            if (!$rating.find('.login-message').length) {
+                $rating.find('.shuriken-approval').after(
+                    '<div class="login-message">[' + 
+                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
+                    ']</div>'
+                );
+            }
+            $rating.find('.login-message').show();
+            return;
+        }
+        
+        // Disable button while processing
+        $rating.find('.shuriken-btn').css('pointer-events', 'none');
+        
+        submitBinaryRating($rating, 1, 0);
     });
 });

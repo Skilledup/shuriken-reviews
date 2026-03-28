@@ -34,6 +34,9 @@
             
             // Focus on the input
             $editRow.find('input[name="rating_name"]').focus().select();
+            
+            // Set initial scale visibility based on rating type
+            updateScaleVisibility($editRow, '.rating-type-select', '.scale-label');
         });
         
         /**
@@ -261,6 +264,29 @@
                 $row.find('.effect-type-label').hide();
                 $row.find('.display-only-label').hide();
             }
+        });
+
+        /**
+         * Toggle scale field visibility based on rating type selection
+         * Binary types (like_dislike, approval) don't use scale
+         */
+        function updateScaleVisibility($container, typeSelector, scaleSelector) {
+            const type = $container.find(typeSelector).val();
+            const isBinary = (type === 'like_dislike' || type === 'approval');
+            $container.find(scaleSelector).toggle(!isBinary);
+        }
+
+        // Add New form: toggle scale row
+        $('#rating_type').on('change', function() {
+            updateScaleVisibility($('#add-new-rating'), '#rating_type', '#scale-row');
+        });
+        // Initial state
+        updateScaleVisibility($('#add-new-rating'), '#rating_type', '#scale-row');
+
+        // Inline edit: toggle scale label
+        $(document).on('change', '.inline-edit-row-rating .rating-type-select', function() {
+            const $row = $(this).closest('.inline-edit-row-rating');
+            updateScaleVisibility($row, '.rating-type-select', '.scale-label');
         });
 
     });

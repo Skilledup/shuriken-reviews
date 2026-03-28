@@ -50,7 +50,9 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
             'name' => $name,
             'parent_id' => $parent_id,
             'effect_type' => $effect_type,
-            'display_only' => $display_only
+            'display_only' => $display_only,
+            'rating_type' => isset($_POST['rating_type']) ? sanitize_text_field($_POST['rating_type']) : 'stars',
+            'scale' => isset($_POST['scale']) ? intval($_POST['scale']) : 5
         );
         
         // If converting from mirror, clear the mirror_of field
@@ -329,8 +331,25 @@ $total_pages = $ratings_result->total_pages;
                                     </div>
                                 <?php endif; ?>
                             <?php endif; ?>
+                            <?php 
+                            // Show rating type badge
+                            $type_label = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+                            $type_labels = array(
+                                'stars' => __('Stars', 'shuriken-reviews'),
+                                'like_dislike' => __('Like/Dislike', 'shuriken-reviews'),
+                                'numeric' => __('Numeric', 'shuriken-reviews'),
+                                'approval' => __('Approval', 'shuriken-reviews'),
+                            );
+                            $type_display = isset($type_labels[$type_label]) ? $type_labels[$type_label] : $type_labels['stars'];
+                            $scale_display = isset($rating->scale) ? intval($rating->scale) : 5;
+                            ?>
+                            <div class="rating-type-info">
+                                <span class="rating-type-badge rating-type-<?php echo esc_attr($type_label); ?>"><?php echo esc_html($type_display); ?></span>
+                                <?php if ($type_label === 'stars' || $type_label === 'numeric'): ?>
+                                    <span class="rating-scale-badge"><?php printf(esc_html__('1-%d', 'shuriken-reviews'), $scale_display); ?></span>
+                                <?php endif; ?>
+                            </div>
                         </td>
-                        <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
                             <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>
                         </td>
                         <td class="stats column-stats" data-colname="<?php esc_attr_e('Rating', 'shuriken-reviews'); ?>">
@@ -374,6 +393,25 @@ $total_pages = $ratings_result->total_pages;
                                             <span class="title"><?php esc_html_e('Name', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <input type="text" name="rating_name" class="ptitle" value="<?php echo esc_attr($rating->name); ?>">
+                                            </span>
+                                        </label>
+                                        
+                                        <label>
+                                            <span class="title"><?php esc_html_e('Type', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <select name="rating_type" class="rating-type-select">
+                                                    <option value="stars" <?php selected(isset($rating->rating_type) ? $rating->rating_type : 'stars', 'stars'); ?>><?php esc_html_e('Stars', 'shuriken-reviews'); ?></option>
+                                                    <option value="like_dislike" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'like_dislike'); ?>><?php esc_html_e('Like / Dislike', 'shuriken-reviews'); ?></option>
+                                                    <option value="numeric" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'numeric'); ?>><?php esc_html_e('Numeric', 'shuriken-reviews'); ?></option>
+                                                    <option value="approval" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'approval'); ?>><?php esc_html_e('Approval (Upvote)', 'shuriken-reviews'); ?></option>
+                                                </select>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="scale-label">
+                                            <span class="title"><?php esc_html_e('Scale', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <input type="number" name="scale" class="small-text" value="<?php echo esc_attr(isset($rating->scale) ? $rating->scale : 5); ?>" min="2" max="10">
                                             </span>
                                         </label>
                                         
@@ -555,6 +593,33 @@ $total_pages = $ratings_result->total_pages;
                                    placeholder="<?php esc_attr_e('Enter rating name...', 'shuriken-reviews'); ?>">
                             <p class="description">
                                 <?php esc_html_e('Enter a descriptive name for this rating. This will be displayed to users.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="rating_type"><?php esc_html_e('Rating Type', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <select name="rating_type" id="rating_type" class="regular-text">
+                                <option value="stars"><?php esc_html_e('Stars', 'shuriken-reviews'); ?></option>
+                                <option value="like_dislike"><?php esc_html_e('Like / Dislike', 'shuriken-reviews'); ?></option>
+                                <option value="numeric"><?php esc_html_e('Numeric', 'shuriken-reviews'); ?></option>
+                                <option value="approval"><?php esc_html_e('Approval (Upvote)', 'shuriken-reviews'); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Choose how visitors interact with this rating.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="scale-row">
+                        <th scope="row">
+                            <label for="scale"><?php esc_html_e('Scale', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="scale" id="scale" class="small-text" value="5" min="2" max="10">
+                            <p class="description">
+                                <?php esc_html_e('Number of stars or maximum numeric value (2-10). Ignored for Like/Dislike and Approval types.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>

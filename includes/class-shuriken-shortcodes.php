@@ -184,10 +184,12 @@ class Shuriken_Shortcodes {
          * For example, with 10 stars: user clicks star 8 → stored as 4.0 (8/10 * 5)
          *
          * @since 1.7.0
-         * @param int    $max_stars The maximum number of stars. Default 5.
+         * @param int    $max_stars The maximum number of stars. Default from rating scale.
          * @param object $rating    The rating object.
          */
-        $max_stars = apply_filters('shuriken_rating_max_stars', 5, $rating);
+        $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+        $scale = isset($rating->scale) ? intval($rating->scale) : 5;
+        $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
         
         // Ensure max_stars is at least 1
         $max_stars = max(1, intval($max_stars));
@@ -208,12 +210,51 @@ class Shuriken_Shortcodes {
         // Start output buffering
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
+        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" data-rating-type="<?php echo esc_attr($rating_type); ?>" <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
             <div class="shuriken-rating-wrapper">
                 <<?php echo tag_escape($tag); ?> class="rating-title">
                     <?php echo esc_html($rating->name); ?>
                 </<?php echo tag_escape($tag); ?>>
                 
+                <?php if ($rating_type === 'like_dislike'): ?>
+                <div class="shuriken-like-dislike<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Like or Dislike', 'shuriken-reviews'); ?>">
+                    <?php if (!$is_display_only): ?>
+                    <button type="button" class="shuriken-btn shuriken-like-btn" data-value="1" aria-label="<?php esc_attr_e('Like', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#128077;</span>
+                        <span class="shuriken-count shuriken-like-count"><?php echo esc_html($rating->total_rating); ?></span>
+                    </button>
+                    <button type="button" class="shuriken-btn shuriken-dislike-btn" data-value="0" aria-label="<?php esc_attr_e('Dislike', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#128078;</span>
+                        <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
+                    </button>
+                    <?php else: ?>
+                    <span class="shuriken-btn shuriken-like-btn" aria-label="<?php esc_attr_e('Likes', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#128077;</span>
+                        <span class="shuriken-count shuriken-like-count"><?php echo esc_html($rating->total_rating); ?></span>
+                    </span>
+                    <span class="shuriken-btn shuriken-dislike-btn" aria-label="<?php esc_attr_e('Dislikes', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#128078;</span>
+                        <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
+                    </span>
+                    <?php endif; ?>
+                </div>
+                
+                <?php elseif ($rating_type === 'approval'): ?>
+                <div class="shuriken-approval<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Upvote', 'shuriken-reviews'); ?>">
+                    <?php if (!$is_display_only): ?>
+                    <button type="button" class="shuriken-btn shuriken-upvote-btn" data-value="1" aria-label="<?php esc_attr_e('Upvote', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#9650;</span>
+                        <span class="shuriken-count shuriken-upvote-count"><?php echo esc_html($rating->total_votes); ?></span>
+                    </button>
+                    <?php else: ?>
+                    <span class="shuriken-btn shuriken-upvote-btn" aria-label="<?php esc_attr_e('Upvotes', 'shuriken-reviews'); ?>">
+                        <span class="shuriken-thumb">&#9650;</span>
+                        <span class="shuriken-count shuriken-upvote-count"><?php echo esc_html($rating->total_votes); ?></span>
+                    </span>
+                    <?php endif; ?>
+                </div>
+                
+                <?php else: /* stars / numeric */ ?>
                 <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
                     <?php for ($i = 1; $i <= $max_stars; $i++): ?>
                         <span class="star" 
@@ -241,6 +282,7 @@ class Shuriken_Shortcodes {
                     );
                     ?>
                 </div>
+                <?php endif; ?>
                 
                 <?php if ($is_display_only): ?>
                 <div class="display-only-notice">

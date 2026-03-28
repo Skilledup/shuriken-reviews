@@ -215,9 +215,11 @@ class Shuriken_Admin {
             $parent_id = $mirror_of ? null : (isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null);
             $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
             $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
+            $rating_type = isset($_POST['rating_type']) ? sanitize_text_field($_POST['rating_type']) : 'stars';
+            $scale = isset($_POST['scale']) ? intval($_POST['scale']) : 5;
 
             if (!empty($name)) {
-                $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of);
+                $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
                 if ($result) {
                     wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                     exit;

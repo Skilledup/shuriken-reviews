@@ -22,6 +22,8 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - FSE block v2 — style presets for both single and grouped rating blocks
 - Mirror management in block editor (CRUD + inline rename, unified search, shared helpers)
 - Editor request deduplication & CDN compatibility (1.11.4)
+- Rating types: stars, like/dislike, numeric, approval (1.12.0)
+- Post Meta Box: link ratings to posts/pages with auto-injection & JSON-LD (1.12.0)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -33,6 +35,11 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Rating notes/comments
 - Votes/notes management UI
 - Alternative calendar display hook (Jalali/Shamsi)
+- Emoji reactions (separate system from rating types)
+- Archive injection (pre_get_posts sorting by rating)
+- Bulk-link tool (assign ratings to multiple posts at once)
+- Block editor sidebar: show linked rating info in post sidebar
+- Type-aware analytics display (like/dislike charts, approval gauges)
 
 🚧 Future:
 - Email notifications
@@ -40,7 +47,53 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ---
 
-## 1.11.x (Current)
+## 1.12.x
+
+### Rating Types
+
+Four rating type modes with full-stack support from DB to frontend.
+
+**Types:**
+- **Stars** (default) — Classic 1–N star rating, scale configurable 2–10
+- **Like/Dislike** — Thumbs up/down binary vote; rating_value=1 (like) or 0 (dislike), total_rating stores like count
+- **Numeric** — Same as stars but without star visual metaphor, scale 2–10
+- **Approval** — Single upvote button, rating_value always 1
+
+**DB Changes:**
+- New columns: `rating_type VARCHAR(20) DEFAULT 'stars'`, `scale TINYINT UNSIGNED DEFAULT 5`
+- Migration v1.5.0 adds columns to existing tables
+- Binary types (like_dislike, approval) force scale=1; stars/numeric allow 2–10
+- Vote validation allows 0 for dislike votes
+
+**Full-Stack Changes:**
+- Database: create_rating/update_rating accept rating_type + scale; vote validation updated
+- REST API: rating_type + scale in create/update args; stats response includes total_rating
+- AJAX: Type-aware vote normalization; binary types stored as-is; response includes rating_type
+- Shortcodes: Type-branched HTML rendering (thumb buttons, upvote button, or stars)
+- Frontend JS: submitBinaryRating() for like/dislike/approval; fetchFreshData branches by type
+- Frontend CSS: Like/dislike button styles, approval button styles, dark preset overrides
+- Admin: Rating type + scale fields in create form and inline edit; type badge in list column; JS toggle hides scale for binary types
+
+### Post Meta Box
+
+Link ratings to posts/pages directly from the post editor. Automatic content injection and JSON-LD structured data.
+
+**Features:**
+- **Meta Box** — Checkbox list in post editor sidebar to select ratings for the current post
+- **Content Injection** — Linked ratings auto-rendered before or after post content via `the_content` filter
+- **JSON-LD** — AggregateRating structured data output in `wp_head` for star/numeric ratings with votes
+- **Admin Columns** — "Ratings" column in post list tables shows linked rating names
+- **REST API Field** — `shuriken_rating_ids` field on supported post types (read + write)
+- **Settings** — New "Content" settings tab: select enabled post types, choose injection position (before/after/disabled)
+- **Filters** — `shuriken_meta_box_post_types`, `shuriken_content_injection_position`, `shuriken_rating_jsonld`
+
+**Files Added:**
+- `includes/class-shuriken-post-meta.php` — Post meta box class
+- `admin/partials/settings-content.php` — Content settings tab
+
+---
+
+## 1.11.x
 
 ### Mirror Management in Block Editor
 

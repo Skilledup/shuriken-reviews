@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: A powerful and flexible rating system for WordPress.
- * Version: 1.11.4
+ * Version: 1.12.0
  * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: Skilledup
@@ -21,11 +21,11 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.11.4');
+    define('SHURIKEN_REVIEWS_VERSION', '1.12.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
-    define('SHURIKEN_REVIEWS_DB_VERSION', '1.4.0');
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.5.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
@@ -114,6 +114,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-ajax.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-frontend.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-admin.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-post-meta.php';
         
         // Legacy/additional functionality
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/comments.php';
@@ -200,6 +201,7 @@ final class Shuriken_Reviews {
         $container->get('block');
         $container->get('ajax');
         $container->get('frontend');
+        $container->get('post_meta');
         
         // Initialize admin (only in admin context)
         if (is_admin()) {

@@ -326,6 +326,54 @@ tr.mirror-rating .column-name {
     margin-top: 6px;
 }
 
+/* Rating type info (secondary badge below hierarchy badge) */
+.rating-type-info {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rating-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.rating-type-stars {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.rating-type-like_dislike {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.rating-type-numeric {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.rating-type-approval {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.rating-scale-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
 /* Rating Display */
 .shuriken-rating-display {
     display: flex;

@@ -46,7 +46,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     /**
      * @var string Standard rating fields for SELECT queries
      */
-    private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, date_created';
+    private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, rating_type, scale, date_created';
 
     /**
      * Constructor
@@ -250,19 +250,31 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If insert fails
      * @throws Shuriken_Validation_Exception If name is empty
      */
-    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null) {
+    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null, $rating_type = 'stars', $scale = 5) {
         $sanitized_name = sanitize_text_field($name);
         
         if (empty($sanitized_name)) {
             throw Shuriken_Validation_Exception::required_field('name');
         }
+
+        $allowed_types = array('stars', 'like_dislike', 'numeric', 'approval');
+        $rating_type = in_array($rating_type, $allowed_types, true) ? $rating_type : 'stars';
+
+        // Force scale per type constraints
+        if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
+            $scale = 1; // Binary types always use scale 1
+        } else {
+            $scale = max(2, min(10, intval($scale))); // Stars/numeric: 2-10
+        }
         
         $insert_data = array(
             'name' => $sanitized_name,
             'effect_type' => in_array($effect_type, array('positive', 'negative'), true) ? $effect_type : 'positive',
-            'display_only' => $display_only ? 1 : 0
+            'display_only' => $display_only ? 1 : 0,
+            'rating_type' => $rating_type,
+            'scale' => $scale,
         );
-        $format = array('%s', '%s', '%d');
+        $format = array('%s', '%s', '%d', '%s', '%d');
 
         // Mirror takes precedence - if mirroring, ignore parent_id
         if ($mirror_of !== null && $mirror_of > 0) {
@@ -315,7 +327,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Validation_Exception If no valid data provided
      */
     public function update_rating($rating_id, $data) {
-        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of');
+        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of', 'rating_type', 'scale');
         $update_data = array();
         $format = array();
 
@@ -327,6 +339,13 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 } elseif ($key === 'effect_type') {
                     $update_data[$key] = in_array($value, array('positive', 'negative'), true) ? $value : 'positive';
                     $format[] = '%s';
+                } elseif ($key === 'rating_type') {
+                    $allowed_types = array('stars', 'like_dislike', 'numeric', 'approval');
+                    $update_data[$key] = in_array($value, $allowed_types, true) ? $value : 'stars';
+                    $format[] = '%s';
+                } elseif ($key === 'scale') {
+                    $update_data[$key] = max(1, min(10, intval($value)));
+                    $format[] = '%d';
                 } elseif ($key === 'parent_id' || $key === 'mirror_of') {
                     // Allow null for parent_id and mirror_of
                     $update_data[$key] = $value === null || $value === '' || $value === 0 ? null : intval($value);
@@ -531,7 +550,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 $total_votes += $sub->total_votes;
                 
                 if ($sub->effect_type === 'negative') {
-                    // For negative effect: invert the rating (6 - rating becomes the effective rating)
+                    // For negative effect: invert the rating using the normalized scale (1-5)
                     // e.g., a 5-star negative rating contributes 1 point, 1-star contributes 5 points
                     $inverted_rating = ($sub->total_votes * 6) - $sub->total_rating;
                     $total_rating += $inverted_rating;
@@ -922,9 +941,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Validation_Exception If rating_value is invalid
      */
     public function create_vote($rating_id, $rating_value, $user_id = 0, $user_ip = null) {
-        // Validate rating value
-        if ($rating_value < 1 || $rating_value > 5) {
-            throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 1, 5);
+        // Validate rating value against normalized scale (1-5 for stars/numeric, 0/1 for binary types)
+        if ($rating_value < 0 || $rating_value > 5) {
+            throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 0, 5);
         }
 
         $this->wpdb->query('START TRANSACTION');
@@ -990,9 +1009,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Validation_Exception If new_value is invalid
      */
     public function update_vote($vote_id, $rating_id, $old_value, $new_value) {
-        // Validate new rating value
-        if ($new_value < 1 || $new_value > 5) {
-            throw Shuriken_Validation_Exception::out_of_range('new_value', $new_value, 1, 5);
+        // Validate new rating value against normalized scale
+        if ($new_value < 0 || $new_value > 5) {
+            throw Shuriken_Validation_Exception::out_of_range('new_value', $new_value, 0, 5);
         }
 
         $this->wpdb->query('START TRANSACTION');
@@ -1156,6 +1175,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             effect_type varchar(10) DEFAULT 'positive',
             display_only tinyint(1) DEFAULT 0,
             mirror_of mediumint(9) DEFAULT NULL,
+            rating_type varchar(20) NOT NULL DEFAULT 'stars',
+            scale tinyint unsigned NOT NULL DEFAULT 5,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY parent_id (parent_id),
@@ -1259,6 +1280,16 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN mirror_of mediumint(9) DEFAULT NULL AFTER display_only");
             // Add index for mirror_of
             $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD KEY mirror_of (mirror_of)");
+        }
+
+        // v1.5.0: Add rating_type and scale columns
+        $rating_type_exists = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$this->ratings_table} LIKE 'rating_type'"
+        );
+
+        if (empty($rating_type_exists)) {
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN rating_type varchar(20) NOT NULL DEFAULT 'stars' AFTER mirror_of");
+            $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN scale tinyint unsigned NOT NULL DEFAULT 5 AFTER rating_type");
         }
 
         return true;
