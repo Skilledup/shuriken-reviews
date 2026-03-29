@@ -408,6 +408,29 @@ tr.mirror-rating .column-name {
     font-weight: 500;
 }
 
+/* Like/Dislike & Approval stats in admin table */
+.like-dislike-stats {
+    display: inline-flex;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.like-stat {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.dislike-stat {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.approval-stats {
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 600;
+}
+
 /* Shortcode Styling */
 .shuriken-copy-shortcode {
     display: inline-block;

@@ -143,19 +143,22 @@
         const gridColor = isDarkMode ? '#334155' : '#f0f0f1';
         const tickColor = isDarkMode ? '#94a3b8' : '#646970';
 
-        // Colors from red (1 star) to green (5 stars)
-        const colors = [
-            '#dc3232',  // 1 star - red
-            '#f56e28',  // 2 stars - orange
-            '#ffb900',  // 3 stars - yellow
-            '#7ad03a',  // 4 stars - light green
-            '#00a32a'   // 5 stars - green
-        ];
+        // Use server-provided labels or generate defaults
+        const labels = shurikenAnalyticsData.distributionLabels || data.map((_, i) => (i + 1) + ' ★');
+
+        // Generate colors dynamically based on number of items (red to green gradient)
+        const allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
+        const colors = data.length <= allColors.length
+            ? allColors.slice(allColors.length - data.length)
+            : data.map((_, i) => {
+                const ratio = data.length > 1 ? i / (data.length - 1) : 0.5;
+                return ratio < 0.5 ? '#dc3232' : '#00a32a';
+            });
 
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+                labels: labels,
                 datasets: [{
                     label: shurikenAnalyticsData.i18n.votes,
                     data: data,

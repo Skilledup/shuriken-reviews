@@ -7,7 +7,9 @@ if (!defined('ABSPATH')) exit;
 // Get database instance
 $db = shuriken_db();
 
-$per_page = 20;
+$user_id = get_current_user_id();
+$per_page = get_user_meta($user_id, 'shuriken_ratings_per_page', true);
+$per_page = $per_page ? absint($per_page) : 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 
 // Handle bulk actions
@@ -350,13 +352,45 @@ $total_pages = $ratings_result->total_pages;
                                 <?php endif; ?>
                             </div>
                         </td>
+                        <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
                             <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>
                         </td>
                         <td class="stats column-stats" data-colname="<?php esc_attr_e('Rating', 'shuriken-reviews'); ?>">
+                            <?php
+                            $r_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+                            $r_scale = isset($rating->scale) ? intval($rating->scale) : 5;
+                            if ($r_type === 'like_dislike'):
+                                $likes = intval($rating->total_rating);
+                                $dislikes = intval($rating->total_votes) - $likes;
+                            ?>
                             <div class="shuriken-rating-display">
-                                <span class="shuriken-rating-stars" title="<?php printf(esc_attr__('%s out of 5', 'shuriken-reviews'), $average); ?>">
-                                    <?php 
-                                    for ($i = 1; $i <= 5; $i++) {
+                                <span class="like-dislike-stats">
+                                    <span class="like-stat">👍 <?php echo number_format_i18n($likes); ?></span>
+                                    <span class="dislike-stat">👎 <?php echo number_format_i18n($dislikes); ?></span>
+                                </span>
+                                <span class="rating-text">
+                                    <?php
+                                    $pct = $rating->total_votes > 0 ? round($likes / $rating->total_votes * 100) : 0;
+                                    printf(
+                                        esc_html__('%1$s%% positive (%2$s votes)', 'shuriken-reviews'),
+                                        $pct,
+                                        number_format_i18n($rating->total_votes)
+                                    );
+                                    ?>
+                                </span>
+                            </div>
+                            <?php elseif ($r_type === 'approval'): ?>
+                            <div class="shuriken-rating-display">
+                                <span class="approval-stats">👍 <?php echo number_format_i18n($rating->total_votes); ?></span>
+                                <span class="rating-text">
+                                    <?php printf(esc_html__('%s upvotes', 'shuriken-reviews'), number_format_i18n($rating->total_votes)); ?>
+                                </span>
+                            </div>
+                            <?php else: ?>
+                            <div class="shuriken-rating-display">
+                                <span class="shuriken-rating-stars" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $average, $r_scale); ?>">
+                                    <?php
+                                    for ($i = 1; $i <= $r_scale; $i++) {
                                         if ($i <= $stars_filled) {
                                             echo '<span class="star filled">★</span>';
                                         } elseif ($i == $stars_filled + 1 && $half_star) {
@@ -368,15 +402,16 @@ $total_pages = $ratings_result->total_pages;
                                     ?>
                                 </span>
                                 <span class="rating-text">
-                                    <?php 
+                                    <?php
                                     printf(
                                         esc_html__('%1$s (%2$s votes)', 'shuriken-reviews'),
                                         '<strong>' . esc_html($average) . '</strong>',
                                         number_format_i18n($rating->total_votes)
-                                    ); 
+                                    );
                                     ?>
                                 </span>
                             </div>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <!-- Inline Edit Row -->

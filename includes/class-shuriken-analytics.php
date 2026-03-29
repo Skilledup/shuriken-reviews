@@ -58,6 +58,47 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     }
 
     /**
+     * Check if a rating type uses binary values (0/1) instead of a 1-N scale
+     *
+     * @param string $rating_type Rating type identifier
+     * @return bool
+     */
+    private function is_binary_type($rating_type) {
+        return in_array($rating_type, array('like_dislike', 'approval'), true);
+    }
+
+    /**
+     * Get the inversion constant for a rating's scale
+     *
+     * Stars/numeric: value range [1, scale], inversion = (scale + 1) - value
+     * Binary (like_dislike, approval): value range [0, 1], inversion = 1 - value
+     *
+     * @param string $rating_type Rating type
+     * @param int $scale Rating scale
+     * @return int The constant C where inverted_value = C - original_value
+     */
+    private function get_inversion_constant($rating_type, $scale) {
+        return $this->is_binary_type($rating_type) ? (int) $scale : ((int) $scale + 1);
+    }
+
+    /**
+     * Build an empty distribution array for a rating type and scale
+     *
+     * Stars/numeric: keys 1 through scale (e.g., {1:0, 2:0, 3:0, 4:0, 5:0})
+     * Binary: keys 0 and 1 (e.g., {0:0, 1:0})
+     *
+     * @param string $rating_type Rating type
+     * @param int $scale Rating scale
+     * @return array Empty distribution array
+     */
+    private function build_empty_distribution($rating_type, $scale) {
+        if ($this->is_binary_type($rating_type)) {
+            return array(0 => 0, 1 => 0);
+        }
+        return array_fill(1, (int) $scale, 0);
+    }
+
+    /**
      * Get singleton instance
      *
      * @return Shuriken_Analytics
@@ -209,6 +250,56 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             default:
                 return __('All Time', 'shuriken-reviews');
         }
+    }
+
+    /**
+     * Format an average rating value for display, adapting to rating type
+     *
+     * Stars/numeric: "3.5/5"
+     * Like/dislike: "72% positive"
+     * Approval: "85% approved"
+     *
+     * @param float $average The average value (for binary: like ratio 0-1 from total_rating/total_votes)
+     * @param string $rating_type Rating type
+     * @param int $scale Rating scale
+     * @param int $total_votes Total votes (needed for binary percentage context)
+     * @param int $total_rating Total rating sum (needed for binary types)
+     * @return string Formatted display string
+     */
+    public function format_average_display($average, $rating_type = 'stars', $scale = 5, $total_votes = 0, $total_rating = 0) {
+        if ($rating_type === 'like_dislike') {
+            $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
+            return $pct . '% ' . __('positive', 'shuriken-reviews');
+        }
+        if ($rating_type === 'approval') {
+            $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
+            return $pct . '% ' . __('approved', 'shuriken-reviews');
+        }
+        return number_format((float) $average, 1) . '/' . intval($scale);
+    }
+
+    /**
+     * Render a vote value for display in tables, adapting to rating type
+     *
+     * Stars/numeric: filled/empty star characters
+     * Like/dislike: 👍 or 👎
+     * Approval: 👍
+     *
+     * @param int $rating_value The vote value
+     * @param string $rating_type Rating type
+     * @param int $scale Rating scale
+     * @return string HTML display string
+     */
+    public function format_vote_display($rating_value, $rating_type = 'stars', $scale = 5) {
+        $value = intval($rating_value);
+        if ($rating_type === 'like_dislike') {
+            return $value === 1 ? '👍' : '👎';
+        }
+        if ($rating_type === 'approval') {
+            return '👍';
+        }
+        $s = (int) $scale;
+        return str_repeat('★', $value) . str_repeat('☆', max(0, $s - $value));
     }
 
     /**
@@ -437,13 +528,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 0) as total_rating,
                     ROUND(AVG(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 1) as average
@@ -493,13 +590,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 0) as total_rating,
                     ROUND(AVG(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 1) as average
@@ -553,13 +656,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 0) as total_rating,
                     ROUND(AVG(
                         CASE 
-                            WHEN sub.effect_type = 'negative' THEN 6 - v.rating_value
+                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
+                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
+                            WHEN sub.effect_type = 'negative'
+                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
                     ), 1) as average
@@ -605,7 +714,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     public function get_parent_ratings_with_stats($limit = 10) {
         $parents = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DISTINCT p.id, p.name, p.total_votes, p.total_rating, p.display_only,
+            "SELECT DISTINCT p.id, p.name, p.total_votes, p.total_rating, p.display_only, p.rating_type, p.scale,
                     ROUND(p.total_rating / NULLIF(p.total_votes, 0), 1) as average,
                     (SELECT COUNT(*) FROM {$this->ratings_table} s WHERE s.parent_id = p.id) as sub_count,
                     (SELECT COUNT(*) FROM {$this->ratings_table} s WHERE s.parent_id = p.id AND s.effect_type = 'positive') as positive_subs,
@@ -633,7 +742,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         }
         
         $subs = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, effect_type,
+            "SELECT id, name, total_votes, total_rating, effect_type, rating_type, scale,
                     ROUND(total_rating / NULLIF(total_votes, 0), 1) as average,
                     ROUND((total_votes / %d) * 100, 1) as vote_contribution_percent
              FROM {$this->ratings_table}
@@ -648,8 +757,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             if ($sub->total_votes > 0) {
                 $sub_average = $sub->total_rating / $sub->total_votes;
                 if ($sub->effect_type === 'negative') {
-                    // Negative: higher rating = lower contribution
-                    $sub->effective_average = 6 - $sub_average;
+                    $inv = $this->get_inversion_constant($sub->rating_type, $sub->scale);
+                    $sub->effective_average = $inv - $sub_average;
                 } else {
                     $sub->effective_average = $sub_average;
                 }
@@ -690,7 +799,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     public function get_mirrored_ratings($limit = 10) {
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.total_votes, r.total_rating,
+            "SELECT r.id, r.name, r.total_votes, r.total_rating, r.rating_type, r.scale,
                     ROUND(r.total_rating / NULLIF(r.total_votes, 0), 1) as average,
                     (SELECT COUNT(*) FROM {$this->ratings_table} m WHERE m.mirror_of = r.id) as mirror_count
              FROM {$this->ratings_table} r
@@ -709,32 +818,56 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @param string|int $date_range Number of days or 'all'
      * @param int|null $rating_id Optional specific rating ID
-     * @return array Associative array with keys 1-5 and vote counts
+     * @return array Associative array with vote value keys and counts
      */
     public function get_rating_distribution($date_range = 'all', $rating_id = null) {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
-        
+
+        // Determine the target rating's type and scale for proper bucketing
+        $rating_type = 'stars';
+        $scale = 5;
+        if ($rating_id) {
+            $rating = $this->db->get_rating($rating_id);
+            if ($rating) {
+                $rating_type = $rating->rating_type ?: 'stars';
+                $scale = (int) ($rating->scale ?: 5);
+            }
+        }
+
+        // When aggregating globally (no rating_id), exclude binary types from the distribution
+        // since their 0/1 values are incompatible with star-scale buckets
+        $type_condition = '';
+        if (!$rating_id) {
+            $type_condition = " AND r.rating_type NOT IN ('like_dislike', 'approval')";
+        }
+
         // Join with ratings table to get effect_type and invert negative effect votes
-        // For negative effect: effective_value = 6 - rating_value (1→5, 2→4, 3→3, 4→2, 5→1)
+        // Scale-aware inversion: binary uses scale, stars/numeric uses (scale + 1)
         $results = $this->wpdb->get_results(
             "SELECT 
                 CASE 
-                    WHEN r.effect_type = 'negative' THEN 6 - v.rating_value 
+                    WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
+                        THEN CAST(r.scale AS SIGNED) - v.rating_value
+                    WHEN r.effect_type = 'negative' 
+                        THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value 
                     ELSE v.rating_value 
                 END as effective_value, 
                 COUNT(*) as count 
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE 1=1 {$date_condition} {$rating_condition}
+             WHERE 1=1 {$date_condition} {$rating_condition} {$type_condition}
              GROUP BY effective_value 
              ORDER BY effective_value"
         );
         
-        // Ensure all ratings 1-5 are represented
-        $distribution = array_fill(1, 5, 0);
+        // Build distribution with type-appropriate buckets
+        $distribution = $this->build_empty_distribution($rating_type, $scale);
         foreach ($results as $row) {
-            $distribution[intval($row->effective_value)] = intval($row->count);
+            $key = intval($row->effective_value);
+            if (array_key_exists($key, $distribution)) {
+                $distribution[$key] = intval($row->count);
+            }
         }
         
         return $distribution;
@@ -774,7 +907,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT v.id, v.rating_id, v.rating_value, v.date_created, v.user_id, v.user_ip,
-                    r.name as rating_name, u.display_name, u.user_email
+                    r.name as rating_name, r.rating_type, r.scale, u.display_name, u.user_email
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
              LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
@@ -947,9 +1080,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         $sub_ids_placeholder = implode(',', array_map('intval', $sub_rating_ids));
         
-        // Get sub-ratings with their effect types
+        // Get sub-ratings with their effect types and type info
         $sub_ratings_info = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, effect_type FROM {$this->ratings_table} WHERE parent_id = %d",
+            "SELECT id, effect_type, rating_type, scale FROM {$this->ratings_table} WHERE parent_id = %d",
             $rating_id
         ));
         
@@ -966,8 +1099,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             if ($sub_totals->total_votes > 0) {
                 $subs_total_votes += (int) $sub_totals->total_votes;
                 if ($sub->effect_type === 'negative') {
-                    // Invert the rating for negative effect
-                    $inverted_rating = ($sub_totals->total_votes * 6) - $sub_totals->total_rating;
+                    $inv = $this->get_inversion_constant($sub->rating_type, $sub->scale);
+                    $inverted_rating = ($sub_totals->total_votes * $inv) - $sub_totals->total_rating;
                     $subs_total_rating += $inverted_rating;
                 } else {
                     $subs_total_rating += (int) $sub_totals->total_rating;
@@ -1006,10 +1139,14 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         );
         
         // Distribution from sub-ratings (with effect_type conversion) and date filter
+        // Scale-aware inversion: binary uses r.scale, stars/numeric uses (r.scale + 1)
         $subs_distribution_results = $this->wpdb->get_results(
             "SELECT 
                 CASE 
-                    WHEN r.effect_type = 'negative' THEN 6 - v.rating_value 
+                    WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
+                        THEN CAST(r.scale AS SIGNED) - v.rating_value
+                    WHEN r.effect_type = 'negative' 
+                        THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value 
                     ELSE v.rating_value 
                 END as effective_value, 
                 COUNT(*) as count 
@@ -1019,10 +1156,17 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              GROUP BY effective_value 
              ORDER BY effective_value"
         );
+
+        // Use parent rating's type/scale for distribution buckets
+        $parent_type = $rating->rating_type ?: 'stars';
+        $parent_scale = (int) ($rating->scale ?: 5);
         
-        $breakdown->subs->distribution = array_fill(1, 5, 0);
+        $breakdown->subs->distribution = $this->build_empty_distribution($parent_type, $parent_scale);
         foreach ($subs_distribution_results as $row) {
-            $breakdown->subs->distribution[intval($row->effective_value)] = intval($row->count);
+            $key = intval($row->effective_value);
+            if (array_key_exists($key, $breakdown->subs->distribution)) {
+                $breakdown->subs->distribution[$key] = intval($row->count);
+            }
         }
         
         // Votes over time from sub-ratings with date filter
@@ -1061,11 +1205,14 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $breakdown->subs->last_vote ?: ''
         ) ?: null;
         
-        // Combined distribution
-        $breakdown->total->distribution = array_fill(1, 5, 0);
-        for ($i = 1; $i <= 5; $i++) {
-            $breakdown->total->distribution[$i] = $breakdown->direct->distribution[$i] + $breakdown->subs->distribution[$i];
+        // Combined distribution (uses same bucket keys as direct and subs)
+        $breakdown->total->distribution = $this->build_empty_distribution($parent_type, $parent_scale);
+        foreach ($breakdown->total->distribution as $key => &$val) {
+            $direct_val = isset($breakdown->direct->distribution[$key]) ? $breakdown->direct->distribution[$key] : 0;
+            $subs_val = isset($breakdown->subs->distribution[$key]) ? $breakdown->subs->distribution[$key] : 0;
+            $val = $direct_val + $subs_val;
         }
+        unset($val);
         
         // Combined votes over time
         $breakdown->total->votes_over_time = $this->get_votes_over_time_for_ids($all_rating_ids, $date_range);
@@ -1146,7 +1293,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $result->per_page = $per_page;
         
         $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.*, u.display_name, u.user_email, r.name as rating_name
+            "SELECT v.*, u.display_name, u.user_email, r.name as rating_name, r.rating_type, r.scale
              FROM {$this->votes_table} v
              LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
              LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
@@ -1269,7 +1416,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         // Paginated votes with rating name
         $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.*, r.name as rating_name, r.parent_id, r.effect_type
+            "SELECT v.*, r.name as rating_name, r.parent_id, r.effect_type, r.rating_type, r.scale
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE {$voter_condition} {$date_condition}
@@ -1305,23 +1452,25 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         // Calculate effect-aware rating values:
         // For positive effect ratings: use rating_value as-is
-        // For negative effect ratings: invert the scale (5→1, 4→2, 3→3, 2→4, 1→5)
+        // For negative effect ratings: invert using scale-aware formula
+        // Excludes binary types from average since their 0/1 values are incompatible with star scales
         $stats = $this->wpdb->get_row(
             "SELECT 
                 COUNT(*) as total_votes,
                 ROUND(AVG(v.rating_value), 1) as average_rating_given,
                 ROUND(AVG(
                     CASE 
-                        WHEN r.effect_type = 'negative' THEN (6 - v.rating_value)
+                        WHEN r.rating_type IN ('like_dislike', 'approval') THEN NULL
+                        WHEN r.effect_type = 'negative' THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value
                         ELSE v.rating_value 
                     END
                 ), 1) as average_effective_rating,
                 MIN(v.date_created) as first_vote,
                 MAX(v.date_created) as last_vote,
                 COUNT(DISTINCT v.rating_id) as unique_items_rated,
-                SUM(CASE WHEN v.rating_value >= 4 THEN 1 ELSE 0 END) as positive_votes,
-                SUM(CASE WHEN v.rating_value <= 2 THEN 1 ELSE 0 END) as negative_votes,
-                SUM(CASE WHEN v.rating_value = 3 THEN 1 ELSE 0 END) as neutral_votes
+                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value >= CEIL(r.scale * 0.8) THEN 1 ELSE 0 END) as positive_votes,
+                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value <= CEIL(r.scale * 0.4) THEN 1 ELSE 0 END) as negative_votes,
+                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value > CEIL(r.scale * 0.4) AND v.rating_value < CEIL(r.scale * 0.8) THEN 1 ELSE 0 END) as neutral_votes
              FROM {$this->votes_table} v
              LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE {$voter_condition} {$date_condition_aliased}"
@@ -1354,26 +1503,43 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return array Distribution array with keys 1-5
      */
     public function get_voter_rating_distribution($user_id, $user_ip = null, $date_range = 'all') {
-        $date_condition = $this->build_date_condition($date_range);
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
         // Build voter condition
         if ($user_id > 0) {
-            $voter_condition = $this->wpdb->prepare("user_id = %d", $user_id);
+            $voter_condition = $this->wpdb->prepare("v.user_id = %d", $user_id);
         } else {
-            $voter_condition = $this->wpdb->prepare("user_id = 0 AND user_ip = %s", $user_ip);
+            $voter_condition = $this->wpdb->prepare("v.user_id = 0 AND v.user_ip = %s", $user_ip);
+        }
+
+        // Exclude binary types from the star distribution — they use 0/1 values
+        $results = $this->wpdb->get_results(
+            "SELECT v.rating_value, COUNT(*) as count 
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE {$voter_condition} {$date_condition}
+               AND r.rating_type NOT IN ('like_dislike', 'approval')
+             GROUP BY v.rating_value 
+             ORDER BY v.rating_value"
+        );
+
+        // Use the max scale across the voter's rated items for bucket size
+        $max_scale = (int) $this->wpdb->get_var(
+            "SELECT MAX(r.scale) FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE {$voter_condition}
+               AND r.rating_type NOT IN ('like_dislike', 'approval')"
+        );
+        if ($max_scale < 1) {
+            $max_scale = 5;
         }
         
-        $results = $this->wpdb->get_results(
-            "SELECT rating_value, COUNT(*) as count 
-             FROM {$this->votes_table}
-             WHERE {$voter_condition} {$date_condition}
-             GROUP BY rating_value 
-             ORDER BY rating_value"
-        );
-        
-        $distribution = array_fill(1, 5, 0);
+        $distribution = array_fill(1, $max_scale, 0);
         foreach ($results as $row) {
-            $distribution[intval($row->rating_value)] = intval($row->count);
+            $key = intval($row->rating_value);
+            if (array_key_exists($key, $distribution)) {
+                $distribution[$key] = intval($row->count);
+            }
         }
         
         return $distribution;

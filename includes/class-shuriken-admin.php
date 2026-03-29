@@ -56,6 +56,7 @@ class Shuriken_Admin {
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
         add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
         add_action('admin_post_shuriken_export_voter_votes', array($this, 'export_voter_votes'));
+        add_filter('set-screen-option', array($this, 'save_screen_options'), 10, 3);
     }
 
     /**
@@ -115,7 +116,7 @@ class Shuriken_Admin {
         );
 
         // Add Ratings submenu
-        add_submenu_page(
+        $ratings_hook = add_submenu_page(
             'shuriken-reviews',
             __('Ratings Management', 'shuriken-reviews'),
             __('Ratings', 'shuriken-reviews'),
@@ -123,6 +124,9 @@ class Shuriken_Admin {
             'shuriken-reviews',
             array($this, 'render_ratings_page')
         );
+
+        // Register screen options for the ratings page
+        add_action("load-{$ratings_hook}", array($this, 'ratings_screen_options'));
 
         // Add Comments Settings submenu
         add_submenu_page(
@@ -183,6 +187,36 @@ class Shuriken_Admin {
             'shuriken-reviews-about',
             array($this, 'render_about_page')
         );
+    }
+
+    /**
+     * Register screen options for the ratings page
+     *
+     * @return void
+     * @since 1.8.0
+     */
+    public function ratings_screen_options() {
+        add_screen_option('per_page', array(
+            'label'   => __('Ratings', 'shuriken-reviews'),
+            'default' => 20,
+            'option'  => 'shuriken_ratings_per_page',
+        ));
+    }
+
+    /**
+     * Save screen options
+     *
+     * @param mixed  $screen_option The value to save.
+     * @param string $option        The option name.
+     * @param int    $value         The option value.
+     * @return mixed
+     * @since 1.8.0
+     */
+    public function save_screen_options($screen_option, $option, $value) {
+        if ($option === 'shuriken_ratings_per_page') {
+            return absint($value);
+        }
+        return $screen_option;
     }
 
     /**

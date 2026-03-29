@@ -209,13 +209,13 @@ $tendency_icons = array(
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-star-filled"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($stats->average_rating_given ?: '0'); ?>/5</h3>
+                <h3><?php echo esc_html($stats->average_rating_given ?: '0'); ?></h3>
                 <p><?php esc_html_e('Average Rating Given', 'shuriken-reviews'); ?></p>
                 <?php if ($stats->average_effective_rating && $stats->average_effective_rating !== $stats->average_rating_given) : ?>
                     <small class="effective-rating-note" title="<?php esc_attr_e('Rating adjusted for negative-effect sub-ratings', 'shuriken-reviews'); ?>">
                         <?php printf(
                             /* translators: %s: effective rating value */
-                            esc_html__('Effective: %s/5', 'shuriken-reviews'),
+                            esc_html__('Effective: %s', 'shuriken-reviews'),
                             esc_html($stats->average_effective_rating)
                         ); ?>
                     </small>
@@ -247,19 +247,19 @@ $tendency_icons = array(
         <div class="shuriken-stat-card small">
             <div class="stat-content">
                 <h4><?php echo esc_html($stats->positive_votes ?: 0); ?></h4>
-                <p><?php esc_html_e('Positive (4-5★)', 'shuriken-reviews'); ?></p>
+                <p><?php esc_html_e('Positive', 'shuriken-reviews'); ?></p>
             </div>
         </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
                 <h4><?php echo esc_html($stats->neutral_votes ?: 0); ?></h4>
-                <p><?php esc_html_e('Neutral (3★)', 'shuriken-reviews'); ?></p>
+                <p><?php esc_html_e('Neutral', 'shuriken-reviews'); ?></p>
             </div>
         </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
                 <h4><?php echo esc_html($stats->negative_votes ?: 0); ?></h4>
-                <p><?php esc_html_e('Negative (1-2★)', 'shuriken-reviews'); ?></p>
+                <p><?php esc_html_e('Negative', 'shuriken-reviews'); ?></p>
             </div>
         </div>
         <div class="shuriken-stat-card small">
@@ -339,7 +339,7 @@ $tendency_icons = array(
                             </td>
                             <td class="column-rating">
                                 <span class="star-rating-display">
-                                    <?php echo str_repeat('★', intval($vote->rating_value)) . str_repeat('☆', 5 - intval($vote->rating_value)); ?>
+                                    <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? 'stars', $vote->scale ?? 5); ?>
                                 </span>
                                 <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
                             </td>
@@ -425,6 +425,7 @@ $tendency_icons = array(
 // Pass PHP data to JavaScript for charts
 var shurikenVoterActivityData = {
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' \u2605'; }, array_keys($distribution_array))); ?>,
     votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
     i18n: {
         votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
@@ -475,20 +476,26 @@ jQuery(document).ready(function($) {
         // Rating Distribution Chart
         var distCtx = document.getElementById('voterRatingDistributionChart');
         if (distCtx) {
+            var distData = shurikenVoterActivityData.ratingDistribution;
+            var distLabels = shurikenVoterActivityData.distributionLabels || distData.map(function(_, i) { return (i + 1) + '\u2605'; });
+            var allBgColors = [
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(249, 115, 22, 0.8)',
+                'rgba(234, 179, 8, 0.8)',
+                'rgba(132, 204, 22, 0.8)',
+                'rgba(34, 197, 94, 0.8)'
+            ];
+            var bgColors = distData.length <= allBgColors.length
+                ? allBgColors.slice(allBgColors.length - distData.length)
+                : allBgColors;
             new Chart(distCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: ['1★', '2★', '3★', '4★', '5★'],
+                    labels: distLabels,
                     datasets: [{
                         label: shurikenVoterActivityData.i18n.votes,
-                        data: shurikenVoterActivityData.ratingDistribution,
-                        backgroundColor: [
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(249, 115, 22, 0.8)',
-                            'rgba(234, 179, 8, 0.8)',
-                            'rgba(132, 204, 22, 0.8)',
-                            'rgba(34, 197, 94, 0.8)'
-                        ],
+                        data: distData,
+                        backgroundColor: bgColors,
                         borderRadius: 6
                     }]
                 },

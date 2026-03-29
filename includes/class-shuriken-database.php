@@ -550,9 +550,12 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 $total_votes += $sub->total_votes;
                 
                 if ($sub->effect_type === 'negative') {
-                    // For negative effect: invert the rating using the normalized scale (1-5)
-                    // e.g., a 5-star negative rating contributes 1 point, 1-star contributes 5 points
-                    $inverted_rating = ($sub->total_votes * 6) - $sub->total_rating;
+                    // Scale-aware inversion:
+                    // Stars/numeric [1, scale]: inverted = (scale + 1) - value → aggregate = votes * (scale + 1) - total
+                    // Binary [0, 1]: inverted = 1 - value → aggregate = votes * scale - total (scale = 1)
+                    $is_binary = in_array($sub->rating_type, array('like_dislike', 'approval'), true);
+                    $inv_const = $is_binary ? (int) $sub->scale : ((int) $sub->scale + 1);
+                    $inverted_rating = ($sub->total_votes * $inv_const) - $sub->total_rating;
                     $total_rating += $inverted_rating;
                 } else {
                     $total_rating += $sub->total_rating;

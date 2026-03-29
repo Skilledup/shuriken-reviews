@@ -123,7 +123,7 @@ $guest_votes         = $vote_counts->guest_votes;
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-performance"></span>
             <div class="stat-content">
-                <h3><?php echo $overall_average ? number_format($overall_average, 1) : '0'; ?>/5</h3>
+                <h3><?php echo $overall_average ? number_format($overall_average, 1) : '0'; ?></h3>
                 <p><?php esc_html_e('Overall Average', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -277,7 +277,7 @@ $guest_votes         = $vote_counts->guest_votes;
                                 </td>
                                 <td>
                                     <span class="star-display">★</span>
-                                    <?php echo esc_html($item->average); ?>/5
+                                    <?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?>
                                 </td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
@@ -334,7 +334,7 @@ $guest_votes         = $vote_counts->guest_votes;
                                 <td><strong><?php echo esc_html($item->total_votes); ?></strong></td>
                                 <td>
                                     <span class="star-display">★</span>
-                                    <?php echo esc_html($item->average ?: '0'); ?>/5
+                                    <?php echo esc_html($analytics->format_average_display($item->average ?: 0, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?>
                                 </td>
                             </tr>
                         <?php $rank++; endforeach; ?>
@@ -384,7 +384,7 @@ $guest_votes         = $vote_counts->guest_votes;
                                 </td>
                                 <td>
                                     <span class="star-display low">★</span>
-                                    <?php echo esc_html($item->average); ?>/5
+                                    <?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?>
                                 </td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
@@ -433,7 +433,7 @@ $guest_votes         = $vote_counts->guest_votes;
                                 </td>
                                 <td>
                                     <span class="star-rating-display">
-                                        <?php echo str_repeat('★', intval($vote->rating_value)) . str_repeat('☆', 5 - intval($vote->rating_value)); ?>
+                                        <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? 'stars', $vote->scale ?? 5); ?>
                                     </span>
                                 </td>
                                 <td>
@@ -502,7 +502,7 @@ $guest_votes         = $vote_counts->guest_votes;
                             </td>
                             <td>
                                 <span class="star-display">★</span>
-                                <?php echo esc_html($parent->average ?: '0'); ?>/5
+                                <?php echo esc_html($analytics->format_average_display($parent->average ?: 0, $parent->rating_type ?? 'stars', $parent->scale ?? 5, $parent->total_votes, $parent->total_rating)); ?>
                                 <br><small class="votes-count"><?php printf(esc_html__('%s votes', 'shuriken-reviews'), esc_html($parent->total_votes)); ?></small>
                             </td>
                             <td>
@@ -550,7 +550,7 @@ $guest_votes         = $vote_counts->guest_votes;
                             </td>
                             <td>
                                 <span class="star-display">★</span>
-                                <?php echo esc_html($rating->average ?: '0'); ?>/5
+                                <?php echo esc_html($analytics->format_average_display($rating->average ?: 0, $rating->rating_type ?? 'stars', $rating->scale ?? 5, $rating->total_votes, $rating->total_rating)); ?>
                                 <br><small class="votes-count"><?php printf(esc_html__('%s votes', 'shuriken-reviews'), esc_html($rating->total_votes)); ?></small>
                             </td>
                             <td>
@@ -588,6 +588,7 @@ $guest_votes         = $vote_counts->guest_votes;
 var shurikenAnalyticsData = {
     votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' ★'; }, array_keys($distribution_array))); ?>,
     userTypeData: {
         members: <?php echo intval($logged_in_votes); ?>,
         guests: <?php echo intval($guest_votes); ?>

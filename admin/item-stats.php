@@ -255,7 +255,7 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-star-filled"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($average); ?>/5</h3>
+                <h3><?php echo esc_html($analytics->format_average_display($average, $rating->rating_type ?: 'stars', $rating->scale ?: 5, $display_total_votes, $display_total_rating)); ?></h3>
                 <p><?php esc_html_e('Average Rating', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -372,11 +372,11 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                         </td>
                         <td>
                             <span class="star-display">★</span>
-                            <?php echo esc_html($sub->average ?: '0'); ?>/5
+                            <?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                         </td>
                         <td>
                             <span class="effective-score <?php echo $sub->effect_type === 'negative' ? 'inverted' : ''; ?>">
-                                <?php echo esc_html($sub->effective_average ?: '0'); ?>/5
+                                <?php echo esc_html($analytics->format_average_display($sub->effective_average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                             </span>
                             <?php if ($sub->effect_type === 'negative') : ?>
                                 <small class="inverted-note"><?php esc_html_e('(inverted)', 'shuriken-reviews'); ?></small>
@@ -432,7 +432,7 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
                             <td class="column-id"><?php echo esc_html($vote->id); ?></td>
                             <td class="column-rating">
                                 <span class="star-rating-display">
-                                    <?php echo str_repeat('★', intval($vote->rating_value)) . str_repeat('☆', 5 - intval($vote->rating_value)); ?>
+                                    <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? $rating->rating_type ?? 'stars', $vote->scale ?? $rating->scale ?? 5); ?>
                                 </span>
                                 <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
                             </td>
@@ -551,6 +551,7 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
 // Pass PHP data to JavaScript for charts
 var shurikenItemStatsData = {
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' \u2605'; }, array_keys($distribution_array))); ?>,
     votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
     i18n: {
         votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
@@ -607,14 +608,19 @@ jQuery(document).ready(function($) {
     // Rating Distribution Chart
     var distCtx = document.getElementById('itemRatingDistributionChart');
     if (distCtx) {
-        var colors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
+        var allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
+        var distData = shurikenItemStatsData.ratingDistribution;
+        var colors = distData.length <= allColors.length
+            ? allColors.slice(allColors.length - distData.length)
+            : allColors;
+        var distLabels = shurikenItemStatsData.distributionLabels || distData.map(function(_, i) { return (i + 1) + ' \u2605'; });
         new Chart(distCtx, {
             type: 'bar',
             data: {
-                labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+                labels: distLabels,
                 datasets: [{
                     label: shurikenItemStatsData.i18n.votes,
-                    data: shurikenItemStatsData.ratingDistribution,
+                    data: distData,
                     backgroundColor: colors,
                     borderColor: colors,
                     borderWidth: 1,

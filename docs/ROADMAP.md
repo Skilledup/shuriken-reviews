@@ -22,8 +22,19 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - FSE block v2 — style presets for both single and grouped rating blocks
 - Mirror management in block editor (CRUD + inline rename, unified search, shared helpers)
 - Editor request deduplication & CDN compatibility (1.11.4)
-- Rating types: stars, like/dislike, numeric, approval (1.12.0)
+- Rating types: stars, like/dislike, numeric, approval — backend + frontend shortcodes + CSS (1.12.0)
 - Post Meta Box: link ratings to posts/pages with auto-injection & JSON-LD (1.12.0)
+- Analytics type-safe aggregation — scale-aware inversion, binary distribution buckets, dynamic thresholds (1.12.1)
+- Analytics type-safe display — format helpers, type-branched rendering across all admin pages (1.12.1)
+- Chart labels — dynamic server-provided labels/colors for all chart.js instances (1.12.1)
+- Admin ratings list — type-aware stats column (like/dislike, approval, stars/numeric) (1.12.1)
+- Database `recalculate_parent_rating()` — binary sub-rating inversion fix (1.12.1)
+- Screen Options — per-page setting on ratings list page (1.12.1)
+
+🚧 In progress (1.12.x — type-awareness gaps):
+- **FSE blocks: type-aware editor preview** — both blocks hardcode `[1,2,3,4,5].map(★)` and `/5`; need type-branched rendering (thumbs, upvote, dynamic scale)
+- **FSE blocks: create/edit modal fields** — modals lack `rating_type` + `scale` fields; all block-created ratings default to stars/5
+- **Post Linked Ratings block** — new FSE dynamic block for site editor templates (renders linked ratings at block position, alternative to `the_content` auto-injection)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -39,7 +50,6 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Archive injection (pre_get_posts sorting by rating)
 - Bulk-link tool (assign ratings to multiple posts at once)
 - Block editor sidebar: show linked rating info in post sidebar
-- Type-aware analytics display (like/dislike charts, approval gauges)
 
 🚧 Future:
 - Email notifications
@@ -51,7 +61,7 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 
 ### Rating Types
 
-Four rating type modes with full-stack support from DB to frontend.
+Four rating type modes with full-stack support from DB to frontend shortcodes.
 
 **Types:**
 - **Stars** (default) — Classic 1–N star rating, scale configurable 2–10
@@ -65,7 +75,7 @@ Four rating type modes with full-stack support from DB to frontend.
 - Binary types (like_dislike, approval) force scale=1; stars/numeric allow 2–10
 - Vote validation allows 0 for dislike votes
 
-**Full-Stack Changes:**
+**Backend + Frontend Shortcode Stack (Done):**
 - Database: create_rating/update_rating accept rating_type + scale; vote validation updated
 - REST API: rating_type + scale in create/update args; stats response includes total_rating
 - AJAX: Type-aware vote normalization; binary types stored as-is; response includes rating_type
@@ -73,6 +83,29 @@ Four rating type modes with full-stack support from DB to frontend.
 - Frontend JS: submitBinaryRating() for like/dislike/approval; fetchFreshData branches by type
 - Frontend CSS: Like/dislike button styles, approval button styles, dark preset overrides
 - Admin: Rating type + scale fields in create form and inline edit; type badge in list column; JS toggle hides scale for binary types
+
+**Remaining — FSE Blocks:**
+- [ ] Both blocks: type-aware editor preview (replace hardcoded 5-star loop with type-branched rendering)
+- [ ] Both blocks: add `rating_type` + `scale` to create/edit modals
+- [ ] `block-helpers.js`: type-aware `calculateAverage()` display helper
+- [ ] `block.json`: add `like`, `approval`, `numeric` keywords
+
+**Done — Analytics & Admin (1.12.1):**
+- [x] `class-shuriken-analytics.php`: scale-aware inversion (`get_inversion_constant`), binary distribution (`build_empty_distribution`), display helpers (`format_average_display`, `format_vote_display`), `is_binary_type` check; fixed 9+ SQL/PHP locations
+- [x] `analytics.php`: type-branched display using format helpers; `distributionLabels` passed to JS
+- [x] `item-stats.php`: type-branched display; dynamic distribution labels/colors
+- [x] `voter-activity.php`: type-aware vote display; generic positive/neutral/negative labels; dynamic chart
+- [x] `admin-analytics.js`: dynamic chart labels from `shurikenAnalyticsData.distributionLabels`
+- [x] `ratings.php` stats column: type-aware rendering (like/dislike counts, approval upvotes, dynamic star scale)
+- [x] `class-shuriken-database.php`: `recalculate_parent_rating()` — scale-aware `$inv_const` for binary sub-ratings
+- [x] Screen Options: per-page setting for ratings list page
+
+**Remaining — Post Linked Ratings Block:**
+- [ ] New dynamic FSE block (`shuriken/post-linked-ratings`) for site editor templates
+- [ ] Reads `_shuriken_rating_ids` from current post context
+- [ ] Server-side renders linked ratings (delegates to shortcode renderer)
+- [ ] Placeholder in editor showing rating count
+- [ ] Alternative to `the_content` auto-injection — use block positioning in templates
 
 ### Post Meta Box
 
