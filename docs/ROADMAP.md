@@ -29,7 +29,11 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Chart labels — dynamic server-provided labels/colors for all chart.js instances (1.12.1)
 - Admin ratings list — type-aware stats column (like/dislike, approval, stars/numeric) (1.12.1)
 - Database `recalculate_parent_rating()` — binary sub-rating inversion fix (1.12.1)
-- Screen Options — per-page setting on ratings list page (1.12.1)
+- Screen Options — per-page setting + column toggles on ratings list page (1.12.1)
+- Admin ratings form redesign — mirror as type option, sub-rating as checkbox, JS visibility logic rewrite (1.12.2)
+- Backend protections — mirror type inheritance from source, type/scale conversion lock when votes exist (1.12.2)
+- Numeric slider UI — HTML5 range input, scale raised to 2–100, format_vote_display returns X/N (1.12.2)
+- Exception system SPL refactor — `Shuriken_Exception_Interface` + `Shuriken_Exception_Trait`; logic-family extends SPL counterparts (1.12.2)
 
 🚧 In progress (1.12.x — type-awareness gaps):
 - **FSE blocks: type-aware editor preview** — both blocks hardcode `[1,2,3,4,5].map(★)` and `/5`; need type-branched rendering (thumbs, upvote, dynamic scale)
@@ -66,23 +70,26 @@ Four rating type modes with full-stack support from DB to frontend shortcodes.
 **Types:**
 - **Stars** (default) — Classic 1–N star rating, scale configurable 2–10
 - **Like/Dislike** — Thumbs up/down binary vote; rating_value=1 (like) or 0 (dislike), total_rating stores like count
-- **Numeric** — Same as stars but without star visual metaphor, scale 2–10
+- **Numeric** — HTML5 range slider with live value display and submit button, scale 2–100
 - **Approval** — Single upvote button, rating_value always 1
+- **Mirror** — Shares vote data with a source rating; type and scale inherited from source, cannot be changed
 
 **DB Changes:**
 - New columns: `rating_type VARCHAR(20) DEFAULT 'stars'`, `scale TINYINT UNSIGNED DEFAULT 5`
 - Migration v1.5.0 adds columns to existing tables
-- Binary types (like_dislike, approval) force scale=1; stars/numeric allow 2–10
+- Binary types (like_dislike, approval) force scale=1; stars allow 2–10; numeric allows 2–100
 - Vote validation allows 0 for dislike votes
+- `create_rating()` — mirrors inherit type/scale from source; numeric scale clamped to 2–100 separately from stars
+- `update_rating()` — throws `Shuriken_Validation_Exception` if type or scale changed when votes exist
 
 **Backend + Frontend Shortcode Stack (Done):**
 - Database: create_rating/update_rating accept rating_type + scale; vote validation updated
 - REST API: rating_type + scale in create/update args; stats response includes total_rating
-- AJAX: Type-aware vote normalization; binary types stored as-is; response includes rating_type
-- Shortcodes: Type-branched HTML rendering (thumb buttons, upvote button, or stars)
-- Frontend JS: submitBinaryRating() for like/dislike/approval; fetchFreshData branches by type
-- Frontend CSS: Like/dislike button styles, approval button styles, dark preset overrides
-- Admin: Rating type + scale fields in create form and inline edit; type badge in list column; JS toggle hides scale for binary types
+- AJAX: Type-aware vote normalization `(value / max_stars) * 5`; works for any numeric scale; no AJAX changes needed for slider
+- Shortcodes: Type-branched HTML — slider (`<input type="range">`) for numeric, thumb buttons for like/dislike, upvote button for approval, star loop for stars
+- Frontend JS: `submitBinaryRating()` for like/dislike/approval; slider `input` event for live preview; `submitRating()` reused for slider submission; `fetchFreshData()` branches by type including numeric slider value update
+- Frontend CSS: Slider track/thumb styling (webkit + moz), value display, submit button, dark preset overrides; like/dislike button styles, approval button styles
+- Admin: Rating type + scale fields in create form; type badge in list column; Mirror merged into type dropdown; sub-rating moved to checkbox; JS toggles scale max (10 for stars, 100 for numeric); type/scale locked in inline edit when votes exist or for mirrors
 
 **Remaining — FSE Blocks:**
 - [ ] Both blocks: type-aware editor preview (replace hardcoded 5-star loop with type-branched rendering)
@@ -99,6 +106,28 @@ Four rating type modes with full-stack support from DB to frontend shortcodes.
 - [x] `ratings.php` stats column: type-aware rendering (like/dislike counts, approval upvotes, dynamic star scale)
 - [x] `class-shuriken-database.php`: `recalculate_parent_rating()` — scale-aware `$inv_const` for binary sub-ratings
 - [x] Screen Options: per-page setting for ratings list page
+
+**Done — Admin Ratings + Numeric Slider (1.12.2):**
+- [x] Screen Options: column toggles for Type, Shortcode, Stats columns (`manage_{screen}_columns` filter + `get_hidden_columns()`)
+- [x] Admin form redesign: Mirror merged into Rating Type dropdown; sub-rating converted to checkbox; `updateAddNewVisibility()` rewritten
+- [x] Backend — mirror creation: fetches source rating and silently inherits type/scale
+- [x] Backend — type/scale lock: `update_rating()` throws `Shuriken_Validation_Exception` when type or scale changed on rated item
+- [x] Numeric scale raised to 2–100 in `create_rating()` and `update_rating()`; stars remain 2–10
+- [x] Shortcode: numeric split from stars branch — renders `<input type="range">` slider with value display`, `/max` label, and Rate button; display-only shows numeric value
+- [x] Frontend JS: slider `input` handler for live value preview; submit button wires into existing `submitRating()`; `fetchFreshData()` numeric branch updates slider display
+- [x] Frontend CSS: full slider styling (track, thumb, value, submit button, disabled states, dark preset overrides)
+- [x] `format_vote_display()`: numeric type returns `X/N` instead of star characters
+- [x] Admin scale input: JS toggles `max` attribute between 10 (stars) and 100 (numeric)
+
+**Done — Exception System SPL Refactor (1.12.2):**
+- [x] `interface-shuriken-exception.php`: `Shuriken_Exception_Interface extends Throwable` — contract for all plugin exceptions
+- [x] `trait-shuriken-exception.php`: `Shuriken_Exception_Trait` — shared `error_code`, `get_error_code()`, `to_wp_error()`, `log()` implementation
+- [x] `Shuriken_Exception` now extends `\RuntimeException` (was `\Exception`); uses the trait
+- [x] Logic-family now extend SPL counterparts: `Shuriken_Logic_Exception → \LogicException`, `Shuriken_Validation_Exception → \InvalidArgumentException`, `Shuriken_Configuration_Exception → \DomainException`
+- [x] Runtime-family stays under `Shuriken_Exception` (Database, Permission, RateLimit, Integration, NotFound)
+- [x] All catch blocks updated from `Shuriken_Exception` to `Shuriken_Exception_Interface` (AJAX × 3, REST API × 9, handler × 1)
+- [x] `Shuriken_Exception_Handler` methods type-hint on `Shuriken_Exception_Interface`
+- [x] Autoloader loads interface + trait before exception classes
 
 **Remaining — Post Linked Ratings Block:**
 - [ ] New dynamic FSE block (`shuriken/post-linked-ratings`) for site editor templates

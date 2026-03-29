@@ -112,21 +112,11 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
         $result = apply_filters('shuriken_rate_limit_check_result', true, $user_id, $user_ip, $rating_id, $limits, $usage);
 
         if (is_wp_error($result)) {
-            throw new Shuriken_Rate_Limit_Exception(
-                $result->get_error_message(),
-                'custom',
-                60,
-                0
-            );
+            throw Shuriken_Rate_Limit_Exception::custom_blocked($result->get_error_message());
         }
 
         if ($result === false) {
-            throw new Shuriken_Rate_Limit_Exception(
-                __('You cannot vote at this time.', 'shuriken-reviews'),
-                'custom',
-                60,
-                0
-            );
+            throw Shuriken_Rate_Limit_Exception::custom_blocked();
         }
 
         return true;

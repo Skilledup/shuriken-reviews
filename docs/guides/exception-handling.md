@@ -5,17 +5,25 @@ Learn about the plugin's exception hierarchy and error handling system for robus
 ## Exception Hierarchy
 
 ```
-Exception (PHP)
-    └── Shuriken_Exception (Base)
-            ├── Shuriken_Database_Exception ✓ Implemented
-            ├── Shuriken_Validation_Exception ✓ Implemented
-            ├── Shuriken_Not_Found_Exception ✓ Implemented
-            ├── Shuriken_Permission_Exception ✓ Implemented
-            ├── Shuriken_Logic_Exception ✓ Implemented
-            ├── Shuriken_Configuration_Exception ✓ Implemented
-            ├── Shuriken_Rate_Limit_Exception (TODO: Rate limiting not yet implemented)
-            └── Shuriken_Integration_Exception (Partial: Some features reserved for future use)
+Throwable (PHP)
+    └── Shuriken_Exception_Interface  (plugin contract)
+            ├── RuntimeException (PHP)
+            │       └── Shuriken_Exception (base for runtime-family)
+            │               ├── Shuriken_Database_Exception      ✓ Implemented
+            │               ├── Shuriken_Not_Found_Exception     ✓ Implemented
+            │               ├── Shuriken_Permission_Exception    ✓ Implemented
+            │               ├── Shuriken_Rate_Limit_Exception    ✓ Implemented
+            │               └── Shuriken_Integration_Exception   (Partial: some features reserved for future)
+            ├── LogicException (PHP)
+            │       └── Shuriken_Logic_Exception         ✓ Implemented
+            ├── InvalidArgumentException (PHP → extends LogicException)
+            │       └── Shuriken_Validation_Exception    ✓ Implemented
+            └── DomainException (PHP → extends LogicException)
+                    └── Shuriken_Configuration_Exception ✓ Implemented
 ```
+
+All exceptions share `error_code`, `get_error_code()`, `to_wp_error()`, and `log()` via `Shuriken_Exception_Trait`.
+Catch all plugin exceptions with `catch (Shuriken_Exception_Interface $e)`.
 
 ### Implementation Status
 
@@ -23,14 +31,42 @@ Exception (PHP)
 |-----------|--------|------------|
 | Base, Database, Validation, Not_Found, Permission, Logic | ✅ Ready | All current features |
 | Configuration | ✅ Ready | Plugin settings validation |
-| Rate_Limit | 🚧 TODO | Reserved for vote throttling/cooldown (not implemented) |
+| Rate_Limit | ✅ Ready | Vote cooldown, hourly/daily limits (via `Shuriken_Rate_Limiter`) |
 | Integration | ⚠️ Partial | HTTP/API failures work; webhooks/cache/email reserved for future |
+
+## Interface & Trait
+
+### `Shuriken_Exception_Interface`
+
+All plugin exceptions implement this interface. Use it in catch blocks and type hints to handle any plugin exception regardless of which SPL class it extends:
+
+```php
+try {
+    // ...
+} catch (Shuriken_Exception_Interface $e) {
+    Shuriken_Exception_Handler::handle_ajax_exception($e);
+}
+```
+
+**Methods (contract):**
+- `get_error_code(): string` — Plugin-specific error slug
+- `to_wp_error(): WP_Error` — Convert to WordPress `WP_Error`
+- `log(string $context): void` — Log to error log
+
+Because the interface extends `Throwable`, it can be used directly in catch blocks in PHP 8+.
+
+### `Shuriken_Exception_Trait`
+
+Provides the concrete implementation of the interface methods, shared across all exception classes via `use Shuriken_Exception_Trait`. This is what makes the shared behavior available to both runtime-family exceptions (via `Shuriken_Exception`) and logic-family exceptions (via direct SPL extension + the trait).
 
 ## Exception Types
 
-### 1. `Shuriken_Exception` (Base)
+### 1. `Shuriken_Exception` (Base — runtime-family)
 
-The base exception all plugin exceptions extend from.
+Base for runtime exceptions. Extends `\RuntimeException`.
+
+Runtime-family exceptions (Database, NotFound, Permission, RateLimit, Integration) extend this class.
+For catching any plugin exception, use `Shuriken_Exception_Interface` instead.
 
 **Features:**
 - Error code for logging/debugging
@@ -45,7 +81,7 @@ The base exception all plugin exceptions extend from.
 
 ### 2. `Shuriken_Database_Exception`
 
-For database operation failures.
+For database operation failures. Extends `Shuriken_Exception` → `\RuntimeException`.
 
 **Static Factory Methods:**
 ```php
@@ -71,7 +107,7 @@ try {
 
 ### 3. `Shuriken_Validation_Exception`
 
-For input validation failures.
+For input validation failures. Extends `\InvalidArgumentException` (a `\LogicException` subclass).
 
 **Static Factory Methods:**
 ```php
@@ -98,7 +134,7 @@ if ($rating_value < 1 || $rating_value > 5) {
 
 ### 4. `Shuriken_Not_Found_Exception`
 
-For missing resources (404 errors).
+For missing resources (404 errors). Extends `Shuriken_Exception` → `\RuntimeException`.
 
 **Static Factory Methods:**
 ```php
@@ -121,7 +157,7 @@ if (!$rating) {
 
 ### 5. `Shuriken_Permission_Exception`
 
-For authorization failures (403 errors).
+For authorization failures (403 errors). Extends `Shuriken_Exception` → `\RuntimeException`.
 
 **Static Factory Methods:**
 ```php
@@ -147,7 +183,7 @@ if (!is_user_logged_in() && !$allow_guest_voting) {
 
 ### 6. `Shuriken_Logic_Exception`
 
-For business logic violations.
+For business logic violations. Extends `\LogicException`.
 
 **Static Factory Methods:**
 ```php
@@ -172,7 +208,7 @@ if ($parent_id === $rating_id) {
 
 ### 7. `Shuriken_Configuration_Exception`
 
-For plugin configuration and settings errors.
+For plugin configuration and settings errors. Extends `\DomainException` (a `\LogicException` subclass).
 
 **Static Factory Methods:**
 ```php
@@ -198,7 +234,7 @@ if (!$max_stars || $max_stars < 1) {
 
 ### 8. `Shuriken_Rate_Limit_Exception`
 
-For rate limiting and throttling (429 errors).
+For rate limiting and throttling (429 errors). Extends `Shuriken_Exception` → `\RuntimeException`.
 
 **Static Factory Methods:**
 ```php
@@ -208,13 +244,14 @@ Shuriken_Rate_Limit_Exception::hourly_vote_limit($limit);
 Shuriken_Rate_Limit_Exception::vote_cooldown($retry_after);
 Shuriken_Rate_Limit_Exception::api_limit_exceeded($retry_after, $limit);
 Shuriken_Rate_Limit_Exception::too_many_failures($action, $retry_after);
+Shuriken_Rate_Limit_Exception::custom_blocked($message, $retry_after); // for shuriken_rate_limit_check_result filter
 ```
 
-**Status:** Reserved for future implementation
+**Status:** Fully implemented. Used by `Shuriken_Rate_Limiter` for vote cooldown, hourly limits, daily limits, and custom filter-blocked votes.
 
 ### 9. `Shuriken_Integration_Exception`
 
-For external service and integration failures (502 errors).
+For external service and integration failures (502 errors). Extends `Shuriken_Exception` → `\RuntimeException`.
 
 **Working Factory Methods:**
 ```php
@@ -248,7 +285,7 @@ public function handle_ajax_request() {
         }
         
         wp_send_json_success($data);
-    } catch (Shuriken_Exception $e) {
+    } catch (Shuriken_Exception_Interface $e) {
         Shuriken_Exception_Handler::handle_ajax_exception($e);
     }
 }
@@ -265,7 +302,7 @@ public function rest_endpoint($request) {
         }
         
         return rest_ensure_response($data);
-    } catch (Shuriken_Exception $e) {
+    } catch (Shuriken_Exception_Interface $e) {
         return Shuriken_Exception_Handler::handle_rest_exception($e);
     }
 }
@@ -283,7 +320,7 @@ public function handle_form_submission() {
         
         // Redirect on success
         wp_safe_redirect($redirect_url);
-    } catch (Shuriken_Exception $e) {
+    } catch (Shuriken_Exception_Interface $e) {
         Shuriken_Exception_Handler::handle_admin_exception($e, $redirect_url);
     }
 }
@@ -340,7 +377,7 @@ try {
 ### 3. Log Exceptions
 
 ```php
-catch (Shuriken_Exception $e) {
+catch (Shuriken_Exception_Interface $e) {
     $e->log('User registration process');
     // Handle the error
 }
@@ -356,7 +393,7 @@ public function validate_data($data) {
             throw Shuriken_Validation_Exception::required_field('name');
         }
         return true;
-    } catch (Shuriken_Exception $e) {
+    } catch (Shuriken_Exception_Interface $e) {
         return $e->to_wp_error();
     }
 }
@@ -378,14 +415,17 @@ throw new Shuriken_Not_Found_Exception("Rating $id not found", 'rating', $id);
 
 The exception handler automatically maps exceptions to HTTP status codes:
 
-| Exception Type | HTTP Status |
-|---------------|-------------|
-| `Shuriken_Not_Found_Exception` | 404 |
-| `Shuriken_Permission_Exception` | 403 |
-| `Shuriken_Validation_Exception` | 400 |
-| `Shuriken_Rate_Limit_Exception` | 429 |
-| `Shuriken_Database_Exception` | 500 |
-| Other | 500 |
+| Exception Type | HTTP Status | SPL Parent |
+|---------------|-------------|-----------|
+| `Shuriken_Not_Found_Exception` | 404 | `\RuntimeException` |
+| `Shuriken_Permission_Exception` | 403 | `\RuntimeException` |
+| `Shuriken_Validation_Exception` | 400 | `\InvalidArgumentException` |
+| `Shuriken_Rate_Limit_Exception` | 429 | `\RuntimeException` |
+| `Shuriken_Integration_Exception` | 502 | `\RuntimeException` |
+| `Shuriken_Database_Exception` | 500 | `\RuntimeException` |
+| `Shuriken_Configuration_Exception` | 500 | `\DomainException` |
+| `Shuriken_Logic_Exception` | 500 | `\LogicException` |
+| Other | 500 | — |
 
 ## Example: Complete AJAX Handler
 
@@ -428,7 +468,7 @@ public function handle_submit_rating() {
         
         wp_send_json_success(['message' => 'Vote submitted']);
         
-    } catch (Shuriken_Exception $e) {
+    } catch (Shuriken_Exception_Interface $e) {
         Shuriken_Exception_Handler::handle_ajax_exception($e);
     }
 }
@@ -442,5 +482,7 @@ public function handle_submit_rating() {
 ✅ **Consistent Errors** - Factory methods ensure consistent messages  
 ✅ **WordPress Compatible** - Converts to WP_Error when needed  
 ✅ **Easier Testing** - Can test that specific exceptions are thrown  
+✅ **SPL Interoperability** - Logic-family extends `\LogicException`, runtime-family extends `\RuntimeException`; third-party code can catch standard PHP exceptions  
+✅ **Unified Interface** - `catch (Shuriken_Exception_Interface $e)` catches every plugin exception regardless of SPL branch  
 
 See [INDEX.md](../INDEX.md) for complete documentation index.
