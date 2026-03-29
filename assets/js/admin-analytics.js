@@ -20,13 +20,10 @@
             return;
         }
 
-        // Detect dark mode
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
         // Chart.js default configuration
         Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif';
         Chart.defaults.font.size = 12;
-        Chart.defaults.color = isDarkMode ? '#94a3b8' : '#646970';
+        Chart.defaults.color = '#646970';
 
         // Initialize all charts
         initVotesOverTimeChart();
@@ -43,10 +40,8 @@
 
         const data = shurikenAnalyticsData.votesOverTime || [];
         
-        // Detect dark mode
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const gridColor = isDarkMode ? '#334155' : '#f0f0f1';
-        const tickColor = isDarkMode ? '#94a3b8' : '#646970';
+        const gridColor = '#f0f0f1';
+        const tickColor = '#646970';
         
         // Prepare data
         const labels = data.map(item => formatDate(item.vote_date));
@@ -70,7 +65,7 @@
                     pointRadius: 3,
                     pointHoverRadius: 6,
                     pointBackgroundColor: '#2271b1',
-                    pointBorderColor: isDarkMode ? '#1e293b' : '#fff',
+                    pointBorderColor: '#fff',
                     pointBorderWidth: 2
                 }]
             },
@@ -138,10 +133,8 @@
 
         const data = shurikenAnalyticsData.ratingDistribution || [0, 0, 0, 0, 0];
 
-        // Detect dark mode
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const gridColor = isDarkMode ? '#334155' : '#f0f0f1';
-        const tickColor = isDarkMode ? '#94a3b8' : '#646970';
+        const gridColor = '#f0f0f1';
+        const tickColor = '#646970';
 
         // Use server-provided labels or generate defaults
         const labels = shurikenAnalyticsData.distributionLabels || data.map((_, i) => (i + 1) + ' ★');
@@ -231,12 +224,10 @@
             return;
         }
 
-        // Detect dark mode
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const textColor = isDarkMode ? '#f1f5f9' : '#1d2327';
-        const labelColor = isDarkMode ? '#94a3b8' : '#646970';
-        const borderColor = isDarkMode ? '#1e293b' : '#fff';
-        const legendColor = isDarkMode ? '#e2e8f0' : '#646970';
+        const textColor = '#1d2327';
+        const labelColor = '#646970';
+        const borderColor = '#fff';
+        const legendColor = '#646970';
 
         new Chart(ctx, {
             type: 'doughnut',

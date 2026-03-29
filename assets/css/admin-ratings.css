@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shuriken Reviews - Admin Ratings Page Styles
  * Modern styling for ratings management
  * 
@@ -15,7 +15,7 @@
 }
 
 /* ==========================================================================
-   Toolbar: single flex row — bulk actions left, search right
+   Toolbar: single flex row â€” bulk actions left, search right
    ========================================================================== */
 
 .shuriken-ratings-toolbar {
@@ -37,7 +37,7 @@
     flex-shrink: 0;
 }
 
-/* Bulk actions select — match WP default height */
+/* Bulk actions select â€” match WP default height */
 .shuriken-ratings-toolbar select {
     height: 28px;
     padding: 0 8px;
@@ -50,7 +50,7 @@
     vertical-align: middle;
 }
 
-/* Apply button — exact same height as the select */
+/* Apply button â€” exact same height as the select */
 .shuriken-ratings-toolbar input.button.action, #doaction2 {
     height: 28px;
     padding: 0 12px;
@@ -111,7 +111,7 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
-/* Icon search button — same height as the search input */
+/* Icon search button â€” same height as the search input */
 .shuriken-ratings-toolbar .search-submit-btn {
     display: inline-flex;
     align-items: center;
@@ -140,7 +140,7 @@
     line-height: 1;
 }
 
-/* Clear ✕ icon */
+/* Clear âœ• icon */
 .shuriken-ratings-toolbar .clear-search-btn {
     display: inline-flex;
     align-items: center;
@@ -164,7 +164,7 @@
     line-height: 1;
 }
 
-/* Remove old float rules — toolbar is now flex, no clear needed */
+/* Remove old float rules â€” toolbar is now flex, no clear needed */
 .wrap > form#ratings-filter {
     clear: none;
 }
@@ -177,7 +177,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Checkbox column — vertical center */
+/* Checkbox column â€” vertical center */
 .wp-list-table.ratings .column-cb {
     width: 2.2em;
     vertical-align: middle;
@@ -720,7 +720,7 @@ html[dir=rtl] .shuriken-copy-notification {
     color: #94a3b8;
 }
 
-/* Bulk Action Button — overrides kept for bottom tablenav (WP default markup) */
+/* Bulk Action Button â€” overrides kept for bottom tablenav (WP default markup) */
 .tablenav .alignleft.actions.bulkactions input.button {
     background: #f8fafc;
     border: 1px solid #d1d5db;
@@ -1235,404 +1235,4 @@ html[dir=rtl] .shuriken-copy-notification {
 /* Hidden class for inline edit */
 .hidden {
     display: none !important;
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    body, #wpcontent {
-        background: #0f172a !important;
-    }
-    .wrap > h1,
-    .wrap > h1.wp-heading-inline {
-        color: #f1f5f9 !important;
-    }
-    
-    .wp-list-table.ratings {
-        background: #1e293b;
-        border-color: #334155;
-    }
-    
-    .wp-list-table.ratings thead th,
-    .wp-list-table.ratings tfoot th {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f1f5f9;
-        border-color: #334155;
-    }
-    
-    .wp-list-table.ratings tbody td {
-        border-bottom-color: #334155;
-        color: #e2e8f0;
-    }
-    
-    .wp-list-table.ratings tbody tr {
-        background: #1e293b;
-    }
-    
-    .wp-list-table.ratings tbody tr:hover {
-        background: #0f172a;
-    }
-    
-    .wp-list-table.ratings tbody tr.alternate {
-        background: #172033;
-    }
-    
-    tr.sub-rating,
-    tr.sub-rating.alternate {
-        background-color: #0f172a !important;
-    }
-    
-    tr.mirror-rating,
-    tr.mirror-rating.alternate {
-        background-color: #0c1929 !important;
-    }
-    
-    .shuriken-ratings-form-wrap,
-    .shuriken-ratings-empty-state {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-color: #334155;
-    }
-    
-    .shuriken-ratings-form-wrap h2 {
-        color: #f1f5f9;
-        border-bottom-color: #334155;
-    }
-    
-    .shuriken-ratings-empty-state h3 {
-        color: #f1f5f9;
-    }
-    
-    .inline-edit-row-rating {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    }
-    
-    .inline-edit-row-rating .inline-edit-legend,
-    .inline-edit-row-rating .title {
-        color: #f1f5f9;
-    }
-    
-    .inline-edit-row-rating .input-text-wrap input[type="text"],
-    .inline-edit-row-rating .input-text-wrap select {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    
-    .inline-edit-row-rating .inline-edit-save {
-        border-top-color: #334155;
-    }
-    
-    .shuriken-copy-shortcode {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: #a5b4fc;
-    }
-    
-    .shuriken-ratings-form-wrap .form-table th {
-        color: #f1f5f9;
-    }
-    
-    .shuriken-ratings-form-wrap .form-table td input[type="text"],
-    .shuriken-ratings-form-wrap .form-table td select {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    
-    .shuriken-ratings-form-wrap .form-table td input[type="text"]:focus,
-    .shuriken-ratings-form-wrap .form-table td select:focus {
-        background: #1e293b;
-        border-color: #667eea;
-        color: #f1f5f9;
-        box-shadow: 0 0 0 1px #667eea;
-        outline: none;
-    }
-    
-    .shuriken-ratings-form-wrap .form-table td input[type="text"]::placeholder {
-        color: #64748b;
-    }
-    
-    .shuriken-ratings-toolbar .search-box input[type="search"] {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-
-    .shuriken-ratings-toolbar .search-box input[type="search"]:focus {
-        border-color: #667eea;
-        background: #1e293b;
-    }
-
-    .shuriken-ratings-toolbar select {
-        background: #1e293b;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-
-    .shuriken-ratings-toolbar input.button.action {
-        background: #1e293b;
-        border-color: #334155;
-        color: #94a3b8;
-    }
-    
-    .wp-list-table.ratings tbody td strong,
-    .wp-list-table.ratings tbody td strong a {
-        color: #f1f5f9;
-    }
-    
-    .wp-list-table.ratings tbody td a.row-title {
-        color: #a5b4fc;
-    }
-    
-    .wp-list-table.ratings tbody td a.row-title:hover {
-        color: #c7d2fe;
-    }
-    
-    .wp-list-table.ratings td.column-name .row-actions {
-        color: #94a3b8;
-    }
-    
-    .wp-list-table.ratings td.column-name .row-actions a {
-        color: #a5b4fc;
-    }
-    
-    .wp-list-table.ratings td.column-name .row-actions a:hover {
-        color: #c7d2fe;
-    }
-    
-    .wp-list-table.ratings td.column-name .row-actions .trash a {
-        color: #f87171;
-    }
-    
-    .wp-list-table.ratings td.column-name .row-actions .trash a:hover {
-        color: #fca5a5;
-    }
-    
-    .wp-list-table.ratings .row-actions .id {
-        color: #94a3b8;
-    }
-    
-    .parent-info,
-    .sub-count,
-    .mirror-info,
-    .mirror-count {
-        color: #cbd5e1 !important;
-    }
-    
-    .rating-text {
-        color: #cbd5e1;
-    }
-    
-    .rating-text strong {
-        color: #f1f5f9;
-    }
-    
-    .shuriken-ratings-empty-state {
-        color: #94a3b8;
-    }
-    
-    .shuriken-ratings-empty-state p {
-        color: #94a3b8;
-    }
-    
-    .shuriken-ratings-form-wrap .form-table td .description {
-        color: #94a3b8;
-    }
-    
-    .inline-edit-row-rating .input-text-wrap .description {
-        color: #94a3b8;
-    }
-    
-    .inline-edit-row-rating .input-text-wrap input[type="checkbox"] {
-        filter: brightness(0.8);
-    }
-    
-    .shuriken-ratings-form-wrap .form-table td input[type="checkbox"] {
-        filter: brightness(0.8);
-    }
-    
-    .tablenav .tablenav-pages .pagination-links .current {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff;
-    }
-    
-    .tablenav .tablenav-pages .pagination-links a {
-        color: #a5b4fc;
-    }
-    
-    .tablenav .tablenav-pages .pagination-links a:hover {
-        color: #c7d2fe;
-        background: #1e293b;
-    }
-    
-    .tablenav .tablenav-pages .pagination-links .tablenav-pages-navspan {
-        color: #64748b;
-    }
-    
-    .tablenav .tablenav-pages .paging-input {
-        color: #cbd5e1;
-    }
-    
-    .tablenav .tablenav-pages .paging-input input {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    
-    .sub-indicator,
-    .mirror-indicator {
-        opacity: 0.9;
-    }
-    
-    .subtitle {
-        color: #94a3b8;
-    }
-    
-    .subtitle strong {
-        color: #f1f5f9;
-    }
-    
-    .page-title-action {
-        color: #a5b4fc !important;
-        border-color: #667eea !important;
-    }
-    
-    .page-title-action:hover {
-        color: #c7d2fe !important;
-        background: #1e293b !important;
-    }
-    
-    .tablenav .displaying-num {
-        color: #cbd5e1;
-    }
-    
-    .tablenav select {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    
-    .tablenav select:focus {
-        border-color: #667eea;
-    }
-    
-    .tablenav .button {
-        background: #1e293b;
-        border-color: #334155;
-        color: #f1f5f9;
-    }
-    
-    .tablenav .button:hover {
-        background: #334155;
-        border-color: #475569;
-        color: #f1f5f9;
-    }
-    
-    .tablenav .button.disabled {
-        background: #0f172a;
-        border-color: #1e293b;
-        color: #64748b;
-        cursor: not-allowed;
-    }
-    
-    /* Rating type badges dark mode */
-    .rating-type.parent-badge {
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-        color: #dbeafe;
-    }
-    
-    .rating-type.parent-badge.display-only {
-        background: linear-gradient(135deg, #92400e 0%, #78350f 100%);
-        color: #fef3c7;
-    }
-    
-    .rating-type.sub-rating-badge {
-        background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-        color: #d1fae5;
-    }
-    
-    .rating-type.sub-rating-badge.negative {
-        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
-        color: #fee2e2;
-    }
-    
-    .rating-type.standalone-badge {
-        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-        color: #e2e8f0;
-    }
-    
-    .rating-type.mirror-badge {
-        background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
-        color: #e0e7ff;
-    }
-
-    .shuriken-copy-shortcode:hover {
-        background: linear-gradient(135deg, #20385e 0%, #355479 100%) !important;
-        color: #f1f5f9 !important;
-    }
-}
-
-/* ==========================================================================
-   DARK MODE + MOBILE COMBINED
-   ========================================================================== */
-
-@media screen and (max-width: 782px) and (prefers-color-scheme: dark) {
-    
-    /* Card Layout Dark Mode */
-    .wp-list-table.ratings tbody tr.iedit {
-        background: #1e293b;
-        border-color: #334155;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-    
-    .wp-list-table.ratings tbody tr.iedit:hover {
-        background: #1e293b;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Sub-rating and Mirror borders */
-    .wp-list-table.ratings tbody tr.sub-rating {
-        border-left-color: #818cf8;
-    }
-    
-    .wp-list-table.ratings tbody tr.mirror-rating {
-        border-left-color: #60a5fa;
-    }
-    
-    /* Row Actions border */
-    .wp-list-table.ratings tbody tr.iedit td.column-name .row-actions {
-        border-top-color: #334155;
-    }
-    
-    /* Column Labels */
-    .wp-list-table.ratings tbody tr.iedit td.column-type::before,
-    .wp-list-table.ratings tbody tr.iedit td.column-shortcode::before,
-    .wp-list-table.ratings tbody tr.iedit td.column-stats::before {
-        color: #94a3b8;
-    }
-    
-    /* Stats Column Background */
-    .wp-list-table.ratings tbody tr.iedit td.column-stats {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    }
-    
-    /* Inline Edit Row Dark Mode */
-    .wp-list-table.ratings tbody tr.inline-edit-row-rating {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-color: #667eea;
-    }
-    
-    .inline-edit-row-rating .inline-edit-save .cancel {
-        background: #334155;
-        color: #e2e8f0;
-        border-color: #475569;
-    }
-    
-    .inline-edit-row-rating .inline-edit-save .cancel:hover {
-        background: #475569;
-        color: #f1f5f9;
-    }
-    
-    /* Pagination Border */
-    .tablenav .tablenav-pages {
-        border-top-color: #334155;
-    }
 }

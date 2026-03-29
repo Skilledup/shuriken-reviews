@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shuriken Reviews About Page Styles
  *
  * @package Shuriken_Reviews
@@ -611,87 +611,5 @@
     .social-links {
         flex-direction: column;
         align-items: center;
-    }
-}
-
-/* Dark Mode Support (WordPress Admin) */
-@media (prefers-color-scheme: dark) {
-    body, #wpcontent {
-        background: #0f172a !important;
-    }
-
-    .shuriken-about-section:not(.credits-section) {
-        background: #1e293b;
-        border-color: #334155;
-    }
-    
-    .section-title {
-        color: #f1f5f9;
-        border-bottom-color: #334155;
-    }
-    
-    .feature-card,
-    .step-card,
-    .shortcode-box,
-    .info-item,
-    .resource-card,
-    .hooks-summary {
-        background: #0f172a;
-        border-color: #334155;
-    }
-    
-    .feature-card h3,
-    .step-content h4,
-    .shortcode-box h4,
-    .info-value,
-    .resource-content h4,
-    .hooks-summary h4,
-    .hooks-table td {
-        color: #f1f5f9;
-    }
-    
-    .feature-card p,
-    .step-content p,
-    .shortcode-desc,
-    .info-label,
-    .resource-content p {
-        color: #94a3b8;
-    }
-
-    .hooks-table th {
-        background: #1e293b;
-        color: #94a3b8;
-    }
-
-    .hooks-table th,
-    .hooks-table td {
-        border-bottom-color: #334155;
-    }
-
-    .hooks-table tr:hover td {
-        background: #1e293b;
-    }
-
-    .new-features-list,
-    .new-features-note {
-        color: #94a3b8;
-    }
-
-    .new-feature-highlight > h3,
-    .new-feature-highlight > h4 {
-        color: #f1f5f9;
-    }
-
-    .new-feature-highlight > p,
-    .whats-new-content p {
-        color: #94a3b8;
-    }
-
-    .shortcode-reference > h3 {
-        color: #f1f5f9;
-    }
-
-    .shuriken-about-hero {
-        border-color: #334155;
     }
 }
