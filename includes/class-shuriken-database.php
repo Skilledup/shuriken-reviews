@@ -260,11 +260,22 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $allowed_types = array('stars', 'like_dislike', 'numeric', 'approval');
         $rating_type = in_array($rating_type, $allowed_types, true) ? $rating_type : 'stars';
 
+        // Mirror inherits type and scale from source rating
+        if ($mirror_of !== null && $mirror_of > 0) {
+            $source = $this->get_rating(intval($mirror_of));
+            if ($source) {
+                $rating_type = isset($source->rating_type) ? $source->rating_type : 'stars';
+                $scale = isset($source->scale) ? intval($source->scale) : 5;
+            }
+        }
+
         // Force scale per type constraints
         if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
             $scale = 1; // Binary types always use scale 1
+        } elseif ($rating_type === 'numeric') {
+            $scale = max(2, min(100, intval($scale))); // Numeric: 2-100 (slider UI)
         } else {
-            $scale = max(2, min(10, intval($scale))); // Stars/numeric: 2-10
+            $scale = max(2, min(10, intval($scale))); // Stars: 2-10
         }
         
         $insert_data = array(
@@ -327,6 +338,27 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Validation_Exception If no valid data provided
      */
     public function update_rating($rating_id, $data) {
+        // Block type/scale changes if rating has votes or is a mirror
+        if (isset($data['rating_type']) || isset($data['scale'])) {
+            $existing = $this->get_rating($rating_id);
+            if ($existing) {
+                // Mirrors always inherit source type — silently ignore type/scale changes
+                if (!empty($existing->mirror_of)) {
+                    unset($data['rating_type'], $data['scale']);
+                } elseif ($existing->total_votes > 0) {
+                    $type_changed = isset($data['rating_type']) && $data['rating_type'] !== ($existing->rating_type ?? 'stars');
+                    $scale_changed = isset($data['scale']) && intval($data['scale']) !== intval($existing->scale ?? 5);
+                    if ($type_changed || $scale_changed) {
+                        throw Shuriken_Validation_Exception::invalid_value(
+                            'rating_type',
+                            $data['rating_type'] ?? '',
+                            'type and scale cannot be changed when rating has existing votes'
+                        );
+                    }
+                }
+            }
+        }
+
         $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of', 'rating_type', 'scale');
         $update_data = array();
         $format = array();
@@ -344,7 +376,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $update_data[$key] = in_array($value, $allowed_types, true) ? $value : 'stars';
                     $format[] = '%s';
                 } elseif ($key === 'scale') {
-                    $update_data[$key] = max(1, min(10, intval($value)));
+                    $update_data[$key] = max(1, min(100, intval($value)));
                     $format[] = '%d';
                 } elseif ($key === 'parent_id' || $key === 'mirror_of') {
                     // Allow null for parent_id and mirror_of

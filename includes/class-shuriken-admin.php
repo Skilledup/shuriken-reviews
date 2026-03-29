@@ -196,11 +196,30 @@ class Shuriken_Admin {
      * @since 1.8.0
      */
     public function ratings_screen_options() {
+        $screen = get_current_screen();
+        add_filter("manage_{$screen->id}_columns", array($this, 'get_ratings_columns'));
+
         add_screen_option('per_page', array(
             'label'   => __('Ratings', 'shuriken-reviews'),
             'default' => 20,
             'option'  => 'shuriken_ratings_per_page',
         ));
+    }
+
+    /**
+     * Get column definitions for the ratings list table
+     *
+     * Used by WordPress Screen Options to render column toggles.
+     *
+     * @return array
+     * @since 1.8.0
+     */
+    public function get_ratings_columns() {
+        return array(
+            'type'      => __('Type', 'shuriken-reviews'),
+            'shortcode' => __('Shortcode', 'shuriken-reviews'),
+            'stats'     => __('Rating', 'shuriken-reviews'),
+        );
     }
 
     /**
@@ -244,13 +263,30 @@ class Shuriken_Admin {
             }
 
             $name = sanitize_text_field($_POST['rating_name']);
-            $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
-            // Clear parent_id if this is a mirror (mirrors cannot be sub-ratings)
-            $parent_id = $mirror_of ? null : (isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null);
-            $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
-            $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
             $rating_type = isset($_POST['rating_type']) ? sanitize_text_field($_POST['rating_type']) : 'stars';
-            $scale = isset($_POST['scale']) ? intval($_POST['scale']) : 5;
+
+            if ($rating_type === 'mirror') {
+                // Mirror: read source, clear parent, type inherited from source in DB layer
+                $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
+                $parent_id = null;
+                $rating_type = 'stars'; // Placeholder — create_rating() inherits from source
+                $scale = 5;
+                $effect_type = 'positive';
+                $display_only = false;
+            } else {
+                // Non-mirror: no mirror_of
+                $mirror_of = null;
+                $scale = isset($_POST['scale']) ? intval($_POST['scale']) : 5;
+                $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
+                $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
+
+                // Sub-rating checkbox determines parent_id
+                if (isset($_POST['is_sub_rating']) && $_POST['is_sub_rating'] === '1') {
+                    $parent_id = isset($_POST['parent_id']) && !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
+                } else {
+                    $parent_id = null;
+                }
+            }
 
             if (!empty($name)) {
                 $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);

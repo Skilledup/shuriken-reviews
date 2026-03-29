@@ -178,56 +178,52 @@
         });
 
         /**
-         * Update field visibility based on mirror and parent selection
-         * Reusable function for both Add New and Inline Edit forms
-         * 
-         * @param {jQuery} $container - The form container
-         * @param {Object} selectors - CSS selectors for elements
+         * Update field visibility based on rating type and sub-rating state
+         * for the Add New Rating form
          */
-        function updateFieldVisibility($container, selectors) {
-            const hasMirror = $container.find(selectors.mirror).val() !== '';
-            const hasParent = $container.find(selectors.parent).val() !== '';
-            
-            if (hasMirror) {
-                // Mirrors hide parent, effect type, and display-only options
-                $container.find(selectors.parentRow).hide();
-                $container.find(selectors.effectRow).hide();
-                $container.find(selectors.displayRow).hide();
-                $container.find(selectors.parent).val('');
-                $container.find(selectors.displayCheckbox).prop('checked', false);
+        function updateAddNewVisibility() {
+            const type = $('#rating_type').val();
+            const isMirror = type === 'mirror';
+            const isBinary = type === 'like_dislike' || type === 'approval';
+            const isNumeric = type === 'numeric';
+            const isSub = $('#is_sub_rating').is(':checked');
+
+            // Mirror: show source, hide everything else
+            $('#mirror-source-row').toggle(isMirror);
+            $('#scale-row').toggle(!isMirror && !isBinary);
+            $('#sub-rating-row').toggle(!isMirror);
+            $('#parent-id-row').toggle(!isMirror && isSub);
+            $('#effect-type-row').toggle(!isMirror && isSub);
+            $('#display-only-row').toggle(!isMirror && !isSub);
+
+            // Dynamic scale max: 100 for numeric, 10 for stars
+            const $scaleInput = $('#scale');
+            if (isNumeric) {
+                $scaleInput.attr('max', 100);
             } else {
-                $container.find(selectors.parentRow).show();
-                if (hasParent) {
-                    $container.find(selectors.effectRow).show();
-                    $container.find(selectors.displayRow).hide();
-                    $container.find(selectors.displayCheckbox).prop('checked', false);
-                } else {
-                    $container.find(selectors.effectRow).hide();
-                    $container.find(selectors.displayRow).show();
+                $scaleInput.attr('max', 10);
+                if (parseInt($scaleInput.val(), 10) > 10) {
+                    $scaleInput.val(10);
                 }
+            }
+
+            if (isMirror) {
+                $('#is_sub_rating').prop('checked', false);
+                $('#display_only').prop('checked', false);
+            }
+            if (!isSub) {
+                $('#parent_id').val($('#parent_id option:first').val());
+                $('#effect_type').val('positive');
             }
         }
 
-        // Selectors for Add New Rating form
-        const addNewSelectors = {
-            mirror: '#mirror_of',
-            parent: '#parent_id',
-            parentRow: '#parent-id-row',
-            effectRow: '#effect-type-row',
-            displayRow: '#display-only-row',
-            displayCheckbox: '#display_only'
-        };
-
-        /**
-         * Handle changes for Add New Rating form
-         */
-        $('#mirror_of, #parent_id').on('change', function() {
-            updateFieldVisibility($('#add-new-rating'), addNewSelectors);
-        });
+        $('#rating_type').on('change', updateAddNewVisibility);
+        $('#is_sub_rating').on('change', updateAddNewVisibility);
+        // Initial state
+        updateAddNewVisibility();
 
         /**
          * Handle parent selection changes for Inline Edit forms
-         * Note: Converting to mirror is not allowed - user must delete and recreate
          */
         $(document).on('change', '.inline-edit-row-rating .parent-select', function() {
             const $row = $(this).closest('.inline-edit-row-rating');
@@ -254,7 +250,6 @@
             if (isConverting) {
                 $row.find('.parent-label').show();
                 $row.find('.display-only-label').show();
-                // Effect type depends on parent selection
                 if ($row.find('.parent-select').val() !== '') {
                     $row.find('.effect-type-label').show();
                     $row.find('.display-only-label').hide();
@@ -267,7 +262,7 @@
         });
 
         /**
-         * Toggle scale field visibility based on rating type selection
+         * Toggle scale field visibility based on rating type selection (inline edit only)
          * Binary types (like_dislike, approval) don't use scale
          */
         function updateScaleVisibility($container, typeSelector, scaleSelector) {
@@ -275,13 +270,6 @@
             const isBinary = (type === 'like_dislike' || type === 'approval');
             $container.find(scaleSelector).toggle(!isBinary);
         }
-
-        // Add New form: toggle scale row
-        $('#rating_type').on('change', function() {
-            updateScaleVisibility($('#add-new-rating'), '#rating_type', '#scale-row');
-        });
-        // Initial state
-        updateScaleVisibility($('#add-new-rating'), '#rating_type', '#scale-row');
 
         // Inline edit: toggle scale label
         $(document).on('change', '.inline-edit-row-rating .rating-type-select', function() {

@@ -281,7 +281,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     /**
      * Render a vote value for display in tables, adapting to rating type
      *
-     * Stars/numeric: filled/empty star characters
+     * Stars: filled/empty star characters
+     * Numeric: X/N format
      * Like/dislike: 👍 or 👎
      * Approval: 👍
      *
@@ -299,6 +300,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             return '👍';
         }
         $s = (int) $scale;
+        if ($rating_type === 'numeric') {
+            return $value . '/' . $s;
+        }
         return str_repeat('★', $value) . str_repeat('☆', max(0, $s - $value));
     }
 

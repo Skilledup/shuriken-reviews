@@ -61,7 +61,7 @@ interface Shuriken_Database_Interface {
      * @param bool        $display_only Whether rating is display-only.
      * @param int|null    $mirror_of    ID of rating to mirror.
      * @param string      $rating_type  Rating type ('stars', 'like_dislike', 'numeric', 'approval').
-     * @param int         $scale        Display scale (2-10 for stars/numeric, 1 for binary types).
+     * @param int         $scale        Display scale (2-10 for stars, 2-100 for numeric, 1 for binary types).
      * @return int|false New rating ID or false on failure.
      */
     public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null, $rating_type = 'stars', $scale = 5);

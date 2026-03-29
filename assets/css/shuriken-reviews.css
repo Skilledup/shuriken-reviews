@@ -790,6 +790,119 @@
 }
 
 /* =====================================================
+   Numeric Slider Rating Type
+   ===================================================== */
+.shuriken-numeric {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.shuriken-numeric .shuriken-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 200px;
+    height: 8px;
+    border-radius: 4px;
+    background: #ddd;
+    outline: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.shuriken-numeric .shuriken-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffd700;
+    cursor: pointer;
+    border: 2px solid #e6c200;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+}
+
+.shuriken-numeric .shuriken-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.shuriken-numeric .shuriken-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffd700;
+    cursor: pointer;
+    border: 2px solid #e6c200;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+}
+
+.shuriken-numeric .shuriken-slider::-moz-range-thumb:hover {
+    transform: scale(1.15);
+}
+
+.shuriken-numeric .shuriken-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #ddd;
+}
+
+.shuriken-numeric .shuriken-slider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.shuriken-slider-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #333;
+    min-width: 2ch;
+    text-align: center;
+}
+
+.shuriken-slider-max {
+    font-size: 1em;
+    color: #888;
+}
+
+.shuriken-slider-submit {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 4px;
+    background: #ffd700;
+    color: #333;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.shuriken-slider-submit:hover {
+    background: #e6c200;
+    transform: translateY(-1px);
+}
+
+.shuriken-slider-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.shuriken-numeric-display {
+    font-size: 1.4em;
+}
+
+.shuriken-numeric-display .shuriken-numeric-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.shuriken-numeric.display-only-stars {
+    cursor: default;
+}
+
+/* =====================================================
    Like / Dislike Rating Type
    ===================================================== */
 .shuriken-like-dislike {
@@ -920,4 +1033,29 @@ button.shuriken-upvote-btn:hover,
     background: #2a4365;
     border-color: #667eea;
     color: #bee3f8;
+}
+
+/* =====================================================
+   Dark preset overrides for Numeric Slider
+   ===================================================== */
+.shuriken-rating.is-style-dark .shuriken-slider {
+    background: #4a5568;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-value,
+.shuriken-rating.is-style-dark .shuriken-numeric-display .shuriken-numeric-value {
+    color: #f7fafc;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-max {
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-submit {
+    background: #ffd700;
+    color: #1a202c;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-submit:hover {
+    background: #e6c200;
 }

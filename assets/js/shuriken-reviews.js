@@ -112,6 +112,23 @@ jQuery(document).ready(function($) {
                                 } else if (ratingType === 'approval') {
                                     // Update upvote count
                                     $rating.find('.shuriken-upvote-count').text(stats.total_votes);
+                                } else if (ratingType === 'numeric') {
+                                    // Numeric slider: calculate scaled average
+                                    var normalizedAverage = parseFloat(stats.average) || 0;
+                                    var scaledAverage = (normalizedAverage / 5) * maxStars;
+                                    scaledAverage = Math.round(scaledAverage * 10) / 10;
+                                    
+                                    $statsEl.data('average', stats.average);
+                                    $statsEl.data('scaled-average', scaledAverage);
+                                    
+                                    var text = shurikenReviews.i18n.averageRating
+                                        .replace('%1$s', scaledAverage)
+                                        .replace('%2$s', maxStars)
+                                        .replace('%3$s', stats.total_votes);
+                                    $statsEl.html(text);
+                                    
+                                    // Update slider value display
+                                    $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
                                 } else {
                                     // Stars/numeric: calculate scaled average from normalized (1-5 scale)
                                     var normalizedAverage = parseFloat(stats.average) || 0;
@@ -162,13 +179,13 @@ jQuery(document).ready(function($) {
     // Fetch fresh data on page load (bypasses cache)
     fetchFreshData();
 
-    // Initialize stars based on average rating (only for stars/numeric types)
+    // Initialize stars based on average rating (only for stars type)
     $('.shuriken-rating').each(function() {
         var $rating = $(this);
         var ratingType = $rating.data('rating-type') || 'stars';
         
         // Skip non-star types for star initialization
-        if (ratingType === 'like_dislike' || ratingType === 'approval') {
+        if (ratingType === 'like_dislike' || ratingType === 'approval' || ratingType === 'numeric') {
             return;
         }
         
@@ -547,6 +564,50 @@ jQuery(document).ready(function($) {
         $rating.find('.shuriken-btn').css('pointer-events', 'none');
         
         submitBinaryRating($rating, value, 0);
+    });
+
+    // Numeric slider: live value update on input
+    $('.shuriken-rating:not(.display-only) .shuriken-slider').on('input', function() {
+        var value = $(this).val();
+        $(this).closest('.shuriken-numeric').find('.shuriken-slider-value').text(value);
+    });
+
+    // Numeric slider: submit button click handler
+    $('.shuriken-rating:not(.display-only) .shuriken-slider-submit').on('click', function(e) {
+        e.preventDefault();
+        var $rating = $(this).closest('.shuriken-rating');
+        var $slider = $rating.find('.shuriken-slider');
+        var value = parseInt($slider.val());
+
+        // Check if voting is allowed
+        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        
+        if (!isLoggedIn && !guestVotingAllowed) {
+            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            if (!$rating.find('.login-message').length) {
+                $rating.find('.shuriken-numeric').after(
+                    '<div class="login-message">[' + 
+                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
+                    ']</div>'
+                );
+            }
+            $rating.find('.login-message').show();
+            return;
+        }
+        
+        // Disable slider and button while processing
+        $slider.prop('disabled', true);
+        $(this).prop('disabled', true);
+        
+        submitRating($rating, value, 0);
+        
+        // Re-enable after a delay
+        var $btn = $(this);
+        setTimeout(function() {
+            $slider.prop('disabled', false);
+            $btn.prop('disabled', false);
+        }, 4000);
     });
 
     // Approval (upvote) button click handler

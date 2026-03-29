@@ -254,7 +254,42 @@ class Shuriken_Shortcodes {
                     <?php endif; ?>
                 </div>
                 
-                <?php else: /* stars / numeric */ ?>
+                <?php elseif ($rating_type === 'numeric'): ?>
+                <div class="shuriken-numeric<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Numeric rating', 'shuriken-reviews'); ?>">
+                    <?php if (!$is_display_only): ?>
+                    <input type="range" 
+                           class="shuriken-slider" 
+                           min="1" 
+                           max="<?php echo esc_attr($max_stars); ?>" 
+                           value="<?php echo esc_attr(max(1, round($scaled_average))); ?>" 
+                           step="1" 
+                           aria-label="<?php printf(esc_attr__('Rate from 1 to %d', 'shuriken-reviews'), $max_stars); ?>">
+                    <span class="shuriken-slider-value"><?php echo esc_html(max(1, round($scaled_average))); ?></span>
+                    <span class="shuriken-slider-max">/ <?php echo esc_html($max_stars); ?></span>
+                    <button type="button" class="shuriken-slider-submit" aria-label="<?php esc_attr_e('Submit rating', 'shuriken-reviews'); ?>">
+                        <?php esc_html_e('Rate', 'shuriken-reviews'); ?>
+                    </button>
+                    <?php else: ?>
+                    <span class="shuriken-numeric-display">
+                        <span class="shuriken-numeric-value"><?php echo esc_html(round($scaled_average, 1)); ?></span>
+                        <span class="shuriken-slider-max">/ <?php echo esc_html($max_stars); ?></span>
+                    </span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="rating-stats" data-average="<?php echo esc_attr($rating->average); ?>" data-scaled-average="<?php echo esc_attr($scaled_average); ?>">
+                    <?php 
+                    printf(
+                        /* translators: 1: Average rating value, 2: Maximum scale, 3: Total number of votes */
+                        esc_html__('Average: %1$s/%2$s (%3$s votes)', 'shuriken-reviews'),
+                        esc_html($scaled_average),
+                        esc_html($max_stars),
+                        esc_html($rating->total_votes)
+                    );
+                    ?>
+                </div>
+                
+                <?php else: /* stars */ ?>
                 <div class="stars<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Rating stars', 'shuriken-reviews'); ?>">
                     <?php for ($i = 1; $i <= $max_stars; $i++): ?>
                         <span class="star" 

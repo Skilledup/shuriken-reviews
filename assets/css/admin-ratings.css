@@ -518,6 +518,18 @@ tr.mirror-rating .column-name {
     font-style: italic;
 }
 
+.inline-edit-row-rating .rating-type-locked {
+    display: inline-block;
+    color: #64748b;
+    font-style: italic;
+    line-height: 2;
+}
+
+.inline-edit-row-rating .rating-type-locked em {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
 .inline-edit-row-rating .inline-edit-save {
     padding: 1.25em;
     border-top: 2px solid #e2e8f0;

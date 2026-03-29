@@ -85,6 +85,12 @@ $ratings_result = $db->get_ratings_paginated($per_page, $current_page, $search);
 $ratings = $ratings_result->ratings;
 $total_items = $ratings_result->total_count;
 $total_pages = $ratings_result->total_pages;
+
+// Hidden columns for Screen Options
+$hidden_columns = get_hidden_columns(get_current_screen());
+$col_class = function($col) use ($hidden_columns) {
+    return in_array($col, $hidden_columns, true) ? ' hidden' : '';
+};
 ?>
 
 <div class="wrap">
@@ -206,9 +212,9 @@ $total_pages = $ratings_result->total_pages;
                         <input id="cb-select-all-1" type="checkbox">
                     </td>
                     <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-type"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
             </thead>
             <tbody id="the-list">
@@ -281,7 +287,7 @@ $total_pages = $ratings_result->total_pages;
                             </div>
                             <button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e('Show more details'); ?></span></button>
                         </td>
-                        <td class="type column-type" data-colname="<?php esc_attr_e('Type', 'shuriken-reviews'); ?>">
+                        <td class="type column-type<?php echo $col_class('type'); ?>" data-colname="<?php esc_attr_e('Type', 'shuriken-reviews'); ?>">
                             <?php if (!empty($rating->mirror_of)): ?>
                                 <span class="rating-type mirror-badge">
                                     <?php esc_html_e('Mirror', 'shuriken-reviews'); ?>
@@ -352,10 +358,10 @@ $total_pages = $ratings_result->total_pages;
                                 <?php endif; ?>
                             </div>
                         </td>
-                        <td class="shortcode column-shortcode" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
+                        <td class="shortcode column-shortcode<?php echo $col_class('shortcode'); ?>" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
                             <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>
                         </td>
-                        <td class="stats column-stats" data-colname="<?php esc_attr_e('Rating', 'shuriken-reviews'); ?>">
+                        <td class="stats column-stats<?php echo $col_class('stats'); ?>" data-colname="<?php esc_attr_e('Rating', 'shuriken-reviews'); ?>">
                             <?php
                             $r_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
                             $r_scale = isset($rating->scale) ? intval($rating->scale) : 5;
@@ -415,6 +421,13 @@ $total_pages = $ratings_result->total_pages;
                         </td>
                     </tr>
                     <!-- Inline Edit Row -->
+                    <?php
+                    $has_votes = intval($rating->total_votes) > 0;
+                    $is_mirror = !empty($rating->mirror_of);
+                    $type_locked = $has_votes || $is_mirror;
+                    $cur_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+                    $cur_scale = isset($rating->scale) ? intval($rating->scale) : 5;
+                    ?>
                     <tr id="inline-edit-<?php echo esc_attr($rating->id); ?>" class="inline-edit-row inline-edit-row-rating hidden">
                         <td colspan="5" class="colspanchange">
                             <form method="post" class="inline-edit-form">
@@ -434,23 +447,47 @@ $total_pages = $ratings_result->total_pages;
                                         <label>
                                             <span class="title"><?php esc_html_e('Type', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
-                                                <select name="rating_type" class="rating-type-select">
-                                                    <option value="stars" <?php selected(isset($rating->rating_type) ? $rating->rating_type : 'stars', 'stars'); ?>><?php esc_html_e('Stars', 'shuriken-reviews'); ?></option>
-                                                    <option value="like_dislike" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'like_dislike'); ?>><?php esc_html_e('Like / Dislike', 'shuriken-reviews'); ?></option>
-                                                    <option value="numeric" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'numeric'); ?>><?php esc_html_e('Numeric', 'shuriken-reviews'); ?></option>
-                                                    <option value="approval" <?php selected(isset($rating->rating_type) ? $rating->rating_type : '', 'approval'); ?>><?php esc_html_e('Approval (Upvote)', 'shuriken-reviews'); ?></option>
-                                                </select>
+                                                <?php if ($type_locked): ?>
+                                                    <input type="hidden" name="rating_type" value="<?php echo esc_attr($cur_type); ?>">
+                                                    <span class="rating-type-locked">
+                                                        <?php
+                                                        $type_labels = array(
+                                                            'stars' => __('Stars', 'shuriken-reviews'),
+                                                            'like_dislike' => __('Like / Dislike', 'shuriken-reviews'),
+                                                            'numeric' => __('Numeric', 'shuriken-reviews'),
+                                                            'approval' => __('Approval', 'shuriken-reviews'),
+                                                        );
+                                                        echo esc_html($type_labels[$cur_type] ?? $cur_type);
+                                                        if ($is_mirror) {
+                                                            echo ' — <em>' . esc_html__('inherited from source', 'shuriken-reviews') . '</em>';
+                                                        } elseif ($has_votes) {
+                                                            echo ' — <em>' . esc_html__('locked (has votes)', 'shuriken-reviews') . '</em>';
+                                                        }
+                                                        ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <select name="rating_type" class="rating-type-select">
+                                                        <option value="stars" <?php selected($cur_type, 'stars'); ?>><?php esc_html_e('Stars', 'shuriken-reviews'); ?></option>
+                                                        <option value="like_dislike" <?php selected($cur_type, 'like_dislike'); ?>><?php esc_html_e('Like / Dislike', 'shuriken-reviews'); ?></option>
+                                                        <option value="numeric" <?php selected($cur_type, 'numeric'); ?>><?php esc_html_e('Numeric', 'shuriken-reviews'); ?></option>
+                                                        <option value="approval" <?php selected($cur_type, 'approval'); ?>><?php esc_html_e('Approval (Upvote)', 'shuriken-reviews'); ?></option>
+                                                    </select>
+                                                <?php endif; ?>
                                             </span>
                                         </label>
                                         
+                                        <?php if (!$type_locked): ?>
                                         <label class="scale-label">
                                             <span class="title"><?php esc_html_e('Scale', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
-                                                <input type="number" name="scale" class="small-text" value="<?php echo esc_attr(isset($rating->scale) ? $rating->scale : 5); ?>" min="2" max="10">
+                                                <input type="number" name="scale" class="small-text" value="<?php echo esc_attr($cur_scale); ?>" min="2" max="<?php echo ($cur_type === 'numeric') ? '100' : '10'; ?>">
                                             </span>
                                         </label>
+                                        <?php else: ?>
+                                        <input type="hidden" name="scale" value="<?php echo esc_attr($cur_scale); ?>">
+                                        <?php endif; ?>
                                         
-                                        <?php if (!empty($rating->mirror_of)): ?>
+                                        <?php if ($is_mirror): ?>
                                         <label class="convert-mirror-label">
                                             <span class="title"><?php esc_html_e('Mirror Status', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
@@ -460,7 +497,7 @@ $total_pages = $ratings_result->total_pages;
                                         </label>
                                         <?php endif; ?>
                                         
-                                        <label class="parent-label" style="<?php echo !empty($rating->mirror_of) ? 'display:none;' : ''; ?>">
+                                        <label class="parent-label" style="<?php echo $is_mirror ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Parent', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <select name="parent_id" class="parent-select">
@@ -477,7 +514,7 @@ $total_pages = $ratings_result->total_pages;
                                             </span>
                                         </label>
                                         
-                                        <label class="effect-type-label" style="<?php echo (empty($rating->parent_id) || !empty($rating->mirror_of)) ? 'display:none;' : ''; ?>">
+                                        <label class="effect-type-label" style="<?php echo (empty($rating->parent_id) || $is_mirror) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Effect', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <select name="effect_type" class="effect-type-select">
@@ -487,7 +524,7 @@ $total_pages = $ratings_result->total_pages;
                                             </span>
                                         </label>
                                         
-                                        <label class="display-only-label" style="<?php echo (!empty($rating->parent_id) || !empty($rating->mirror_of)) ? 'display:none;' : ''; ?>">
+                                        <label class="display-only-label" style="<?php echo (!empty($rating->parent_id) || $is_mirror) ? 'display:none;' : ''; ?>">
                                             <span class="title"><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <input type="checkbox" name="display_only" value="1" <?php checked($rating->display_only, 1); ?>>
@@ -515,9 +552,9 @@ $total_pages = $ratings_result->total_pages;
                         <input id="cb-select-all-2" type="checkbox">
                     </td>
                     <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-type"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-shortcode"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-stats"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
             </tfoot>
         </table>
@@ -641,9 +678,28 @@ $total_pages = $ratings_result->total_pages;
                                 <option value="like_dislike"><?php esc_html_e('Like / Dislike', 'shuriken-reviews'); ?></option>
                                 <option value="numeric"><?php esc_html_e('Numeric', 'shuriken-reviews'); ?></option>
                                 <option value="approval"><?php esc_html_e('Approval (Upvote)', 'shuriken-reviews'); ?></option>
+                                <option value="mirror"><?php esc_html_e('Mirror', 'shuriken-reviews'); ?></option>
                             </select>
                             <p class="description">
-                                <?php esc_html_e('Choose how visitors interact with this rating.', 'shuriken-reviews'); ?>
+                                <?php esc_html_e('Choose how visitors interact with this rating. A mirror shares vote data with an existing rating.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr id="mirror-source-row" style="display: none;">
+                        <th scope="row">
+                            <label for="mirror_of"><?php esc_html_e('Mirror Source', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <select name="mirror_of" id="mirror_of" class="regular-text">
+                                <option value=""><?php esc_html_e('— Select a rating to mirror —', 'shuriken-reviews'); ?></option>
+                                <?php foreach ($mirrorable_ratings as $mirrorable): ?>
+                                    <option value="<?php echo esc_attr($mirrorable->id); ?>">
+                                        <?php echo esc_html($mirrorable->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Select the rating to mirror. Mirrors share the same vote data and inherit type/scale from the source.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>
@@ -653,36 +709,28 @@ $total_pages = $ratings_result->total_pages;
                         </th>
                         <td>
                             <input type="number" name="scale" id="scale" class="small-text" value="5" min="2" max="10">
-                            <p class="description">
-                                <?php esc_html_e('Number of stars or maximum numeric value (2-10). Ignored for Like/Dislike and Approval types.', 'shuriken-reviews'); ?>
+                            <p class="description" id="scale-description">
+                                <?php esc_html_e('Number of stars (2-10) or numeric slider max (2-100).', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>
-                    <tr>
+                    <tr id="sub-rating-row">
                         <th scope="row">
-                            <label for="mirror_of"><?php esc_html_e('Mirror of', 'shuriken-reviews'); ?></label>
+                            <?php esc_html_e('Sub-rating', 'shuriken-reviews'); ?>
                         </th>
                         <td>
-                            <select name="mirror_of" id="mirror_of" class="regular-text">
-                                <option value=""><?php esc_html_e('— Not a Mirror (Original Rating) —', 'shuriken-reviews'); ?></option>
-                                <?php foreach ($mirrorable_ratings as $mirrorable): ?>
-                                    <option value="<?php echo esc_attr($mirrorable->id); ?>">
-                                        <?php echo esc_html($mirrorable->name); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description">
-                                <?php esc_html_e('Select a rating to mirror. Mirrors share the same vote data but have different names/labels.', 'shuriken-reviews'); ?>
-                            </p>
+                            <label>
+                                <input type="checkbox" id="is_sub_rating" name="is_sub_rating" value="1">
+                                <?php esc_html_e('This is a sub-rating of another rating', 'shuriken-reviews'); ?>
+                            </label>
                         </td>
                     </tr>
-                    <tr id="parent-id-row">
+                    <tr id="parent-id-row" style="display: none;">
                         <th scope="row">
                             <label for="parent_id"><?php esc_html_e('Parent Rating', 'shuriken-reviews'); ?></label>
                         </th>
                         <td>
                             <select name="parent_id" id="parent_id" class="regular-text">
-                                <option value=""><?php esc_html_e('— None (Standalone Rating) —', 'shuriken-reviews'); ?></option>
                                 <?php foreach ($parent_ratings as $parent): ?>
                                     <option value="<?php echo esc_attr($parent->id); ?>">
                                         <?php echo esc_html($parent->name); ?>
@@ -690,7 +738,7 @@ $total_pages = $ratings_result->total_pages;
                                 <?php endforeach; ?>
                             </select>
                             <p class="description">
-                                <?php esc_html_e('Select a parent to make this a sub-rating. Sub-ratings contribute to their parent\'s score.', 'shuriken-reviews'); ?>
+                                <?php esc_html_e('Select the parent rating. Sub-ratings contribute to their parent\'s score.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>
@@ -710,7 +758,7 @@ $total_pages = $ratings_result->total_pages;
                     </tr>
                     <tr id="display-only-row">
                         <th scope="row">
-                            <label for="display_only"><?php esc_html_e('Display Only', 'shuriken-reviews'); ?></label>
+                            <?php esc_html_e('Display Only', 'shuriken-reviews'); ?>
                         </th>
                         <td>
                             <label>
