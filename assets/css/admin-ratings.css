@@ -474,21 +474,33 @@ tr.mirror-rating .column-name {
     color: #1e293b;
 }
 
-.inline-edit-row-rating label {
+/* Override WP core float-based inline-edit layout with flex */
+.inline-edit-row.inline-edit-row-rating fieldset label {
     display: flex;
+    float: none;
+    clear: none;
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    line-height: inherit;
 }
 
-.inline-edit-row-rating .title {
+.inline-edit-row.inline-edit-row-rating fieldset label span.title {
     width: 7em;
+    float: none;
     font-weight: 600;
     color: #1e293b;
+    height: auto;
+    line-height: inherit;
 }
 
-.inline-edit-row-rating .input-text-wrap {
+.inline-edit-row.inline-edit-row-rating fieldset label span.input-text-wrap {
     flex: 1;
+    margin-left: 0;
+}
+
+.inline-edit-row-rating .inline-edit-col > input[type="hidden"] {
+    display: none;
 }
 
 .inline-edit-row-rating .input-text-wrap input[type="text"],
