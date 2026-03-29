@@ -19,6 +19,7 @@ if (!defined('ABSPATH')) {
  * Handles exceptions and converts them to appropriate WordPress responses.
  *
  * @since 1.7.0
+ * @since 1.8.0 Updated to accept Shuriken_Exception_Interface
  */
 class Shuriken_Exception_Handler {
 
@@ -27,11 +28,11 @@ class Shuriken_Exception_Handler {
      *
      * Converts the exception to a JSON error response.
      *
-     * @param Shuriken_Exception $exception The exception to handle.
-     * @param bool               $die       Whether to die after sending response.
+     * @param Shuriken_Exception_Interface $exception The exception to handle.
+     * @param bool                         $die       Whether to die after sending response.
      * @return void
      */
-    public static function handle_ajax_exception($exception, $die = true) {
+    public static function handle_ajax_exception(Shuriken_Exception_Interface $exception, $die = true) {
         // Log the exception
         $exception->log('AJAX Request');
 
@@ -51,10 +52,10 @@ class Shuriken_Exception_Handler {
      *
      * Converts the exception to a WP_Error.
      *
-     * @param Shuriken_Exception $exception The exception to handle.
+     * @param Shuriken_Exception_Interface $exception The exception to handle.
      * @return WP_Error
      */
-    public static function handle_rest_exception($exception) {
+    public static function handle_rest_exception(Shuriken_Exception_Interface $exception) {
         // Log the exception
         $exception->log('REST API Request');
 
@@ -73,11 +74,11 @@ class Shuriken_Exception_Handler {
      *
      * Adds an admin notice and logs the exception.
      *
-     * @param Shuriken_Exception $exception The exception to handle.
-     * @param string             $redirect_url Optional URL to redirect to.
+     * @param Shuriken_Exception_Interface $exception The exception to handle.
+     * @param string                       $redirect_url Optional URL to redirect to.
      * @return void
      */
-    public static function handle_admin_exception($exception, $redirect_url = '') {
+    public static function handle_admin_exception(Shuriken_Exception_Interface $exception, $redirect_url = '') {
         // Log the exception
         $exception->log('Admin Page');
 
@@ -101,10 +102,10 @@ class Shuriken_Exception_Handler {
     /**
      * Get user-friendly error message
      *
-     * @param Shuriken_Exception $exception The exception.
+     * @param Shuriken_Exception_Interface $exception The exception.
      * @return string User-friendly message.
      */
-    protected static function get_user_message($exception) {
+    protected static function get_user_message(Shuriken_Exception_Interface $exception) {
         // Return the exception message directly
         // Could be customized based on exception type
         $message = $exception->getMessage();
@@ -160,10 +161,10 @@ class Shuriken_Exception_Handler {
     /**
      * Get HTTP status code for exception
      *
-     * @param Shuriken_Exception $exception The exception.
+     * @param Shuriken_Exception_Interface $exception The exception.
      * @return int HTTP status code.
      */
-    protected static function get_http_status_code($exception) {
+    protected static function get_http_status_code(Shuriken_Exception_Interface $exception) {
         if ($exception instanceof Shuriken_Not_Found_Exception) {
             return 404;
         }
@@ -206,7 +207,7 @@ class Shuriken_Exception_Handler {
     public static function safe_execute($callback, $context = '', $default = null) {
         try {
             return call_user_func($callback);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             $e->log($context);
             return $default;
         } catch (Exception $e) {

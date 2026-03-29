@@ -1,11 +1,18 @@
 <?php
 /**
- * Base Exception for Shuriken Reviews
+ * Base Runtime Exception for Shuriken Reviews
  *
- * All custom exceptions in the plugin extend this base exception.
+ * Runtime-family exceptions extend this class:
+ * Database, Permission, RateLimit, Integration, NotFound.
+ *
+ * Logic-family exceptions (Logic, Validation, Configuration) extend
+ * their SPL counterparts directly and share behavior via the trait.
+ *
+ * All plugin exceptions implement Shuriken_Exception_Interface.
  *
  * @package Shuriken_Reviews
  * @since 1.7.0
+ * @since 1.8.0 Extends RuntimeException, implements Shuriken_Exception_Interface
  */
 
 // Exit if accessed directly
@@ -16,16 +23,14 @@ if (!defined('ABSPATH')) {
 /**
  * Class Shuriken_Exception
  *
- * Base exception class for the plugin.
+ * Base runtime exception class for the plugin.
  *
  * @since 1.7.0
+ * @since 1.8.0 Extends \RuntimeException instead of \Exception
  */
-class Shuriken_Exception extends Exception {
-    
-    /**
-     * @var string Error code for logging/debugging
-     */
-    protected $error_code;
+class Shuriken_Exception extends RuntimeException implements Shuriken_Exception_Interface {
+
+    use Shuriken_Exception_Trait;
 
     /**
      * Constructor
@@ -38,45 +43,6 @@ class Shuriken_Exception extends Exception {
     public function __construct($message = '', $error_code = 'shuriken_error', $code = 0, $previous = null) {
         $this->error_code = $error_code;
         parent::__construct($message, $code, $previous);
-    }
-
-    /**
-     * Get the error code
-     *
-     * @return string
-     */
-    public function get_error_code() {
-        return $this->error_code;
-    }
-
-    /**
-     * Convert to WP_Error for WordPress compatibility
-     *
-     * @return WP_Error
-     */
-    public function to_wp_error() {
-        return new WP_Error($this->error_code, $this->getMessage(), array('exception' => get_class($this)));
-    }
-
-    /**
-     * Log the exception
-     *
-     * @param string $context Additional context for logging.
-     * @return void
-     */
-    public function log($context = '') {
-        $message = sprintf(
-            '[Shuriken Reviews] %s: %s (Code: %s)',
-            get_class($this),
-            $this->getMessage(),
-            $this->error_code
-        );
-
-        if (!empty($context)) {
-            $message .= ' | Context: ' . $context;
-        }
-
-        error_log($message);
     }
 }
 

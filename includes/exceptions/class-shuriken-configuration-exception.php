@@ -3,9 +3,11 @@
  * Configuration Exception for Shuriken Reviews
  *
  * Thrown when plugin configuration or settings are invalid.
+ * Extends PHP's DomainException for SPL interoperability.
  *
  * @package Shuriken_Reviews
  * @since 1.7.0
+ * @since 1.8.0 Extends \DomainException instead of Shuriken_Exception
  */
 
 // Exit if accessed directly
@@ -19,8 +21,11 @@ if (!defined('ABSPATH')) {
  * Exception for configuration and settings errors.
  *
  * @since 1.7.0
+ * @since 1.8.0 Extends \DomainException, implements Shuriken_Exception_Interface
  */
-class Shuriken_Configuration_Exception extends Shuriken_Exception {
+class Shuriken_Configuration_Exception extends DomainException implements Shuriken_Exception_Interface {
+
+    use Shuriken_Exception_Trait;
 
     /**
      * @var string The configuration key that caused the error
@@ -43,8 +48,8 @@ class Shuriken_Configuration_Exception extends Shuriken_Exception {
     public function __construct($message = '', $config_key = '', $config_value = null, $previous = null) {
         $this->config_key = $config_key;
         $this->config_value = $config_value;
-        $error_code = 'config_' . sanitize_key($config_key) . '_invalid';
-        parent::__construct($message, $error_code, 0, $previous);
+        $this->error_code = 'config_' . sanitize_key($config_key) . '_invalid';
+        parent::__construct($message, 0, $previous);
     }
 
     /**

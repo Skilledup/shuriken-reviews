@@ -3,9 +3,11 @@
  * Logic Exception for Shuriken Reviews
  *
  * Thrown when business logic rules are violated.
+ * Extends PHP's LogicException for SPL interoperability.
  *
  * @package Shuriken_Reviews
  * @since 1.7.0
+ * @since 1.8.0 Extends \LogicException instead of Shuriken_Exception
  */
 
 // Exit if accessed directly
@@ -19,8 +21,11 @@ if (!defined('ABSPATH')) {
  * Exception for business logic violations.
  *
  * @since 1.7.0
+ * @since 1.8.0 Extends \LogicException, implements Shuriken_Exception_Interface
  */
-class Shuriken_Logic_Exception extends Shuriken_Exception {
+class Shuriken_Logic_Exception extends LogicException implements Shuriken_Exception_Interface {
+
+    use Shuriken_Exception_Trait;
 
     /**
      * Constructor
@@ -30,7 +35,8 @@ class Shuriken_Logic_Exception extends Shuriken_Exception {
      * @param Throwable|null $previous   Previous exception.
      */
     public function __construct($message = '', $error_code = 'logic_error', $previous = null) {
-        parent::__construct($message, $error_code, 0, $previous);
+        $this->error_code = $error_code;
+        parent::__construct($message, 0, $previous);
     }
 
     /**

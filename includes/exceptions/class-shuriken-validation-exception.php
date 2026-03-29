@@ -3,9 +3,11 @@
  * Validation Exception for Shuriken Reviews
  *
  * Thrown when input validation fails.
+ * Extends PHP's InvalidArgumentException for SPL interoperability.
  *
  * @package Shuriken_Reviews
  * @since 1.7.0
+ * @since 1.8.0 Extends \InvalidArgumentException instead of Shuriken_Exception
  */
 
 // Exit if accessed directly
@@ -19,8 +21,11 @@ if (!defined('ABSPATH')) {
  * Exception for validation failures.
  *
  * @since 1.7.0
+ * @since 1.8.0 Extends \InvalidArgumentException, implements Shuriken_Exception_Interface
  */
-class Shuriken_Validation_Exception extends Shuriken_Exception {
+class Shuriken_Validation_Exception extends InvalidArgumentException implements Shuriken_Exception_Interface {
+
+    use Shuriken_Exception_Trait;
 
     /**
      * @var string Field that failed validation
@@ -43,8 +48,8 @@ class Shuriken_Validation_Exception extends Shuriken_Exception {
     public function __construct($message = '', $field = '', $invalid_value = null, $previous = null) {
         $this->field = $field;
         $this->invalid_value = $invalid_value;
-        $error_code = 'validation_' . $field . '_invalid';
-        parent::__construct($message, $error_code, 0, $previous);
+        $this->error_code = 'validation_' . $field . '_invalid';
+        parent::__construct($message, 0, $previous);
     }
 
     /**

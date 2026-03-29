@@ -82,6 +82,10 @@ final class Shuriken_Reviews {
      * @return void
      */
     private function load_dependencies() {
+        // Exception interface and trait (must load before exception classes)
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/interface-shuriken-exception.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/trait-shuriken-exception.php';
+
         // Exceptions
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-exception.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/exceptions/class-shuriken-database-exception.php';

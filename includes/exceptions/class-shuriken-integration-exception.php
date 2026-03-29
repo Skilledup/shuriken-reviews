@@ -31,6 +31,7 @@ if (!defined('ABSPATH')) {
  * Exception for external service and integration failures.
  *
  * @since 1.7.0
+ * @since 1.8.0 Implements Shuriken_Exception_Interface via parent
  */
 class Shuriken_Integration_Exception extends Shuriken_Exception {
 

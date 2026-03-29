@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Shuriken Reviews AJAX Class
  *
@@ -112,7 +112,7 @@ class Shuriken_AJAX {
             if (!isset($_POST['rating_value'])) {
                 throw Shuriken_Validation_Exception::required_field('rating_value');
             }
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             Shuriken_Exception_Handler::handle_ajax_exception($e);
             return;
         }
@@ -171,7 +171,7 @@ class Shuriken_AJAX {
                 }
 
                 // Normalize the rating value to 1-5 scale for storage
-                // e.g., 8 out of 10 stars → 4 out of 5
+                // e.g., 8 out of 10 stars â†’ 4 out of 5
                 $normalized_value = ($rating_value / $max_stars) * 5;
                 $normalized_value = round($normalized_value, 2);
                 
@@ -210,7 +210,7 @@ class Shuriken_AJAX {
             if ($can_vote === false) {
                 throw Shuriken_Permission_Exception::voting_not_allowed();
             }
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             Shuriken_Exception_Handler::handle_ajax_exception($e);
             return;
         }
@@ -284,7 +284,7 @@ class Shuriken_AJAX {
             // Get updated rating data
             $updated_rating = $this->db->get_rating($rating_id);
 
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             Shuriken_Exception_Handler::handle_ajax_exception($e);
             return;
         }

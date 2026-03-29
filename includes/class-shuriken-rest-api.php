@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Shuriken Reviews REST API Class
  *
@@ -464,7 +464,7 @@ class Shuriken_REST_API {
             $rating = $this->db->get_rating($new_id);
             
             return rest_ensure_response($rating);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -485,7 +485,7 @@ class Shuriken_REST_API {
             }
             
             return rest_ensure_response($rating);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -561,7 +561,7 @@ class Shuriken_REST_API {
             $rating = $this->db->get_rating($id);
             
             return rest_ensure_response($rating);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -601,7 +601,7 @@ class Shuriken_REST_API {
                 'deleted' => true,
                 'id' => $id
             ));
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -651,7 +651,7 @@ class Shuriken_REST_API {
             
             $ratings = $this->db->get_child_ratings($parent_id);
             return rest_ensure_response($ratings);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -679,7 +679,7 @@ class Shuriken_REST_API {
 
             $mirrors = $this->db->get_mirrors($id);
             return rest_ensure_response($mirrors);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -710,7 +710,7 @@ class Shuriken_REST_API {
             
             $ratings = $this->db->search_ratings($search_term, $limit, $type);
             return rest_ensure_response($ratings);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -741,7 +741,7 @@ class Shuriken_REST_API {
 
             $ratings = $this->db->get_ratings_by_ids($ids);
             return rest_ensure_response(array_values($ratings));
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }
@@ -778,7 +778,7 @@ class Shuriken_REST_API {
             }
             
             return rest_ensure_response($stats);
-        } catch (Shuriken_Exception $e) {
+        } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
         }
     }

@@ -19,6 +19,7 @@ if (!defined('ABSPATH')) {
  * Exception for missing resources.
  *
  * @since 1.7.0
+ * @since 1.8.0 Implements Shuriken_Exception_Interface via parent
  */
 class Shuriken_Not_Found_Exception extends Shuriken_Exception {
 

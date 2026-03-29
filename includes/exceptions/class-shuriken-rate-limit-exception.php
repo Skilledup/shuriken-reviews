@@ -26,6 +26,7 @@ if (!defined('ABSPATH')) {
  * Exception for rate limiting and throttling.
  *
  * @since 1.7.0
+ * @since 1.8.0 Implements Shuriken_Exception_Interface via parent
  */
 class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
 
