@@ -117,11 +117,6 @@ class Shuriken_Container {
                 $container->get('analytics')
             );
         });
-
-        // Register post meta service (depends on database)
-        $this->singleton('post_meta', function($container) {
-            return new Shuriken_Post_Meta($container->get('database'));
-        });
     }
 
     /**

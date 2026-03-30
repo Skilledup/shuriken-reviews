@@ -123,7 +123,6 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-ajax.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-frontend.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-admin.php';
-        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-post-meta.php';
         
         // Legacy/additional functionality
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/comments.php';
@@ -210,7 +209,6 @@ final class Shuriken_Reviews {
         $container->get('block');
         $container->get('ajax');
         $container->get('frontend');
-        $container->get('post_meta');
         
         // Initialize admin (only in admin context)
         if (is_admin()) {

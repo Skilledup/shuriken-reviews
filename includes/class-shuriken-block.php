@@ -200,9 +200,6 @@ class Shuriken_Block {
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
             'render_callback' => array($this, 'render_grouped_block'),
         ));
-
-        // Note: The shuriken-post-linked-ratings block has been deprecated in favor of
-        // the postContext attribute on single/grouped rating blocks (contextual voting).
     }
 
     /**
@@ -465,71 +462,6 @@ class Shuriken_Block {
         }
 
         return $html;
-    }
-
-    /**
-     * Render callback for the Post Linked Ratings block
-     *
-     * Reads `_shuriken_rating_ids` from the current post context and renders
-     * each linked rating using the shortcode renderer.
-     *
-     * @param array    $attributes Block attributes.
-     * @param string   $content    Block content.
-     * @param WP_Block $block      Block instance (provides context).
-     * @return string Rendered block output.
-     * @since 1.12.4
-     */
-    public function render_post_linked_ratings_block(array $attributes, string $content, \WP_Block $block): string {
-        $post_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
-
-        if (!$post_id) {
-            return '';
-        }
-
-        $rating_ids = get_post_meta($post_id, Shuriken_Post_Meta::META_KEY, true);
-        if (!is_array($rating_ids) || empty($rating_ids)) {
-            return '';
-        }
-
-        $ratings_html = '';
-        foreach ($rating_ids as $rating_id) {
-            $id = absint($rating_id);
-            if ($id > 0) {
-                $ratings_html .= do_shortcode('[shuriken_rating id="' . $id . '"]');
-            }
-        }
-
-        if (empty($ratings_html)) {
-            return '';
-        }
-
-        // Apply universal style/color settings as defaults
-        $wrapper_classes = array('shuriken-post-ratings');
-        $style_preset = get_option('shuriken_linked_ratings_style', '');
-        if ($style_preset && in_array($style_preset, array('classic', 'card', 'minimal', 'dark', 'outlined'), true)) {
-            $wrapper_classes[] = 'is-style-' . $style_preset;
-        }
-
-        $style_vars = array();
-        $accent_color = get_option('shuriken_linked_ratings_accent_color', '');
-        if ($accent_color) {
-            $style_vars[] = '--shuriken-user-accent: ' . esc_attr($accent_color);
-        }
-        $star_color = get_option('shuriken_linked_ratings_star_color', '');
-        if ($star_color) {
-            $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($star_color);
-        }
-
-        $wrapper_args = array(
-            'class' => implode(' ', $wrapper_classes),
-        );
-        if (!empty($style_vars)) {
-            $wrapper_args['style'] = implode('; ', $style_vars) . ';';
-        }
-
-        $wrapper_attributes = get_block_wrapper_attributes($wrapper_args);
-
-        return '<div ' . $wrapper_attributes . '>' . $ratings_html . '</div>';
     }
 }
 

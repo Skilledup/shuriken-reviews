@@ -20,11 +20,6 @@ $tabs = array(
         'icon'  => '⚙️',
         'file'  => 'settings-general.php',
     ),
-    'content' => array(
-        'label' => __('Content', 'shuriken-reviews'),
-        'icon'  => '📄',
-        'file'  => 'settings-content.php',
-    ),
     'rate-limiting' => array(
         'label' => __('Rate Limiting', 'shuriken-reviews'),
         'icon'  => '🛡️',
