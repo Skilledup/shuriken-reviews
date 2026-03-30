@@ -28,17 +28,17 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
     /**
      * @var int Seconds until the limit resets
      */
-    protected $retry_after;
+    protected int $retry_after;
 
     /**
      * @var int The rate limit that was exceeded
      */
-    protected $limit;
+    protected int $limit;
 
     /**
      * @var string The action that was rate limited
      */
-    protected $action;
+    protected string $action;
 
     /**
      * Constructor
@@ -49,7 +49,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int            $limit       The rate limit.
      * @param Throwable|null $previous    Previous exception.
      */
-    public function __construct($message = '', $action = '', $retry_after = 0, $limit = 0, $previous = null) {
+    public function __construct(string $message = '', string $action = '', int $retry_after = 0, int $limit = 0, ?\Throwable $previous = null) {
         $this->action = $action;
         $this->retry_after = $retry_after;
         $this->limit = $limit;
@@ -62,7 +62,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      *
      * @return int
      */
-    public function get_retry_after() {
+    public function get_retry_after(): int {
         return $this->retry_after;
     }
 
@@ -71,7 +71,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      *
      * @return int
      */
-    public function get_limit() {
+    public function get_limit(): int {
         return $this->limit;
     }
 
@@ -80,7 +80,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      *
      * @return string
      */
-    public function get_action() {
+    public function get_action(): string {
         return $this->action;
     }
 
@@ -91,7 +91,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int $limit       Maximum votes allowed in the time period.
      * @return self
      */
-    public static function voting_too_fast($retry_after = 60, $limit = 0) {
+    public static function voting_too_fast(int $retry_after = 60, int $limit = 0): self {
         $message = __('You are voting too quickly. Please wait before submitting another vote.', 'shuriken-reviews');
         if ($retry_after > 0) {
             $message = sprintf(
@@ -108,7 +108,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int $limit Maximum votes per day.
      * @return self
      */
-    public static function daily_vote_limit($limit) {
+    public static function daily_vote_limit(int $limit): self {
         return new self(
             sprintf(__('You have reached the daily limit of %d votes. Please try again tomorrow.', 'shuriken-reviews'), $limit),
             'daily_votes',
@@ -123,7 +123,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int $limit Maximum votes per hour.
      * @return self
      */
-    public static function hourly_vote_limit($limit) {
+    public static function hourly_vote_limit(int $limit): self {
         return new self(
             sprintf(__('You have reached the hourly limit of %d votes. Please try again later.', 'shuriken-reviews'), $limit),
             'hourly_votes',
@@ -138,7 +138,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int $retry_after Seconds until user can vote on this item again.
      * @return self
      */
-    public static function vote_cooldown($retry_after) {
+    public static function vote_cooldown(int $retry_after): self {
         return new self(
             sprintf(__('You can change your vote on this item in %d seconds.', 'shuriken-reviews'), $retry_after),
             'vote_cooldown',
@@ -154,7 +154,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int $limit       Requests per time period.
      * @return self
      */
-    public static function api_limit_exceeded($retry_after = 60, $limit = 100) {
+    public static function api_limit_exceeded(int $retry_after = 60, int $limit = 100): self {
         return new self(
             sprintf(__('API rate limit exceeded. Please wait %d seconds.', 'shuriken-reviews'), $retry_after),
             'api',
@@ -170,7 +170,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int    $retry_after Seconds until user can try again.
      * @return self
      */
-    public static function too_many_failures($action, $retry_after = 300) {
+    public static function too_many_failures(string $action, int $retry_after = 300): self {
         return new self(
             sprintf(__('Too many failed attempts. Please wait %d seconds before trying again.', 'shuriken-reviews'), $retry_after),
             $action . '_failures',
@@ -186,7 +186,7 @@ class Shuriken_Rate_Limit_Exception extends Shuriken_Exception {
      * @param int    $retry_after Seconds until user can try again.
      * @return self
      */
-    public static function custom_blocked($message = '', $retry_after = 60) {
+    public static function custom_blocked(string $message = '', int $retry_after = 60): self {
         if (empty($message)) {
             $message = __('You cannot vote at this time.', 'shuriken-reviews');
         }

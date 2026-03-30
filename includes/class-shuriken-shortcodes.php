@@ -25,12 +25,12 @@ class Shuriken_Shortcodes {
     /**
      * @var Shuriken_Shortcodes Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Allowed HTML tags for rating title
@@ -42,7 +42,7 @@ class Shuriken_Shortcodes {
      *
      * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    public function __construct($db = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
         add_shortcode('shuriken_rating', array($this, 'render_rating'));
@@ -54,7 +54,7 @@ class Shuriken_Shortcodes {
      *
      * @return Shuriken_Shortcodes
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self(shuriken_db());
         }
@@ -66,7 +66,7 @@ class Shuriken_Shortcodes {
      *
      * @return Shuriken_Database_Interface
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -75,7 +75,7 @@ class Shuriken_Shortcodes {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -100,7 +100,7 @@ class Shuriken_Shortcodes {
      * @example [shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
      * @example [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
      */
-    public function render_rating($atts) {
+    public function render_rating(array|string $atts): string {
         // Validate and sanitize attributes with proper defaults and parsing
         $atts = shortcode_atts(array(
             'id' => 0,
@@ -143,7 +143,7 @@ class Shuriken_Shortcodes {
      * @param string $anchor_id Optional anchor ID.
      * @return string Rendered HTML.
      */
-    public function render_rating_html($rating, $tag = 'h2', $anchor_id = '') {
+    public function render_rating_html(object $rating, string $tag = 'h2', string $anchor_id = ''): string {
         /**
          * Filter the rating data before rendering.
          *
@@ -372,7 +372,7 @@ class Shuriken_Shortcodes {
      * @example [shuriken_grouped_rating id="1"]
      * @example [shuriken_grouped_rating id="1" style="dark" layout="list" accent_color="#e74c3c"]
      */
-    public function render_grouped_rating($atts) {
+    public function render_grouped_rating(array|string $atts): string {
         $atts = shortcode_atts(array(
             'id'           => 0,
             'tag'          => 'h2',
@@ -442,7 +442,7 @@ class Shuriken_Shortcodes {
      * @param array  $atts Shortcode attributes containing style, accent_color, star_color.
      * @return string Modified HTML with style attributes applied.
      */
-    private function wrap_with_style_attributes($html, $atts) {
+    private function wrap_with_style_attributes(string $html, array $atts): string {
         $style_class = $this->get_preset_class(!empty($atts['style']) ? $atts['style'] : '');
         $style_vars = $this->build_style_vars($atts);
 
@@ -479,7 +479,7 @@ class Shuriken_Shortcodes {
      * @param array $atts Shortcode attributes.
      * @return string CSS custom properties string, e.g. "--shuriken-user-accent: #e74c3c; --shuriken-user-star-color: #f39c12;"
      */
-    private function build_style_vars($atts) {
+    private function build_style_vars(array $atts): string {
         $vars = array();
 
         if (!empty($atts['accent_color']) && sanitize_hex_color($atts['accent_color'])) {
@@ -498,7 +498,7 @@ class Shuriken_Shortcodes {
      * @param string $style Preset name.
      * @return string CSS class string with leading space, or empty string.
      */
-    private function get_preset_class($style) {
+    private function get_preset_class(string $style): string {
         if (empty($style)) {
             return '';
         }
@@ -512,7 +512,7 @@ class Shuriken_Shortcodes {
  *
  * @return Shuriken_Shortcodes
  */
-function shuriken_shortcodes() {
+function shuriken_shortcodes(): Shuriken_Shortcodes {
     return Shuriken_Shortcodes::get_instance();
 }
 

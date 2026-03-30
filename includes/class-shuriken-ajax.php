@@ -25,19 +25,19 @@ class Shuriken_AJAX {
     /**
      * @var Shuriken_AJAX Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Constructor
      *
      * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    public function __construct($db = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
         // Rating submission
@@ -50,7 +50,7 @@ class Shuriken_AJAX {
      *
      * @return Shuriken_AJAX
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self(shuriken_db());
         }
@@ -62,7 +62,7 @@ class Shuriken_AJAX {
      *
      * @return Shuriken_Database_Interface
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -71,7 +71,7 @@ class Shuriken_AJAX {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -83,7 +83,7 @@ class Shuriken_AJAX {
      * @return void
      * @since 1.1.0
      */
-    public function handle_submit_rating() {
+    public function handle_submit_rating(): void {
         try {
             $allow_guest_voting = get_option('shuriken_allow_guest_voting', '0') === '1';
             
@@ -362,7 +362,7 @@ class Shuriken_AJAX {
      * @return string The user's IP address.
      * @since 1.2.0
      */
-    private function get_user_ip() {
+    private function get_user_ip(): string {
         $ip = '';
         
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
@@ -389,7 +389,7 @@ class Shuriken_AJAX {
  *
  * @return Shuriken_AJAX
  */
-function shuriken_ajax() {
+function shuriken_ajax(): Shuriken_AJAX {
     return Shuriken_AJAX::get_instance();
 }
 

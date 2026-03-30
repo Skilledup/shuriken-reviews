@@ -29,7 +29,7 @@ interface Shuriken_Database_Interface {
      * @param int $rating_id Rating ID.
      * @return object|null Rating object or null if not found.
      */
-    public function get_rating($rating_id);
+    public function get_rating(int $rating_id): ?object;
 
     /**
      * Get all ratings
@@ -38,7 +38,7 @@ interface Shuriken_Database_Interface {
      * @param string $order   Sort order (ASC or DESC).
      * @return array Array of rating objects.
      */
-    public function get_all_ratings($orderby = 'id', $order = 'DESC');
+    public function get_all_ratings(string $orderby = 'id', string $order = 'DESC'): array;
 
     /**
      * Get paginated ratings
@@ -50,7 +50,7 @@ interface Shuriken_Database_Interface {
      * @param string $order    Sort order (ASC or DESC).
      * @return array Array with 'ratings', 'total', and 'total_pages' keys.
      */
-    public function get_ratings_paginated($per_page = 20, $page = 1, $search = '', $orderby = 'id', $order = 'DESC');
+    public function get_ratings_paginated(int $per_page = 20, int $page = 1, string $search = '', string $orderby = 'id', string $order = 'DESC'): object;
 
     /**
      * Create a new rating
@@ -64,7 +64,7 @@ interface Shuriken_Database_Interface {
      * @param int         $scale        Display scale (2-10 for stars, 2-100 for numeric, 1 for binary types).
      * @return int|false New rating ID or false on failure.
      */
-    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null, $rating_type = 'stars', $scale = 5);
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = 5): int;
 
     /**
      * Update a rating
@@ -73,7 +73,7 @@ interface Shuriken_Database_Interface {
      * @param array $data      Data to update.
      * @return bool True on success, false on failure.
      */
-    public function update_rating($rating_id, $data);
+    public function update_rating(int $rating_id, array $data): bool;
 
     /**
      * Delete a rating and its votes
@@ -81,7 +81,7 @@ interface Shuriken_Database_Interface {
      * @param int $rating_id Rating ID.
      * @return bool True on success, false on failure.
      */
-    public function delete_rating($rating_id);
+    public function delete_rating(int $rating_id): bool;
 
     /**
      * Get sub-ratings of a parent rating
@@ -89,7 +89,7 @@ interface Shuriken_Database_Interface {
      * @param int $parent_id Parent rating ID.
      * @return array Array of rating objects.
      */
-    public function get_sub_ratings($parent_id);
+    public function get_sub_ratings(int $parent_id): array;
 
     /**
      * Get all parent ratings
@@ -97,7 +97,7 @@ interface Shuriken_Database_Interface {
      * @param int|null $exclude_id Rating ID to exclude.
      * @return array Array of rating objects.
      */
-    public function get_parent_ratings($exclude_id = null);
+    public function get_parent_ratings(?int $exclude_id = null): array;
 
     /**
      * Recalculate parent rating totals
@@ -105,7 +105,7 @@ interface Shuriken_Database_Interface {
      * @param int $parent_id Parent rating ID.
      * @return bool True on success, false on failure.
      */
-    public function recalculate_parent_rating($parent_id);
+    public function recalculate_parent_rating(int $parent_id): bool;
 
     /**
      * Get ratings that can be mirrored
@@ -113,7 +113,7 @@ interface Shuriken_Database_Interface {
      * @param int|null $exclude_id Rating ID to exclude.
      * @return array Array of rating objects.
      */
-    public function get_mirrorable_ratings($exclude_id = null);
+    public function get_mirrorable_ratings(?int $exclude_id = null): array;
 
     /**
      * Get mirrors of a rating
@@ -121,7 +121,7 @@ interface Shuriken_Database_Interface {
      * @param int $rating_id Rating ID.
      * @return array Array of mirror rating objects.
      */
-    public function get_mirrors($rating_id);
+    public function get_mirrors(int $rating_id): array;
 
     /**
      * Get multiple ratings by IDs in a single query
@@ -129,7 +129,7 @@ interface Shuriken_Database_Interface {
      * @param array $ids Array of rating IDs.
      * @return array Array of rating objects indexed by ID.
      */
-    public function get_ratings_by_ids($ids);
+    public function get_ratings_by_ids(array $ids): array;
 
     /**
      * Search ratings by name
@@ -139,7 +139,7 @@ interface Shuriken_Database_Interface {
      * @param string $type        Filter type: 'all', 'parents', 'mirrorable'.
      * @return array Array of rating objects matching the search.
      */
-    public function search_ratings($search_term, $limit = 20, $type = 'all');
+    public function search_ratings(string $search_term, int $limit = 20, string $type = 'all'): array;
 
     /**
      * Get user's vote for a rating
@@ -149,7 +149,7 @@ interface Shuriken_Database_Interface {
      * @param string|null $user_ip   User IP address.
      * @return object|null Vote object or null if not found.
      */
-    public function get_user_vote($rating_id, $user_id, $user_ip = null);
+    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null): ?object;
 
     /**
      * Create a new vote
@@ -160,7 +160,7 @@ interface Shuriken_Database_Interface {
      * @param string|null $user_ip      User IP address.
      * @return bool True on success, false on failure.
      */
-    public function create_vote($rating_id, $rating_value, $user_id = 0, $user_ip = null);
+    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null): bool;
 
     /**
      * Update an existing vote
@@ -171,35 +171,35 @@ interface Shuriken_Database_Interface {
      * @param float $new_value New rating value.
      * @return bool True on success, false on failure.
      */
-    public function update_vote($vote_id, $rating_id, $old_value, $new_value);
+    public function update_vote(int $vote_id, int $rating_id, float|int $old_value, float|int $new_value): bool;
 
     /**
      * Create database tables
      *
      * @return bool True on success, false on failure.
      */
-    public function create_tables();
+    public function create_tables(): bool;
 
     /**
      * Check if database tables exist
      *
      * @return bool True if tables exist, false otherwise.
      */
-    public function tables_exist();
+    public function tables_exist(): bool;
 
     /**
      * Get the ratings table name
      *
      * @return string Table name.
      */
-    public function get_ratings_table();
+    public function get_ratings_table(): string;
 
     /**
      * Get the votes table name
      *
      * @return string Table name.
      */
-    public function get_votes_table();
+    public function get_votes_table(): string;
 
     /**
      * Get the timestamp of the last vote for a rating by a user/guest
@@ -209,7 +209,7 @@ interface Shuriken_Database_Interface {
      * @param string|null $user_ip   User IP address (for guests).
      * @return string|null Datetime string or null if no vote found.
      */
-    public function get_last_vote_time($rating_id, $user_id, $user_ip = null);
+    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null): ?string;
 
     /**
      * Count votes by a user/guest since a given datetime
@@ -219,7 +219,7 @@ interface Shuriken_Database_Interface {
      * @param string      $since   Datetime string (Y-m-d H:i:s format).
      * @return int Number of votes since the given time.
      */
-    public function count_votes_since($user_id, $user_ip, $since);
+    public function count_votes_since(int $user_id, ?string $user_ip, string $since): int;
 
     /**
      * Get the oldest vote datetime within a time window
@@ -231,6 +231,6 @@ interface Shuriken_Database_Interface {
      * @param int         $window_seconds Time window in seconds.
      * @return string|null Datetime string or null if no votes in window.
      */
-    public function get_oldest_vote_in_window($user_id, $user_ip, $window_seconds);
+    public function get_oldest_vote_in_window(int $user_id, ?string $user_ip, int $window_seconds): ?string;
 }
 

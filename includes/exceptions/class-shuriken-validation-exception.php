@@ -30,12 +30,12 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
     /**
      * @var string Field that failed validation
      */
-    protected $field;
+    protected string $field;
 
     /**
      * @var mixed Invalid value
      */
-    protected $invalid_value;
+    protected mixed $invalid_value;
 
     /**
      * Constructor
@@ -45,7 +45,7 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
      * @param mixed          $invalid_value The invalid value.
      * @param Throwable|null $previous      Previous exception.
      */
-    public function __construct($message = '', $field = '', $invalid_value = null, $previous = null) {
+    public function __construct(string $message = '', string $field = '', mixed $invalid_value = null, ?\Throwable $previous = null) {
         $this->field = $field;
         $this->invalid_value = $invalid_value;
         $this->error_code = 'validation_' . $field . '_invalid';
@@ -57,7 +57,7 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
      *
      * @return string
      */
-    public function get_field() {
+    public function get_field(): string {
         return $this->field;
     }
 
@@ -66,7 +66,7 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
      *
      * @return mixed
      */
-    public function get_invalid_value() {
+    public function get_invalid_value(): mixed {
         return $this->invalid_value;
     }
 
@@ -76,7 +76,7 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
      * @param string $field Field name.
      * @return self
      */
-    public static function required_field($field) {
+    public static function required_field(string $field): self {
         return new self(
             sprintf(__('The %s field is required', 'shuriken-reviews'), $field),
             $field,
@@ -92,7 +92,7 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
      * @param string $expected Expected format/type.
      * @return self
      */
-    public static function invalid_value($field, $value, $expected = '') {
+    public static function invalid_value(string $field, mixed $value, string $expected = ''): self {
         $message = sprintf(__('Invalid value for %s', 'shuriken-reviews'), $field);
         if (!empty($expected)) {
             $message .= sprintf(__('. Expected: %s', 'shuriken-reviews'), $expected);
@@ -103,13 +103,13 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
     /**
      * Create exception for out of range value
      *
-     * @param string $field Field name.
-     * @param mixed  $value Invalid value.
-     * @param int    $min   Minimum allowed value.
-     * @param int    $max   Maximum allowed value.
+     * @param string    $field Field name.
+     * @param mixed     $value Invalid value.
+     * @param int|float $min   Minimum allowed value.
+     * @param int|float $max   Maximum allowed value.
      * @return self
      */
-    public static function out_of_range($field, $value, $min, $max) {
+    public static function out_of_range(string $field, mixed $value, int|float $min, int|float $max): self {
         return new self(
             sprintf(
                 __('%s must be between %d and %d', 'shuriken-reviews'),
@@ -125,11 +125,11 @@ class Shuriken_Validation_Exception extends InvalidArgumentException implements 
     /**
      * Create exception for invalid rating value
      *
-     * @param float $value    Rating value.
-     * @param int   $max_stars Maximum stars.
+     * @param float|int $value    Rating value.
+     * @param int       $max_stars Maximum stars.
      * @return self
      */
-    public static function invalid_rating_value($value, $max_stars) {
+    public static function invalid_rating_value(float|int $value, int $max_stars): self {
         return new self(
             sprintf(
                 __('Rating value must be between 1 and %d', 'shuriken-reviews'),

@@ -40,7 +40,7 @@ class Shuriken_Exception extends RuntimeException implements Shuriken_Exception_
      * @param int            $code       Error code number.
      * @param Throwable|null $previous   Previous exception.
      */
-    public function __construct($message = '', $error_code = 'shuriken_error', $code = 0, $previous = null) {
+    public function __construct(string $message = '', string $error_code = 'shuriken_error', int $code = 0, ?\Throwable $previous = null) {
         $this->error_code = $error_code;
         parent::__construct($message, $code, $previous);
     }

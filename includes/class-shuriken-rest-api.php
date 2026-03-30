@@ -25,12 +25,12 @@ class Shuriken_REST_API {
     /**
      * @var Shuriken_REST_API Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * REST API namespace
@@ -42,7 +42,7 @@ class Shuriken_REST_API {
      *
      * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    public function __construct($db = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
         add_action('rest_api_init', array($this, 'register_routes'));
@@ -69,7 +69,7 @@ class Shuriken_REST_API {
      * @param WP_Error|null|bool $result Authentication result.
      * @return WP_Error|null|bool
      */
-    public function rest_authentication_errors($result) {
+    public function rest_authentication_errors(\WP_Error|null|bool $result): \WP_Error|null|bool {
         // If there's already a result from a previous filter, respect it
         if ($result !== null) {
             return $result;
@@ -95,7 +95,7 @@ class Shuriken_REST_API {
      *
      * @return Shuriken_REST_API
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self(shuriken_db());
         }
@@ -107,7 +107,7 @@ class Shuriken_REST_API {
      *
      * @return Shuriken_Database_Interface
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -116,7 +116,7 @@ class Shuriken_REST_API {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -126,7 +126,7 @@ class Shuriken_REST_API {
      * @return void
      * @since 1.7.0
      */
-    public function register_routes() {
+    public function register_routes(): void {
         // Ratings collection endpoint
         register_rest_route(self::NAMESPACE, '/ratings', array(
             array(
@@ -286,7 +286,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object (optional).
      * @return bool
      */
-    public function can_edit_posts($request = null) {
+    public function can_edit_posts(\WP_REST_Request $request = null): bool {
         // WordPress REST API handles authentication automatically
         // This will work with cookie auth, application passwords, etc.
         return current_user_can('edit_posts');
@@ -298,7 +298,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object (optional).
      * @return bool
      */
-    public function can_manage_options($request = null) {
+    public function can_manage_options(\WP_REST_Request $request = null): bool {
         // WordPress REST API handles authentication automatically
         // This will work with cookie auth, application passwords, etc.
         return current_user_can('manage_options');
@@ -313,7 +313,7 @@ class Shuriken_REST_API {
      *
      * @return array
      */
-    private function get_rating_id_args() {
+    private function get_rating_id_args(): array {
         return array(
             'id' => array(
                 'required'          => true,
@@ -328,7 +328,7 @@ class Shuriken_REST_API {
      *
      * @return array
      */
-    private function get_rating_create_args() {
+    private function get_rating_create_args(): array {
         return array(
             'name' => array(
                 'required'          => true,
@@ -376,7 +376,7 @@ class Shuriken_REST_API {
      *
      * @return array
      */
-    private function get_rating_update_args() {
+    private function get_rating_update_args(): array {
         return array(
             'id' => array(
                 'required'          => true,
@@ -430,7 +430,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response
      */
-    public function get_ratings($request) {
+    public function get_ratings(\WP_REST_Request $request): \WP_REST_Response {
         $ratings = $this->db->get_all_ratings();
         return rest_ensure_response($ratings);
     }
@@ -441,7 +441,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
      */
-    public function create_rating($request) {
+    public function create_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $name = $request->get_param('name');
             $parent_id = $request->get_param('parent_id');
@@ -475,7 +475,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
      */
-    public function get_single_rating($request) {
+    public function get_single_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $id = $request->get_param('id');
             $rating = $this->db->get_rating($id);
@@ -496,7 +496,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
      */
-    public function update_rating($request) {
+    public function update_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $id = $request->get_param('id');
             
@@ -572,7 +572,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
      */
-    public function delete_rating($request) {
+    public function delete_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $id = $request->get_param('id');
             
@@ -612,7 +612,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response
      */
-    public function get_parent_ratings($request) {
+    public function get_parent_ratings(\WP_REST_Request $request): \WP_REST_Response {
         $ratings = $this->db->get_parent_ratings();
         return rest_ensure_response($ratings);
     }
@@ -623,7 +623,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response
      */
-    public function get_mirrorable_ratings($request) {
+    public function get_mirrorable_ratings(\WP_REST_Request $request): \WP_REST_Response {
         $ratings = $this->db->get_mirrorable_ratings();
         return rest_ensure_response($ratings);
     }
@@ -635,7 +635,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      * @since 1.9.0
      */
-    public function get_child_ratings($request) {
+    public function get_child_ratings(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $parent_id = $request->get_param('id');
             
@@ -663,7 +663,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      * @since 2.1.0
      */
-    public function get_rating_mirrors($request) {
+    public function get_rating_mirrors(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $id = $request->get_param('id');
 
@@ -691,7 +691,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      * @since 1.9.0
      */
-    public function search_ratings($request) {
+    public function search_ratings(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $search_term = $request->get_param('q');
             $limit = $request->get_param('limit');
@@ -725,7 +725,7 @@ class Shuriken_REST_API {
      * @return WP_REST_Response|WP_Error
      * @since 1.11.1
      */
-    public function get_ratings_batch($request) {
+    public function get_ratings_batch(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $ids_string = $request->get_param('ids');
             $ids = array_map('intval', explode(',', $ids_string));
@@ -754,7 +754,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
      */
-    public function get_rating_stats($request) {
+    public function get_rating_stats(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {
             $ids_string = $request->get_param('ids');
             $ids = array_map('intval', explode(',', $ids_string));
@@ -800,7 +800,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Server   $server  Server instance.
      * @return bool
      */
-    public function clean_rest_buffer($served, $result, $request, $server) {
+    public function clean_rest_buffer(bool $served, \WP_HTTP_Response $result, \WP_REST_Request $request, \WP_REST_Server $server): bool {
         if (strpos($request->get_route(), '/shuriken-reviews/') === 0) {
             if (ob_get_level() > 0 && ob_get_length() > 0) {
                 ob_clean();
@@ -822,7 +822,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request  $request  Request object.
      * @return WP_REST_Response
      */
-    public function set_rest_cache_headers($response, $server, $request) {
+    public function set_rest_cache_headers(\WP_REST_Response $response, \WP_REST_Server $server, \WP_REST_Request $request): \WP_REST_Response {
         if (strpos($request->get_route(), '/shuriken-reviews/') === 0) {
             $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
             $response->header('CDN-Cache-Control', 'no-store');
@@ -841,7 +841,7 @@ class Shuriken_REST_API {
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response
      */
-    public function get_fresh_nonce($request) {
+    public function get_fresh_nonce(\WP_REST_Request $request): \WP_REST_Response {
         // Prevent caching of this endpoint
         nocache_headers();
         
@@ -860,7 +860,7 @@ class Shuriken_REST_API {
  *
  * @return Shuriken_REST_API
  */
-function shuriken_rest_api() {
+function shuriken_rest_api(): Shuriken_REST_API {
     return Shuriken_REST_API::get_instance();
 }
 

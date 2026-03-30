@@ -24,24 +24,24 @@ if (!defined('ABSPATH')) {
 class Shuriken_Database implements Shuriken_Database_Interface {
 
     /**
-     * @var wpdb WordPress database instance
+     * @var \wpdb WordPress database instance
      */
-    private $wpdb;
+    private \wpdb $wpdb;
 
     /**
      * @var string Ratings table name
      */
-    private $ratings_table;
+    private string $ratings_table;
 
     /**
      * @var string Votes table name
      */
-    private $votes_table;
+    private string $votes_table;
 
     /**
-     * @var Shuriken_Database Singleton instance
+     * @var Shuriken_Database|null Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var string Standard rating fields for SELECT queries
@@ -63,7 +63,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return Shuriken_Database
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self();
         }
@@ -75,7 +75,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return string
      */
-    public function get_ratings_table() {
+    public function get_ratings_table(): string {
         return $this->ratings_table;
     }
 
@@ -84,16 +84,16 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return string
      */
-    public function get_votes_table() {
+    public function get_votes_table(): string {
         return $this->votes_table;
     }
 
     /**
      * Get the wpdb instance
      *
-     * @return wpdb
+     * @return \wpdb
      */
-    public function get_wpdb() {
+    public function get_wpdb(): \wpdb {
         return $this->wpdb;
     }
 
@@ -108,7 +108,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param bool $with_average Whether to calculate average rating
      * @return object|null Rating object or null if not found
      */
-    public function get_rating($rating_id) {
+    public function get_rating(int $rating_id): ?object {
         $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
@@ -147,7 +147,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_id Rating ID
      * @return object|null Rating object or null if not found
      */
-    private function get_original_rating($rating_id) {
+    private function get_original_rating(int $rating_id): ?object {
         $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
@@ -170,7 +170,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string $order ASC or DESC
      * @return array Array of rating objects
      */
-    public function get_all_ratings($orderby = 'id', $order = 'DESC') {
+    public function get_all_ratings(string $orderby = 'id', string $order = 'DESC'): array {
         $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id', 'mirror_of');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
@@ -191,7 +191,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string $order ASC or DESC
      * @return object Object with ratings, total_count, total_pages, current_page
      */
-    public function get_ratings_paginated($per_page = 20, $page = 1, $search = '', $orderby = 'id', $order = 'DESC') {
+    public function get_ratings_paginated(int $per_page = 20, int $page = 1, string $search = '', string $orderby = 'id', string $order = 'DESC'): object {
         $offset = ($page - 1) * $per_page;
         $allowed_orderby = array('id', 'name', 'total_votes', 'total_rating', 'date_created', 'parent_id', 'mirror_of');
         $orderby = in_array($orderby, $allowed_orderby, true) ? $orderby : 'id';
@@ -250,7 +250,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If insert fails
      * @throws Shuriken_Validation_Exception If name is empty
      */
-    public function create_rating($name, $parent_id = null, $effect_type = 'positive', $display_only = false, $mirror_of = null, $rating_type = 'stars', $scale = 5) {
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = 5): int {
         $sanitized_name = sanitize_text_field($name);
         
         if (empty($sanitized_name)) {
@@ -337,7 +337,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If update fails
      * @throws Shuriken_Validation_Exception If no valid data provided
      */
-    public function update_rating($rating_id, $data) {
+    public function update_rating(int $rating_id, array $data): bool {
         // Block type/scale changes if rating has votes or is a mirror
         if (isset($data['rating_type']) || isset($data['scale'])) {
             $existing = $this->get_rating($rating_id);
@@ -436,7 +436,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @return bool True on success
      * @throws Shuriken_Database_Exception If delete fails or transaction fails
      */
-    public function delete_rating($rating_id) {
+    public function delete_rating(int $rating_id): bool {
         /**
          * Fires before a rating is deleted.
          *
@@ -513,7 +513,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $parent_id Parent rating ID
      * @return array Array of sub-rating objects
      */
-    public function get_sub_ratings($parent_id) {
+    public function get_sub_ratings(int $parent_id): array {
         $fields = self::RATING_FIELDS;
         $ratings = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} 
@@ -541,7 +541,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int|null $exclude_id Rating ID to exclude from results
      * @return array Array of rating objects
      */
-    public function get_parent_ratings($exclude_id = null) {
+    public function get_parent_ratings(?int $exclude_id = null): array {
         $fields = self::RATING_FIELDS;
         if ($exclude_id) {
             return $this->wpdb->get_results($this->wpdb->prepare(
@@ -566,7 +566,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @return bool True on success
      * @throws Shuriken_Database_Exception If update fails
      */
-    public function recalculate_parent_rating($parent_id) {
+    public function recalculate_parent_rating(int $parent_id): bool {
         // Get all sub-ratings
         $sub_ratings = $this->get_sub_ratings($parent_id);
         
@@ -608,7 +608,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int|null $exclude_id Rating ID to exclude from results
      * @return array Array of rating objects
      */
-    public function get_mirrorable_ratings($exclude_id = null) {
+    public function get_mirrorable_ratings(?int $exclude_id = null): array {
         $fields = self::RATING_FIELDS;
         if ($exclude_id) {
             return $this->wpdb->get_results($this->wpdb->prepare(
@@ -632,7 +632,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_id Rating ID
      * @return array Array of mirror rating objects
      */
-    public function get_mirrors($rating_id) {
+    public function get_mirrors(int $rating_id): array {
         $fields = self::RATING_FIELDS;
         $mirrors = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} 
@@ -669,7 +669,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param array $ids Array of rating IDs
      * @return array Array of rating objects indexed by ID
      */
-    public function get_ratings_by_ids($ids) {
+    public function get_ratings_by_ids(array $ids): array {
         if (empty($ids)) {
             return array();
         }
@@ -753,7 +753,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @return array Array of child rating objects
      * @since 1.9.0
      */
-    public function get_child_ratings($parent_id) {
+    public function get_child_ratings(int $parent_id): array {
         $parent_id = absint($parent_id);
         
         if (!$parent_id) {
@@ -790,7 +790,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string $type        Filter type: 'all', 'parents', 'mirrorable' (default 'all')
      * @return array Array of rating objects matching the search
      */
-    public function search_ratings($search_term, $limit = 20, $type = 'all') {
+    public function search_ratings(string $search_term, int $limit = 20, string $type = 'all'): array {
         $search_term = sanitize_text_field($search_term);
         $limit = absint($limit);
         
@@ -893,7 +893,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If delete fails or transaction fails
      * @throws Shuriken_Validation_Exception If no rating IDs provided
      */
-    public function delete_ratings($rating_ids) {
+    public function delete_ratings(array $rating_ids): int {
         if (empty($rating_ids)) {
             throw Shuriken_Validation_Exception::required_field('rating_ids');
         }
@@ -946,7 +946,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string|null $user_ip IP address for guest votes
      * @return object|null Vote object or null if not found
      */
-    public function get_user_vote($rating_id, $user_id, $user_ip = null) {
+    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null): ?object {
         if ($user_id > 0) {
             return $this->wpdb->get_row($this->wpdb->prepare(
                 "SELECT * FROM {$this->votes_table} 
@@ -975,7 +975,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If insert fails or transaction fails
      * @throws Shuriken_Validation_Exception If rating_value is invalid
      */
-    public function create_vote($rating_id, $rating_value, $user_id = 0, $user_ip = null) {
+    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null): bool {
         // Validate rating value against normalized scale (1-5 for stars/numeric, 0/1 for binary types)
         if ($rating_value < 0 || $rating_value > 5) {
             throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 0, 5);
@@ -1043,7 +1043,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If update fails or transaction fails
      * @throws Shuriken_Validation_Exception If new_value is invalid
      */
-    public function update_vote($vote_id, $rating_id, $old_value, $new_value) {
+    public function update_vote(int $vote_id, int $rating_id, float|int $old_value, float|int $new_value): bool {
         // Validate new rating value against normalized scale
         if ($new_value < 0 || $new_value > 5) {
             throw Shuriken_Validation_Exception::out_of_range('new_value', $new_value, 0, 5);
@@ -1108,7 +1108,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string|null $user_ip   User IP address (for guests).
      * @return string|null Datetime string or null if no vote found.
      */
-    public function get_last_vote_time($rating_id, $user_id, $user_ip = null) {
+    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null): ?string {
         if ($user_id > 0) {
             return $this->wpdb->get_var($this->wpdb->prepare(
                 "SELECT date_modified FROM {$this->votes_table} 
@@ -1136,7 +1136,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string      $since   Datetime string (Y-m-d H:i:s format).
      * @return int Number of votes since the given time.
      */
-    public function count_votes_since($user_id, $user_ip, $since) {
+    public function count_votes_since(int $user_id, ?string $user_ip, string $since): int {
         if ($user_id > 0) {
             return (int) $this->wpdb->get_var($this->wpdb->prepare(
                 "SELECT COUNT(*) FROM {$this->votes_table} 
@@ -1164,7 +1164,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int         $window_seconds Time window in seconds.
      * @return string|null Datetime string or null if no votes in window.
      */
-    public function get_oldest_vote_in_window($user_id, $user_ip, $window_seconds) {
+    public function get_oldest_vote_in_window(int $user_id, ?string $user_ip, int $window_seconds): ?string {
         $since = gmdate('Y-m-d H:i:s', strtotime(current_time('mysql')) - $window_seconds);
 
         if ($user_id > 0) {
@@ -1195,7 +1195,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return bool True on success, false on failure
      */
-    public function create_tables() {
+    public function create_tables(): bool {
         $charset_collate = $this->wpdb->get_charset_collate();
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -1247,7 +1247,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return bool True if both tables exist
      */
-    public function tables_exist() {
+    public function tables_exist(): bool {
         $ratings_exists = $this->wpdb->get_var("SHOW TABLES LIKE '{$this->ratings_table}'") === $this->ratings_table;
         $votes_exists = $this->wpdb->get_var("SHOW TABLES LIKE '{$this->votes_table}'") === $this->votes_table;
 
@@ -1260,7 +1260,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param string $current_version Current DB version
      * @return bool True on success
      */
-    public function run_migrations($current_version) {
+    public function run_migrations(string $current_version): bool {
         if (!$this->tables_exist()) {
             return false;
         }
@@ -1339,7 +1339,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      *
      * @return array Array of rating objects
      */
-    public function get_ratings_for_export() {
+    public function get_ratings_for_export(): array {
         return $this->wpdb->get_results(
             "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, date_created,
                     ROUND(total_rating / NULLIF(total_votes, 0), 2) as average_rating
@@ -1354,7 +1354,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_id Rating ID
      * @return array Array of vote objects with user info
      */
-    public function get_votes_for_export($rating_id) {
+    public function get_votes_for_export(int $rating_id): array {
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT v.id, v.rating_value, v.user_id, v.user_ip, v.date_created, 
                     u.display_name, u.user_email

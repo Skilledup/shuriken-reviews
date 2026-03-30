@@ -25,17 +25,17 @@ class Shuriken_Admin {
     /**
      * @var Shuriken_Admin Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * @var Shuriken_Analytics_Interface Analytics instance
      */
-    private $analytics;
+    private Shuriken_Analytics_Interface $analytics;
 
     /**
      * Constructor
@@ -43,7 +43,7 @@ class Shuriken_Admin {
      * @param Shuriken_Database_Interface|null  $db        Database instance (optional, for dependency injection).
      * @param Shuriken_Analytics_Interface|null $analytics Analytics instance (optional, for dependency injection).
      */
-    public function __construct($db = null, $analytics = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null, ?Shuriken_Analytics_Interface $analytics = null) {
         $this->db = $db ?: shuriken_db();
         $this->analytics = $analytics ?: shuriken_analytics();
         
@@ -64,7 +64,7 @@ class Shuriken_Admin {
      *
      * @return Shuriken_Admin
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self(shuriken_db(), shuriken_analytics());
         }
@@ -76,7 +76,7 @@ class Shuriken_Admin {
      *
      * @return Shuriken_Database_Interface
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -85,7 +85,7 @@ class Shuriken_Admin {
      *
      * @return Shuriken_Analytics_Interface
      */
-    public function get_analytics() {
+    public function get_analytics(): Shuriken_Analytics_Interface {
         return $this->analytics;
     }
 
@@ -94,7 +94,7 @@ class Shuriken_Admin {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -104,7 +104,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.1.0
      */
-    public function register_menu() {
+    public function register_menu(): void {
         add_menu_page(
             __('Shuriken Reviews', 'shuriken-reviews'),
             __('Shuriken Reviews', 'shuriken-reviews'),
@@ -195,7 +195,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.8.0
      */
-    public function ratings_screen_options() {
+    public function ratings_screen_options(): void {
         $screen = get_current_screen();
         add_filter("manage_{$screen->id}_columns", array($this, 'get_ratings_columns'));
 
@@ -214,7 +214,7 @@ class Shuriken_Admin {
      * @return array
      * @since 1.8.0
      */
-    public function get_ratings_columns() {
+    public function get_ratings_columns(): array {
         return array(
             'type'      => __('Type', 'shuriken-reviews'),
             'shortcode' => __('Shortcode', 'shuriken-reviews'),
@@ -231,7 +231,7 @@ class Shuriken_Admin {
      * @return mixed
      * @since 1.8.0
      */
-    public function save_screen_options($screen_option, $option, $value) {
+    public function save_screen_options(mixed $screen_option, string $option, int $value): mixed {
         if ($option === 'shuriken_ratings_per_page') {
             return absint($value);
         }
@@ -246,7 +246,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.5
      */
-    public function handle_rating_forms() {
+    public function handle_rating_forms(): void {
         // Only process on our admin page
         if (!isset($_GET['page']) || $_GET['page'] !== 'shuriken-reviews') {
             return;
@@ -309,7 +309,7 @@ class Shuriken_Admin {
      * @return bool
      * @since 1.7.5
      */
-    private function is_plugin_page($page_slugs) {
+    private function is_plugin_page(string|array $page_slugs): bool {
         if (!isset($_GET['page'])) {
             return false;
         }
@@ -330,7 +330,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.7.5
      */
-    public function enqueue_ratings_scripts($hook) {
+    public function enqueue_ratings_scripts(string $hook): void {
         // Check using page slug - works regardless of language/locale
         if (!$this->is_plugin_page('shuriken-reviews')) {
             return;
@@ -372,7 +372,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.0
      */
-    public function enqueue_analytics_scripts($hook) {
+    public function enqueue_analytics_scripts(string $hook): void {
         // Check using page slug - works regardless of language/locale
         $allowed_pages = array(
             'shuriken-reviews-analytics',
@@ -418,7 +418,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.5.8
      */
-    public function enqueue_about_scripts($hook) {
+    public function enqueue_about_scripts(string $hook): void {
         // Check using page slug - works regardless of language/locale
         if (!$this->is_plugin_page('shuriken-reviews-about')) {
             return;
@@ -439,7 +439,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.10.0
      */
-    public function enqueue_settings_scripts($hook) {
+    public function enqueue_settings_scripts(string $hook): void {
         // Check using page slug - works regardless of language/locale
         if (!$this->is_plugin_page('shuriken-reviews-settings')) {
             return;
@@ -473,7 +473,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.1.5
      */
-    public function render_ratings_page() {
+    public function render_ratings_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/ratings.php';
     }
 
@@ -483,7 +483,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.1.5
      */
-    public function render_comments_page() {
+    public function render_comments_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/comments.php';
     }
 
@@ -493,7 +493,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.2.0
      */
-    public function render_settings_page() {
+    public function render_settings_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/settings.php';
     }
 
@@ -503,7 +503,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.0
      */
-    public function render_analytics_page() {
+    public function render_analytics_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/analytics.php';
     }
 
@@ -513,7 +513,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.0
      */
-    public function render_item_stats_page() {
+    public function render_item_stats_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/item-stats.php';
     }
 
@@ -523,7 +523,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.9.1
      */
-    public function render_voter_activity_page() {
+    public function render_voter_activity_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/voter-activity.php';
     }
 
@@ -533,7 +533,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.5.8
      */
-    public function render_about_page() {
+    public function render_about_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/about.php';
     }
 
@@ -547,7 +547,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.0
      */
-    public function export_ratings() {
+    public function export_ratings(): void {
         // Check nonce and permissions
         if (!isset($_POST['shuriken_export_nonce']) || 
             !wp_verify_nonce($_POST['shuriken_export_nonce'], 'shuriken_export_data')) {
@@ -607,7 +607,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.3.0
      */
-    public function export_item_votes() {
+    public function export_item_votes(): void {
         // Check nonce and permissions
         if (!isset($_POST['shuriken_export_item_nonce']) || 
             !wp_verify_nonce($_POST['shuriken_export_item_nonce'], 'shuriken_export_item_votes')) {
@@ -685,7 +685,7 @@ class Shuriken_Admin {
      * @return void
      * @since 1.9.1
      */
-    public function export_voter_votes() {
+    public function export_voter_votes(): void {
         // Check nonce and permissions
         if (!isset($_POST['shuriken_export_voter_nonce']) || 
             !wp_verify_nonce($_POST['shuriken_export_voter_nonce'], 'shuriken_export_voter_votes')) {
@@ -762,7 +762,7 @@ class Shuriken_Admin {
  *
  * @return Shuriken_Admin
  */
-function shuriken_admin() {
+function shuriken_admin(): Shuriken_Admin {
     return Shuriken_Admin::get_instance();
 }
 

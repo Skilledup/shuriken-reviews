@@ -28,14 +28,14 @@ interface Shuriken_Analytics_Interface {
      *
      * @return array Array with total_ratings, total_votes, average_rating, etc.
      */
-    public function get_overall_stats();
+    public function get_overall_stats(): object;
 
     /**
      * Get rating type counts
      *
      * @return array Array with counts for different rating types.
      */
-    public function get_rating_type_counts();
+    public function get_rating_type_counts(): object;
 
     /**
      * Get vote counts for a date range
@@ -43,7 +43,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return int Number of votes.
      */
-    public function get_vote_counts($date_range = 'all');
+    public function get_vote_counts(string|int|array $date_range = 'all'): object;
 
     /**
      * Get vote change percentage
@@ -51,7 +51,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return float Percentage change.
      */
-    public function get_vote_change_percent($date_range);
+    public function get_vote_change_percent(string|int|array $date_range): ?float;
 
     /**
      * Get top rated items
@@ -62,7 +62,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range  Date range identifier.
      * @return array Array of rating objects.
      */
-    public function get_top_rated($limit = 10, $min_votes = 1, $min_average = 3.0, $date_range = 'all');
+    public function get_top_rated(int $limit = 10, int $min_votes = 1, float $min_average = 3.0, string|int|array $date_range = 'all'): array;
 
     /**
      * Get most voted items
@@ -71,7 +71,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return array Array of rating objects.
      */
-    public function get_most_voted($limit = 10, $date_range = 'all');
+    public function get_most_voted(int $limit = 10, string|int|array $date_range = 'all'): array;
 
     /**
      * Get low performing items
@@ -82,7 +82,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range  Date range identifier.
      * @return array Array of rating objects.
      */
-    public function get_low_performers($limit = 10, $min_votes = 1, $max_average = 3.0, $date_range = 'all');
+    public function get_low_performers(int $limit = 10, int $min_votes = 1, float $max_average = 3.0, string|int|array $date_range = 'all'): array;
 
     /**
      * Get rating distribution
@@ -91,7 +91,7 @@ interface Shuriken_Analytics_Interface {
      * @param int|null $rating_id  Optional rating ID to filter by.
      * @return array Array with counts for each star rating (1-5).
      */
-    public function get_rating_distribution($date_range = 'all', $rating_id = null);
+    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null): array;
 
     /**
      * Get votes over time
@@ -100,7 +100,7 @@ interface Shuriken_Analytics_Interface {
      * @param int|null $rating_id  Optional rating ID to filter by.
      * @return array Array of date => count pairs.
      */
-    public function get_votes_over_time($date_range = 30, $rating_id = null);
+    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null): array;
 
     /**
      * Get recent votes
@@ -110,7 +110,7 @@ interface Shuriken_Analytics_Interface {
      * @param string   $date_range Date range identifier.
      * @return array Array of vote objects.
      */
-    public function get_recent_votes($limit = 10, $rating_id = null, $date_range = 'all');
+    public function get_recent_votes(int $limit = 10, ?int $rating_id = null, string|int|array $date_range = 'all'): array;
 
     /**
      * Get a single rating
@@ -118,7 +118,7 @@ interface Shuriken_Analytics_Interface {
      * @param int $rating_id Rating ID.
      * @return object|null Rating object or null if not found.
      */
-    public function get_rating($rating_id);
+    public function get_rating(int $rating_id): ?object;
 
     /**
      * Get rating statistics
@@ -127,7 +127,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return array Array with statistics.
      */
-    public function get_rating_stats($rating_id, $date_range = 'all');
+    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all'): ?object;
 
     /**
      * Get paginated votes for a rating
@@ -139,7 +139,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $view   For parent ratings: 'direct', 'subs', or 'total'.
      * @return array Array with 'votes', 'total', and 'total_pages' keys.
      */
-    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20, $date_range = 'all', $view = 'direct');
+    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct'): object;
 
     /**
      * Get chart data for visualization
@@ -148,7 +148,7 @@ interface Shuriken_Analytics_Interface {
      * @param int|null $rating_id  Optional rating ID to filter by.
      * @return array Array with chart data.
      */
-    public function get_chart_data($date_range = 30, $rating_id = null);
+    public function get_chart_data(string|int|array $date_range = 30, ?int $rating_id = null): array;
 
     /**
      * Build date condition for SQL queries
@@ -157,7 +157,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $column     Column name for date comparison.
      * @return string SQL WHERE clause condition.
      */
-    public function build_date_condition($date_range, $column = 'date_created');
+    public function build_date_condition(string|int|array $date_range, string $column = 'date_created'): string;
 
     /**
      * Parse date range parameters
@@ -165,7 +165,7 @@ interface Shuriken_Analytics_Interface {
      * @param array $params Request parameters.
      * @return string Date range identifier.
      */
-    public function parse_date_range_params($params);
+    public function parse_date_range_params(array $params): string|array;
 
     /**
      * Get date range label
@@ -173,7 +173,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return string Human-readable label.
      */
-    public function get_date_range_label($date_range);
+    public function get_date_range_label(string|int|array $date_range): string;
 
     /**
      * Format time ago string
@@ -181,7 +181,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $mysql_date MySQL datetime string.
      * @return string Human-readable time ago string.
      */
-    public function format_time_ago($mysql_date);
+    public function format_time_ago(string $mysql_date): string;
 
     /**
      * Format date string
@@ -190,6 +190,6 @@ interface Shuriken_Analytics_Interface {
      * @param bool   $include_time Whether to include time.
      * @return string Formatted date string.
      */
-    public function format_date($mysql_date, $include_time = true);
+    public function format_date(string $mysql_date, bool $include_time = true): string;
 }
 

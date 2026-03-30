@@ -25,31 +25,31 @@ if (!defined('ABSPATH')) {
 class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
     /**
-     * @var wpdb WordPress database instance
+     * @var \wpdb WordPress database instance
      */
-    private $wpdb;
+    private \wpdb $wpdb;
 
     /**
      * @var string Ratings table name
      */
-    private $ratings_table;
+    private string $ratings_table;
 
     /**
      * @var string Votes table name
      */
-    private $votes_table;
+    private string $votes_table;
 
     /**
-     * @var Shuriken_Database Database instance
+     * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Constructor
      *
      * @param Shuriken_Database_Interface|null $db Optional database instance (for dependency injection).
      */
-    public function __construct($db = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null) {
         // Use provided database or get from container
         $this->db = $db ?: shuriken_db();
         $this->wpdb = $this->db->get_wpdb();
@@ -63,7 +63,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $rating_type Rating type identifier
      * @return bool
      */
-    private function is_binary_type($rating_type) {
+    private function is_binary_type(string $rating_type): bool {
         return in_array($rating_type, array('like_dislike', 'approval'), true);
     }
 
@@ -77,7 +77,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Rating scale
      * @return int The constant C where inverted_value = C - original_value
      */
-    private function get_inversion_constant($rating_type, $scale) {
+    private function get_inversion_constant(string $rating_type, int $scale): int {
         return $this->is_binary_type($rating_type) ? (int) $scale : ((int) $scale + 1);
     }
 
@@ -91,7 +91,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Rating scale
      * @return array Empty distribution array
      */
-    private function build_empty_distribution($rating_type, $scale) {
+    private function build_empty_distribution(string $rating_type, int $scale): array {
         if ($this->is_binary_type($rating_type)) {
             return array(0 => 0, 1 => 0);
         }
@@ -103,7 +103,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @return Shuriken_Analytics
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         static $instance = null;
         if (null === $instance) {
             $instance = new self();
@@ -116,7 +116,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @return Shuriken_Database
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -132,7 +132,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $column Column name for date comparison (can include table alias like 'v.date_created')
      * @return string SQL condition string
      */
-    public function build_date_condition($date_range, $column = 'date_created') {
+    public function build_date_condition(string|int|array $date_range, string $column = 'date_created'): string {
         // No filter for 'all' or empty
         if ($date_range === 'all' || empty($date_range)) {
             return '';
@@ -186,7 +186,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param array $params Request parameters (typically $_GET)
      * @return string|array Date range value ('all', number of days, or array with start/end)
      */
-    public function parse_date_range_params($params) {
+    public function parse_date_range_params(array $params): string|array {
         $range_type = isset($params['range_type']) ? sanitize_text_field($params['range_type']) : 'preset';
         
         if ($range_type === 'custom') {
@@ -222,7 +222,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|array $date_range Date range value
      * @return string Human-readable label
      */
-    public function get_date_range_label($date_range) {
+    public function get_date_range_label(string|int|array $date_range): string {
         if (is_array($date_range)) {
             $start = !empty($date_range['start']) ? date_i18n(get_option('date_format'), strtotime($date_range['start'])) : '';
             $end = !empty($date_range['end']) ? date_i18n(get_option('date_format'), strtotime($date_range['end'])) : '';
@@ -266,7 +266,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $total_rating Total rating sum (needed for binary types)
      * @return string Formatted display string
      */
-    public function format_average_display($average, $rating_type = 'stars', $scale = 5, $total_votes = 0, $total_rating = 0) {
+    public function format_average_display(float $average, string $rating_type = 'stars', int $scale = 5, int $total_votes = 0, int $total_rating = 0): string {
         if ($rating_type === 'like_dislike') {
             $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
             return $pct . '% ' . __('positive', 'shuriken-reviews');
@@ -291,7 +291,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Rating scale
      * @return string HTML display string
      */
-    public function format_vote_display($rating_value, $rating_type = 'stars', $scale = 5) {
+    public function format_vote_display(int $rating_value, string $rating_type = 'stars', int $scale = 5): string {
         $value = intval($rating_value);
         if ($rating_type === 'like_dislike') {
             return $value === 1 ? '👍' : '👎';
@@ -311,7 +311,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @return object Object containing total_ratings, total_votes, overall_average, unique_voters
      */
-    public function get_overall_stats() {
+    public function get_overall_stats(): object {
         $stats = new stdClass();
         
         // Count all ratings
@@ -347,7 +347,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @return object Object with standalone, parent, sub, display_only, mirror counts
      */
-    public function get_rating_type_counts() {
+    public function get_rating_type_counts(): object {
         $counts = new stdClass();
         
         // Standalone: no parent_id, no mirror_of, and not a parent itself
@@ -397,7 +397,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int $date_range Number of days or 'all'
      * @return object Object containing period_votes, member_votes, guest_votes
      */
-    public function get_vote_counts($date_range = 'all') {
+    public function get_vote_counts(string|int|array $date_range = 'all'): object {
         $date_condition = $this->build_date_condition($date_range);
         
         $counts = new stdClass();
@@ -426,7 +426,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range (number of days or array with start/end)
      * @return float|null Percentage change or null if not applicable
      */
-    public function get_vote_change_percent($date_range) {
+    public function get_vote_change_percent(string|int|array $date_range): ?float {
         // For 'all' or empty, no comparison possible
         if ($date_range === 'all' || empty($date_range)) {
             return null;
@@ -504,7 +504,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of rating objects
      */
-    public function get_top_rated($limit = 10, $min_votes = 1, $min_average = 3.0, $date_range = 'all') {
+    public function get_top_rated(int $limit = 10, int $min_votes = 1, float $min_average = 3.0, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
         // If no date filter, use the cached totals from ratings table (faster)
@@ -570,7 +570,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of rating objects
      */
-    public function get_most_voted($limit = 10, $date_range = 'all') {
+    public function get_most_voted(int $limit = 10, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
         // If no date filter, use the cached totals from ratings table (faster)
@@ -632,7 +632,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of rating objects
      */
-    public function get_low_performers($limit = 10, $min_votes = 1, $max_average = 3.0, $date_range = 'all') {
+    public function get_low_performers(int $limit = 10, int $min_votes = 1, float $max_average = 3.0, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
         // If no date filter, use the cached totals from ratings table (faster)
@@ -697,7 +697,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $type Type filter: 'all', 'standalone', 'parent', 'sub'
      * @return string SQL condition string
      */
-    private function build_type_condition($type) {
+    private function build_type_condition(string $type): string {
         switch ($type) {
             case 'standalone':
                 return "AND parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = {$this->ratings_table}.id)";
@@ -716,7 +716,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $limit Maximum number of items to return
      * @return array Array of parent rating objects with sub-rating stats
      */
-    public function get_parent_ratings_with_stats($limit = 10) {
+    public function get_parent_ratings_with_stats(int $limit = 10): array {
         $parents = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DISTINCT p.id, p.name, p.total_votes, p.total_rating, p.display_only, p.rating_type, p.scale,
                     ROUND(p.total_rating / NULLIF(p.total_votes, 0), 1) as average,
@@ -739,7 +739,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $parent_id Parent rating ID
      * @return array Array of sub-rating objects with contribution data
      */
-    public function get_sub_ratings_contribution($parent_id) {
+    public function get_sub_ratings_contribution(int $parent_id): array {
         $parent = $this->db->get_rating($parent_id);
         if (!$parent || $parent->total_votes == 0) {
             return array();
@@ -781,7 +781,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $limit Maximum number of items to return
      * @return array Array of mirror rating objects
      */
-    public function get_mirror_ratings_with_originals($limit = 10) {
+    public function get_mirror_ratings_with_originals(int $limit = 10): array {
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT m.id, m.name as mirror_name, 
                     o.id as original_id, o.name as original_name, 
@@ -801,7 +801,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $limit Maximum number of items to return
      * @return array Array of original rating objects with mirror count
      */
-    public function get_mirrored_ratings($limit = 10) {
+    public function get_mirrored_ratings(int $limit = 10): array {
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.total_votes, r.total_rating, r.rating_type, r.scale,
                     ROUND(r.total_rating / NULLIF(r.total_votes, 0), 1) as average,
@@ -824,7 +824,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null $rating_id Optional specific rating ID
      * @return array Associative array with vote value keys and counts
      */
-    public function get_rating_distribution($date_range = 'all', $rating_id = null) {
+    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
 
@@ -884,7 +884,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null $rating_id Optional specific rating ID
      * @return array Array of objects with vote_date and vote_count
      */
-    public function get_votes_over_time($date_range = 30, $rating_id = null) {
+    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null): array {
         $date_condition = $this->build_date_condition($date_range);
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND rating_id = %d", $rating_id) : '';
         
@@ -905,7 +905,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of vote objects with rating info
      */
-    public function get_recent_votes($limit = 10, $rating_id = null, $date_range = 'all') {
+    public function get_recent_votes(int $limit = 10, ?int $rating_id = null, string|int|array $date_range = 'all'): array {
         $rating_condition = $rating_id ? $this->wpdb->prepare("AND v.rating_id = %d", $rating_id) : '';
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
@@ -928,7 +928,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $rating_id Rating ID
      * @return object|null Rating object with calculated stats or null
      */
-    public function get_rating($rating_id) {
+    public function get_rating(int $rating_id): ?object {
         return $this->db->get_rating($rating_id);
     }
 
@@ -939,7 +939,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return object|null Object with comprehensive stats or null
      */
-    public function get_rating_stats($rating_id, $date_range = 'all') {
+    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all'): ?object {
         $rating = $this->get_rating($rating_id);
         if (!$rating) {
             return null;
@@ -1013,7 +1013,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $rating_id Parent rating ID
      * @return object|null Object with direct, subs, and total stats or null
      */
-    public function get_parent_rating_stats_breakdown($rating_id, $date_range = 'all') {
+    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all'): ?object {
         $rating = $this->get_rating($rating_id);
         if (!$rating) {
             return null;
@@ -1231,7 +1231,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param mixed $date_range Date range (days, 'all', or array with 'start'/'end')
      * @return array Array of vote date/count objects
      */
-    private function get_votes_over_time_for_ids($rating_ids, $date_range = 30) {
+    private function get_votes_over_time_for_ids(array $rating_ids, string|int|array $date_range = 30): array {
         if (empty($rating_ids)) {
             return array();
         }
@@ -1258,7 +1258,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $view For parent ratings: 'direct', 'subs', or 'total'
      * @return object Object with votes array, total_count, total_pages, current_page
      */
-    public function get_rating_votes_paginated($rating_id, $page = 1, $per_page = 20, $date_range = 'all', $view = 'direct') {
+    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct'): object {
         $offset = ($page - 1) * $per_page;
         
         $result = new stdClass();
@@ -1321,7 +1321,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $mysql_date MySQL datetime string
      * @return string Formatted "X time ago" string
      */
-    public function format_time_ago($mysql_date) {
+    public function format_time_ago(string $mysql_date): string {
         if (empty($mysql_date)) {
             return '-';
         }
@@ -1336,7 +1336,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param bool $include_time Whether to include time
      * @return string Formatted date string
      */
-    public function format_date($mysql_date, $include_time = true) {
+    public function format_date(string $mysql_date, bool $include_time = true): string {
         if (empty($mysql_date)) {
             return '-';
         }
@@ -1354,7 +1354,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null $rating_id Optional specific rating ID
      * @return array Array with distribution, votes_over_time, user_types
      */
-    public function get_chart_data($date_range = 30, $rating_id = null) {
+    public function get_chart_data(string|int|array $date_range = 30, ?int $rating_id = null): array {
         $vote_counts = $rating_id ? null : $this->get_vote_counts($date_range);
         
         return array(
@@ -1373,7 +1373,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $rating_id Rating ID to check
      * @return bool True if rating has sub-ratings
      */
-    public function has_sub_ratings($rating_id) {
+    public function has_sub_ratings(int $rating_id): bool {
         $count = (int) $this->wpdb->get_var($this->wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id = %d",
             $rating_id
@@ -1395,7 +1395,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|array $date_range Date range filter
      * @return object Object with votes array, total_count, total_pages, current_page
      */
-    public function get_voter_votes_paginated($user_id, $user_ip = null, $page = 1, $per_page = 20, $date_range = 'all') {
+    public function get_voter_votes_paginated(int $user_id, ?string $user_ip = null, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all'): object {
         $offset = ($page - 1) * $per_page;
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
@@ -1441,7 +1441,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|array $date_range Date range filter
      * @return object Object with voting statistics
      */
-    public function get_voter_stats($user_id, $user_ip = null, $date_range = 'all') {
+    public function get_voter_stats(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): object {
         $date_condition = $this->build_date_condition($date_range);
         
         // Build voter condition
@@ -1506,7 +1506,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|array $date_range Date range filter
      * @return array Distribution array with keys 1-5
      */
-    public function get_voter_rating_distribution($user_id, $user_ip = null, $date_range = 'all') {
+    public function get_voter_rating_distribution(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
         // Build voter condition
@@ -1557,7 +1557,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|array $date_range Date range filter
      * @return array Array of objects with vote_date and vote_count
      */
-    public function get_voter_activity_over_time($user_id, $user_ip = null, $date_range = 30) {
+    public function get_voter_activity_over_time(int $user_id, ?string $user_ip = null, string|int|array $date_range = 30): array {
         $date_condition = $this->build_date_condition($date_range);
         
         // Build voter condition
@@ -1582,7 +1582,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $user_id WordPress user ID
      * @return object|null User object with display_name, email, etc. or null
      */
-    public function get_user_info($user_id) {
+    public function get_user_info(int $user_id): ?object {
         if ($user_id <= 0) {
             return null;
         }
@@ -1611,7 +1611,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|null $user_ip IP address for guest identification
      * @return array Array of vote objects with rating info
      */
-    public function get_voter_votes_for_export($user_id, $user_ip = null) {
+    public function get_voter_votes_for_export(int $user_id, ?string $user_ip = null): array {
         // Build voter condition
         if ($user_id > 0) {
             $voter_condition = $this->wpdb->prepare("v.user_id = %d", $user_id);

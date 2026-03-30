@@ -32,7 +32,7 @@ class Shuriken_Exception_Handler {
      * @param bool                         $die       Whether to die after sending response.
      * @return void
      */
-    public static function handle_ajax_exception(Shuriken_Exception_Interface $exception, $die = true) {
+    public static function handle_ajax_exception(Shuriken_Exception_Interface $exception, bool $die = true): void {
         // Log the exception
         $exception->log('AJAX Request');
 
@@ -55,7 +55,7 @@ class Shuriken_Exception_Handler {
      * @param Shuriken_Exception_Interface $exception The exception to handle.
      * @return WP_Error
      */
-    public static function handle_rest_exception(Shuriken_Exception_Interface $exception) {
+    public static function handle_rest_exception(Shuriken_Exception_Interface $exception): \WP_Error {
         // Log the exception
         $exception->log('REST API Request');
 
@@ -78,7 +78,7 @@ class Shuriken_Exception_Handler {
      * @param string                       $redirect_url Optional URL to redirect to.
      * @return void
      */
-    public static function handle_admin_exception(Shuriken_Exception_Interface $exception, $redirect_url = '') {
+    public static function handle_admin_exception(Shuriken_Exception_Interface $exception, string $redirect_url = ''): void {
         // Log the exception
         $exception->log('Admin Page');
 
@@ -105,7 +105,7 @@ class Shuriken_Exception_Handler {
      * @param Shuriken_Exception_Interface $exception The exception.
      * @return string User-friendly message.
      */
-    protected static function get_user_message(Shuriken_Exception_Interface $exception) {
+    protected static function get_user_message(Shuriken_Exception_Interface $exception): string {
         // Return the exception message directly
         // Could be customized based on exception type
         $message = $exception->getMessage();
@@ -164,7 +164,7 @@ class Shuriken_Exception_Handler {
      * @param Shuriken_Exception_Interface $exception The exception.
      * @return int HTTP status code.
      */
-    protected static function get_http_status_code(Shuriken_Exception_Interface $exception) {
+    protected static function get_http_status_code(Shuriken_Exception_Interface $exception): int {
         if ($exception instanceof Shuriken_Not_Found_Exception) {
             return 404;
         }
@@ -204,7 +204,7 @@ class Shuriken_Exception_Handler {
      * @param mixed    $default  Default value to return on exception.
      * @return mixed Result of callback or default value on exception.
      */
-    public static function safe_execute($callback, $context = '', $default = null) {
+    public static function safe_execute(callable $callback, string $context = '', mixed $default = null): mixed {
         try {
             return call_user_func($callback);
         } catch (Shuriken_Exception_Interface $e) {
@@ -227,7 +227,7 @@ class Shuriken_Exception_Handler {
      * @throws Shuriken_Database_Exception If result is false.
      * @return mixed The result if not false.
      */
-    public static function assert_not_false($result, $operation, $message = '') {
+    public static function assert_not_false(mixed $result, string $operation, string $message = ''): mixed {
         if ($result === false) {
             if (empty($message)) {
                 $message = sprintf(__('Operation failed: %s', 'shuriken-reviews'), $operation);

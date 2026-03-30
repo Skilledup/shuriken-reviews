@@ -26,7 +26,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
     /**
      * @var string Required capability or permission
      */
-    protected $required_permission;
+    protected string $required_permission;
 
     /**
      * Constructor
@@ -35,7 +35,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      * @param string         $required_permission Required permission.
      * @param Throwable|null $previous            Previous exception.
      */
-    public function __construct($message = '', $required_permission = '', $previous = null) {
+    public function __construct(string $message = '', string $required_permission = '', ?\Throwable $previous = null) {
         $this->required_permission = $required_permission;
         $error_code = 'permission_denied';
         parent::__construct($message, $error_code, 403, $previous);
@@ -46,7 +46,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      *
      * @return string
      */
-    public function get_required_permission() {
+    public function get_required_permission(): string {
         return $this->required_permission;
     }
 
@@ -56,7 +56,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      * @param string $action Action being attempted.
      * @return self
      */
-    public static function unauthorized($action = '') {
+    public static function unauthorized(string $action = ''): self {
         $message = __('You do not have permission to perform this action', 'shuriken-reviews');
         if (!empty($action)) {
             $message = sprintf(__('You do not have permission to %s', 'shuriken-reviews'), $action);
@@ -69,7 +69,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      *
      * @return self
      */
-    public static function guest_not_allowed() {
+    public static function guest_not_allowed(): self {
         return new self(
             __('You must be logged in to perform this action', 'shuriken-reviews'),
             'login_required'
@@ -82,7 +82,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      * @param string $capability Required capability.
      * @return self
      */
-    public static function missing_capability($capability) {
+    public static function missing_capability(string $capability): self {
         return new self(
             sprintf(__('Required capability: %s', 'shuriken-reviews'), $capability),
             $capability
@@ -95,7 +95,7 @@ class Shuriken_Permission_Exception extends Shuriken_Exception {
      * @param string $reason Reason voting is not allowed.
      * @return self
      */
-    public static function voting_not_allowed($reason = '') {
+    public static function voting_not_allowed(string $reason = ''): self {
         $message = __('You are not allowed to vote', 'shuriken-reviews');
         if (!empty($reason)) {
             $message .= ': ' . $reason;

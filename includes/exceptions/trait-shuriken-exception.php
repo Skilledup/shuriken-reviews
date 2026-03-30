@@ -27,14 +27,14 @@ trait Shuriken_Exception_Trait {
     /**
      * @var string Error code for logging/debugging
      */
-    protected $error_code;
+    protected string $error_code;
 
     /**
      * Get the error code
      *
      * @return string
      */
-    public function get_error_code() {
+    public function get_error_code(): string {
         return $this->error_code;
     }
 
@@ -43,7 +43,7 @@ trait Shuriken_Exception_Trait {
      *
      * @return WP_Error
      */
-    public function to_wp_error() {
+    public function to_wp_error(): WP_Error {
         return new WP_Error($this->error_code, $this->getMessage(), array('exception' => get_class($this)));
     }
 
@@ -53,7 +53,7 @@ trait Shuriken_Exception_Trait {
      * @param string $context Additional context for logging.
      * @return void
      */
-    public function log($context = '') {
+    public function log(string $context = ''): void {
         $message = sprintf(
             '[Shuriken Reviews] %s: %s (Code: %s)',
             get_class($this),

@@ -26,7 +26,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Constructor
@@ -46,7 +46,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @return bool True if vote is allowed.
      * @throws Shuriken_Rate_Limit_Exception If any limit is exceeded.
      */
-    public function can_vote($user_id, $user_ip, $rating_id) {
+    public function can_vote(int $user_id, ?string $user_ip, int $rating_id): bool {
         /**
          * Fires before rate limit check is performed.
          *
@@ -128,7 +128,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param int $user_id User ID (0 for guests).
      * @return array Rate limit settings.
      */
-    public function get_limits($user_id) {
+    public function get_limits(int $user_id): array {
         $is_guest = ($user_id === 0);
 
         $settings = array(
@@ -169,7 +169,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP address (required for guests).
      * @return array Current usage statistics.
      */
-    public function get_usage($user_id, $user_ip) {
+    public function get_usage(int $user_id, ?string $user_ip): array {
         $now = current_time('mysql');
         $hour_ago = gmdate('Y-m-d H:i:s', strtotime($now) - HOUR_IN_SECONDS);
         $day_ago = gmdate('Y-m-d H:i:s', strtotime($now) - DAY_IN_SECONDS);
@@ -188,7 +188,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param int         $rating_id Rating ID.
      * @return int Seconds remaining until user can vote again.
      */
-    public function get_cooldown_remaining($user_id, $user_ip, $rating_id) {
+    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id): int {
         $limits = $this->get_limits($user_id);
         
         if ($limits['cooldown'] <= 0) {
@@ -219,7 +219,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP address.
      * @return bool True if user bypasses rate limiting.
      */
-    public function should_bypass($user_id, $user_ip) {
+    public function should_bypass(int $user_id, ?string $user_ip): bool {
         // Guests never bypass by default
         if ($user_id === 0) {
             $bypass = false;
@@ -248,7 +248,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param int         $retry_after Seconds until limit resets.
      * @return void
      */
-    private function fire_exceeded_action($type, $user_id, $user_ip, $retry_after) {
+    private function fire_exceeded_action(string $type, int $user_id, ?string $user_ip, int $retry_after): void {
         /**
          * Fires when a rate limit is exceeded.
          *
@@ -270,7 +270,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP address.
      * @return int Seconds until reset.
      */
-    private function get_time_until_hourly_reset($user_id, $user_ip) {
+    private function get_time_until_hourly_reset(int $user_id, ?string $user_ip): int {
         $oldest_vote_in_window = $this->db->get_oldest_vote_in_window($user_id, $user_ip, HOUR_IN_SECONDS);
         
         if (!$oldest_vote_in_window) {
@@ -291,7 +291,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP address.
      * @return int Seconds until reset.
      */
-    private function get_time_until_daily_reset($user_id, $user_ip) {
+    private function get_time_until_daily_reset(int $user_id, ?string $user_ip): int {
         $oldest_vote_in_window = $this->db->get_oldest_vote_in_window($user_id, $user_ip, DAY_IN_SECONDS);
         
         if (!$oldest_vote_in_window) {
@@ -311,6 +311,6 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
  *
  * @return Shuriken_Rate_Limiter_Interface
  */
-function shuriken_rate_limiter() {
+function shuriken_rate_limiter(): Shuriken_Rate_Limiter_Interface {
     return shuriken_container()->get('rate_limiter');
 }

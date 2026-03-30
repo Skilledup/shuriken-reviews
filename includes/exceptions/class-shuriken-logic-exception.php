@@ -34,7 +34,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      * @param string         $error_code Error code.
      * @param Throwable|null $previous   Previous exception.
      */
-    public function __construct($message = '', $error_code = 'logic_error', $previous = null) {
+    public function __construct(string $message = '', string $error_code = 'logic_error', ?\Throwable $previous = null) {
         $this->error_code = $error_code;
         parent::__construct($message, 0, $previous);
     }
@@ -44,7 +44,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      *
      * @return self
      */
-    public static function display_only_rating() {
+    public static function display_only_rating(): self {
         return new self(
             __('This rating is display-only and cannot be voted on directly', 'shuriken-reviews'),
             'display_only_rating'
@@ -56,7 +56,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      *
      * @return self
      */
-    public static function circular_reference() {
+    public static function circular_reference(): self {
         return new self(
             __('Cannot create circular reference between ratings', 'shuriken-reviews'),
             'circular_reference'
@@ -68,7 +68,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      *
      * @return self
      */
-    public static function invalid_parent() {
+    public static function invalid_parent(): self {
         return new self(
             __('Cannot set a mirror or display-only rating as parent', 'shuriken-reviews'),
             'invalid_parent'
@@ -80,7 +80,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      *
      * @return self
      */
-    public static function invalid_mirror_target() {
+    public static function invalid_mirror_target(): self {
         return new self(
             __('Cannot mirror a rating that is itself a mirror', 'shuriken-reviews'),
             'invalid_mirror_target'
@@ -92,7 +92,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      *
      * @return self
      */
-    public static function duplicate_vote() {
+    public static function duplicate_vote(): self {
         return new self(
             __('You have already voted on this rating', 'shuriken-reviews'),
             'duplicate_vote'
@@ -105,7 +105,7 @@ class Shuriken_Logic_Exception extends LogicException implements Shuriken_Except
      * @param int $limit Vote limit.
      * @return self
      */
-    public static function vote_limit_reached($limit) {
+    public static function vote_limit_reached(int $limit): self {
         return new self(
             sprintf(__('You have reached your voting limit of %d votes', 'shuriken-reviews'), $limit),
             'vote_limit_reached'

@@ -38,12 +38,12 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
     /**
      * @var string The service that failed
      */
-    protected $service;
+    protected string $service;
 
     /**
      * @var array Additional context about the failure
      */
-    protected $context;
+    protected array $context;
 
     /**
      * Constructor
@@ -53,7 +53,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param array          $context  Additional context.
      * @param Throwable|null $previous Previous exception.
      */
-    public function __construct($message = '', $service = '', $context = array(), $previous = null) {
+    public function __construct(string $message = '', string $service = '', array $context = array(), ?\Throwable $previous = null) {
         $this->service = $service;
         $this->context = $context;
         $error_code = 'integration_' . sanitize_key($service) . '_failed';
@@ -65,7 +65,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      *
      * @return string
      */
-    public function get_service() {
+    public function get_service(): string {
         return $this->service;
     }
 
@@ -74,7 +74,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      *
      * @return array
      */
-    public function get_context() {
+    public function get_context(): array {
         return $this->context;
     }
 
@@ -86,7 +86,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $error      Error message from the request.
      * @return self
      */
-    public static function http_request_failed($url, $status = 0, $error = '') {
+    public static function http_request_failed(string $url, int $status = 0, string $error = ''): self {
         $message = __('External HTTP request failed', 'shuriken-reviews');
         if (!empty($error)) {
             $message .= ': ' . $error;
@@ -105,7 +105,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $error    Error message.
      * @return self
      */
-    public static function api_connection_failed($api_name, $error = '') {
+    public static function api_connection_failed(string $api_name, string $error = ''): self {
         $message = sprintf(__('Failed to connect to %s API', 'shuriken-reviews'), $api_name);
         if (!empty($error)) {
             $message .= ': ' . $error;
@@ -119,7 +119,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $api_name Name of the API.
      * @return self
      */
-    public static function api_auth_failed($api_name) {
+    public static function api_auth_failed(string $api_name): self {
         return new self(
             sprintf(__('Authentication failed for %s API. Please check your credentials.', 'shuriken-reviews'), $api_name),
             $api_name,
@@ -136,7 +136,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $error       Error message.
      * @return self
      */
-    public static function webhook_failed($webhook_url, $error = '') {
+    public static function webhook_failed(string $webhook_url, string $error = ''): self {
         $message = __('Failed to deliver webhook', 'shuriken-reviews');
         if (!empty($error)) {
             $message .= ': ' . $error;
@@ -156,7 +156,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $error     Error message.
      * @return self
      */
-    public static function cache_failed($operation, $error = '') {
+    public static function cache_failed(string $operation, string $error = ''): self {
         $message = sprintf(__('Cache %s operation failed', 'shuriken-reviews'), $operation);
         if (!empty($error)) {
             $message .= ': ' . $error;
@@ -175,7 +175,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $error Error message.
      * @return self
      */
-    public static function email_failed($error = '') {
+    public static function email_failed(string $error = ''): self {
         $message = __('Failed to send email notification', 'shuriken-reviews');
         if (!empty($error)) {
             $message .= ': ' . $error;
@@ -191,7 +191,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $plugin_name Name of the required plugin.
      * @return self
      */
-    public static function plugin_dependency_missing($plugin_name) {
+    public static function plugin_dependency_missing(string $plugin_name): self {
         return new self(
             sprintf(__('Required plugin "%s" is not installed or activated', 'shuriken-reviews'), $plugin_name),
             'plugin',
@@ -209,7 +209,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param string $required_version Required version.
      * @return self
      */
-    public static function plugin_version_incompatible($plugin_name, $current_version, $required_version) {
+    public static function plugin_version_incompatible(string $plugin_name, string $current_version, string $required_version): self {
         return new self(
             sprintf(
                 __('Plugin "%s" version %s is incompatible. Version %s or higher is required.', 'shuriken-reviews'),
@@ -233,7 +233,7 @@ class Shuriken_Integration_Exception extends Shuriken_Exception {
      * @param int    $timeout      Timeout in seconds.
      * @return self
      */
-    public static function service_timeout($service_name, $timeout = 30) {
+    public static function service_timeout(string $service_name, int $timeout = 30): self {
         return new self(
             sprintf(__('%s service request timed out after %d seconds', 'shuriken-reviews'), $service_name, $timeout),
             $service_name,

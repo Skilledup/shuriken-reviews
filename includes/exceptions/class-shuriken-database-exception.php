@@ -30,7 +30,7 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
      * @param string         $operation Database operation that failed.
      * @param Throwable|null $previous Previous exception.
      */
-    public function __construct($message = '', $operation = 'unknown', $previous = null) {
+    public function __construct(string $message = '', string $operation = 'unknown', ?\Throwable $previous = null) {
         $error_code = 'database_' . $operation . '_failed';
         parent::__construct($message, $error_code, 0, $previous);
     }
@@ -41,7 +41,7 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
      * @param string $table Table name.
      * @return self
      */
-    public static function insert_failed($table) {
+    public static function insert_failed(string $table): self {
         return new self(
             sprintf(__('Failed to insert data into %s table', 'shuriken-reviews'), $table),
             'insert'
@@ -55,7 +55,7 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
      * @param int    $id    Record ID.
      * @return self
      */
-    public static function update_failed($table, $id) {
+    public static function update_failed(string $table, int $id): self {
         return new self(
             sprintf(__('Failed to update %s with ID %d', 'shuriken-reviews'), $table, $id),
             'update'
@@ -65,13 +65,13 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
     /**
      * Create exception for delete failure
      *
-     * @param string $table Table name.
-     * @param int    $id    Record ID.
+     * @param string     $table Table name.
+     * @param int|string $id    Record ID.
      * @return self
      */
-    public static function delete_failed($table, $id) {
+    public static function delete_failed(string $table, int|string $id): self {
         return new self(
-            sprintf(__('Failed to delete %s with ID %d', 'shuriken-reviews'), $table, $id),
+            sprintf(__('Failed to delete %s with ID %s', 'shuriken-reviews'), $table, $id),
             'delete'
         );
     }
@@ -82,7 +82,7 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
      * @param string $query Query type.
      * @return self
      */
-    public static function query_failed($query) {
+    public static function query_failed(string $query): self {
         return new self(
             sprintf(__('Database query failed: %s', 'shuriken-reviews'), $query),
             'query'
@@ -94,7 +94,7 @@ class Shuriken_Database_Exception extends Shuriken_Exception {
      *
      * @return self
      */
-    public static function transaction_failed() {
+    public static function transaction_failed(): self {
         return new self(
             __('Database transaction failed and was rolled back', 'shuriken-reviews'),
             'transaction'

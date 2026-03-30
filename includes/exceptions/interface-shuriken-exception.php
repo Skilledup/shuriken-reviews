@@ -29,14 +29,14 @@ interface Shuriken_Exception_Interface extends Throwable {
      *
      * @return string
      */
-    public function get_error_code();
+    public function get_error_code(): string;
 
     /**
      * Convert to WP_Error for WordPress compatibility
      *
      * @return WP_Error
      */
-    public function to_wp_error();
+    public function to_wp_error(): WP_Error;
 
     /**
      * Log the exception
@@ -44,5 +44,5 @@ interface Shuriken_Exception_Interface extends Throwable {
      * @param string $context Additional context for logging.
      * @return void
      */
-    public function log($context = '');
+    public function log(string $context = ''): void;
 }

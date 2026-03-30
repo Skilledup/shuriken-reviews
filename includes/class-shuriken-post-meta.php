@@ -29,14 +29,14 @@ class Shuriken_Post_Meta {
     /**
      * @var Shuriken_Database_Interface
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Constructor
      *
      * @param Shuriken_Database_Interface $db Database instance.
      */
-    public function __construct($db) {
+    public function __construct(Shuriken_Database_Interface $db) {
         $this->db = $db;
 
         // Meta box
@@ -61,7 +61,7 @@ class Shuriken_Post_Meta {
      *
      * @return array
      */
-    private function get_supported_post_types() {
+    private function get_supported_post_types(): array {
         $post_types = get_option('shuriken_meta_box_post_types', array('post', 'page'));
         if (!is_array($post_types)) {
             $post_types = array('post', 'page');
@@ -81,7 +81,7 @@ class Shuriken_Post_Meta {
      *
      * @return string 'before', 'after', or 'disabled'
      */
-    private function get_injection_position() {
+    private function get_injection_position(): string {
         $position = get_option('shuriken_content_injection_position', 'after');
 
         /**
@@ -98,7 +98,7 @@ class Shuriken_Post_Meta {
      *
      * @return void
      */
-    public function register_meta_box() {
+    public function register_meta_box(): void {
         $post_types = $this->get_supported_post_types();
 
         foreach ($post_types as $post_type) {
@@ -119,7 +119,7 @@ class Shuriken_Post_Meta {
      * @param WP_Post $post Current post object.
      * @return void
      */
-    public function render_meta_box($post) {
+    public function render_meta_box(\WP_Post $post): void {
         wp_nonce_field('shuriken_meta_box', 'shuriken_meta_box_nonce');
 
         $linked_ids = $this->get_linked_rating_ids($post->ID);
@@ -166,7 +166,7 @@ class Shuriken_Post_Meta {
      * @param WP_Post $post    Post object.
      * @return void
      */
-    public function save_meta_box($post_id, $post) {
+    public function save_meta_box(int $post_id, \WP_Post $post): void {
         // Verify nonce
         if (!isset($_POST['shuriken_meta_box_nonce']) ||
             !wp_verify_nonce($_POST['shuriken_meta_box_nonce'], 'shuriken_meta_box')) {
@@ -207,7 +207,7 @@ class Shuriken_Post_Meta {
      * @param int $post_id Post ID.
      * @return array Array of rating IDs.
      */
-    public function get_linked_rating_ids($post_id) {
+    public function get_linked_rating_ids(int $post_id): array {
         $ids = get_post_meta($post_id, self::META_KEY, true);
         if (!is_array($ids)) {
             return array();
@@ -221,7 +221,7 @@ class Shuriken_Post_Meta {
      * @param string $content Post content.
      * @return string Modified content.
      */
-    public function inject_ratings($content) {
+    public function inject_ratings(string $content): string {
         // Only on singular views in main query
         if (!is_singular() || !in_the_loop() || !is_main_query()) {
             return $content;
@@ -266,7 +266,7 @@ class Shuriken_Post_Meta {
      *
      * @return void
      */
-    public function output_jsonld() {
+    public function output_jsonld(): void {
         if (!is_singular()) {
             return;
         }
@@ -336,7 +336,7 @@ class Shuriken_Post_Meta {
      *
      * @return void
      */
-    public function register_admin_columns() {
+    public function register_admin_columns(): void {
         $post_types = $this->get_supported_post_types();
 
         foreach ($post_types as $post_type) {
@@ -351,7 +351,7 @@ class Shuriken_Post_Meta {
      * @param array $columns Existing columns.
      * @return array Modified columns.
      */
-    public function add_admin_column($columns) {
+    public function add_admin_column(array $columns): array {
         $columns['shuriken_ratings'] = __('Ratings', 'shuriken-reviews');
         return $columns;
     }
@@ -363,7 +363,7 @@ class Shuriken_Post_Meta {
      * @param int    $post_id     Post ID.
      * @return void
      */
-    public function render_admin_column($column_name, $post_id) {
+    public function render_admin_column(string $column_name, int $post_id): void {
         if ($column_name !== 'shuriken_ratings') {
             return;
         }
@@ -390,7 +390,7 @@ class Shuriken_Post_Meta {
      *
      * @return void
      */
-    public function register_rest_field() {
+    public function register_rest_field(): void {
         $post_types = $this->get_supported_post_types();
 
         foreach ($post_types as $post_type) {

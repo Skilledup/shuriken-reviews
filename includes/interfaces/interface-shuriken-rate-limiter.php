@@ -35,7 +35,7 @@ interface Shuriken_Rate_Limiter_Interface {
      * @return bool True if vote is allowed.
      * @throws Shuriken_Rate_Limit_Exception If any limit is exceeded.
      */
-    public function can_vote($user_id, $user_ip, $rating_id);
+    public function can_vote(int $user_id, ?string $user_ip, int $rating_id): bool;
 
     /**
      * Get the current rate limit settings
@@ -52,7 +52,7 @@ interface Shuriken_Rate_Limiter_Interface {
      *     @type int  $daily_limit  Maximum votes per day.
      * }
      */
-    public function get_limits($user_id);
+    public function get_limits(int $user_id): array;
 
     /**
      * Get current usage for a user/guest
@@ -66,7 +66,7 @@ interface Shuriken_Rate_Limiter_Interface {
      *     @type int $daily_votes  Number of votes in the last 24 hours.
      * }
      */
-    public function get_usage($user_id, $user_ip);
+    public function get_usage(int $user_id, ?string $user_ip): array;
 
     /**
      * Get remaining cooldown time for a specific rating
@@ -76,7 +76,7 @@ interface Shuriken_Rate_Limiter_Interface {
      * @param int         $rating_id Rating ID.
      * @return int Seconds remaining until user can vote again (0 if no cooldown).
      */
-    public function get_cooldown_remaining($user_id, $user_ip, $rating_id);
+    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id): int;
 
     /**
      * Check if a user bypasses rate limiting

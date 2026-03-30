@@ -25,12 +25,12 @@ class Shuriken_Block {
     /**
      * @var Shuriken_Block Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * @var Shuriken_Database_Interface Database instance
      */
-    private $db;
+    private Shuriken_Database_Interface $db;
 
     /**
      * Allowed HTML tags for rating title
@@ -42,7 +42,7 @@ class Shuriken_Block {
      *
      * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
      */
-    public function __construct($db = null) {
+    public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
         add_action('init', array($this, 'register_block'));
@@ -53,7 +53,7 @@ class Shuriken_Block {
      *
      * @return Shuriken_Block
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self(shuriken_db());
         }
@@ -65,7 +65,7 @@ class Shuriken_Block {
      *
      * @return Shuriken_Database_Interface
      */
-    public function get_db() {
+    public function get_db(): Shuriken_Database_Interface {
         return $this->db;
     }
 
@@ -74,7 +74,7 @@ class Shuriken_Block {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -84,7 +84,7 @@ class Shuriken_Block {
      * @return void
      * @since 1.1.9
      */
-    public function register_block() {
+    public function register_block(): void {
         // Register the shared ratings store (used by all blocks)
         wp_register_script(
             'shuriken-ratings-store',
@@ -196,7 +196,7 @@ class Shuriken_Block {
      * @return string Rendered block output.
      * @since 1.1.9
      */
-    public function render_block($attributes, $content, $block) {
+    public function render_block(array $attributes, string $content, \WP_Block $block): string {
         // Ensure attributes is an array
         if (!is_array($attributes)) {
             $attributes = array();
@@ -246,7 +246,7 @@ class Shuriken_Block {
      * @return string Rendered block output.
      * @since 1.8.0
      */
-    public function render_grouped_block($attributes, $content, $block) {
+    public function render_grouped_block(array $attributes, string $content, \WP_Block $block): string {
         // Ensure attributes is an array
         if (!is_array($attributes)) {
             $attributes = array();
@@ -384,7 +384,7 @@ class Shuriken_Block {
      * @param array  $style_vars Optional CSS variable declarations (e.g. '--shuriken-user-accent: #ff0000').
      * @return string HTML wrapped with block attributes.
      */
-    private function wrap_with_block_attributes($html, $rating, $anchor_tag = '', $style_vars = array()) {
+    private function wrap_with_block_attributes(string $html, object $rating, string $anchor_tag = '', array $style_vars = array()): string {
         // The shared render method already outputs a complete div with classes.
         // We need to merge the block wrapper attributes with the existing ones.
 
@@ -434,7 +434,7 @@ class Shuriken_Block {
  *
  * @return Shuriken_Block
  */
-function shuriken_block() {
+function shuriken_block(): Shuriken_Block {
     return Shuriken_Block::get_instance();
 }
 

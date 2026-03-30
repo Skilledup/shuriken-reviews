@@ -25,7 +25,7 @@ class Shuriken_Frontend {
     /**
      * @var Shuriken_Frontend Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
      * Constructor
@@ -39,7 +39,7 @@ class Shuriken_Frontend {
      *
      * @return Shuriken_Frontend
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self();
         }
@@ -51,7 +51,7 @@ class Shuriken_Frontend {
      *
      * @return void
      */
-    public static function init() {
+    public static function init(): void {
         self::get_instance();
     }
 
@@ -61,7 +61,7 @@ class Shuriken_Frontend {
      * @return void
      * @since 1.1.0
      */
-    public function enqueue_scripts() {
+    public function enqueue_scripts(): void {
         // Enqueue styles
         wp_enqueue_style(
             'shuriken-reviews',
@@ -91,7 +91,7 @@ class Shuriken_Frontend {
      *
      * @return array
      */
-    private function get_localized_data() {
+    private function get_localized_data(): array {
         $data = array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'rest_url' => esc_url_raw(rest_url()),
@@ -117,7 +117,7 @@ class Shuriken_Frontend {
      *
      * @return array
      */
-    private function get_i18n_strings() {
+    private function get_i18n_strings(): array {
         $strings = array(
             /* translators: %s: Login URL */
             'pleaseLogin' => __('Please <a href="%s">login</a> to rate', 'shuriken-reviews'),
@@ -144,7 +144,7 @@ class Shuriken_Frontend {
  *
  * @return Shuriken_Frontend
  */
-function shuriken_frontend() {
+function shuriken_frontend(): Shuriken_Frontend {
     return Shuriken_Frontend::get_instance();
 }
 

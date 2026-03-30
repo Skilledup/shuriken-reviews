@@ -36,8 +36,16 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Exception system SPL refactor — `Shuriken_Exception_Interface` + `Shuriken_Exception_Trait`; logic-family extends SPL counterparts (1.12.2)
 - FSE blocks: type-aware editor preview + create/edit modal fields + block-helpers + keywords (1.12.3)
 
-🚧 In progress (1.12.x — type-awareness gaps):
+🚧 In progress (1.12.x):
 - **Post Linked Ratings block** — new FSE dynamic block for site editor templates (renders linked ratings at block position, alternative to `the_content` auto-injection)
+
+🚧 In progress (1.13.x — code quality):
+- **PHP 8.1+ type hints** — native property types, parameter types, return types across all classes
+- **Magic number constants** — extract hardcoded values (`5` for scale default, `60` for cooldown, etc.) to named class constants
+- **Vote normalization helper** — extract duplicated type-aware normalization logic from AJAX into a shared method
+- **Frontend JS modernization** — replace `var` with `const`/`let`, add event handler cleanup, remove global state
+- **Block store input validation** — validate `ratingId` and other inputs before API calls in `ratings-store.js`
+- **PHPUnit test suite** — add proper test configuration and unit tests (later)
 
 🚧 Next up:
 - Server-side render pre-fetch (batch query for frontend pages)
@@ -157,6 +165,54 @@ Link ratings to posts/pages directly from the post editor. Automatic content inj
 **Files Added:**
 - `includes/class-shuriken-post-meta.php` — Post meta box class
 - `admin/partials/settings-content.php` — Content settings tab
+
+---
+
+## 1.13.x — Code Quality & Standards
+
+Systematic code quality improvements identified by deep audit against PHP 8.1+, WordPress coding standards, and modern best practices.
+
+### PHP 8.1+ Native Type Hints (1.13.0)
+
+Add property types, parameter types, and return types to all PHP classes.
+
+**Scope:**
+- [x] Exception interface + trait: typed properties, parameter types, return types
+- [x] All 7 exception classes: typed properties, constructor parameter types, factory method types
+- [x] `Shuriken_Container`: typed properties, parameter types, return types
+- [x] `Shuriken_Database_Interface`: parameter types, return types on all method signatures
+- [x] `Shuriken_Analytics_Interface`: parameter types, return types on all method signatures
+- [x] `Shuriken_Rate_Limiter_Interface`: parameter types, return types on all method signatures
+- [x] `Shuriken_Database`: typed properties, parameter types, return types (~28 methods)
+- [x] `Shuriken_Rate_Limiter`: typed properties, parameter types, return types
+- [x] `Shuriken_Analytics`: typed properties, parameter types, return types
+- [x] `Shuriken_AJAX`: typed properties, parameter types, return types
+- [x] `Shuriken_REST_API`: typed properties, parameter types, return types
+- [x] `Shuriken_Frontend`: typed properties, parameter types, return types
+- [x] `Shuriken_Shortcodes`: typed properties, parameter types, return types
+- [x] `Shuriken_Block`: typed properties, parameter types, return types
+- [x] `Shuriken_Admin`: typed properties, parameter types, return types
+- [x] `Shuriken_Post_Meta`: typed properties, parameter types, return types
+- [x] `Shuriken_Exception_Handler`: parameter types, return types
+
+### Magic Number Constants (1.13.0)
+
+- [ ] Extract `RATING_SCALE_DEFAULT = 5` (used in AJAX, Database, Shortcodes)
+- [ ] Extract `STARS_SCALE_MAX = 10`, `NUMERIC_SCALE_MAX = 100` (used in create/update)
+- [ ] Extract `RATE_LIMIT_COOLDOWN_DEFAULT = 60` and other rate limit defaults
+- [ ] Replace all hardcoded usages
+
+### Vote Normalization Helper (1.13.0)
+
+- [ ] Extract type-aware normalization logic from `handle_submit_rating()` into `normalize_vote_value()` helper
+- [ ] Use in AJAX handler, admin forms, and any future vote entry points
+
+### Frontend JS Modernization (1.13.0)
+
+- [ ] `shuriken-reviews.js`: replace all `var` with `const`/`let`
+- [ ] `shuriken-reviews.js`: wrap in IIFE or module to eliminate global state
+- [ ] `shuriken-reviews.js`: add event handler cleanup on dynamic element removal
+- [ ] `ratings-store.js`: validate `ratingId` (positive integer) before API calls
 
 ---
 

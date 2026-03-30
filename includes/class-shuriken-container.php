@@ -25,24 +25,24 @@ class Shuriken_Container {
     /**
      * @var Shuriken_Container Singleton instance
      */
-    private static $instance = null;
+    private static ?self $instance = null;
 
     /**
-     * @var array Registered services
+     * @var array<string, array{resolver: callable, singleton: bool}> Registered services
      */
-    private $services = array();
+    private array $services = array();
 
     /**
-     * @var array Service instances (singletons)
+     * @var array<string, mixed> Service instances (singletons)
      */
-    private $instances = array();
+    private array $instances = array();
 
     /**
      * Get singleton instance
      *
-     * @return Shuriken_Container
+     * @return self
      */
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self();
         }
@@ -64,7 +64,7 @@ class Shuriken_Container {
      *
      * @return void
      */
-    private function register_core_services() {
+    private function register_core_services(): void {
         // Register database service (foundation - no dependencies)
         $this->singleton('database', function($container) {
             return Shuriken_Database::get_instance();
@@ -126,7 +126,7 @@ class Shuriken_Container {
      * @param callable $resolver Function that creates the service.
      * @return void
      */
-    public function bind($name, $resolver) {
+    public function bind(string $name, callable $resolver): void {
         $this->services[$name] = array(
             'resolver' => $resolver,
             'singleton' => false
@@ -140,7 +140,7 @@ class Shuriken_Container {
      * @param callable $resolver Function that creates the service.
      * @return void
      */
-    public function singleton($name, $resolver) {
+    public function singleton(string $name, callable $resolver): void {
         $this->services[$name] = array(
             'resolver' => $resolver,
             'singleton' => true
@@ -154,9 +154,9 @@ class Shuriken_Container {
      * @return mixed Service instance.
      * @throws Exception If service not found.
      */
-    public function get($name) {
+    public function get(string $name): mixed {
         if (!isset($this->services[$name])) {
-            throw new Exception("Service '{$name}' not found in container");
+            throw new \RuntimeException("Service '{$name}' not found in container");
         }
 
         $service = $this->services[$name];
@@ -183,7 +183,7 @@ class Shuriken_Container {
      * @param string $name Service name.
      * @return bool
      */
-    public function has($name) {
+    public function has(string $name): bool {
         return isset($this->services[$name]);
     }
 
@@ -196,7 +196,7 @@ class Shuriken_Container {
      * @param mixed  $instance Service instance.
      * @return void
      */
-    public function set($name, $instance) {
+    public function set(string $name, mixed $instance): void {
         $this->instances[$name] = $instance;
         
         // Also register it as a singleton that returns this instance
@@ -211,7 +211,7 @@ class Shuriken_Container {
      * @param string $name Service name.
      * @return mixed
      */
-    public function __get($name) {
+    public function __get(string $name): mixed {
         return $this->get($name);
     }
 
@@ -220,7 +220,7 @@ class Shuriken_Container {
      *
      * @return void
      */
-    public function reset() {
+    public function reset(): void {
         $this->instances = array();
     }
 }
@@ -230,7 +230,7 @@ class Shuriken_Container {
  *
  * @return Shuriken_Container
  */
-function shuriken_container() {
+function shuriken_container(): Shuriken_Container {
     return Shuriken_Container::get_instance();
 }
 
@@ -241,7 +241,7 @@ function shuriken_container() {
  *
  * @return Shuriken_Database_Interface
  */
-function shuriken_db() {
+function shuriken_db(): Shuriken_Database_Interface {
     return shuriken_container()->get('database');
 }
 
@@ -252,7 +252,7 @@ function shuriken_db() {
  *
  * @return Shuriken_Analytics_Interface
  */
-function shuriken_analytics() {
+function shuriken_analytics(): Shuriken_Analytics_Interface {
     return shuriken_container()->get('analytics');
 }
 

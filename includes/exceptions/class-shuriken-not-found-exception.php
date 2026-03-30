@@ -26,12 +26,12 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
     /**
      * @var string Resource type
      */
-    protected $resource_type;
+    protected string $resource_type;
 
     /**
      * @var int|string Resource ID
      */
-    protected $resource_id;
+    protected int|string $resource_id;
 
     /**
      * Constructor
@@ -41,7 +41,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      * @param int|string     $resource_id   Resource ID.
      * @param Throwable|null $previous      Previous exception.
      */
-    public function __construct($message = '', $resource_type = 'resource', $resource_id = 0, $previous = null) {
+    public function __construct(string $message = '', string $resource_type = 'resource', int|string $resource_id = 0, ?\Throwable $previous = null) {
         $this->resource_type = $resource_type;
         $this->resource_id = $resource_id;
         $error_code = $resource_type . '_not_found';
@@ -53,7 +53,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      *
      * @return string
      */
-    public function get_resource_type() {
+    public function get_resource_type(): string {
         return $this->resource_type;
     }
 
@@ -62,7 +62,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      *
      * @return int|string
      */
-    public function get_resource_id() {
+    public function get_resource_id(): int|string {
         return $this->resource_id;
     }
 
@@ -72,7 +72,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      * @param int $rating_id Rating ID.
      * @return self
      */
-    public static function rating($rating_id) {
+    public static function rating(int $rating_id): self {
         return new self(
             sprintf(__('Rating with ID %d not found', 'shuriken-reviews'), $rating_id),
             'rating',
@@ -86,7 +86,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      * @param int $vote_id Vote ID.
      * @return self
      */
-    public static function vote($vote_id) {
+    public static function vote(int $vote_id): self {
         return new self(
             sprintf(__('Vote with ID %d not found', 'shuriken-reviews'), $vote_id),
             'vote',
@@ -100,7 +100,7 @@ class Shuriken_Not_Found_Exception extends Shuriken_Exception {
      * @param int $parent_id Parent rating ID.
      * @return self
      */
-    public static function parent_rating($parent_id) {
+    public static function parent_rating(int $parent_id): self {
         return new self(
             sprintf(__('Parent rating with ID %d not found', 'shuriken-reviews'), $parent_id),
             'parent_rating',
