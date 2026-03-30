@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Shuriken Reviews REST API Class
  *
