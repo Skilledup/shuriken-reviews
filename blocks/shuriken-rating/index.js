@@ -33,7 +33,10 @@
         calculateAverage,
         renderRatingPreview,
         ratingTypeOptions,
-        getScaleRange
+        getScaleRange,
+        getRatingType,
+        buildColorSettings,
+        areTypesCompatible
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/rating', {
@@ -364,22 +367,17 @@
                             help: __('Optional anchor ID for linking to this rating.', 'shuriken-reviews')
                         })
                     ),
-                    // Colors Panel
+                    // Colors Panel (type-aware)
                     wp.element.createElement(PanelColorSettings, {
                         title: __('Colors', 'shuriken-reviews'),
                         initialOpen: false,
-                        colorSettings: [
-                            {
-                                value: accentColor,
-                                onChange: function (value) { setAttributes({ accentColor: value || '' }); },
-                                label: __('Accent Color', 'shuriken-reviews')
-                            },
-                            {
-                                value: starColor,
-                                onChange: function (value) { setAttributes({ starColor: value || '' }); },
-                                label: __('Star Color', 'shuriken-reviews')
-                            }
-                        ]
+                        colorSettings: buildColorSettings({
+                            ratingType: selectedRating ? getRatingType(selectedRating) : 'stars',
+                            accentColor: accentColor,
+                            starColor: starColor,
+                            setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
+                            setStar: function (value) { setAttributes({ starColor: value || '' }); }
+                        })
                     })
                 ),
                 // Create Rating Modal
@@ -473,6 +471,18 @@
                         onChange: setNewRatingEffectType,
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
+                    // Type-compatibility warning for sub-ratings
+                    !newRatingMirrorOf && newRatingParentId && (function () {
+                        var parent = parentRatings.find(function (r) { return String(r.id) === newRatingParentId; });
+                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', newRatingType)) {
+                            return wp.element.createElement(Notice, {
+                                status: 'warning',
+                                isDismissible: false,
+                                style: { marginBottom: '12px' }
+                            }, __('This sub-rating type is incompatible with the parent\'s type. Mixing star/numeric types with like/dislike/approval types produces incorrect aggregated scores.', 'shuriken-reviews'));
+                        }
+                        return null;
+                    })(),
                     !newRatingMirrorOf && !newRatingParentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
                         checked: newRatingDisplayOnly,
@@ -579,6 +589,18 @@
                         onChange: setEditRatingEffectType,
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
+                    // Type-compatibility warning for edit modal
+                    !editRatingMirrorOf && editRatingParentId && (function () {
+                        var parent = parentRatings.find(function (r) { return String(r.id) === editRatingParentId; });
+                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', editRatingType)) {
+                            return wp.element.createElement(Notice, {
+                                status: 'warning',
+                                isDismissible: false,
+                                style: { marginBottom: '12px' }
+                            }, __('This sub-rating type is incompatible with the parent\'s type. Mixing star/numeric types with like/dislike/approval types produces incorrect aggregated scores.', 'shuriken-reviews'));
+                        }
+                        return null;
+                    })(),
                     !editRatingMirrorOf && !editRatingParentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
                         checked: editRatingDisplayOnly,

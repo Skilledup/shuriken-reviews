@@ -50,7 +50,10 @@
         renderRatingPreview,
         formatCompactStats,
         ratingTypeOptions,
-        getScaleRange
+        getScaleRange,
+        getRatingType,
+        buildColorSettings,
+        areTypesCompatible
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/grouped-rating', {
@@ -892,24 +895,19 @@
                         })
                     ),
 
-                    // Panel 4 — Colors (simple: accent + star)
+                    // Panel 4 — Colors (type-aware: accent + star/slider)
                     wp.element.createElement(
                         PanelColorSettings,
                         {
                             title: __('Colors', 'shuriken-reviews'),
                             initialOpen: false,
-                            colorSettings: [
-                                {
-                                    label: __('Accent Color', 'shuriken-reviews'),
-                                    value: accentColor || undefined,
-                                    onChange: function (value) { setAttributes({ accentColor: value || '' }); }
-                                },
-                                {
-                                    label: __('Star Color', 'shuriken-reviews'),
-                                    value: starColor || undefined,
-                                    onChange: function (value) { setAttributes({ starColor: value || '' }); }
-                                }
-                            ]
+                            colorSettings: buildColorSettings({
+                                ratingType: selectedRating ? getRatingType(selectedRating) : 'stars',
+                                accentColor: accentColor || undefined,
+                                starColor: starColor || undefined,
+                                setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
+                                setStar: function (value) { setAttributes({ starColor: value || '' }); }
+                            })
                         }
                     )
                 ),
@@ -1323,6 +1321,12 @@
                             },
                             help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(newChildType).min + '–' + getScaleRange(newChildType).max
                         }),
+                        // Type-compatibility warning for new sub-rating
+                        selectedRating && !areTypesCompatible(getRatingType(selectedRating), newChildType) && wp.element.createElement(Notice, {
+                            status: 'warning',
+                            isDismissible: false,
+                            style: { marginBottom: '12px' }
+                        }, __('This sub-rating type is incompatible with the parent\'s type. Mixing star/numeric types with like/dislike/approval types produces incorrect aggregated scores.', 'shuriken-reviews')),
                         wp.element.createElement(CheckboxControl, {
                             label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
                             checked: newChildDisplayOnly,
@@ -1450,7 +1454,13 @@
                                                 checked: !!childDisplayOnly,
                                                 onChange: function (val) { updateChildLocally(child.id, { display_only: val }); },
                                                 help: __('When enabled, this sub-rating cannot be voted on directly.', 'shuriken-reviews')
-                                            })
+                                            }),
+                                            // Type-compatibility warning for existing sub-ratings
+                                            selectedRating && !areTypesCompatible(getRatingType(selectedRating), childType) && wp.element.createElement(Notice, {
+                                                status: 'warning',
+                                                isDismissible: false,
+                                                style: { marginBottom: '8px' }
+                                            }, __('This sub-rating type is incompatible with the parent\'s type. Aggregated scores may be incorrect.', 'shuriken-reviews'))
                                         );
                                     })()
                                 ),

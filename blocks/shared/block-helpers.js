@@ -313,6 +313,91 @@
         return scaledAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')';
     }
 
+    /**
+     * Get the type class for a rating type.
+     * "continuous" types (stars, numeric) normalize votes to 1–5.
+     * "binary" types (like_dislike, approval) store 0 or 1 per vote.
+     *
+     * @param {string} ratingType
+     * @return {string} 'continuous' or 'binary'
+     */
+    function getTypeClass(ratingType) {
+        if (ratingType === 'like_dislike' || ratingType === 'approval') {
+            return 'binary';
+        }
+        return 'continuous';
+    }
+
+    /**
+     * Check whether a child rating type is compatible with a parent rating type
+     * for score aggregation purposes.
+     *
+     * Mixing binary (like_dislike, approval) with continuous (stars, numeric)
+     * produces mathematically incorrect aggregated scores.
+     *
+     * @param {string} parentType
+     * @param {string} childType
+     * @return {boolean}
+     */
+    function areTypesCompatible(parentType, childType) {
+        return getTypeClass(parentType) === getTypeClass(childType);
+    }
+
+    /**
+     * Check whether the "widget color" setting (star/slider color) is
+     * relevant for a given rating type.
+     *
+     * @param {string} ratingType
+     * @return {boolean}
+     */
+    function hasWidgetColor(ratingType) {
+        return ratingType === 'stars' || ratingType === 'numeric';
+    }
+
+    /**
+     * Get type-appropriate label for the widget colour picker.
+     *
+     * @param {string} ratingType
+     * @return {string}
+     */
+    function getWidgetColorLabel(ratingType) {
+        if (ratingType === 'numeric') {
+            return __('Slider Color', 'shuriken-reviews');
+        }
+        return __('Star Color', 'shuriken-reviews');
+    }
+
+    /**
+     * Build the color settings array for a rating's PanelColorSettings.
+     *
+     * @param {Object}   opts
+     * @param {string}   opts.ratingType  - Current rating type.
+     * @param {string}   opts.accentColor - Current accent color value.
+     * @param {string}   opts.starColor   - Current star/widget color value.
+     * @param {Function} opts.setAccent   - onChange for accent.
+     * @param {Function} opts.setStar     - onChange for star/widget color.
+     * @return {Array} colorSettings array for PanelColorSettings.
+     */
+    function buildColorSettings(opts) {
+        var settings = [
+            {
+                value: opts.accentColor,
+                onChange: opts.setAccent,
+                label: __('Accent Color', 'shuriken-reviews')
+            }
+        ];
+
+        if (hasWidgetColor(opts.ratingType)) {
+            settings.push({
+                value: opts.starColor,
+                onChange: opts.setStar,
+                label: getWidgetColorLabel(opts.ratingType)
+            });
+        }
+
+        return settings;
+    }
+
     // Expose on global namespace so both blocks can import without a bundler
     window.ShurikenBlockHelpers = {
         formatApiError:         formatApiError,
@@ -327,6 +412,11 @@
         getRatingScale:         getRatingScale,
         calculateScaledAverage: calculateScaledAverage,
         renderRatingPreview:    renderRatingPreview,
-        formatCompactStats:     formatCompactStats
+        formatCompactStats:     formatCompactStats,
+        hasWidgetColor:         hasWidgetColor,
+        getWidgetColorLabel:    getWidgetColorLabel,
+        buildColorSettings:     buildColorSettings,
+        getTypeClass:           getTypeClass,
+        areTypesCompatible:     areTypesCompatible
     };
 })(window.wp);
