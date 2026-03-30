@@ -191,5 +191,71 @@ interface Shuriken_Analytics_Interface {
      * @return string Formatted date string.
      */
     public function format_date(string $mysql_date, bool $include_time = true): string;
+
+    /**
+     * Get voting heatmap data — day-of-week × hour activity
+     *
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with dow, hour, count.
+     */
+    public function get_voting_heatmap(string|int|array $date_range = 'all'): array;
+
+    /**
+     * Get votes over time split by rating type
+     *
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with vote_date, rating_type, vote_count.
+     */
+    public function get_votes_over_time_by_type(string|int|array $date_range = 30): array;
+
+    /**
+     * Get per-type summary statistics
+     *
+     * @return array Array of type summary objects.
+     */
+    public function get_per_type_summary(): array;
+
+    /**
+     * Get participation rate
+     *
+     * @return object Object with total_items, active_items, rate (0-100).
+     */
+    public function get_participation_rate(): object;
+
+    /**
+     * Get momentum items — ratings rising or falling vs. previous period
+     *
+     * @param string|int|array $date_range Date range filter (numeric days only).
+     * @param int              $limit      Max items per direction.
+     * @return object Object with rising[] and falling[] arrays.
+     */
+    public function get_momentum_items(string|int|array $date_range = 30, int $limit = 3): object;
+
+    /**
+     * Get approval rate trend for a like/dislike rating
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with vote_date and approval_rate.
+     */
+    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30): array;
+
+    /**
+     * Get cumulative approval count for an approval-type rating
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with vote_date, daily_count, cumulative_count.
+     */
+    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30): array;
+
+    /**
+     * Get daily votes with rolling average for dual-axis chart
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with vote_date, vote_count, avg_rating.
+     */
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30): array;
 }
 

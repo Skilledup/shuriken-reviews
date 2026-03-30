@@ -1382,6 +1382,289 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     }
 
     // =========================================================================
+    // Dashboard Analytics Methods (v2)
+    // =========================================================================
+
+    /**
+     * Get voting heatmap data (hour-of-day × day-of-week)
+     *
+     * Returns a 7×24 matrix of vote counts for visualizing when users vote.
+     * Day 1 = Sunday, Day 7 = Saturday (MySQL DAYOFWEEK convention).
+     *
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with dow, hour, count
+     */
+    public function get_voting_heatmap(string|int|array $date_range = 'all'): array {
+        $date_condition = $this->build_date_condition($date_range);
+
+        return $this->wpdb->get_results(
+            "SELECT DAYOFWEEK(date_created) as dow, HOUR(date_created) as hour, COUNT(*) as count
+             FROM {$this->votes_table}
+             WHERE 1=1 {$date_condition}
+             GROUP BY dow, hour
+             ORDER BY dow, hour"
+        );
+    }
+
+    /**
+     * Get votes over time split by rating type (stars, like_dislike, numeric, approval)
+     *
+     * Used for the stacked area chart on the dashboard.
+     *
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date, rating_type, vote_count
+     */
+    public function get_votes_over_time_by_type(string|int|array $date_range = 30): array {
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
+
+        return $this->wpdb->get_results(
+            "SELECT DATE(v.date_created) as vote_date,
+                    COALESCE(r.rating_type, 'stars') as rating_type,
+                    COUNT(*) as vote_count
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE 1=1 {$date_condition}
+             GROUP BY vote_date, rating_type
+             ORDER BY vote_date"
+        );
+    }
+
+    /**
+     * Get per-type summary statistics
+     *
+     * Returns one row per active rating type with appropriate metrics:
+     * - Stars/Numeric: weighted average, item count, total votes
+     * - Like/Dislike: average approval %, item count, total votes, likes, dislikes
+     * - Approval: total approvals, item count
+     *
+     * @return array Array of type summary objects
+     */
+    public function get_per_type_summary(): array {
+        $results = $this->wpdb->get_results(
+            "SELECT COALESCE(r.rating_type, 'stars') as rating_type,
+                    r.scale,
+                    COUNT(DISTINCT r.id) as item_count,
+                    COALESCE(SUM(r.total_votes), 0) as total_votes,
+                    COALESCE(SUM(r.total_rating), 0) as total_rating
+             FROM {$this->ratings_table} r
+             WHERE r.mirror_of IS NULL
+               AND r.parent_id IS NULL
+               AND r.total_votes > 0
+             GROUP BY r.rating_type, r.scale
+             ORDER BY total_votes DESC"
+        );
+
+        // Aggregate by type (different scales of same type become one row)
+        $summaries = array();
+        foreach ($results as $row) {
+            $type = $row->rating_type;
+            if (!isset($summaries[$type])) {
+                $summaries[$type] = (object) array(
+                    'rating_type' => $type,
+                    'item_count'  => 0,
+                    'total_votes' => 0,
+                    'total_rating' => 0,
+                    'scale'       => (int) $row->scale,
+                );
+            }
+            $summaries[$type]->item_count  += (int) $row->item_count;
+            $summaries[$type]->total_votes += (int) $row->total_votes;
+            $summaries[$type]->total_rating += (int) $row->total_rating;
+        }
+
+        // Calculate display metrics per type
+        foreach ($summaries as &$s) {
+            if (in_array($s->rating_type, array('like_dislike', 'approval'), true)) {
+                $s->approval_rate = $s->total_votes > 0
+                    ? round(($s->total_rating / $s->total_votes) * 100)
+                    : 0;
+            } else {
+                $s->weighted_average = $s->total_votes > 0
+                    ? round($s->total_rating / $s->total_votes, 1)
+                    : 0;
+            }
+        }
+        unset($s);
+
+        return array_values($summaries);
+    }
+
+    /**
+     * Get participation rate — how many rating items have received at least one vote
+     *
+     * @return object Object with total_items, active_items, rate (0-100)
+     */
+    public function get_participation_rate(): object {
+        $result = new stdClass();
+
+        $result->total_items = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table}
+             WHERE mirror_of IS NULL AND parent_id IS NULL"
+        );
+
+        $result->active_items = (int) $this->wpdb->get_var(
+            "SELECT COUNT(*) FROM {$this->ratings_table}
+             WHERE mirror_of IS NULL AND parent_id IS NULL AND total_votes > 0"
+        );
+
+        $result->rate = $result->total_items > 0
+            ? round(($result->active_items / $result->total_items) * 100)
+            : 0;
+
+        return $result;
+    }
+
+    /**
+     * Get momentum items — ratings whose average is rising or falling vs. previous period
+     *
+     * Compares current half-period average to previous half-period average.
+     * Only considers items with votes in both halves.
+     *
+     * @param string|int|array $date_range Date range filter (preset days only, not custom/all)
+     * @param int $limit Max items per direction (rising + falling)
+     * @return object Object with rising[] and falling[] arrays
+     */
+    public function get_momentum_items(string|int|array $date_range = 30, int $limit = 3): object {
+        $result = new stdClass();
+        $result->rising = array();
+        $result->falling = array();
+
+        // Only works with numeric day presets
+        $days = intval($date_range);
+        if ($days <= 0) {
+            return $result;
+        }
+
+        $half = intval($days / 2);
+
+        // Get items with votes in both halves, compare averages
+        // Exclude binary types (approval rate momentum is different from star averages)
+        $items = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT r.id, r.name, r.rating_type, r.scale, r.total_votes,
+                    AVG(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) THEN v.rating_value END) as recent_avg,
+                    AVG(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
+                              AND v.date_created < DATE_SUB(NOW(), INTERVAL %d DAY) THEN v.rating_value END) as prev_avg,
+                    COUNT(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) THEN 1 END) as recent_count,
+                    COUNT(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
+                               AND v.date_created < DATE_SUB(NOW(), INTERVAL %d DAY) THEN 1 END) as prev_count
+             FROM {$this->ratings_table} r
+             JOIN {$this->votes_table} v ON v.rating_id = r.id
+             WHERE r.mirror_of IS NULL
+               AND r.parent_id IS NULL
+               AND r.rating_type NOT IN ('approval')
+               AND v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
+             GROUP BY r.id
+             HAVING recent_count >= 2 AND prev_count >= 2",
+            $half, $days, $half, $half, $days, $half, $days
+        ));
+
+        foreach ($items as $item) {
+            $recent = round((float) $item->recent_avg, 2);
+            $prev = round((float) $item->prev_avg, 2);
+            if ($prev == 0) continue;
+
+            $delta = $recent - $prev;
+            $item->delta = round($delta, 1);
+            $item->recent_avg = round($recent, 1);
+            $item->prev_avg = round($prev, 1);
+
+            if ($delta > 0) {
+                $result->rising[] = $item;
+            } elseif ($delta < 0) {
+                $result->falling[] = $item;
+            }
+        }
+
+        // Sort: rising by delta DESC, falling by delta ASC
+        usort($result->rising, fn($a, $b) => $b->delta <=> $a->delta);
+        usort($result->falling, fn($a, $b) => $a->delta <=> $b->delta);
+
+        $result->rising = array_slice($result->rising, 0, $limit);
+        $result->falling = array_slice($result->falling, 0, $limit);
+
+        return $result;
+    }
+
+    /**
+     * Get approval rate trend over time for a like/dislike rating
+     *
+     * Returns daily approval percentage instead of raw vote counts.
+     *
+     * @param int $rating_id Rating ID
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date and approval_rate (0-100)
+     */
+    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30): array {
+        $date_condition = $this->build_date_condition($date_range);
+
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(date_created) as vote_date,
+                    COUNT(*) as total,
+                    SUM(rating_value) as likes,
+                    ROUND((SUM(rating_value) / COUNT(*)) * 100, 1) as approval_rate
+             FROM {$this->votes_table}
+             WHERE rating_id = %d {$date_condition}
+             GROUP BY DATE(date_created)
+             ORDER BY vote_date",
+            $rating_id
+        ));
+    }
+
+    /**
+     * Get cumulative approval count over time for an approval-type rating
+     *
+     * @param int $rating_id Rating ID
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date, daily_count, cumulative_count
+     */
+    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30): array {
+        $date_condition = $this->build_date_condition($date_range);
+
+        $daily = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(date_created) as vote_date, COUNT(*) as daily_count
+             FROM {$this->votes_table}
+             WHERE rating_id = %d {$date_condition}
+             GROUP BY DATE(date_created)
+             ORDER BY vote_date",
+            $rating_id
+        ));
+
+        // Build cumulative
+        $cumulative = 0;
+        foreach ($daily as &$row) {
+            $cumulative += (int) $row->daily_count;
+            $row->cumulative_count = $cumulative;
+        }
+        unset($row);
+
+        return $daily;
+    }
+
+    /**
+     * Get votes over time with rolling average for stars/numeric items
+     *
+     * Returns daily vote counts alongside a rolling 7-day average score.
+     *
+     * @param int $rating_id Rating ID
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date, vote_count, daily_avg
+     */
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30): array {
+        $date_condition = $this->build_date_condition($date_range);
+
+        return $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT DATE(date_created) as vote_date,
+                    COUNT(*) as vote_count,
+                    ROUND(AVG(rating_value), 2) as daily_avg
+             FROM {$this->votes_table}
+             WHERE rating_id = %d {$date_condition}
+             GROUP BY DATE(date_created)
+             ORDER BY vote_date",
+            $rating_id
+        ));
+    }
+
+    // =========================================================================
     // Voter Activity Methods
     // =========================================================================
 

@@ -10,9 +10,30 @@
 (function ($) {
     'use strict';
 
-    // Wait for DOM and Chart.js to be ready
+    // Color palette
+    var colors = {
+        blue: '#2271b1',
+        blueLight: 'rgba(34, 113, 177, 0.15)',
+        green: '#00a32a',
+        greenLight: 'rgba(0, 163, 42, 0.15)',
+        orange: '#dba617',
+        orangeLight: 'rgba(219, 166, 23, 0.15)',
+        purple: '#8c5383',
+        purpleLight: 'rgba(140, 83, 131, 0.15)',
+        grid: '#f0f0f1',
+        tick: '#646970',
+        tooltipBg: '#1d2327'
+    };
+
+    // Type-to-color mapping
+    var typeColors = {
+        stars: { border: colors.blue, bg: colors.blueLight },
+        like_dislike: { border: colors.green, bg: colors.greenLight },
+        numeric: { border: colors.orange, bg: colors.orangeLight },
+        approval: { border: colors.purple, bg: colors.purpleLight }
+    };
+
     $(document).ready(function () {
-        // Initialize clickable rows
         initClickableRows();
 
         if (typeof shurikenAnalyticsData === 'undefined') {
@@ -20,104 +41,113 @@
             return;
         }
 
-        // Chart.js default configuration
         Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif';
         Chart.defaults.font.size = 12;
-        Chart.defaults.color = '#646970';
+        Chart.defaults.color = colors.tick;
 
-        // Initialize all charts
-        initVotesOverTimeChart();
-        initRatingDistributionChart();
-        initUserTypeChart();
+        initStackedAreaChart();
+        initHeatmap();
     });
 
     /**
-     * Initialize Votes Over Time Line Chart
+     * Initialize Stacked Area Chart — votes over time split by rating type
      */
-    function initVotesOverTimeChart() {
-        const ctx = document.getElementById('votesOverTimeChart');
+    function initStackedAreaChart() {
+        var ctx = document.getElementById('votesOverTimeChart');
         if (!ctx) return;
 
-        const data = shurikenAnalyticsData.votesOverTime || [];
-        
-        const gridColor = '#f0f0f1';
-        const tickColor = '#646970';
-        
-        // Prepare data
-        const labels = data.map(item => formatDate(item.vote_date));
-        const values = data.map(item => parseInt(item.vote_count, 10));
+        var rawData = shurikenAnalyticsData.votesOverTimeByType || [];
+        if (!rawData.length) {
+            showEmptyState(ctx, 'No voting activity yet');
+            return;
+        }
 
-        // Fill in missing dates with zeros for better visualization
-        const filledData = fillMissingDates(data);
+        // Group data: { date: { type: count } }
+        var dateMap = {};
+        var typesFound = {};
+        rawData.forEach(function (row) {
+            if (!dateMap[row.vote_date]) dateMap[row.vote_date] = {};
+            dateMap[row.vote_date][row.rating_type] = parseInt(row.vote_count, 10);
+            typesFound[row.rating_type] = true;
+        });
+
+        // Fill missing dates
+        var allDates = Object.keys(dateMap).sort();
+        var start = new Date(allDates[0]);
+        var end = new Date(allDates[allDates.length - 1]);
+        var filledDates = [];
+        var cur = new Date(start);
+        while (cur <= end) {
+            var ds = cur.toISOString().split('T')[0];
+            filledDates.push(ds);
+            if (!dateMap[ds]) dateMap[ds] = {};
+            cur.setDate(cur.getDate() + 1);
+        }
+
+        var i18n = shurikenAnalyticsData.i18n;
+        var typeLabels = {
+            stars: i18n.stars,
+            like_dislike: i18n.like_dislike,
+            numeric: i18n.numeric,
+            approval: i18n.approval
+        };
+
+        var datasets = [];
+        var typeOrder = ['stars', 'like_dislike', 'numeric', 'approval'];
+        typeOrder.forEach(function (type) {
+            if (!typesFound[type]) return;
+            var tc = typeColors[type] || typeColors.stars;
+            datasets.push({
+                label: typeLabels[type] || type,
+                data: filledDates.map(function (d) { return dateMap[d][type] || 0; }),
+                borderColor: tc.border,
+                backgroundColor: tc.bg,
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2,
+                pointHoverRadius: 5
+            });
+        });
 
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: filledData.labels,
-                datasets: [{
-                    label: shurikenAnalyticsData.i18n.votes,
-                    data: filledData.values,
-                    borderColor: '#2271b1',
-                    backgroundColor: 'rgba(34, 113, 177, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#2271b1',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
-                }]
+                labels: filledDates.map(formatDate),
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
+                interaction: { intersect: false, mode: 'index' },
                 plugins: {
                     legend: {
-                        display: false
+                        position: 'top',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 15 }
                     },
                     tooltip: {
-                        backgroundColor: '#1d2327',
+                        backgroundColor: colors.tooltipBg,
                         titleColor: '#fff',
                         bodyColor: '#fff',
                         padding: 12,
-                        displayColors: false,
                         callbacks: {
-                            title: function(context) {
-                                return context[0].label;
-                            },
-                            label: function(context) {
-                                return context.parsed.y + ' ' + shurikenAnalyticsData.i18n.votes.toLowerCase();
+                            label: function (context) {
+                                return context.dataset.label + ': ' + context.parsed.y + ' ' + i18n.votes.toLowerCase();
                             }
                         }
                     }
                 },
                 scales: {
                     x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            color: tickColor
-                        }
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: colors.tick }
                     },
                     y: {
+                        stacked: true,
                         beginAtZero: true,
-                        grid: {
-                            color: gridColor
-                        },
-                        ticks: {
-                            precision: 0,
-                            color: tickColor
-                        }
+                        grid: { color: colors.grid },
+                        ticks: { precision: 0, color: colors.tick }
                     }
                 }
             }
@@ -125,272 +155,93 @@
     }
 
     /**
-     * Initialize Rating Distribution Bar Chart
+     * Initialize Voting Heatmap — CSS grid showing day-of-week × hour activity
      */
-    function initRatingDistributionChart() {
-        const ctx = document.getElementById('ratingDistributionChart');
-        if (!ctx) return;
+    function initHeatmap() {
+        var container = document.getElementById('votingHeatmap');
+        if (!container) return;
 
-        const data = shurikenAnalyticsData.ratingDistribution || [0, 0, 0, 0, 0];
-
-        const gridColor = '#f0f0f1';
-        const tickColor = '#646970';
-
-        // Use server-provided labels or generate defaults
-        const labels = shurikenAnalyticsData.distributionLabels || data.map((_, i) => (i + 1) + ' ★');
-
-        // Generate colors dynamically based on number of items (red to green gradient)
-        const allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
-        const colors = data.length <= allColors.length
-            ? allColors.slice(allColors.length - data.length)
-            : data.map((_, i) => {
-                const ratio = data.length > 1 ? i / (data.length - 1) : 0.5;
-                return ratio < 0.5 ? '#dc3232' : '#00a32a';
-            });
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: shurikenAnalyticsData.i18n.votes,
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: colors,
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    barThickness: 30
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: '#1d2327',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        padding: 12,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                const total = data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? Math.round((context.parsed.y / total) * 100) : 0;
-                                return context.parsed.y + ' ' + shurikenAnalyticsData.i18n.votes.toLowerCase() + ' (' + percentage + '%)';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            color: tickColor
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: gridColor
-                        },
-                        ticks: {
-                            precision: 0,
-                            color: tickColor
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Initialize User Type Doughnut Chart
-     */
-    function initUserTypeChart() {
-        const ctx = document.getElementById('userTypeChart');
-        if (!ctx) return;
-
-        const data = shurikenAnalyticsData.userTypeData || { members: 0, guests: 0 };
-        const total = data.members + data.guests;
-
-        // Show empty state if no data
-        if (total === 0) {
-            showEmptyState(ctx, 'No voter data available yet');
+        var rawData = shurikenAnalyticsData.heatmap || [];
+        if (!rawData.length) {
+            container.innerHTML = '<div class="chart-empty-state"><span class="dashicons dashicons-clock"></span><p>No voting data yet</p></div>';
             return;
         }
 
-        const textColor = '#1d2327';
-        const labelColor = '#646970';
-        const borderColor = '#fff';
-        const legendColor = '#646970';
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: [
-                    shurikenAnalyticsData.i18n.members,
-                    shurikenAnalyticsData.i18n.guests
-                ],
-                datasets: [{
-                    data: [data.members, data.guests],
-                    backgroundColor: [
-                        '#2271b1',
-                        '#72aee6'
-                    ],
-                    borderColor: borderColor,
-                    borderWidth: 3,
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            color: legendColor
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1d2327',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                const percentage = Math.round((context.parsed / total) * 100);
-                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
-                            }
-                        }
-                    }
-                }
-            },
-            plugins: [{
-                id: 'centerText',
-                beforeDraw: function(chart) {
-                    const width = chart.width;
-                    const height = chart.height;
-                    const ctx = chart.ctx;
-                    
-                    ctx.restore();
-                    
-                    // Draw total in center
-                    const fontSize = (height / 114).toFixed(2);
-                    ctx.font = 'bold ' + fontSize + 'em sans-serif';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = textColor;
-                    
-                    const text = total.toString();
-                    const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                    const textY = height / 2 - 10;
-                    
-                    ctx.fillText(text, textX, textY);
-                    
-                    // Draw "Total" label
-                    ctx.font = '0.8em sans-serif';
-                    ctx.fillStyle = labelColor;
-                    const labelText = 'Total';
-                    const labelX = Math.round((width - ctx.measureText(labelText).width) / 2);
-                    ctx.fillText(labelText, labelX, textY + 20);
-                    
-                    ctx.save();
-                }
-            }]
+        // Build grid: MySQL DAYOFWEEK returns 1=Sun..7=Sat, hours 0-23
+        var maxCount = 0;
+        var grid = {};
+        rawData.forEach(function (row) {
+            var key = row.dow + '-' + row.hour;
+            var c = parseInt(row.count, 10);
+            grid[key] = c;
+            if (c > maxCount) maxCount = c;
         });
+
+        var i18n = shurikenAnalyticsData.i18n;
+        var dayLabels = [i18n.sun, i18n.mon, i18n.tue, i18n.wed, i18n.thu, i18n.fri, i18n.sat];
+
+        // Only show hours 0,3,6,9,12,15,18,21 for readability
+        var hourSlots = [0, 3, 6, 9, 12, 15, 18, 21];
+
+        var html = '<div class="heatmap-grid">';
+
+        // Header row (hours)
+        html += '<div class="heatmap-corner"></div>';
+        hourSlots.forEach(function (h) {
+            var label = h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p';
+            html += '<div class="heatmap-hour-label">' + label + '</div>';
+        });
+
+        // Data rows
+        for (var day = 1; day <= 7; day++) {
+            html += '<div class="heatmap-day-label">' + dayLabels[day - 1] + '</div>';
+            hourSlots.forEach(function (h) {
+                // Aggregate 3-hour blocks: sum the 3 hours starting at h
+                var total = 0;
+                for (var offset = 0; offset < 3; offset++) {
+                    total += grid[day + '-' + (h + offset)] || 0;
+                }
+                var intensity = maxCount > 0 ? total / maxCount : 0;
+                var opacity = intensity > 0 ? (0.15 + intensity * 0.85).toFixed(2) : 0;
+                var bgColor = intensity > 0 ? 'rgba(34, 113, 177, ' + opacity + ')' : 'transparent';
+                var title = dayLabels[day - 1] + ' ' + h + ':00-' + (h + 2) + ':59 — ' + total + ' ' + i18n.votes.toLowerCase();
+                html += '<div class="heatmap-cell" style="background-color:' + bgColor + '" title="' + title + '"></div>';
+            });
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
     }
 
     /**
-     * Fill missing dates in the data array
-     * 
-     * @param {Array} data Original data array
-     * @returns {Object} Object with labels and values arrays
-     */
-    function fillMissingDates(data) {
-        if (!data || data.length === 0) {
-            return { labels: [], values: [] };
-        }
-
-        // Create a map of existing dates
-        const dateMap = {};
-        data.forEach(item => {
-            dateMap[item.vote_date] = parseInt(item.vote_count, 10);
-        });
-
-        // Get date range
-        const dates = Object.keys(dateMap).sort();
-        const startDate = new Date(dates[0]);
-        const endDate = new Date(dates[dates.length - 1]);
-
-        const labels = [];
-        const values = [];
-
-        // Fill in all dates
-        const currentDate = new Date(startDate);
-        while (currentDate <= endDate) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            labels.push(formatDate(dateStr));
-            values.push(dateMap[dateStr] || 0);
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        return { labels, values };
-    }
-
-    /**
-     * Format date for display
-     * 
-     * @param {string} dateStr Date string in YYYY-MM-DD format
-     * @returns {string} Formatted date
+     * Format date string for chart labels
      */
     function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const options = { month: 'short', day: 'numeric' };
-        return date.toLocaleDateString(undefined, options);
+        var date = new Date(dateStr);
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
     /**
-     * Show empty state for a chart
-     * 
-     * @param {HTMLElement} ctx Canvas element
-     * @param {string} message Message to display
+     * Show empty state for a chart canvas
      */
     function showEmptyState(ctx, message) {
-        const parent = ctx.parentElement;
+        var parent = ctx.parentElement;
         ctx.style.display = 'none';
-        
-        const emptyDiv = document.createElement('div');
-        emptyDiv.className = 'chart-empty-state';
-        emptyDiv.innerHTML = '<span class="dashicons dashicons-chart-pie"></span><p>' + message + '</p>';
-        emptyDiv.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #646970;';
-        
-        parent.appendChild(emptyDiv);
+        var div = document.createElement('div');
+        div.className = 'chart-empty-state';
+        div.innerHTML = '<span class="dashicons dashicons-chart-pie"></span><p>' + message + '</p>';
+        div.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#646970;';
+        parent.appendChild(div);
     }
 
     /**
      * Initialize clickable table rows
-     * Clicking anywhere on the row navigates to the rating item
      */
     function initClickableRows() {
         $('.shuriken-clickable-row').on('click', function (e) {
-            // Don't navigate if clicking on a link (let the link handle it)
-            if ($(e.target).is('a') || $(e.target).closest('a').length) {
-                return;
-            }
-            
+            if ($(e.target).is('a') || $(e.target).closest('a').length) return;
             var href = $(this).data('href');
-            if (href) {
-                window.location.href = href;
-            }
+            if (href) window.location.href = href;
         });
     }
 

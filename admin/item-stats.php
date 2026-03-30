@@ -101,6 +101,19 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
 
 // Base URL for filters (preserves rating_id)
 $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
+
+// Type-specific chart data
+$rating_type = $rating->rating_type ?: 'stars';
+$is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+
+if ($rating_type === 'like_dislike') {
+    $approval_trend = $analytics->get_approval_trend($rating_id, $date_range);
+} elseif ($rating_type === 'approval') {
+    $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range);
+} else {
+    // stars/numeric: dual-axis chart data
+    $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range);
+}
 ?>
 
 <div class="wrap shuriken-analytics shuriken-item-stats">
@@ -255,15 +268,45 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-star-filled"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($analytics->format_average_display($average, $rating->rating_type ?: 'stars', $rating->scale ?: 5, $display_total_votes, $display_total_rating)); ?></h3>
-                <p><?php esc_html_e('Average Rating', 'shuriken-reviews'); ?></p>
+                <h3>
+                    <?php
+                    if ($rating_type === 'like_dislike') {
+                        $approval_pct = $display_total_votes > 0
+                            ? round(($display_total_rating / $display_total_votes) * 100)
+                            : 0;
+                        echo esc_html($approval_pct) . '%';
+                    } elseif ($rating_type === 'approval') {
+                        echo esc_html($display_total_rating);
+                    } else {
+                        echo esc_html($analytics->format_average_display($average, $rating->rating_type ?: 'stars', $rating->scale ?: 5, $display_total_votes, $display_total_rating));
+                    }
+                    ?>
+                </h3>
+                <p>
+                    <?php
+                    if ($rating_type === 'like_dislike') {
+                        esc_html_e('Approval Rate', 'shuriken-reviews');
+                    } elseif ($rating_type === 'approval') {
+                        esc_html_e('Total Approvals', 'shuriken-reviews');
+                    } else {
+                        esc_html_e('Average Rating', 'shuriken-reviews');
+                    }
+                    ?>
+                </p>
             </div>
         </div>
         
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-chart-bar"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($display_total_votes); ?></h3>
+                <h3>
+                    <?php echo esc_html($display_total_votes); ?>
+                    <?php if ($rating_type === 'like_dislike') : ?>
+                        <small style="font-size: 14px; color: #64748b;">
+                            (👍 <?php echo esc_html($display_total_rating); ?> / 👎 <?php echo esc_html($display_total_votes - $display_total_rating); ?>)
+                        </small>
+                    <?php endif; ?>
+                </h3>
                 <p><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -277,28 +320,22 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-calculator"></span>
+            <span class="stat-icon dashicons dashicons-admin-users"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($display_total_rating); ?></h3>
-                <p><?php esc_html_e('Total Points', 'shuriken-reviews'); ?></p>
+                <h3>
+                    <?php 
+                    $item_total = ($member_votes ?: 0) + ($guest_votes_count ?: 0);
+                    $item_member_pct = $item_total > 0 ? round(($member_votes / $item_total) * 100) : 0;
+                    echo esc_html($item_member_pct) . '%';
+                    ?>
+                </h3>
+                <p><?php printf(esc_html__('Members (%s) / Guests (%s)', 'shuriken-reviews'), esc_html($member_votes ?: 0), esc_html($guest_votes_count ?: 0)); ?></p>
             </div>
         </div>
     </div>
     
     <!-- Secondary Stats -->
     <div class="shuriken-stats-grid secondary">
-        <div class="shuriken-stat-card small">
-            <div class="stat-content">
-                <h4><?php echo esc_html($member_votes ?: 0); ?></h4>
-                <p><?php esc_html_e('Member Votes', 'shuriken-reviews'); ?></p>
-            </div>
-        </div>
-        <div class="shuriken-stat-card small">
-            <div class="stat-content">
-                <h4><?php echo esc_html($guest_votes_count ?: 0); ?></h4>
-                <p><?php esc_html_e('Guest Votes', 'shuriken-reviews'); ?></p>
-            </div>
-        </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
                 <h4><?php echo esc_html($analytics->format_time_ago($first_vote)); ?></h4>
@@ -313,23 +350,46 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
         </div>
     </div>
     
-    <!-- Charts Row -->
+    <!-- Charts Row (type-aware) -->
     <div class="shuriken-charts-row">
-        <!-- Rating Distribution -->
-        <div class="shuriken-chart-card">
-            <h2><?php esc_html_e('Rating Distribution', 'shuriken-reviews'); ?></h2>
-            <div class="chart-container">
-                <canvas id="itemRatingDistributionChart"></canvas>
+        <?php if ($rating_type === 'like_dislike') : ?>
+            <!-- Like/Dislike: Approval Ring -->
+            <div class="shuriken-chart-card">
+                <h2><?php esc_html_e('Likes vs Dislikes', 'shuriken-reviews'); ?></h2>
+                <div class="chart-container">
+                    <canvas id="itemApprovalRingChart"></canvas>
+                </div>
             </div>
-        </div>
-        
-        <!-- Votes Over Time -->
-        <div class="shuriken-chart-card wide">
-            <h2><?php esc_html_e('Voting Activity (Last 30 Days)', 'shuriken-reviews'); ?></h2>
-            <div class="chart-container">
-                <canvas id="itemVotesOverTimeChart"></canvas>
+            <!-- Like/Dislike: Approval Trend -->
+            <div class="shuriken-chart-card wide">
+                <h2><?php esc_html_e('Approval Trend', 'shuriken-reviews'); ?></h2>
+                <div class="chart-container">
+                    <canvas id="itemApprovalTrendChart"></canvas>
+                </div>
             </div>
-        </div>
+        <?php elseif ($rating_type === 'approval') : ?>
+            <!-- Approval: Cumulative only (full width) -->
+            <div class="shuriken-chart-card" style="grid-column: 1 / -1;">
+                <h2><?php esc_html_e('Cumulative Approvals', 'shuriken-reviews'); ?></h2>
+                <div class="chart-container">
+                    <canvas id="itemCumulativeChart"></canvas>
+                </div>
+            </div>
+        <?php else : ?>
+            <!-- Stars/Numeric: Distribution + Dual-axis -->
+            <div class="shuriken-chart-card">
+                <h2><?php esc_html_e('Rating Distribution', 'shuriken-reviews'); ?></h2>
+                <div class="chart-container">
+                    <canvas id="itemRatingDistributionChart"></canvas>
+                </div>
+            </div>
+            <div class="shuriken-chart-card wide">
+                <h2><?php esc_html_e('Voting Activity', 'shuriken-reviews'); ?></h2>
+                <div class="chart-container">
+                    <canvas id="itemDualAxisChart"></canvas>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
     
     <?php if ($is_parent && !empty($sub_ratings)) : ?>
@@ -548,20 +608,32 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_
 </div>
 
 <script>
-// Pass PHP data to JavaScript for charts
 var shurikenItemStatsData = {
+    ratingType: <?php echo wp_json_encode($rating_type); ?>,
+    <?php if ($rating_type === 'like_dislike') : ?>
+    likes: <?php echo intval($display_total_rating); ?>,
+    dislikes: <?php echo intval($display_total_votes - $display_total_rating); ?>,
+    approvalTrend: <?php echo wp_json_encode($approval_trend); ?>,
+    <?php elseif ($rating_type === 'approval') : ?>
+    cumulativeApprovals: <?php echo wp_json_encode($cumulative_approvals); ?>,
+    <?php else : ?>
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
     distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' \u2605'; }, array_keys($distribution_array))); ?>,
-    votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
+    dualAxisData: <?php echo wp_json_encode($dual_axis_data); ?>,
+    <?php endif; ?>
     i18n: {
         votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
-        stars: <?php echo wp_json_encode(__('Stars', 'shuriken-reviews')); ?>
+        average: <?php echo wp_json_encode(__('Average', 'shuriken-reviews')); ?>,
+        likes: <?php echo wp_json_encode(__('Likes', 'shuriken-reviews')); ?>,
+        dislikes: <?php echo wp_json_encode(__('Dislikes', 'shuriken-reviews')); ?>,
+        approvalRate: <?php echo wp_json_encode(__('Approval %', 'shuriken-reviews')); ?>,
+        approvals: <?php echo wp_json_encode(__('Approvals', 'shuriken-reviews')); ?>,
+        cumulative: <?php echo wp_json_encode(__('Cumulative', 'shuriken-reviews')); ?>
     }
 };
 
-// Initialize charts and filters when DOM is ready
 jQuery(document).ready(function($) {
-    // Date range filter handling for item stats (runs regardless of Chart.js)
+    // Date range filter
     var $itemDateSelect = $('#item_date_range');
     var $itemCustomRange = $('#shuriken-item-date-filter-form .custom-date-range');
     var $itemRangeType = $('#item_range_type');
@@ -574,12 +646,10 @@ jQuery(document).ready(function($) {
         } else {
             $itemCustomRange.slideUp(200);
             $itemRangeType.val('preset');
-            // Auto-submit for preset options
             $itemForm.submit();
         }
     });
     
-    // Validate custom date range before submit
     $itemForm.on('submit', function(e) {
         if ($itemRangeType.val() === 'custom') {
             var startDate = $('#item_start_date').val();
@@ -590,7 +660,6 @@ jQuery(document).ready(function($) {
                 e.preventDefault();
                 return false;
             }
-            
             if (startDate && endDate && startDate > endDate) {
                 alert(<?php echo wp_json_encode(__('Start date must be before end date.', 'shuriken-reviews')); ?>);
                 e.preventDefault();
@@ -599,82 +668,195 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Charts require Chart.js
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js not loaded');
         return;
     }
     
-    // Rating Distribution Chart
-    var distCtx = document.getElementById('itemRatingDistributionChart');
-    if (distCtx) {
-        var allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
-        var distData = shurikenItemStatsData.ratingDistribution;
-        var colors = distData.length <= allColors.length
-            ? allColors.slice(allColors.length - distData.length)
-            : allColors;
-        var distLabels = shurikenItemStatsData.distributionLabels || distData.map(function(_, i) { return (i + 1) + ' \u2605'; });
-        new Chart(distCtx, {
-            type: 'bar',
-            data: {
-                labels: distLabels,
-                datasets: [{
-                    label: shurikenItemStatsData.i18n.votes,
-                    data: distData,
-                    backgroundColor: colors,
-                    borderColor: colors,
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
-                }
-            }
-        });
+    var d = shurikenItemStatsData;
+    var gridColor = '#f0f0f1';
+    var tickColor = '#646970';
+    
+    function formatDate(dateStr) {
+        var date = new Date(dateStr);
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
     
-    // Votes Over Time Chart
-    var timeCtx = document.getElementById('itemVotesOverTimeChart');
-    if (timeCtx) {
-        var data = shurikenItemStatsData.votesOverTime || [];
-        var labels = data.map(function(item) {
-            var date = new Date(item.vote_date);
-            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        });
-        var values = data.map(function(item) { return parseInt(item.vote_count, 10); });
-        
-        new Chart(timeCtx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: shurikenItemStatsData.i18n.votes,
-                    data: values,
-                    borderColor: '#2271b1',
-                    backgroundColor: 'rgba(34, 113, 177, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#2271b1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
+    if (d.ratingType === 'like_dislike') {
+        // Approval Ring Chart
+        var ringCtx = document.getElementById('itemApprovalRingChart');
+        if (ringCtx && (d.likes + d.dislikes) > 0) {
+            new Chart(ringCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [d.i18n.likes, d.i18n.dislikes],
+                    datasets: [{
+                        data: [d.likes, d.dislikes],
+                        backgroundColor: ['#00a32a', '#dc3232'],
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } },
+                        tooltip: {
+                            backgroundColor: '#1d2327', titleColor: '#fff', bodyColor: '#fff', padding: 12,
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = d.likes + d.dislikes;
+                                    return ctx.label + ': ' + ctx.parsed + ' (' + Math.round((ctx.parsed / total) * 100) + '%)';
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
+        
+        // Approval Trend Line
+        var trendCtx = document.getElementById('itemApprovalTrendChart');
+        if (trendCtx && d.approvalTrend && d.approvalTrend.length) {
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: d.approvalTrend.map(function(r) { return formatDate(r.vote_date); }),
+                    datasets: [{
+                        label: d.i18n.approvalRate,
+                        data: d.approvalTrend.map(function(r) { return parseFloat(r.approval_rate); }),
+                        borderColor: '#00a32a',
+                        backgroundColor: 'rgba(0, 163, 42, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: tickColor } },
+                        y: { beginAtZero: true, max: 100, grid: { color: gridColor }, ticks: { callback: function(v) { return v + '%'; }, color: tickColor } }
+                    }
+                }
+            });
+        }
+        
+    } else if (d.ratingType === 'approval') {
+        // Cumulative Approvals
+        var cumCtx = document.getElementById('itemCumulativeChart');
+        if (cumCtx && d.cumulativeApprovals && d.cumulativeApprovals.length) {
+            new Chart(cumCtx, {
+                type: 'line',
+                data: {
+                    labels: d.cumulativeApprovals.map(function(r) { return formatDate(r.vote_date); }),
+                    datasets: [{
+                        label: d.i18n.cumulative,
+                        data: d.cumulativeApprovals.map(function(r) { return parseInt(r.cumulative_count, 10); }),
+                        borderColor: '#8c5383',
+                        backgroundColor: 'rgba(140, 83, 131, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: tickColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } }
+                    }
+                }
+            });
+        }
+        
+    } else {
+        // Stars/Numeric: Distribution Bar
+        var distCtx = document.getElementById('itemRatingDistributionChart');
+        if (distCtx) {
+            var allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
+            var distData = d.ratingDistribution || [];
+            var colors = distData.length <= allColors.length
+                ? allColors.slice(allColors.length - distData.length)
+                : allColors;
+            var distLabels = d.distributionLabels || distData.map(function(_, i) { return (i + 1) + ' \u2605'; });
+            new Chart(distCtx, {
+                type: 'bar',
+                data: {
+                    labels: distLabels,
+                    datasets: [{ label: d.i18n.votes, data: distData, backgroundColor: colors, borderColor: colors, borderWidth: 1, borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: tickColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } }
+                    }
+                }
+            });
+        }
+        
+        // Stars/Numeric: Dual-axis (votes + avg)
+        var dualCtx = document.getElementById('itemDualAxisChart');
+        if (dualCtx && d.dualAxisData && d.dualAxisData.length) {
+            new Chart(dualCtx, {
+                type: 'bar',
+                data: {
+                    labels: d.dualAxisData.map(function(r) { return formatDate(r.vote_date); }),
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: d.i18n.votes,
+                            data: d.dualAxisData.map(function(r) { return parseInt(r.vote_count, 10); }),
+                            backgroundColor: 'rgba(34, 113, 177, 0.3)',
+                            borderColor: '#2271b1',
+                            borderWidth: 1,
+                            borderRadius: 3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'line',
+                            label: d.i18n.average,
+                            data: d.dualAxisData.map(function(r) { return parseFloat(r.daily_avg); }),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#f59e0b',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, padding: 12 } },
+                        tooltip: {
+                            backgroundColor: '#1d2327', titleColor: '#fff', bodyColor: '#fff', padding: 12
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: tickColor } },
+                        y: { beginAtZero: true, position: 'left', grid: { color: gridColor }, ticks: { precision: 0, color: tickColor }, title: { display: true, text: d.i18n.votes, color: tickColor } },
+                        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#f59e0b' }, title: { display: true, text: d.i18n.average, color: '#f59e0b' } }
+                    }
+                }
+            });
+        }
     }
 });
 </script>
