@@ -73,12 +73,19 @@
             const [isManageChildrenModalOpen, setIsManageChildrenModalOpen] = useState(false);
             const [newParentName, setNewParentName] = useState('');
             const [newParentDisplayOnly, setNewParentDisplayOnly] = useState(true);
+            const [newParentType, setNewParentType] = useState('stars');
+            const [newParentScale, setNewParentScale] = useState(5);
             const [editParentName, setEditParentName] = useState('');
             const [editParentDisplayOnly, setEditParentDisplayOnly] = useState(true);
+            const [editParentType, setEditParentType] = useState('stars');
+            const [editParentScale, setEditParentScale] = useState(5);
             const [childrenToManage, setChildrenToManage] = useState([]);
             const [childrenLocalEdits, setChildrenLocalEdits] = useState({});
             const [newChildName, setNewChildName] = useState('');
             const [newChildEffectType, setNewChildEffectType] = useState('positive');
+            const [newChildType, setNewChildType] = useState('stars');
+            const [newChildScale, setNewChildScale] = useState(5);
+            const [newChildDisplayOnly, setNewChildDisplayOnly] = useState(false);
             const [creating, setCreating] = useState(false);
             const [updating, setUpdating] = useState(false);
             const [managingChildren, setManagingChildren] = useState(false);
@@ -396,12 +403,20 @@
 
                 // Normal parent creation
                 setCreating(true);
-                createRating({ name: newParentName, display_only: newParentDisplayOnly })
+                var scaleRange = getScaleRange(newParentType);
+                createRating({
+                    name: newParentName,
+                    display_only: newParentDisplayOnly,
+                    rating_type: newParentType,
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newParentScale))
+                })
                     .then(function (data) {
                         setAttributes({ ratingId: parseInt(data.id, 10), mirrorId: 0, subRatings: [] });
                         fetchParentRatings();
                         setNewParentName('');
                         setNewParentDisplayOnly(true);
+                        setNewParentType('stars');
+                        setNewParentScale(5);
                         setIsCreateModalOpen(false);
                         setCreating(false);
                         setError(null);
@@ -417,13 +432,21 @@
                 setEditParentName(selectedRating.name || '');
                 var dv = selectedRating.display_only;
                 setEditParentDisplayOnly(dv === true || dv === 'true' || parseInt(dv, 10) === 1);
+                setEditParentType(selectedRating.rating_type || 'stars');
+                setEditParentScale(parseInt(selectedRating.scale, 10) || 5);
                 setIsEditModalOpen(true);
             }
 
             function updateParentRating() {
                 if (!editParentName.trim() || updating || !selectedRating) return;
                 setUpdating(true);
-                updateRating(selectedRating.id, { name: editParentName, display_only: editParentDisplayOnly })
+                var scaleRange = getScaleRange(editParentType);
+                updateRating(selectedRating.id, {
+                    name: editParentName,
+                    display_only: editParentDisplayOnly,
+                    rating_type: editParentType,
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, editParentScale))
+                })
                     .then(function () {
                         fetchParentRatings();
                         setIsEditModalOpen(false);
@@ -446,16 +469,22 @@
             function addNewChild() {
                 if (!newChildName.trim() || managingChildren || !selectedRating) return;
                 setManagingChildren(true);
+                var scaleRange = getScaleRange(newChildType);
                 createRating({
                     name: newChildName,
                     parent_id: parseInt(selectedRating.id, 10),
                     effect_type: newChildEffectType,
-                    display_only: false
+                    display_only: newChildDisplayOnly,
+                    rating_type: newChildType,
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newChildScale))
                 })
                     .then(function (data) {
                         setChildrenToManage(function (prev) { return [data].concat(prev); });
                         setNewChildName('');
                         setNewChildEffectType('positive');
+                        setNewChildType('stars');
+                        setNewChildScale(5);
+                        setNewChildDisplayOnly(false);
                         setManagingChildren(false);
                         setError(null);
                     })
@@ -896,6 +925,8 @@
                             setIsCreateModalOpen(false);
                             setNewParentName('');
                             setNewParentDisplayOnly(true);
+                            setNewParentType('stars');
+                            setNewParentScale(5);
                             setNewRatingIsMirror(false);
                             setNewMirrorSourceId(0);
                         },
@@ -947,6 +978,34 @@
                             onChange: setNewParentDisplayOnly,
                             help: __('When enabled, users can only vote on sub-ratings. The parent shows the calculated average.', 'shuriken-reviews')
                         }),
+                        !newRatingIsMirror && wp.element.createElement(SelectControl, {
+                            label: __('Rating Type', 'shuriken-reviews'),
+                            value: newParentType,
+                            options: ratingTypeOptions,
+                            onChange: function (value) {
+                                setNewParentType(value);
+                                var range = getScaleRange(value);
+                                if (newParentScale < range.min || newParentScale > range.max) {
+                                    setNewParentScale(range.min === range.max ? range.min : 5);
+                                }
+                            },
+                            help: __('Choose how users will rate this item.', 'shuriken-reviews')
+                        }),
+                        !newRatingIsMirror && (newParentType === 'stars' || newParentType === 'numeric') && wp.element.createElement(TextControl, {
+                            label: __('Scale', 'shuriken-reviews'),
+                            type: 'number',
+                            value: String(newParentScale),
+                            onChange: function (value) {
+                                var range = getScaleRange(newParentType);
+                                var num = parseInt(value, 10);
+                                if (!isNaN(num)) {
+                                    setNewParentScale(Math.max(range.min, Math.min(range.max, num)));
+                                }
+                            },
+                            help: newParentType === 'stars'
+                                ? __('Number of stars (2–10).', 'shuriken-reviews')
+                                : __('Maximum slider value (2–100).', 'shuriken-reviews')
+                        }),
                         wp.element.createElement(
                             'div',
                             { className: 'shuriken-modal-actions' },
@@ -956,6 +1015,8 @@
                                     setIsCreateModalOpen(false);
                                     setNewParentName('');
                                     setNewParentDisplayOnly(true);
+                                    setNewParentType('stars');
+                                    setNewParentScale(5);
                                     setNewRatingIsMirror(false);
                                     setNewMirrorSourceId(0);
                                 }
@@ -1001,6 +1062,39 @@
                             checked: editParentDisplayOnly,
                             onChange: setEditParentDisplayOnly,
                             help: __('When enabled, users can only vote on sub-ratings.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Rating Type', 'shuriken-reviews'),
+                            value: editParentType,
+                            options: ratingTypeOptions,
+                            onChange: function (val) {
+                                setEditParentType(val);
+                                var range = getScaleRange(val);
+                                if (range.fixed) {
+                                    setEditParentScale(range.min);
+                                } else if (editParentScale < range.min || editParentScale > range.max) {
+                                    setEditParentScale(range.min);
+                                }
+                            },
+                            disabled: selectedRating && parseInt(selectedRating.total_votes, 10) > 0,
+                            help: selectedRating && parseInt(selectedRating.total_votes, 10) > 0
+                                ? __('Rating type cannot be changed after votes are cast.', 'shuriken-reviews')
+                                : undefined
+                        }),
+                        !getScaleRange(editParentType).fixed && wp.element.createElement(TextControl, {
+                            label: __('Scale', 'shuriken-reviews'),
+                            type: 'number',
+                            value: String(editParentScale),
+                            min: getScaleRange(editParentType).min,
+                            max: getScaleRange(editParentType).max,
+                            onChange: function (val) {
+                                var n = parseInt(val, 10);
+                                var range = getScaleRange(editParentType);
+                                if (!isNaN(n)) {
+                                    setEditParentScale(Math.max(range.min, Math.min(range.max, n)));
+                                }
+                            },
+                            help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(editParentType).min + '–' + getScaleRange(editParentType).max
                         }),
                         wp.element.createElement(
                             'div',
@@ -1148,6 +1242,9 @@
                             setIsManageChildrenModalOpen(false);
                             setNewChildName('');
                             setNewChildEffectType('positive');
+                            setNewChildType('stars');
+                            setNewChildScale(5);
+                            setNewChildDisplayOnly(false);
                             setChildrenLocalEdits({});
                             setNewChildMirrorNames({});
                             setEditingMirrorNames({});
@@ -1196,6 +1293,41 @@
                             ],
                             onChange: setNewChildEffectType,
                             help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(SelectControl, {
+                            label: __('Rating Type', 'shuriken-reviews'),
+                            value: newChildType,
+                            options: ratingTypeOptions,
+                            onChange: function (val) {
+                                setNewChildType(val);
+                                var range = getScaleRange(val);
+                                if (range.fixed) {
+                                    setNewChildScale(range.min);
+                                } else if (newChildScale < range.min || newChildScale > range.max) {
+                                    setNewChildScale(range.min);
+                                }
+                            }
+                        }),
+                        !getScaleRange(newChildType).fixed && wp.element.createElement(TextControl, {
+                            label: __('Scale', 'shuriken-reviews'),
+                            type: 'number',
+                            value: String(newChildScale),
+                            min: getScaleRange(newChildType).min,
+                            max: getScaleRange(newChildType).max,
+                            onChange: function (val) {
+                                var n = parseInt(val, 10);
+                                var range = getScaleRange(newChildType);
+                                if (!isNaN(n)) {
+                                    setNewChildScale(Math.max(range.min, Math.min(range.max, n)));
+                                }
+                            },
+                            help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(newChildType).min + '–' + getScaleRange(newChildType).max
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
+                            checked: newChildDisplayOnly,
+                            onChange: setNewChildDisplayOnly,
+                            help: __('When enabled, this sub-rating cannot be voted on directly.', 'shuriken-reviews')
                         }),
                         wp.element.createElement(
                             'div',
@@ -1266,11 +1398,61 @@
                                         label: __('Effect Type', 'shuriken-reviews'),
                                         value: (hasEdits && childrenLocalEdits[child.id].effect_type) || child.effect_type || 'positive',
                                         options: [
-                                            { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
-                                            { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
+                                            { label: __('Positive — Higher votes improve parent rating', 'shuriken-reviews'), value: 'positive' },
+                                            { label: __('Negative — Higher votes lower parent rating', 'shuriken-reviews'), value: 'negative' }
                                         ],
                                         onChange: function (value) { updateChildLocally(child.id, { effect_type: value }); }
-                                    })
+                                    }),
+                                    (function () {
+                                        var childType = (hasEdits && childrenLocalEdits[child.id].rating_type) || child.rating_type || 'stars';
+                                        var childScale = (hasEdits && childrenLocalEdits[child.id].scale !== undefined) ? childrenLocalEdits[child.id].scale : (child.scale || 5);
+                                        var childDisplayOnly = (hasEdits && childrenLocalEdits[child.id].display_only !== undefined) ? childrenLocalEdits[child.id].display_only : (child.display_only || false);
+                                        var childHasVotes = parseInt(child.total_votes, 10) > 0;
+                                        return wp.element.createElement(
+                                            wp.element.Fragment,
+                                            null,
+                                            wp.element.createElement(SelectControl, {
+                                                label: __('Rating Type', 'shuriken-reviews'),
+                                                value: childType,
+                                                options: ratingTypeOptions,
+                                                onChange: function (val) {
+                                                    var range = getScaleRange(val);
+                                                    var updates = { rating_type: val };
+                                                    if (range.fixed) {
+                                                        updates.scale = range.min;
+                                                    } else if (childScale < range.min || childScale > range.max) {
+                                                        updates.scale = range.min;
+                                                    }
+                                                    updateChildLocally(child.id, updates);
+                                                },
+                                                disabled: childHasVotes,
+                                                help: childHasVotes
+                                                    ? __('Rating type cannot be changed after votes are cast.', 'shuriken-reviews')
+                                                    : undefined
+                                            }),
+                                            !getScaleRange(childType).fixed && wp.element.createElement(TextControl, {
+                                                label: __('Scale', 'shuriken-reviews'),
+                                                type: 'number',
+                                                value: String(childScale),
+                                                min: getScaleRange(childType).min,
+                                                max: getScaleRange(childType).max,
+                                                onChange: function (val) {
+                                                    var n = parseInt(val, 10);
+                                                    var range = getScaleRange(childType);
+                                                    if (!isNaN(n)) {
+                                                        updateChildLocally(child.id, { scale: Math.max(range.min, Math.min(range.max, n)) });
+                                                    }
+                                                },
+                                                help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(childType).min + '–' + getScaleRange(childType).max
+                                            }),
+                                            wp.element.createElement(CheckboxControl, {
+                                                label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
+                                                checked: !!childDisplayOnly,
+                                                onChange: function (val) { updateChildLocally(child.id, { display_only: val }); },
+                                                help: __('When enabled, this sub-rating cannot be voted on directly.', 'shuriken-reviews')
+                                            })
+                                        );
+                                    })()
                                 ),
                                 // --- Mirrors for this child ---
                                 (function () {

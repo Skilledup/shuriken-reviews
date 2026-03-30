@@ -467,10 +467,11 @@
                         label: __('Effect on Parent', 'shuriken-reviews'),
                         value: newRatingEffectType,
                         options: [
-                            { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
-                            { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
+                            { label: __('Positive — Higher votes improve parent rating', 'shuriken-reviews'), value: 'positive' },
+                            { label: __('Negative — Higher votes lower parent rating', 'shuriken-reviews'), value: 'negative' }
                         ],
-                        onChange: setNewRatingEffectType
+                        onChange: setNewRatingEffectType,
+                        help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     !newRatingMirrorOf && !newRatingParentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
@@ -572,10 +573,11 @@
                         label: __('Effect on Parent', 'shuriken-reviews'),
                         value: editRatingEffectType,
                         options: [
-                            { label: __('Positive', 'shuriken-reviews'), value: 'positive' },
-                            { label: __('Negative', 'shuriken-reviews'), value: 'negative' }
+                            { label: __('Positive — Higher votes improve parent rating', 'shuriken-reviews'), value: 'positive' },
+                            { label: __('Negative — Higher votes lower parent rating', 'shuriken-reviews'), value: 'negative' }
                         ],
-                        onChange: setEditRatingEffectType
+                        onChange: setEditRatingEffectType,
+                        help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     !editRatingMirrorOf && !editRatingParentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
