@@ -201,30 +201,8 @@ class Shuriken_Block {
             'render_callback' => array($this, 'render_grouped_block'),
         ));
 
-        // Register the post-linked-ratings editor script
-        wp_register_script(
-            'shuriken-post-linked-ratings-editor',
-            plugins_url('blocks/shuriken-post-linked-ratings/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
-            array(
-                'wp-blocks',
-                'wp-element',
-                'wp-block-editor',
-                'wp-components',
-                'wp-i18n',
-                'wp-core-data',
-                'wp-data',
-                'wp-api-fetch',
-                'shuriken-ratings-store',
-                'shuriken-block-helpers',
-            ),
-            SHURIKEN_REVIEWS_VERSION,
-            true
-        );
-
-        // Register the post-linked-ratings block (dynamic, server-side rendered)
-        register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-post-linked-ratings', array(
-            'render_callback' => array($this, 'render_post_linked_ratings_block'),
-        ));
+        // Note: The shuriken-post-linked-ratings block has been deprecated in favor of
+        // the postContext attribute on single/grouped rating blocks (contextual voting).
     }
 
     /**
@@ -273,8 +251,17 @@ class Shuriken_Block {
             $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($attributes['starColor']);
         }
 
+        // Determine context for contextual voting
+        $context_id = null;
+        $context_type = null;
+        $post_context = !empty($attributes['postContext']);
+        if ($post_context) {
+            $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
+            $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
+        }
+
         // Use the shared render method from Shortcodes class
-        $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag);
+        $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag, $context_id, $context_type);
 
         // Wrap with block wrapper attributes for proper Gutenberg integration
         return $this->wrap_with_block_attributes($html, $rating, $anchor_tag, $style_vars);
@@ -371,17 +358,26 @@ class Shuriken_Block {
         // Layout class
         $layout_class = ($child_layout === 'list') ? ' is-layout-list' : '';
 
+        // Determine context for contextual voting
+        $context_id = null;
+        $context_type = null;
+        $post_context = !empty($attributes['postContext']);
+        if ($post_context) {
+            $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
+            $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
+        }
+
         // Render parent rating
         $html = '<div class="shuriken-rating-group' . esc_attr($layout_class) . '">';
         // Add parent-rating class to the wrapper of the parent rating
-        $parent_html = shuriken_shortcodes()->render_rating_html($parent_display_rating, $title_tag, $anchor_tag);
+        $parent_html = shuriken_shortcodes()->render_rating_html($parent_display_rating, $title_tag, $anchor_tag, $context_id, $context_type);
         $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
 
         // Render child ratings
         if (!empty($child_ratings)) {
             $html .= '<div class="shuriken-child-ratings">';
             foreach ($child_ratings as $child) {
-                $child_html = shuriken_shortcodes()->render_rating_html($child, 'h4');
+                $child_html = shuriken_shortcodes()->render_rating_html($child, 'h4', '', $context_id, $context_type);
                 // Add child-rating class
                 $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
             }

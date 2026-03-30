@@ -65,13 +65,15 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
     /**
      * Check if a user can submit a vote
      *
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (required for guests).
-     * @param int         $rating_id Rating ID being voted on.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (required for guests).
+     * @param int         $rating_id    Rating ID being voted on.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type ('post', 'product', etc.).
      * @return bool True if vote is allowed.
      * @throws Shuriken_Rate_Limit_Exception If any limit is exceeded.
      */
-    public function can_vote(int $user_id, ?string $user_ip, int $rating_id): bool {
+    public function can_vote(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): bool {
         /**
          * Fires before rate limit check is performed.
          *
@@ -96,7 +98,7 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
 
         // Check cooldown for this specific rating
         if ($limits['cooldown'] > 0) {
-            $cooldown_remaining = $this->get_cooldown_remaining($user_id, $user_ip, $rating_id);
+            $cooldown_remaining = $this->get_cooldown_remaining($user_id, $user_ip, $rating_id, $context_id, $context_type);
             
             if ($cooldown_remaining > 0) {
                 $this->fire_exceeded_action('cooldown', $user_id, $user_ip, $cooldown_remaining);
@@ -208,19 +210,21 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
     /**
      * Get remaining cooldown time for a specific rating
      *
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (required for guests).
-     * @param int         $rating_id Rating ID.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (required for guests).
+     * @param int         $rating_id    Rating ID.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return int Seconds remaining until user can vote again.
      */
-    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id): int {
+    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): int {
         $limits = $this->get_limits($user_id);
         
         if ($limits['cooldown'] <= 0) {
             return 0;
         }
 
-        $last_vote_time = $this->db->get_last_vote_time($rating_id, $user_id, $user_ip);
+        $last_vote_time = $this->db->get_last_vote_time($rating_id, $user_id, $user_ip, $context_id, $context_type);
         
         if (!$last_vote_time) {
             return 0;

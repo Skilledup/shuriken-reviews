@@ -52,10 +52,25 @@ jQuery(document).ready(function($) {
         const ratingIds = [];
         const $allRatings = $('.shuriken-rating');
         
+        // Group ratings by context for batched fetching
+        const contextGroups = {};
+        
         $allRatings.each(function() {
             const id = $(this).data('id');
-            if (id && ratingIds.indexOf(id) === -1) {
-                ratingIds.push(id);
+            const ctxId = $(this).data('context-id') || '';
+            const ctxType = $(this).data('context-type') || '';
+            const key = ctxId + ':' + ctxType;
+            
+            if (id) {
+                if (!contextGroups[key]) {
+                    contextGroups[key] = { ids: [], contextId: ctxId, contextType: ctxType };
+                }
+                if (contextGroups[key].ids.indexOf(id) === -1) {
+                    contextGroups[key].ids.push(id);
+                }
+                if (ratingIds.indexOf(id) === -1) {
+                    ratingIds.push(id);
+                }
             }
         });
         
@@ -86,87 +101,100 @@ jQuery(document).ready(function($) {
                     }
                 }
                 
-                // Fetch fresh rating stats (public endpoint - no auth needed)
-                $.ajax({
-                    url: shurikenReviews.rest_url + 'shuriken-reviews/v1/ratings/stats',
-                    type: 'GET',
-                    cache: false, // Important: bypass browser cache
-                    data: {
-                        ids: ratingIds.join(',')
-                    },
-                    // Note: Don't send X-WP-Nonce header - this is a public endpoint
-                    success: function(statsResponse) {
-                        // Update each rating with fresh data
-                        $.each(statsResponse, function(ratingId, stats) {
-                            const $ratings = $('.shuriken-rating[data-id="' + ratingId + '"]');
-                            $ratings.each(function() {
-                                const $rating = $(this);
-                                const ratingType = $rating.data('rating-type') || 'stars';
-                                const $statsEl = $rating.find('.rating-stats');
-                                const maxStars = parseInt($rating.data('max-stars')) || 5;
+                // Build stats requests per context group
+                const groupKeys = Object.keys(contextGroups);
+                let completedRequests = 0;
+                const totalRequests = groupKeys.length;
+                
+                function applyStats(statsResponse, ctxId, ctxType) {
+                    $.each(statsResponse, function(ratingId, stats) {
+                        // Select only ratings matching this context
+                        let selector = '.shuriken-rating[data-id="' + ratingId + '"]';
+                        if (ctxId) {
+                            selector += '[data-context-id="' + ctxId + '"][data-context-type="' + ctxType + '"]';
+                        } else {
+                            selector += ':not([data-context-id])';
+                        }
+                        const $ratings = $(selector);
+                        $ratings.each(function() {
+                            const $rating = $(this);
+                            const ratingType = $rating.data('rating-type') || 'stars';
+                            const $statsEl = $rating.find('.rating-stats');
+                            const maxStars = parseInt($rating.data('max-stars')) || 5;
+                            
+                            if (ratingType === 'like_dislike') {
+                                const totalVotes = parseInt(stats.total_votes) || 0;
+                                const totalRating = parseInt(stats.total_rating) || 0;
+                                $rating.find('.shuriken-like-count').text(totalRating);
+                                $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
+                            } else if (ratingType === 'approval') {
+                                $rating.find('.shuriken-upvote-count').text(stats.total_votes);
+                            } else if (ratingType === 'numeric') {
+                                const normalizedAverage = parseFloat(stats.average) || 0;
+                                let scaledAverage = (normalizedAverage / 5) * maxStars;
+                                scaledAverage = Math.round(scaledAverage * 10) / 10;
                                 
-                                if (ratingType === 'like_dislike') {
-                                    // Update like/dislike counts
-                                    const totalVotes = parseInt(stats.total_votes) || 0;
-                                    const totalRating = parseInt(stats.total_rating) || 0;
-                                    $rating.find('.shuriken-like-count').text(totalRating);
-                                    $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
-                                } else if (ratingType === 'approval') {
-                                    // Update upvote count
-                                    $rating.find('.shuriken-upvote-count').text(stats.total_votes);
-                                } else if (ratingType === 'numeric') {
-                                    // Numeric slider: calculate scaled average
-                                    const normalizedAverage = parseFloat(stats.average) || 0;
-                                    let scaledAverage = (normalizedAverage / 5) * maxStars;
-                                    scaledAverage = Math.round(scaledAverage * 10) / 10;
-                                    
-                                    $statsEl.data('average', stats.average);
-                                    $statsEl.data('scaled-average', scaledAverage);
-                                    
-                                    const text = shurikenReviews.i18n.averageRating
-                                        .replace('%1$s', scaledAverage)
-                                        .replace('%2$s', maxStars)
-                                        .replace('%3$s', stats.total_votes);
-                                    $statsEl.html(text);
-                                    
-                                    // Update slider value display
-                                    $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
-                                } else {
-                                    // Stars/numeric: calculate scaled average from normalized (1-5 scale)
-                                    const normalizedAverage = parseFloat(stats.average) || 0;
-                                    let scaledAverage = (normalizedAverage / 5) * maxStars;
-                                    scaledAverage = Math.round(scaledAverage * 10) / 10; // Round to 1 decimal
-                                    
-                                    // Update data attributes
-                                    $statsEl.data('average', stats.average);
-                                    $statsEl.data('scaled-average', scaledAverage);
-                                    
-                                    // Update displayed text with scaled values
-                                    const text = shurikenReviews.i18n.averageRating
-                                        .replace('%1$s', scaledAverage)
-                                        .replace('%2$s', maxStars)
-                                        .replace('%3$s', stats.total_votes);
-                                    $statsEl.html(text);
-                                    
-                                    // Update stars using scaled average
-                                    updateStars($rating, scaledAverage);
-                                }
+                                $statsEl.data('average', stats.average);
+                                $statsEl.data('scaled-average', scaledAverage);
                                 
-                                // Remove refreshing state with slight delay for smooth transition
-                                $rating.removeClass('shuriken-refreshing');
-                            });
+                                const text = shurikenReviews.i18n.averageRating
+                                    .replace('%1$s', scaledAverage)
+                                    .replace('%2$s', maxStars)
+                                    .replace('%3$s', stats.total_votes);
+                                $statsEl.html(text);
+                                
+                                $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
+                            } else {
+                                const normalizedAverage = parseFloat(stats.average) || 0;
+                                let scaledAverage = (normalizedAverage / 5) * maxStars;
+                                scaledAverage = Math.round(scaledAverage * 10) / 10;
+                                
+                                $statsEl.data('average', stats.average);
+                                $statsEl.data('scaled-average', scaledAverage);
+                                
+                                const text = shurikenReviews.i18n.averageRating
+                                    .replace('%1$s', scaledAverage)
+                                    .replace('%2$s', maxStars)
+                                    .replace('%3$s', stats.total_votes);
+                                $statsEl.html(text);
+                                
+                                updateStars($rating, scaledAverage);
+                            }
+                            
+                            $rating.removeClass('shuriken-refreshing');
                         });
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Failed to fetch fresh rating stats:', error);
-                        // Remove refreshing state on error too
-                        $('.shuriken-rating').removeClass('shuriken-refreshing');
-                    },
-                    complete: function() {
+                    });
+                }
+                
+                function onRequestComplete() {
+                    completedRequests++;
+                    if (completedRequests >= totalRequests) {
                         isFetchingFreshData = false;
-                        // Ensure refreshing state is removed even if no data returned
                         $('.shuriken-rating.shuriken-refreshing').removeClass('shuriken-refreshing');
                     }
+                }
+                
+                $.each(contextGroups, function(key, group) {
+                    const requestData = { ids: group.ids.join(',') };
+                    if (group.contextId) {
+                        requestData.context_id = group.contextId;
+                        requestData.context_type = group.contextType;
+                    }
+                    
+                    $.ajax({
+                        url: shurikenReviews.rest_url + 'shuriken-reviews/v1/ratings/stats',
+                        type: 'GET',
+                        cache: false,
+                        data: requestData,
+                        success: function(statsResponse) {
+                            applyStats(statsResponse, group.contextId, group.contextType);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Failed to fetch fresh rating stats:', error);
+                            $('.shuriken-rating').removeClass('shuriken-refreshing');
+                        },
+                        complete: onRequestComplete
+                    });
                 });
             },
             error: function(xhr, status, error) {
@@ -259,18 +287,26 @@ jQuery(document).ready(function($) {
         const $stars = $rating.find('.stars');
         const ratingId = $rating.data('id');
         const maxStars = parseInt($rating.data('max-stars')) || 5;
+        const contextId = $rating.data('context-id') || '';
+        const contextType = $rating.data('context-type') || '';
         let originalText = $rating.find('.rating-stats').html();
+
+        var postData = {
+            action: 'submit_rating',
+            rating_id: ratingId,
+            rating_value: value,
+            max_stars: maxStars,
+            nonce: shurikenReviews.nonce
+        };
+        if (contextId && contextType) {
+            postData.context_id = contextId;
+            postData.context_type = contextType;
+        }
         
         $.ajax({
             url: shurikenReviews.ajaxurl,
             type: 'POST',
-            data: {
-                action: 'submit_rating',
-                rating_id: ratingId,
-                rating_value: value,
-                max_stars: maxStars,
-                nonce: shurikenReviews.nonce
-            },
+            data: postData,
             success: function(response) {
                 if (response.success) {
                     // Show translated success feedback
@@ -489,17 +525,25 @@ jQuery(document).ready(function($) {
         
         const ratingId = $rating.data('id');
         const ratingType = $rating.data('rating-type');
+        const contextId = $rating.data('context-id') || '';
+        const contextType = $rating.data('context-type') || '';
+
+        var postData = {
+            action: 'submit_rating',
+            rating_id: ratingId,
+            rating_value: value,
+            max_stars: 1,
+            nonce: shurikenReviews.nonce
+        };
+        if (contextId && contextType) {
+            postData.context_id = contextId;
+            postData.context_type = contextType;
+        }
         
         $.ajax({
             url: shurikenReviews.ajaxurl,
             type: 'POST',
-            data: {
-                action: 'submit_rating',
-                rating_id: ratingId,
-                rating_value: value,
-                max_stars: 1,
-                nonce: shurikenReviews.nonce
-            },
+            data: postData,
             success: function(response) {
                 if (response.success) {
                     if (ratingType === 'like_dislike') {

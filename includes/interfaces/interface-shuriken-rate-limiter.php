@@ -29,13 +29,15 @@ interface Shuriken_Rate_Limiter_Interface {
      * Verifies all rate limiting conditions (cooldown, hourly, daily).
      * Throws an appropriate exception if any limit is exceeded.
      *
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (required for guests).
-     * @param int         $rating_id Rating ID being voted on.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (required for guests).
+     * @param int         $rating_id    Rating ID being voted on.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return bool True if vote is allowed.
      * @throws Shuriken_Rate_Limit_Exception If any limit is exceeded.
      */
-    public function can_vote(int $user_id, ?string $user_ip, int $rating_id): bool;
+    public function can_vote(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): bool;
 
     /**
      * Get the current rate limit settings

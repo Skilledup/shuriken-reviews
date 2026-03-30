@@ -138,12 +138,14 @@ class Shuriken_Shortcodes {
     /**
      * Render rating HTML
      *
-     * @param object $rating    Rating object from database.
-     * @param string $tag       HTML tag for title.
-     * @param string $anchor_id Optional anchor ID.
+     * @param object      $rating       Rating object from database.
+     * @param string      $tag          HTML tag for title.
+     * @param string      $anchor_id    Optional anchor ID.
+     * @param int|null    $context_id   Optional post/entity ID for contextual stats.
+     * @param string|null $context_type Optional context type ('post', 'product', etc.).
      * @return string Rendered HTML.
      */
-    public function render_rating_html(object $rating, string $tag = 'h2', string $anchor_id = ''): string {
+    public function render_rating_html(object $rating, string $tag = 'h2', string $anchor_id = '', ?int $context_id = null, ?string $context_type = null): string {
         /**
          * Filter the rating data before rendering.
          *
@@ -239,6 +241,16 @@ class Shuriken_Shortcodes {
          * @param object $rating      The rating object.
          */
         $star_symbol = apply_filters('shuriken_rating_star_symbol', '★', $rating);
+
+        // If contextual, overlay per-context stats onto the rating object
+        $context_attrs = '';
+        if ($context_id !== null && $context_type !== null) {
+            $ctx_stats = shuriken_db()->get_contextual_stats((int) $rating->source_id, $context_id, $context_type);
+            $rating->total_votes = $ctx_stats->total_votes;
+            $rating->total_rating = $ctx_stats->total_rating;
+            $rating->average = $ctx_stats->average;
+            $context_attrs = ' data-context-id="' . esc_attr($context_id) . '" data-context-type="' . esc_attr($context_type) . '"';
+        }
         
         // Calculate the scaled average for display (convert from 5-scale to custom scale)
         $scaled_average = Shuriken_Database::denormalize_average($rating->average, $max_stars);
@@ -247,7 +259,7 @@ class Shuriken_Shortcodes {
         // Start output buffering
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" data-rating-type="<?php echo esc_attr($rating_type); ?>" <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
+        <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" data-rating-type="<?php echo esc_attr($rating_type); ?>"<?php echo $context_attrs; ?> <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
             <div class="shuriken-rating-wrapper">
                 <<?php echo tag_escape($tag); ?> class="rating-title">
                     <?php echo esc_html($rating->name); ?>

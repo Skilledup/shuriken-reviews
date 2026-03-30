@@ -123,6 +123,23 @@ class Shuriken_AJAX {
         $rating_value = floatval($_POST['rating_value']);
         $max_stars = isset($_POST['max_stars']) ? intval($_POST['max_stars']) : Shuriken_Database::RATING_SCALE_DEFAULT;
 
+        // Context for post-scoped voting
+        $context_id = isset($_POST['context_id']) ? absint($_POST['context_id']) : null;
+        $context_type = isset($_POST['context_type']) ? sanitize_key($_POST['context_type']) : null;
+
+        // Validate context: both must be provided or neither
+        if (($context_id && !$context_type) || (!$context_id && $context_type)) {
+            $context_id = null;
+            $context_type = null;
+        }
+
+        // Validate context_type against allowed values
+        $allowed_context_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+        if ($context_type && !in_array($context_type, $allowed_context_types, true)) {
+            $context_id = null;
+            $context_type = null;
+        }
+
         try {
             // Get the rating first to apply the filter
             $rating = $this->db->get_rating($rating_id);
@@ -172,7 +189,7 @@ class Shuriken_AJAX {
 
             // Check rate limits
             $rate_limiter = shuriken_rate_limiter();
-            $rate_limiter->can_vote($user_id, $user_ip, $rating_id);
+            $rate_limiter->can_vote($user_id, $user_ip, $rating_id, $context_id, $context_type);
 
             /**
              * Filter whether the user can submit this vote.
@@ -217,7 +234,7 @@ class Shuriken_AJAX {
 
         try {
             // Check if the user has already voted
-            $existing_vote = $this->db->get_user_vote($rating_id, $user_id, $user_ip);
+            $existing_vote = $this->db->get_user_vote($rating_id, $user_id, $user_ip, $context_id, $context_type);
             $is_update = !empty($existing_vote);
 
             if ($existing_vote) {
@@ -245,7 +262,7 @@ class Shuriken_AJAX {
                 do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
             } else {
                 // Insert a new vote (use normalized value for storage)
-                $this->db->create_vote($rating_id, $normalized_value, $user_id, $user_ip);
+                $this->db->create_vote($rating_id, $normalized_value, $user_id, $user_ip, $context_id, $context_type);
 
                 /**
                  * Fires after a new vote is created.
@@ -275,23 +292,35 @@ class Shuriken_AJAX {
             return;
         }
 
+        // For contextual votes, return context-scoped stats instead of global totals
+        if ($context_id !== null && $context_type !== null) {
+            $ctx_stats = $this->db->get_contextual_stats($rating_id, $context_id, $context_type);
+            $ctx_total_votes = $ctx_stats->total_votes;
+            $ctx_total_rating = $ctx_stats->total_rating;
+            $ctx_average = $ctx_stats->average;
+        } else {
+            $ctx_total_votes = $updated_rating->total_votes;
+            $ctx_total_rating = $updated_rating->total_rating;
+            $ctx_average = $updated_rating->average;
+        }
+
         // Calculate scaled average for the response (type-aware)
         if ($rating_type === 'like_dislike') {
             // For like/dislike: total_rating = like count, average = approval rate
-            $scaled_average = $updated_rating->total_votes > 0 
-                ? round(($updated_rating->total_rating / $updated_rating->total_votes) * 100) 
+            $scaled_average = $ctx_total_votes > 0 
+                ? round(($ctx_total_rating / $ctx_total_votes) * 100) 
                 : 0;
         } elseif ($rating_type === 'approval') {
-            $scaled_average = $updated_rating->total_votes;
+            $scaled_average = $ctx_total_votes;
         } else {
-            $scaled_average = Shuriken_Database::denormalize_average($updated_rating->average, $max_stars);
+            $scaled_average = Shuriken_Database::denormalize_average($ctx_average, $max_stars);
         }
 
         // Build response data with both normalized and scaled values
         $response_data = array(
-            'new_average' => $updated_rating->average,           // Normalized (1-5 scale)
+            'new_average' => $ctx_average,                       // Normalized (1-5 scale)
             'new_scaled_average' => $scaled_average,             // Scaled to max_stars
-            'new_total_votes' => $updated_rating->total_votes,
+            'new_total_votes' => $ctx_total_votes,
             'max_stars' => $max_stars,
             'rating_type' => $rating_type,
         );
@@ -311,13 +340,23 @@ class Shuriken_AJAX {
                     $parent_max_stars = apply_filters('shuriken_rating_scale', $parent_max_stars, $parent_rating, $parent_type);
                 }
 
-                $parent_scaled_average = Shuriken_Database::denormalize_average($parent_rating->average, $parent_max_stars);
-                
-                $response_data['parent_id'] = $parent_rating->id;
-                $response_data['parent_average'] = $parent_rating->average;
-                $response_data['parent_scaled_average'] = $parent_scaled_average;
-                $response_data['parent_total_votes'] = $parent_rating->total_votes;
-                $response_data['parent_max_stars'] = $parent_max_stars;
+                // Use contextual stats for parent too if in context mode
+                if ($context_id !== null && $context_type !== null) {
+                    $parent_ctx = $this->db->get_contextual_stats($parent_rating->source_id, $context_id, $context_type);
+                    $parent_scaled_average = Shuriken_Database::denormalize_average($parent_ctx->average, $parent_max_stars);
+                    $response_data['parent_id'] = $parent_rating->id;
+                    $response_data['parent_average'] = $parent_ctx->average;
+                    $response_data['parent_scaled_average'] = $parent_scaled_average;
+                    $response_data['parent_total_votes'] = $parent_ctx->total_votes;
+                    $response_data['parent_max_stars'] = $parent_max_stars;
+                } else {
+                    $parent_scaled_average = Shuriken_Database::denormalize_average($parent_rating->average, $parent_max_stars);
+                    $response_data['parent_id'] = $parent_rating->id;
+                    $response_data['parent_average'] = $parent_rating->average;
+                    $response_data['parent_scaled_average'] = $parent_scaled_average;
+                    $response_data['parent_total_votes'] = $parent_rating->total_votes;
+                    $response_data['parent_max_stars'] = $parent_max_stars;
+                }
             }
         }
 

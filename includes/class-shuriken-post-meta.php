@@ -82,7 +82,7 @@ class Shuriken_Post_Meta {
      * @return string 'before', 'after', or 'disabled'
      */
     private function get_injection_position(): string {
-        $position = get_option('shuriken_content_injection_position', 'after');
+        $position = get_option('shuriken_content_injection_position', 'disabled');
 
         /**
          * Filter the content injection position.
@@ -497,6 +497,11 @@ class Shuriken_Post_Meta {
 
         // Skip injection if the Post Linked Ratings block is present in this content
         if (has_block('shuriken-reviews/post-linked-ratings', $post_id)) {
+            return $content;
+        }
+
+        // Skip injection if a contextual rating/grouped-rating block is already in the content
+        if (has_block('shuriken-reviews/rating', $post_id) || has_block('shuriken-reviews/grouped-rating', $post_id)) {
             return $content;
         }
 

@@ -265,6 +265,18 @@ class Shuriken_REST_API {
                     'sanitize_callback' => 'sanitize_text_field',
                     'description'       => 'Comma-separated list of rating IDs',
                 ),
+                'context_id' => array(
+                    'required'          => false,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                    'description'       => 'Post/entity ID for contextual stats',
+                ),
+                'context_type' => array(
+                    'required'          => false,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_key',
+                    'description'       => 'Context type (post, page, product, etc.)',
+                ),
             ),
         ));
 
@@ -809,18 +821,61 @@ class Shuriken_REST_API {
             if (empty($ids)) {
                 throw Shuriken_Validation_Exception::required_field('ids');
             }
+
+            $context_id = $request->get_param('context_id');
+            $context_type = $request->get_param('context_type');
+            $has_context = $context_id && $context_type;
+
+            // Validate context_type against allowed values
+            if ($has_context) {
+                $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+                if (!in_array($context_type, $allowed_types, true)) {
+                    $has_context = false;
+                }
+            }
             
-            // Use batch method for efficiency (single query instead of N queries)
+            // Always fetch base rating data (for source_id / mirror resolution)
             $ratings = $this->db->get_ratings_by_ids($ids);
+
+            // If contextual, overlay per-context stats
+            if ($has_context) {
+                // Collect source_ids for context query (mirrors use original's votes)
+                $source_ids = array();
+                foreach ($ratings as $rating) {
+                    $source_ids[] = (int) $rating->source_id;
+                }
+                $source_ids = array_unique($source_ids);
+                $ctx_stats = $this->db->get_contextual_stats_batch($source_ids, (int) $context_id, $context_type);
+            }
             
             $stats = array();
             foreach ($ratings as $id => $rating) {
-                $stats[$id] = array(
-                    'average' => $rating->average,
-                    'total_votes' => $rating->total_votes,
-                    'total_rating' => $rating->total_rating,
-                    'source_id' => $rating->source_id,
-                );
+                $source_id = (int) $rating->source_id;
+
+                if ($has_context && isset($ctx_stats[$source_id])) {
+                    $ctx = $ctx_stats[$source_id];
+                    $stats[$id] = array(
+                        'average' => $ctx->average,
+                        'total_votes' => $ctx->total_votes,
+                        'total_rating' => $ctx->total_rating,
+                        'source_id' => $source_id,
+                    );
+                } elseif ($has_context) {
+                    // Context requested but no votes yet for this context
+                    $stats[$id] = array(
+                        'average' => 0,
+                        'total_votes' => 0,
+                        'total_rating' => 0,
+                        'source_id' => $source_id,
+                    );
+                } else {
+                    $stats[$id] = array(
+                        'average' => $rating->average,
+                        'total_votes' => $rating->total_votes,
+                        'total_rating' => $rating->total_rating,
+                        'source_id' => $rating->source_id,
+                    );
+                }
             }
             
             return rest_ensure_response($stats);

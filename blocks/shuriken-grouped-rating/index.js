@@ -67,7 +67,8 @@
                 starColor,
                 childLayout,
                 mirrorId,
-                subRatings
+                subRatings,
+                postContext
             } = attributes;
 
             // ---- Local UI state ----
@@ -810,6 +811,12 @@
                             value: anchorTag,
                             onChange: function (value) { setAttributes({ anchorTag: value }); },
                             help: __('Optional anchor ID for linking to this rating group.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Per-post voting', 'shuriken-reviews'),
+                            checked: postContext,
+                            onChange: function (value) { setAttributes({ postContext: value }); },
+                            help: __('When enabled, votes are counted separately for each post/page this block appears on.', 'shuriken-reviews')
                         })
                     ),
 

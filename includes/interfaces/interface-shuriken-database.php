@@ -144,12 +144,14 @@ interface Shuriken_Database_Interface {
     /**
      * Get user's vote for a rating
      *
-     * @param int         $rating_id Rating ID.
-     * @param int         $user_id   User ID.
-     * @param string|null $user_ip   User IP address.
+     * @param int         $rating_id    Rating ID.
+     * @param int         $user_id      User ID.
+     * @param string|null $user_ip      User IP address.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return object|null Vote object or null if not found.
      */
-    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null): ?object;
+    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): ?object;
 
     /**
      * Create a new vote
@@ -158,9 +160,11 @@ interface Shuriken_Database_Interface {
      * @param float       $rating_value Rating value.
      * @param int         $user_id      User ID.
      * @param string|null $user_ip      User IP address.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return bool True on success, false on failure.
      */
-    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null): bool;
+    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): bool;
 
     /**
      * Update an existing vote
@@ -204,12 +208,34 @@ interface Shuriken_Database_Interface {
     /**
      * Get the timestamp of the last vote for a rating by a user/guest
      *
-     * @param int         $rating_id Rating ID.
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (for guests).
+     * @param int         $rating_id    Rating ID.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (for guests).
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return string|null Datetime string or null if no vote found.
      */
-    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null): ?string;
+    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): ?string;
+
+    /**
+     * Get contextual stats for a rating scoped to a specific post/entity
+     *
+     * @param int    $rating_id    Rating ID.
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type.
+     * @return object Object with total_votes, total_rating, average.
+     */
+    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type): object;
+
+    /**
+     * Get contextual stats for multiple ratings in a single query
+     *
+     * @param array  $rating_ids   Array of rating IDs.
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type.
+     * @return array Associative array keyed by rating_id.
+     */
+    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type): array;
 
     /**
      * Count votes by a user/guest since a given datetime

@@ -42,7 +42,7 @@
     registerBlockType('shuriken-reviews/rating', {
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { ratingId, titleTag, anchorTag, accentColor, starColor } = attributes;
+            const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext } = attributes;
 
             // Local UI state
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -365,6 +365,14 @@
                                 setAttributes({ anchorTag: value });
                             },
                             help: __('Optional anchor ID for linking to this rating.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Per-post voting', 'shuriken-reviews'),
+                            checked: postContext,
+                            onChange: function (value) {
+                                setAttributes({ postContext: value });
+                            },
+                            help: __('When enabled, votes are counted separately for each post/page this block appears on.', 'shuriken-reviews')
                         })
                     ),
                     // Colors Panel (type-aware)

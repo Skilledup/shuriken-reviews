@@ -830,6 +830,79 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /**
+     * Get contextual stats for a rating scoped to a specific post/entity
+     *
+     * Computes total_votes, total_rating, and average from the votes table
+     * filtered by context_id and context_type.
+     *
+     * @param int    $rating_id    Rating ID.
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type ('post', 'product', etc.).
+     * @return object Object with total_votes, total_rating, average properties.
+     */
+    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type): object {
+        $row = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
+             FROM {$this->votes_table}
+             WHERE rating_id = %d AND context_id = %d AND context_type = %s",
+            $rating_id,
+            $context_id,
+            $context_type
+        ));
+
+        $stats = new \stdClass();
+        $stats->total_votes = $row ? (int) $row->total_votes : 0;
+        $stats->total_rating = $row ? (int) $row->total_rating : 0;
+        $stats->average = $stats->total_votes > 0
+            ? round($stats->total_rating / $stats->total_votes, 1)
+            : 0;
+
+        return $stats;
+    }
+
+    /**
+     * Get contextual stats for multiple ratings in a single query
+     *
+     * @param array  $rating_ids   Array of rating IDs.
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type ('post', 'product', etc.).
+     * @return array Associative array keyed by rating_id => stats object.
+     */
+    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type): array {
+        if (empty($rating_ids)) {
+            return array();
+        }
+
+        $rating_ids = array_map('intval', array_filter($rating_ids));
+        if (empty($rating_ids)) {
+            return array();
+        }
+
+        $ids_placeholder = implode(',', array_fill(0, count($rating_ids), '%d'));
+
+        $rows = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT rating_id, COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
+             FROM {$this->votes_table}
+             WHERE rating_id IN ($ids_placeholder) AND context_id = %d AND context_type = %s
+             GROUP BY rating_id",
+            ...array_merge($rating_ids, [$context_id, $context_type])
+        ));
+
+        $result = array();
+        foreach ($rows as $row) {
+            $stats = new \stdClass();
+            $stats->total_votes = (int) $row->total_votes;
+            $stats->total_rating = (int) $row->total_rating;
+            $stats->average = $stats->total_votes > 0
+                ? round($stats->total_rating / $stats->total_votes, 1)
+                : 0;
+            $result[(int) $row->rating_id] = $stats;
+        }
+
+        return $result;
+    }
+
+    /**
      * Get child ratings of a parent rating
      *
      * Returns all ratings that have the specified parent_id.
@@ -1029,20 +1102,44 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_id Rating ID
      * @param int $user_id User ID (0 for guests)
      * @param string|null $user_ip IP address for guest votes
+     * @param int|null $context_id Optional post/entity ID for contextual votes
+     * @param string|null $context_type Optional context type ('post', 'product', etc.)
      * @return object|null Vote object or null if not found
      */
-    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null): ?object {
+    public function get_user_vote(int $rating_id, int $user_id, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): ?object {
+        if ($context_id !== null && $context_type !== null) {
+            if ($user_id > 0) {
+                return $this->wpdb->get_row($this->wpdb->prepare(
+                    "SELECT * FROM {$this->votes_table} 
+                     WHERE rating_id = %d AND user_id = %d AND context_id = %d AND context_type = %s",
+                    $rating_id,
+                    $user_id,
+                    $context_id,
+                    $context_type
+                ));
+            } else {
+                return $this->wpdb->get_row($this->wpdb->prepare(
+                    "SELECT * FROM {$this->votes_table} 
+                     WHERE rating_id = %d AND user_ip = %s AND user_id = 0 AND context_id = %d AND context_type = %s",
+                    $rating_id,
+                    $user_ip,
+                    $context_id,
+                    $context_type
+                ));
+            }
+        }
+
         if ($user_id > 0) {
             return $this->wpdb->get_row($this->wpdb->prepare(
                 "SELECT * FROM {$this->votes_table} 
-                 WHERE rating_id = %d AND user_id = %d",
+                 WHERE rating_id = %d AND user_id = %d AND context_id IS NULL",
                 $rating_id,
                 $user_id
             ));
         } else {
             return $this->wpdb->get_row($this->wpdb->prepare(
                 "SELECT * FROM {$this->votes_table} 
-                 WHERE rating_id = %d AND user_ip = %s AND user_id = 0",
+                 WHERE rating_id = %d AND user_ip = %s AND user_id = 0 AND context_id IS NULL",
                 $rating_id,
                 $user_ip
             ));
@@ -1056,11 +1153,13 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int $rating_value Rating value (1-5)
      * @param int $user_id User ID (0 for guests)
      * @param string|null $user_ip IP address for guest votes
+     * @param int|null $context_id Optional post/entity ID for contextual votes
+     * @param string|null $context_type Optional context type ('post', 'product', etc.)
      * @return bool True on success
      * @throws Shuriken_Database_Exception If insert fails or transaction fails
      * @throws Shuriken_Validation_Exception If rating_value is invalid
      */
-    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null): bool {
+    public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): bool {
         // Validate rating value against normalized scale (1-5 for stars/numeric, 0/1 for binary types)
         if ($rating_value < 0 || $rating_value > self::RATING_SCALE_DEFAULT) {
             throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 0, self::RATING_SCALE_DEFAULT);
@@ -1081,6 +1180,13 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             if ($user_id === 0 && $user_ip) {
                 $insert_data['user_ip'] = $user_ip;
+                $format[] = '%s';
+            }
+
+            if ($context_id !== null && $context_type !== null) {
+                $insert_data['context_id'] = $context_id;
+                $insert_data['context_type'] = $context_type;
+                $format[] = '%d';
                 $format[] = '%s';
             }
 
@@ -1188,16 +1294,22 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     /**
      * Get the timestamp of the last vote for a rating by a user/guest
      *
-     * @param int         $rating_id Rating ID.
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (for guests).
+     * @param int         $rating_id    Rating ID.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (for guests).
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type ('post', 'product', etc.).
      * @return string|null Datetime string or null if no vote found.
      */
-    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null): ?string {
+    public function get_last_vote_time(int $rating_id, int $user_id, ?string $user_ip = null, ?int $context_id = null, ?string $context_type = null): ?string {
+        $context_clause = ($context_id !== null && $context_type !== null)
+            ? $this->wpdb->prepare(' AND context_id = %d AND context_type = %s', $context_id, $context_type)
+            : ' AND context_id IS NULL';
+
         if ($user_id > 0) {
             return $this->wpdb->get_var($this->wpdb->prepare(
                 "SELECT date_modified FROM {$this->votes_table} 
-                 WHERE rating_id = %d AND user_id = %d
+                 WHERE rating_id = %d AND user_id = %d{$context_clause}
                  ORDER BY date_modified DESC LIMIT 1",
                 $rating_id,
                 $user_id
@@ -1205,7 +1317,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         } else {
             return $this->wpdb->get_var($this->wpdb->prepare(
                 "SELECT date_modified FROM {$this->votes_table} 
-                 WHERE rating_id = %d AND user_ip = %s AND user_id = 0
+                 WHERE rating_id = %d AND user_ip = %s AND user_id = 0{$context_clause}
                  ORDER BY date_modified DESC LIMIT 1",
                 $rating_id,
                 $user_ip
@@ -1312,10 +1424,13 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             user_id bigint(20) DEFAULT 0,
             user_ip varchar(45) DEFAULT NULL,
             rating_value int NOT NULL,
+            context_id bigint(20) unsigned DEFAULT NULL,
+            context_type varchar(20) DEFAULT NULL,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
             date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
-            UNIQUE KEY unique_vote (rating_id, user_id, user_ip)
+            UNIQUE KEY unique_vote (rating_id, user_id, user_ip, context_id, context_type),
+            KEY context_lookup (rating_id, context_id, context_type)
         ) $charset_collate;";
 
         dbDelta($sql_votes);
@@ -1410,6 +1525,28 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         if (empty($rating_type_exists)) {
             $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN rating_type varchar(20) NOT NULL DEFAULT 'stars' AFTER mirror_of");
             $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN scale tinyint unsigned NOT NULL DEFAULT 5 AFTER rating_type");
+        }
+
+        // v1.6.0: Add contextual voting columns (context_id, context_type)
+        $context_id_exists = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$this->votes_table} LIKE 'context_id'"
+        );
+
+        if (empty($context_id_exists)) {
+            $this->wpdb->query("ALTER TABLE {$this->votes_table} ADD COLUMN context_id bigint(20) unsigned DEFAULT NULL AFTER rating_value");
+            $this->wpdb->query("ALTER TABLE {$this->votes_table} ADD COLUMN context_type varchar(20) DEFAULT NULL AFTER context_id");
+
+            // Update unique index to include context columns
+            $index_exists = $this->wpdb->get_results(
+                "SHOW INDEX FROM {$this->votes_table} WHERE Key_name = 'unique_vote'"
+            );
+            if (!empty($index_exists)) {
+                $this->wpdb->query("ALTER TABLE {$this->votes_table} DROP INDEX unique_vote");
+            }
+            $this->wpdb->query("ALTER TABLE {$this->votes_table} ADD UNIQUE KEY unique_vote (rating_id, user_id, user_ip, context_id, context_type)");
+
+            // Add index for context lookups
+            $this->wpdb->query("ALTER TABLE {$this->votes_table} ADD KEY context_lookup (rating_id, context_id, context_type)");
         }
 
         return true;

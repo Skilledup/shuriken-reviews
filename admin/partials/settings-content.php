@@ -65,7 +65,7 @@ $saved_post_types = get_option('shuriken_meta_box_post_types', array('post', 'pa
 if (!is_array($saved_post_types)) {
     $saved_post_types = array('post', 'page');
 }
-$saved_position = get_option('shuriken_content_injection_position', 'after');
+$saved_position = get_option('shuriken_content_injection_position', 'disabled');
 $saved_style = get_option('shuriken_linked_ratings_style', '');
 $saved_accent_color = get_option('shuriken_linked_ratings_accent_color', '');
 $saved_star_color = get_option('shuriken_linked_ratings_star_color', '');
