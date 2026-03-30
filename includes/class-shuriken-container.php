@@ -75,6 +75,11 @@ class Shuriken_Container {
             return new Shuriken_Analytics($container->get('database'));
         });
 
+        // Register voter analytics service (depends on database)
+        $this->singleton('voter_analytics', function($container) {
+            return new Shuriken_Voter_Analytics($container->get('database'));
+        });
+
         // Register REST API service (depends on database)
         $this->singleton('rest_api', function($container) {
             return new Shuriken_REST_API($container->get('database'));
@@ -254,5 +259,14 @@ function shuriken_db(): Shuriken_Database_Interface {
  */
 function shuriken_analytics(): Shuriken_Analytics_Interface {
     return shuriken_container()->get('analytics');
+}
+
+/**
+ * Get the voter analytics service
+ *
+ * @return Shuriken_Voter_Analytics_Interface
+ */
+function shuriken_voter_analytics(): Shuriken_Voter_Analytics_Interface {
+    return shuriken_container()->get('voter_analytics');
 }
 

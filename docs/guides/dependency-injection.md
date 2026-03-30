@@ -10,6 +10,7 @@ All services with database dependencies now use constructor injection:
 |---------|--------------|--------|
 | `Shuriken_Database` | Foundation | Base singleton |
 | `Shuriken_Analytics` | `database` | ✅ DI-ready |
+| `Shuriken_Voter_Analytics` | `database` | ✅ DI-ready |
 | `Shuriken_REST_API` | `database` | ✅ DI-ready |
 | `Shuriken_Admin` | `database`, `analytics` | ✅ DI-ready |
 | `Shuriken_AJAX` | `database` | ✅ DI-ready |
@@ -17,8 +18,6 @@ All services with database dependencies now use constructor injection:
 | `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
 | `Shuriken_Post_Meta` | `database` | ✅ DI-ready |
 | `Shuriken_Frontend` | None | No DI needed |
-
-**Coverage:** 88.9% (8 of 9 services)
 
 ## What is Dependency Injection?
 
@@ -76,6 +75,7 @@ The following services are automatically registered:
 |-------------|-------|-----------|
 | `database` | `Shuriken_Database` | `Shuriken_Database_Interface` |
 | `analytics` | `Shuriken_Analytics` | `Shuriken_Analytics_Interface` |
+| `voter_analytics` | `Shuriken_Voter_Analytics` | `Shuriken_Voter_Analytics_Interface` |
 | `rest_api` | `Shuriken_REST_API` | - |
 | `shortcodes` | `Shuriken_Shortcodes` | - |
 | `block` | `Shuriken_Block` | - |
@@ -106,10 +106,12 @@ Helper functions maintain backward compatibility:
 // Old way (still works)
 $db = shuriken_db();
 $analytics = shuriken_analytics();
+$voter_analytics = shuriken_voter_analytics();
 
 // New way (recommended)
 $db = shuriken_container()->get('database');
 $analytics = shuriken_container()->get('analytics');
+$voter_analytics = shuriken_container()->get('voter_analytics');
 ```
 
 ## Registering Custom Services

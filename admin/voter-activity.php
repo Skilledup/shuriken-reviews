@@ -13,8 +13,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get analytics instance
+// Get analytics instances
 $analytics = shuriken_analytics();
+$voter_analytics = shuriken_voter_analytics();
 
 // Get voter identifier (user_id for members, user_ip for guests)
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
@@ -30,7 +31,7 @@ $is_member = $user_id > 0;
 $voter_identifier = $is_member ? $user_id : $user_ip;
 
 // Get user info for members
-$user_info = $is_member ? $analytics->get_user_info($user_id) : null;
+$user_info = $is_member ? $voter_analytics->get_user_info($user_id) : null;
 
 // Parse date range from request parameters
 $date_range = $analytics->parse_date_range_params($_GET);
@@ -43,16 +44,16 @@ $start_date = is_array($date_range) && !empty($date_range['start']) ? $date_rang
 $end_date = is_array($date_range) && !empty($date_range['end']) ? $date_range['end'] : '';
 
 // Get voter stats
-$stats = $analytics->get_voter_stats($user_id, $user_ip, $date_range);
-$distribution_array = $analytics->get_voter_rating_distribution($user_id, $user_ip, $date_range);
-$votes_over_time = $analytics->get_voter_activity_over_time($user_id, $user_ip, $date_range);
+$stats = $voter_analytics->get_voter_stats($user_id, $user_ip, $date_range);
+$distribution_array = $voter_analytics->get_voter_rating_distribution($user_id, $user_ip, $date_range);
+$votes_over_time = $voter_analytics->get_voter_activity_over_time($user_id, $user_ip, $date_range);
 
 // Pagination for votes
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 
 // Get paginated votes
-$votes_result = $analytics->get_voter_votes_paginated($user_id, $user_ip, $current_page, $per_page, $date_range);
+$votes_result = $voter_analytics->get_voter_votes_paginated($user_id, $user_ip, $current_page, $per_page, $date_range);
 $votes = $votes_result->votes;
 $total_votes_count = $votes_result->total_count;
 $total_pages = $votes_result->total_pages;

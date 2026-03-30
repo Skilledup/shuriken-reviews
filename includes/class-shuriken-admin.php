@@ -707,14 +707,14 @@ class Shuriken_Admin {
 
         // Get voter info for filename
         if ($is_member) {
-            $user_info = $this->analytics->get_user_info($user_id);
+            $user_info = shuriken_voter_analytics()->get_user_info($user_id);
             $voter_name = $user_info ? sanitize_title($user_info->display_name) : 'user-' . $user_id;
         } else {
             $voter_name = 'guest-' . sanitize_title(str_replace('.', '-', $user_ip));
         }
 
         // Get all votes for this voter
-        $votes = $this->analytics->get_voter_votes_for_export($user_id, $user_ip);
+        $votes = shuriken_voter_analytics()->get_voter_votes_for_export($user_id, $user_ip);
 
         // Set headers for CSV download
         $filename = 'shuriken-voter-votes-' . $voter_name . '-' . date('Y-m-d') . '.csv';

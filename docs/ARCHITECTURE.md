@@ -30,6 +30,7 @@ This document provides a high-level overview of the plugin's structure, design d
 - `shuriken_container()` - Get the DI container
 - `shuriken_db()` - Get database service
 - `shuriken_analytics()` - Get analytics service
+- `shuriken_voter_analytics()` - Get voter analytics service
 
 ### 2. Service Container (`class-shuriken-container.php`)
 
@@ -43,9 +44,10 @@ This document provides a high-level overview of the plugin's structure, design d
 
 **Registered Services:**
 ```php
-database      → Shuriken_Database (implements Shuriken_Database_Interface)
-analytics     → Shuriken_Analytics (implements Shuriken_Analytics_Interface)
-rate_limiter  → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
+database        → Shuriken_Database (implements Shuriken_Database_Interface)
+analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface)
+voter_analytics → Shuriken_Voter_Analytics (implements Shuriken_Voter_Analytics_Interface)
+rate_limiter    → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
 rest_api      → Shuriken_REST_API
 shortcodes    → Shuriken_Shortcodes
 block         → Shuriken_Block
@@ -88,19 +90,51 @@ Throws `Shuriken_Database_Exception` on failures instead of returning false.
 ### 4. Analytics Service (`class-shuriken-analytics.php`)
 
 **Implements:** `Shuriken_Analytics_Interface`
+**Uses:** `Shuriken_Analytics_Helpers` trait
 
 **Responsibilities:**
-- Calculate rating statistics
-- Generate analytics reports
-- Identify trends and patterns
-- Format data for display
+- Calculate rating statistics and trends
+- Generate analytics reports (dashboard, item stats)
+- Format data for display (averages, votes, dates)
+- Type-aware analytics (stars, like/dislike, numeric, approval)
 
 **Key Methods:**
 - `get_rating_stats($rating_id, $date_range)` - Get statistics
 - `get_top_rated($limit)` - Top performers
 - `get_most_voted($limit)` - Most popular
-- `get_vote_distribution($rating_id)` - Votes per rating value
-- `get_votes_over_time($rating_id, $interval)` - Trend data
+- `get_rating_distribution($date_range, $rating_id)` - Votes per rating value
+- `get_votes_over_time($date_range, $rating_id)` - Trend data
+- `get_voting_heatmap($date_range)` - Day-of-week × hour activity
+- `get_votes_over_time_by_type($date_range)` - Votes split by rating type
+- `get_per_type_summary()` - Per-type statistics
+- `get_momentum_items($date_range, $limit)` - Rising/falling items
+- `format_average_display()` - Type-aware average formatting
+- `format_vote_display()` - Type-aware vote rendering
+
+### 4b. Voter Analytics Service (`class-shuriken-voter-analytics.php`)
+
+**Implements:** `Shuriken_Voter_Analytics_Interface`
+**Uses:** `Shuriken_Analytics_Helpers` trait
+
+**Responsibilities:**
+- Voter-specific activity history and statistics
+- Voting distribution per voter
+- Voter data export
+
+**Key Methods:**
+- `get_voter_votes_paginated($user_id, $user_ip)` - Paginated vote history
+- `get_voter_stats($user_id, $user_ip)` - Voting statistics and tendency
+- `get_voter_rating_distribution($user_id, $user_ip)` - Rating value distribution
+- `get_voter_activity_over_time($user_id, $user_ip)` - Activity timeline
+- `get_user_info($user_id)` - WordPress user profile data
+- `get_voter_votes_for_export($user_id, $user_ip)` - All votes for CSV export
+
+### 4c. Analytics Helpers Trait (`trait-shuriken-analytics-helpers.php`)
+
+**Purpose:** Shared query helpers for analytics classes
+
+**Methods:**
+- `build_date_condition($date_range, $column)` - SQL date filtering (relative days, custom range, all time)
 
 ### 5. Rate Limiter Service (`class-shuriken-rate-limiter.php`)
 

@@ -193,6 +193,53 @@ interface Shuriken_Analytics_Interface {
     public function format_date(string $mysql_date, bool $include_time = true): string;
 
     /**
+     * Format an average rating value for display, adapting to rating type
+     *
+     * @param float  $average     The average value.
+     * @param string $rating_type Rating type.
+     * @param int    $scale       Rating scale.
+     * @param int    $total_votes Total votes.
+     * @param int    $total_rating Total rating sum.
+     * @return string Formatted display string.
+     */
+    public function format_average_display(float $average, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, int $total_votes = 0, int $total_rating = 0): string;
+
+    /**
+     * Render a vote value for display in tables, adapting to rating type
+     *
+     * @param int    $rating_value The vote value.
+     * @param string $rating_type  Rating type.
+     * @param int    $scale        Rating scale.
+     * @return string HTML display string.
+     */
+    public function format_vote_display(int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string;
+
+    /**
+     * Check if a rating has sub-ratings
+     *
+     * @param int $rating_id Rating ID.
+     * @return bool True if the rating has sub-ratings.
+     */
+    public function has_sub_ratings(int $rating_id): bool;
+
+    /**
+     * Get sub-ratings for a parent with contribution analysis
+     *
+     * @param int $parent_id Parent rating ID.
+     * @return array Array of sub-rating objects with contribution data.
+     */
+    public function get_sub_ratings_contribution(int $parent_id): array;
+
+    /**
+     * Get parent rating stats breakdown with effective sub-rating averages
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return object|null Stats breakdown or null.
+     */
+    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all'): ?object;
+
+    /**
      * Get voting heatmap data — day-of-week × hour activity
      *
      * @param string|int|array $date_range Date range filter.
