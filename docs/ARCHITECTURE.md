@@ -255,6 +255,7 @@ Registers and renders Gutenberg blocks.
 **Blocks:**
 - `shuriken-reviews/rating` - Single rating display
 - `shuriken-reviews/grouped-rating` - Parent with child ratings
+- `shuriken-reviews/post-linked-ratings` - All ratings linked to the current post (FSE/Query Loop aware)
 
 ### Shared Data Store (`blocks/shared/ratings-store.js`)
 

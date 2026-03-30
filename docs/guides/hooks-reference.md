@@ -14,6 +14,7 @@ This document lists all available hooks (actions and filters) in the Shuriken Re
   - [Rate Limiting](#rate-limiting-filters)
   - [Database Operations](#database-filters)
   - [Frontend Assets](#frontend-filters)
+  - [Post Meta](#post-meta-filters)
 - [Actions](#actions)
   - [Rating Display](#rating-display-actions)
   - [Vote Submission](#vote-submission-actions)
@@ -33,7 +34,7 @@ Filters the rating object before it's rendered. Use this to modify any rating pr
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$rating` | object | The rating object containing: `id`, `name`, `average`, `total_votes`, `display_only`, `mirror_of`, `source_id` |
+| `$rating` | object | The rating object containing: `id`, `name`, `average`, `total_votes`, `display_only`, `mirror_of`, `source_id`, `rating_type` (since 1.12.0), `scale` (since 1.12.0) |
 | `$tag` | string | The HTML tag for the title (e.g., 'h2', 'h3') |
 | `$anchor_id` | string | The anchor ID for linking |
 
@@ -352,22 +353,23 @@ Filters the AJAX response data sent back to the browser after a successful vote.
 | `$rating_value` | int | The submitted rating value |
 | `$is_update` | bool | `true` if user changed their existing vote, `false` if new vote |
 | `$updated_rating` | object | The updated rating object |
+| `$max_stars` | int | The maximum stars for this rating |
 
 **Example 1: Add a custom message**
 ```php
-add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $is_update, $rating) {
+add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $is_update, $rating, $max_stars) {
     if ($is_update) {
         $data['custom_message'] = 'Your vote has been updated!';
     } else {
         $data['custom_message'] = 'Thank you for voting!';
     }
     return $data;
-}, 10, 5);
+}, 10, 6);
 ```
 
 **Example 2: Add ranking information**
 ```php
-add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $is_update, $rating) {
+add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $is_update, $rating, $max_stars) {
     // Calculate this rating's rank among all ratings
     global $wpdb;
     $table = $wpdb->prefix . 'shuriken_ratings';
@@ -377,7 +379,7 @@ add_filter('shuriken_vote_response_data', function($data, $rating_id, $value, $i
     ));
     $data['rank'] = $rank;
     return $data;
-}, 10, 5);
+}, 10, 6);
 ```
 
 ---
@@ -605,6 +607,121 @@ add_filter('shuriken_i18n_strings', function($strings) {
     $strings['genericError'] = 'Oops! Something went wrong. Please try again.';
     return $strings;
 });
+```
+
+---
+
+### Post Meta Filters
+
+> **Since 1.12.0** — These filters are part of the Post Meta module, which manages per-post rating associations, automatic content injection, and JSON-LD structured data output.
+
+#### `shuriken_meta_box_post_types`
+
+Filters the list of post types that display the Shuriken Ratings meta box in the post editor.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$post_types` | array | Array of post type slugs (default: `['post', 'page']`) |
+
+**Example 1: Add support for a custom post type**
+```php
+add_filter('shuriken_meta_box_post_types', function($post_types) {
+    $post_types[] = 'product';  // WooCommerce products
+    $post_types[] = 'review';   // Custom review post type
+    return $post_types;
+});
+```
+
+**Example 2: Restrict to only posts**
+```php
+add_filter('shuriken_meta_box_post_types', function($post_types) {
+    return ['post'];
+});
+```
+
+---
+
+#### `shuriken_content_injection_position`
+
+Filters where linked ratings are automatically injected relative to post content. Return `'disabled'` to turn off automatic injection entirely.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$position` | string | Injection position: `'before'`, `'after'`, or `'disabled'` (saved in Settings) |
+
+**Example 1: Always inject before content**
+```php
+add_filter('shuriken_content_injection_position', function($position) {
+    return 'before';
+});
+```
+
+**Example 2: Disable injection on archive pages**
+```php
+add_filter('shuriken_content_injection_position', function($position) {
+    if (is_archive()) {
+        return 'disabled';
+    }
+    return $position;
+});
+```
+
+**Example 3: Disable injection on specific post types**
+```php
+add_filter('shuriken_content_injection_position', function($position) {
+    if (is_singular('product')) {
+        return 'disabled';  // Handle WooCommerce products separately
+    }
+    return $position;
+});
+```
+
+---
+
+#### `shuriken_rating_jsonld`
+
+Filters the JSON-LD structured data array before it's output in the `<head>`. Use this to extend or modify the schema markup for SEO purposes.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$jsonld` | array | JSON-LD data with `@context`, `@type`, `name`, `url`, and `aggregateRating` fields |
+| `$rating` | object | The rating object |
+| `$post_id` | int | The post ID the rating is linked to |
+
+**Example 1: Add author information to structured data**
+```php
+add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
+    $author = get_the_author_meta('display_name', get_post_field('post_author', $post_id));
+    $jsonld['author'] = [
+        '@type' => 'Person',
+        'name'  => $author,
+    ];
+    return $jsonld;
+}, 10, 3);
+```
+
+**Example 2: Change the schema type for WooCommerce products**
+```php
+add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
+    if (get_post_type($post_id) === 'product') {
+        $jsonld['@type'] = 'Product';
+    }
+    return $jsonld;
+}, 10, 3);
+```
+
+**Example 3: Disable JSON-LD output for a specific rating**
+```php
+add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
+    // Return an empty array to suppress output
+    if ($rating->display_only) {
+        return [];
+    }
+    return $jsonld;
+}, 10, 3);
 ```
 
 ---

@@ -30,11 +30,12 @@ Reference for all global helper functions providing access to plugin services an
 - Usage patterns and examples
 
 #### [Hooks Reference](guides/hooks-reference.md)
-Complete API reference for all 29 WordPress hooks (18 filters + 11 actions) with examples and use cases.
+Complete API reference for all 30 WordPress hooks (19 filters + 11 actions) with examples and use cases.
 - Rating display filters
 - Vote submission filters  
 - Database operation filters
 - Frontend asset filters
+- Post meta filters (content injection, JSON-LD) — added in 1.12
 - Action hooks
 
 #### [Exception System](guides/exception-handling.md)

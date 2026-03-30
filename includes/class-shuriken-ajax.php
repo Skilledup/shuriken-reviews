@@ -349,11 +349,17 @@ class Shuriken_AJAX {
         }
         
         // Validate IP address
-        if (filter_var($ip, FILTER_VALIDATE_IP)) {
-            return $ip;
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            $ip = '0.0.0.0';
         }
-        
-        return '0.0.0.0';
+
+        /**
+         * Filter the detected user IP address.
+         *
+         * @since 1.13.1
+         * @param string $ip Detected IP address.
+         */
+        return apply_filters('shuriken_get_user_ip', $ip);
     }
 }
 
