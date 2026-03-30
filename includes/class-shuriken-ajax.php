@@ -140,15 +140,28 @@ class Shuriken_AJAX {
              * @param int    $max_stars The maximum number of stars. Default 5.
              * @param object $rating    The rating object.
              */
-            $max_stars_filtered = apply_filters('shuriken_rating_max_stars', intval($rating->scale), $rating);
-            $max_stars_filtered = max(1, intval($max_stars_filtered));
-            
-            // Use the filtered value (server-side filter takes precedence)
-            // This ensures security even if client sends wrong max_stars
-            $max_stars = $max_stars_filtered;
 
             // Type-aware validation and normalization
             $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+
+            /** @since 1.14.0 */
+            $rating_type = apply_filters('shuriken_rating_type', $rating_type, $rating);
+
+            // Binary types have a fixed scale — skip scale filtering
+            if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
+                $max_stars = 1;
+            } else {
+                $max_stars_filtered = apply_filters('shuriken_rating_max_stars', intval($rating->scale), $rating);
+
+                /** @since 1.14.0 */
+                $max_stars_filtered = apply_filters('shuriken_rating_scale', $max_stars_filtered, $rating, $rating_type);
+                $max_stars_filtered = max(1, intval($max_stars_filtered));
+                
+                // Use the filtered value (server-side filter takes precedence)
+                // This ensures security even if client sends wrong max_stars
+                $max_stars = $max_stars_filtered;
+            }
+
             $normalized_value = Shuriken_Database::normalize_vote_value($rating_value, $rating_type, $max_stars);
 
             // Check if this rating is display-only
@@ -287,8 +300,17 @@ class Shuriken_AJAX {
         if (!empty($rating->parent_id)) {
             $parent_rating = $this->db->get_rating($rating->parent_id);
             if ($parent_rating) {
-                // Apply filter to get parent's max_stars
-                $parent_max_stars = apply_filters('shuriken_rating_max_stars', intval($parent_rating->scale), $parent_rating);
+                $parent_type = isset($parent_rating->rating_type) ? $parent_rating->rating_type : 'stars';
+                $parent_type = apply_filters('shuriken_rating_type', $parent_type, $parent_rating);
+
+                // Binary types have a fixed scale
+                if ($parent_type === 'like_dislike' || $parent_type === 'approval') {
+                    $parent_max_stars = 1;
+                } else {
+                    $parent_max_stars = apply_filters('shuriken_rating_max_stars', intval($parent_rating->scale), $parent_rating);
+                    $parent_max_stars = apply_filters('shuriken_rating_scale', $parent_max_stars, $parent_rating, $parent_type);
+                }
+
                 $parent_scaled_average = Shuriken_Database::denormalize_average($parent_rating->average, $parent_max_stars);
                 
                 $response_data['parent_id'] = $parent_rating->id;

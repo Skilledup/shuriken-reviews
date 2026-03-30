@@ -189,13 +189,50 @@ class Shuriken_Shortcodes {
          */
         $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
         $scale = isset($rating->scale) ? intval($rating->scale) : Shuriken_Database::RATING_SCALE_DEFAULT;
-        $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
-        
-        // Ensure max_stars is at least 1
-        $max_stars = max(1, intval($max_stars));
 
         /**
-         * Filter the star character/symbol.
+         * Filter the resolved rating type before rendering.
+         *
+         * Allows overriding which rendering mode is used for a rating.
+         * For example, force all ratings to render as stars, or switch
+         * a specific rating to a different type.
+         *
+         * @since 1.14.0
+         * @param string $rating_type The rating type: 'stars', 'like_dislike', 'numeric', or 'approval'.
+         * @param object $rating      The rating object.
+         */
+        $rating_type = apply_filters('shuriken_rating_type', $rating_type, $rating);
+
+        // Binary types have a fixed scale — skip scale filtering
+        if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
+            $max_stars = 1;
+        } else {
+            // Legacy filter (stars-specific, kept for backward compatibility)
+            $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
+
+            /**
+             * Filter the rating scale for any rating type.
+             *
+             * This is the type-aware replacement for `shuriken_rating_max_stars`.
+             * For stars, it controls the number of stars (2-10).
+             * For numeric, it controls the slider maximum (2-100).
+             * Not applied to binary types (like_dislike, approval) which always use scale 1.
+             *
+             * @since 1.14.0
+             * @param int    $scale       The rating scale. Default from rating settings.
+             * @param object $rating      The rating object.
+             * @param string $rating_type The rating type: 'stars' or 'numeric'.
+             */
+            $max_stars = apply_filters('shuriken_rating_scale', $max_stars, $rating, $rating_type);
+
+            // Ensure scale is at least 1
+            $max_stars = max(1, intval($max_stars));
+        }
+
+        /**
+         * Filter the star character/symbol used for star-type ratings.
+         *
+         * Only applies to the 'stars' rating type.
          *
          * @since 1.7.0
          * @param string $star_symbol The star symbol. Default '★'.
@@ -216,45 +253,72 @@ class Shuriken_Shortcodes {
                     <?php echo esc_html($rating->name); ?>
                 </<?php echo tag_escape($tag); ?>>
                 
-                <?php if ($rating_type === 'like_dislike'): ?>
+                <?php if ($rating_type === 'like_dislike'):
+                    /**
+                     * Filter the like/dislike symbols.
+                     *
+                     * @since 1.14.0
+                     * @param array  $symbols Array with 'like' and 'dislike' keys. Default: ['like' => '👍', 'dislike' => '👎'].
+                     * @param object $rating  The rating object.
+                     */
+                    $ld_symbols = apply_filters('shuriken_like_dislike_symbols', array('like' => '&#128077;', 'dislike' => '&#128078;'), $rating);
+                ?>
                 <div class="shuriken-like-dislike<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Like or Dislike', 'shuriken-reviews'); ?>">
                     <?php if (!$is_display_only): ?>
                     <button type="button" class="shuriken-btn shuriken-like-btn" data-value="1" aria-label="<?php esc_attr_e('Like', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#128077;</span>
+                        <span class="shuriken-thumb"><?php echo $ld_symbols['like']; ?></span>
                         <span class="shuriken-count shuriken-like-count"><?php echo esc_html($rating->total_rating); ?></span>
                     </button>
                     <button type="button" class="shuriken-btn shuriken-dislike-btn" data-value="0" aria-label="<?php esc_attr_e('Dislike', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#128078;</span>
+                        <span class="shuriken-thumb"><?php echo $ld_symbols['dislike']; ?></span>
                         <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
                     </button>
                     <?php else: ?>
                     <span class="shuriken-btn shuriken-like-btn" aria-label="<?php esc_attr_e('Likes', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#128077;</span>
+                        <span class="shuriken-thumb"><?php echo $ld_symbols['like']; ?></span>
                         <span class="shuriken-count shuriken-like-count"><?php echo esc_html($rating->total_rating); ?></span>
                     </span>
                     <span class="shuriken-btn shuriken-dislike-btn" aria-label="<?php esc_attr_e('Dislikes', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#128078;</span>
+                        <span class="shuriken-thumb"><?php echo $ld_symbols['dislike']; ?></span>
                         <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
                     </span>
                     <?php endif; ?>
                 </div>
                 
-                <?php elseif ($rating_type === 'approval'): ?>
+                <?php elseif ($rating_type === 'approval'):
+                    /**
+                     * Filter the approval/upvote symbol.
+                     *
+                     * @since 1.14.0
+                     * @param string $symbol The upvote symbol. Default '▲' (&#9650;).
+                     * @param object $rating The rating object.
+                     */
+                    $approval_symbol = apply_filters('shuriken_approval_symbol', '&#9650;', $rating);
+                ?>
                 <div class="shuriken-approval<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Upvote', 'shuriken-reviews'); ?>">
                     <?php if (!$is_display_only): ?>
                     <button type="button" class="shuriken-btn shuriken-upvote-btn" data-value="1" aria-label="<?php esc_attr_e('Upvote', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#9650;</span>
+                        <span class="shuriken-thumb"><?php echo $approval_symbol; ?></span>
                         <span class="shuriken-count shuriken-upvote-count"><?php echo esc_html($rating->total_votes); ?></span>
                     </button>
                     <?php else: ?>
                     <span class="shuriken-btn shuriken-upvote-btn" aria-label="<?php esc_attr_e('Upvotes', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb">&#9650;</span>
+                        <span class="shuriken-thumb"><?php echo $approval_symbol; ?></span>
                         <span class="shuriken-count shuriken-upvote-count"><?php echo esc_html($rating->total_votes); ?></span>
                     </span>
                     <?php endif; ?>
                 </div>
                 
-                <?php elseif ($rating_type === 'numeric'): ?>
+                <?php elseif ($rating_type === 'numeric'):
+                    /**
+                     * Filter the numeric rating submit button label.
+                     *
+                     * @since 1.14.0
+                     * @param string $label  The submit button label. Default 'Rate'.
+                     * @param object $rating The rating object.
+                     */
+                    $numeric_submit_label = apply_filters('shuriken_numeric_submit_label', __('Rate', 'shuriken-reviews'), $rating);
+                ?>
                 <div class="shuriken-numeric<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Numeric rating', 'shuriken-reviews'); ?>">
                     <?php if (!$is_display_only): ?>
                     <input type="range" 
@@ -267,7 +331,7 @@ class Shuriken_Shortcodes {
                     <span class="shuriken-slider-value"><?php echo esc_html(max(1, round($scaled_average))); ?></span>
                     <span class="shuriken-slider-max">/ <?php echo esc_html($max_stars); ?></span>
                     <button type="button" class="shuriken-slider-submit" aria-label="<?php esc_attr_e('Submit rating', 'shuriken-reviews'); ?>">
-                        <?php esc_html_e('Rate', 'shuriken-reviews'); ?>
+                        <?php echo esc_html($numeric_submit_label); ?>
                     </button>
                     <?php else: ?>
                     <span class="shuriken-numeric-display">

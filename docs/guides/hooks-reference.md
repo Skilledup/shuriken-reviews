@@ -34,7 +34,7 @@ Filters the rating object before it's rendered. Use this to modify any rating pr
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$rating` | object | The rating object containing: `id`, `name`, `average`, `total_votes`, `display_only`, `mirror_of`, `source_id`, `rating_type` (since 1.12.0), `scale` (since 1.12.0) |
+| `$rating` | object | The rating object containing: `id`, `name`, `average`, `total_votes`, `display_only`, `mirror_of`, `source_id`, `rating_type`, `scale` |
 | `$tag` | string | The HTML tag for the title (e.g., 'h2', 'h3') |
 | `$anchor_id` | string | The anchor ID for linking |
 
@@ -94,9 +94,41 @@ add_filter('shuriken_rating_css_classes', function($classes, $rating) {
 
 ---
 
+#### `shuriken_rating_type`
+
+Filters the resolved rating type before rendering or vote processing. Allows overriding which rendering mode is used for a given rating.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$rating_type` | string | The rating type: `'stars'`, `'like_dislike'`, `'numeric'`, or `'approval'` |
+| `$rating` | object | The rating object |
+
+**Example 1: Force all ratings to render as stars**
+```php
+add_filter('shuriken_rating_type', function($type, $rating) {
+    return 'stars';
+}, 10, 2);
+```
+
+**Example 2: Switch specific ratings to like/dislike**
+```php
+add_filter('shuriken_rating_type', function($type, $rating) {
+    // Use like/dislike for "Quick Vote" ratings regardless of their stored type
+    if (strpos($rating->name, 'Quick Vote') !== false) {
+        return 'like_dislike';
+    }
+    return $type;
+}, 10, 2);
+```
+
+---
+
 #### `shuriken_rating_max_stars`
 
 Filters the maximum number of stars displayed AND accepted for voting. By default, the plugin uses a 5-star system.
+
+> **Deprecation notice:** Since 1.14.0, prefer using `shuriken_rating_scale` instead — it is type-aware and receives `$rating_type` as a third parameter. `shuriken_rating_max_stars` continues to work for backward compatibility and is applied **only to star-type ratings** (before `shuriken_rating_scale`). It is **not** applied to binary types (`like_dislike`, `approval`).
 
 > **How it works:** When you change this to 10 stars, users can click any of the 10 stars. The vote is automatically **normalized to a 1-5 scale** for storage. For example:
 > - User clicks star 8 out of 10 → stored as `4.0` (8/10 × 5)
@@ -144,9 +176,49 @@ add_filter('shuriken_rating_star_symbol', function($symbol, $rating) {
 
 ---
 
+#### `shuriken_rating_scale`
+
+
+The type-aware replacement for `shuriken_rating_max_stars`. Controls the rating scale for any scalable rating type. Receives `$rating_type` as context so you can apply different logic per type.
+
+This filter is **not applied** to binary types (`like_dislike`, `approval`) — they always use scale 1.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$scale` | int | The rating scale. For stars: 2-10 (default 5). For numeric: 2-100 (default 5). |
+| `$rating` | object | The rating object |
+| `$rating_type` | string | The rating type: `'stars'` or `'numeric'` |
+
+**Example 1: Use 10-star scale for stars, 100-point scale for numeric**
+```php
+add_filter('shuriken_rating_scale', function($scale, $rating, $type) {
+    if ($type === 'stars') {
+        return 10;
+    }
+    if ($type === 'numeric') {
+        return 100;
+    }
+    return $scale;
+}, 10, 3);
+```
+
+**Example 2: Override scale for a specific rating**
+```php
+add_filter('shuriken_rating_scale', function($scale, $rating, $type) {
+    // Use 7-star scale for "Detailed Review" ratings
+    if ($type === 'stars' && strpos($rating->name, 'Detailed Review') !== false) {
+        return 7;
+    }
+    return $scale;
+}, 10, 3);
+```
+
+---
+
 #### `shuriken_rating_star_symbol`
 
-Filters the character/symbol used for stars. By default, the plugin uses `★` (filled star).
+Filters the character/symbol used for stars. By default, the plugin uses `★` (filled star). Only applies to the `stars` rating type.
 
 **Parameters:**
 | Parameter | Type | Description |
@@ -176,6 +248,92 @@ add_filter('shuriken_rating_star_symbol', function($symbol, $rating) {
         return '🔥';
     }
     return $symbol;
+}, 10, 2);
+```
+
+---
+
+#### `shuriken_like_dislike_symbols`
+
+
+Filters the like and dislike symbols for `like_dislike` type ratings. Returns an associative array with `like` and `dislike` keys.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$symbols` | array | Associative array: `['like' => '👍', 'dislike' => '👎']` (HTML entities) |
+| `$rating` | object | The rating object |
+
+**Example 1: Use arrows instead of thumbs**
+```php
+add_filter('shuriken_like_dislike_symbols', function($symbols, $rating) {
+    return ['like' => '⬆', 'dislike' => '⬇'];
+}, 10, 2);
+```
+
+**Example 2: Use custom icons for specific ratings**
+```php
+add_filter('shuriken_like_dislike_symbols', function($symbols, $rating) {
+    if (strpos($rating->name, 'Helpful') !== false) {
+        return ['like' => '✅', 'dislike' => '❌'];
+    }
+    return $symbols;
+}, 10, 2);
+```
+
+---
+
+#### `shuriken_approval_symbol`
+
+
+Filters the symbol used for the upvote button in `approval` type ratings.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$symbol` | string | The upvote symbol. Default `'▲'` (&#9650;). |
+| `$rating` | object | The rating object |
+
+**Example 1: Use a heart for appreciation-style ratings**
+```php
+add_filter('shuriken_approval_symbol', function($symbol, $rating) {
+    return '❤';
+}, 10, 2);
+```
+
+**Example 2: Use a plus sign**
+```php
+add_filter('shuriken_approval_symbol', function($symbol, $rating) {
+    return '+1';
+}, 10, 2);
+```
+
+---
+
+#### `shuriken_numeric_submit_label`
+
+Filters the submit button label for `numeric` type ratings (the button next to the range slider).
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$label` | string | The button label. Default `'Rate'`. |
+| `$rating` | object | The rating object |
+
+**Example 1: Customize the button text**
+```php
+add_filter('shuriken_numeric_submit_label', function($label, $rating) {
+    return 'Submit Score';
+}, 10, 2);
+```
+
+**Example 2: Different label based on rating**
+```php
+add_filter('shuriken_numeric_submit_label', function($label, $rating) {
+    if (strpos($rating->name, 'Score') !== false) {
+        return 'Score it!';
+    }
+    return $label;
 }, 10, 2);
 ```
 
@@ -613,7 +771,7 @@ add_filter('shuriken_i18n_strings', function($strings) {
 
 ### Post Meta Filters
 
-> **Since 1.12.0** — These filters are part of the Post Meta module, which manages per-post rating associations, automatic content injection, and JSON-LD structured data output.
+> These filters are part of the Post Meta module, which manages per-post rating associations, automatic content injection, and JSON-LD structured data output.
 
 #### `shuriken_meta_box_post_types`
 
@@ -1147,10 +1305,31 @@ add_filter('shuriken_allow_guest_voting', '__return_false');
 ### Use 10-Star Rating System
 
 ```php
-// Display 10 stars instead of 5
-// Votes are automatically normalized (e.g., 8/10 → 4/5 internally)
+// Display 10 stars instead of 5 (type-aware)
+add_filter('shuriken_rating_scale', function($scale, $rating, $type) {
+    if ($type === 'stars') {
+        return 10;
+    }
+    return $scale;
+}, 10, 3);
+
+// Or use the legacy filter (stars only — still works)
 add_filter('shuriken_rating_max_stars', function($max, $rating) {
     return 10;
+}, 10, 2);
+```
+
+### Customize Like/Dislike and Approval Symbols
+
+```php
+// Use check/cross instead of thumbs for like/dislike
+add_filter('shuriken_like_dislike_symbols', function($symbols, $rating) {
+    return ['like' => '✅', 'dislike' => '❌'];
+}, 10, 2);
+
+// Use a heart for approval-style ratings
+add_filter('shuriken_approval_symbol', function($symbol, $rating) {
+    return '❤';
 }, 10, 2);
 ```
 
