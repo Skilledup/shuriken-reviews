@@ -1,5 +1,7 @@
 jQuery(document).ready(function($) {
-    var isFetchingFreshData = false;
+    'use strict';
+
+    let isFetchingFreshData = false;
     
     /**
      * Update star display based on average rating
@@ -23,13 +25,13 @@ jQuery(document).ready(function($) {
      * Uses scaled-average if available, falls back to converting from normalized average
      */
     function resetStars($rating) {
-        var $stats = $rating.find('.rating-stats');
-        var scaledAverage = parseFloat($stats.data('scaled-average'));
+        const $stats = $rating.find('.rating-stats');
+        let scaledAverage = parseFloat($stats.data('scaled-average'));
         
         // If no scaled average, calculate from normalized average
         if (isNaN(scaledAverage)) {
-            var normalizedAverage = parseFloat($stats.data('average')) || 0;
-            var maxStars = parseInt($rating.data('max-stars')) || 5;
+            const normalizedAverage = parseFloat($stats.data('average')) || 0;
+            const maxStars = parseInt($rating.data('max-stars')) || 5;
             scaledAverage = (normalizedAverage / 5) * maxStars;
         }
         
@@ -47,11 +49,11 @@ jQuery(document).ready(function($) {
         isFetchingFreshData = true;
         
         // Collect all rating IDs on the page
-        var ratingIds = [];
-        var $allRatings = $('.shuriken-rating');
+        const ratingIds = [];
+        const $allRatings = $('.shuriken-rating');
         
         $allRatings.each(function() {
-            var id = $(this).data('id');
+            const id = $(this).data('id');
             if (id && ratingIds.indexOf(id) === -1) {
                 ratingIds.push(id);
             }
@@ -96,17 +98,17 @@ jQuery(document).ready(function($) {
                     success: function(statsResponse) {
                         // Update each rating with fresh data
                         $.each(statsResponse, function(ratingId, stats) {
-                            var $ratings = $('.shuriken-rating[data-id="' + ratingId + '"]');
+                            const $ratings = $('.shuriken-rating[data-id="' + ratingId + '"]');
                             $ratings.each(function() {
-                                var $rating = $(this);
-                                var ratingType = $rating.data('rating-type') || 'stars';
-                                var $statsEl = $rating.find('.rating-stats');
-                                var maxStars = parseInt($rating.data('max-stars')) || 5;
+                                const $rating = $(this);
+                                const ratingType = $rating.data('rating-type') || 'stars';
+                                const $statsEl = $rating.find('.rating-stats');
+                                const maxStars = parseInt($rating.data('max-stars')) || 5;
                                 
                                 if (ratingType === 'like_dislike') {
                                     // Update like/dislike counts
-                                    var totalVotes = parseInt(stats.total_votes) || 0;
-                                    var totalRating = parseInt(stats.total_rating) || 0;
+                                    const totalVotes = parseInt(stats.total_votes) || 0;
+                                    const totalRating = parseInt(stats.total_rating) || 0;
                                     $rating.find('.shuriken-like-count').text(totalRating);
                                     $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
                                 } else if (ratingType === 'approval') {
@@ -114,14 +116,14 @@ jQuery(document).ready(function($) {
                                     $rating.find('.shuriken-upvote-count').text(stats.total_votes);
                                 } else if (ratingType === 'numeric') {
                                     // Numeric slider: calculate scaled average
-                                    var normalizedAverage = parseFloat(stats.average) || 0;
-                                    var scaledAverage = (normalizedAverage / 5) * maxStars;
+                                    const normalizedAverage = parseFloat(stats.average) || 0;
+                                    let scaledAverage = (normalizedAverage / 5) * maxStars;
                                     scaledAverage = Math.round(scaledAverage * 10) / 10;
                                     
                                     $statsEl.data('average', stats.average);
                                     $statsEl.data('scaled-average', scaledAverage);
                                     
-                                    var text = shurikenReviews.i18n.averageRating
+                                    const text = shurikenReviews.i18n.averageRating
                                         .replace('%1$s', scaledAverage)
                                         .replace('%2$s', maxStars)
                                         .replace('%3$s', stats.total_votes);
@@ -131,8 +133,8 @@ jQuery(document).ready(function($) {
                                     $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
                                 } else {
                                     // Stars/numeric: calculate scaled average from normalized (1-5 scale)
-                                    var normalizedAverage = parseFloat(stats.average) || 0;
-                                    var scaledAverage = (normalizedAverage / 5) * maxStars;
+                                    const normalizedAverage = parseFloat(stats.average) || 0;
+                                    let scaledAverage = (normalizedAverage / 5) * maxStars;
                                     scaledAverage = Math.round(scaledAverage * 10) / 10; // Round to 1 decimal
                                     
                                     // Update data attributes
@@ -140,7 +142,7 @@ jQuery(document).ready(function($) {
                                     $statsEl.data('scaled-average', scaledAverage);
                                     
                                     // Update displayed text with scaled values
-                                    var text = shurikenReviews.i18n.averageRating
+                                    const text = shurikenReviews.i18n.averageRating
                                         .replace('%1$s', scaledAverage)
                                         .replace('%2$s', maxStars)
                                         .replace('%3$s', stats.total_votes);
@@ -181,40 +183,58 @@ jQuery(document).ready(function($) {
 
     // Initialize stars based on average rating (only for stars type)
     $('.shuriken-rating').each(function() {
-        var $rating = $(this);
-        var ratingType = $rating.data('rating-type') || 'stars';
+        const $rating = $(this);
+        const ratingType = $rating.data('rating-type') || 'stars';
         
         // Skip non-star types for star initialization
         if (ratingType === 'like_dislike' || ratingType === 'approval' || ratingType === 'numeric') {
             return;
         }
         
-        var $stats = $rating.find('.rating-stats');
-        var maxStars = parseInt($rating.data('max-stars')) || 5;
+        const $stats = $rating.find('.rating-stats');
+        const maxStars = parseInt($rating.data('max-stars')) || 5;
         
         // Use scaled-average if available, otherwise calculate from normalized average
-        var scaledAverage = parseFloat($stats.data('scaled-average'));
+        let scaledAverage = parseFloat($stats.data('scaled-average'));
         if (isNaN(scaledAverage)) {
-            var normalizedAverage = parseFloat($stats.data('average')) || 0;
+            const normalizedAverage = parseFloat($stats.data('average')) || 0;
             scaledAverage = (normalizedAverage / 5) * maxStars;
         }
         
         updateStars($rating, scaledAverage);
 
-        // Update stars after 4 seconds
-        setInterval(function() {
+        // Update stars periodically; store interval ID for cleanup
+        const intervalId = setInterval(function() {
             if (!$rating.data('hovering')) {
                 resetStars($rating);
             }
         }, 4000);
+        $rating.data('shuriken-interval', intervalId);
     });
+
+    // Clean up setInterval when rating elements are removed from the DOM
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.removedNodes.forEach(function(node) {
+                    if (node.nodeType !== 1) return;
+                    const $removed = $(node).find('.shuriken-rating').addBack('.shuriken-rating');
+                    $removed.each(function() {
+                        const id = $(this).data('shuriken-interval');
+                        if (id) clearInterval(id);
+                    });
+                });
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     // Only add hover effects to votable ratings (not display-only)
     $('.shuriken-rating:not(.display-only) .star').hover(
         function() {
-            var $rating = $(this).closest('.shuriken-rating');
+            const $rating = $(this).closest('.shuriken-rating');
             $rating.data('hovering', true);
-            var value = $(this).data('value');
+            const value = $(this).data('value');
             $(this).parent().find('.star').each(function() {
                 if ($(this).data('value') <= value) {
                     $(this).addClass('active');
@@ -224,7 +244,7 @@ jQuery(document).ready(function($) {
             });
         },
         function() {
-            var $rating = $(this).closest('.shuriken-rating');
+            const $rating = $(this).closest('.shuriken-rating');
             $rating.data('hovering', false);
             resetStars($rating);
         }
@@ -236,10 +256,10 @@ jQuery(document).ready(function($) {
     function submitRating($rating, value, retryCount) {
         retryCount = retryCount || 0;
         
-        var $stars = $rating.find('.stars');
-        var ratingId = $rating.data('id');
-        var maxStars = parseInt($rating.data('max-stars')) || 5;
-        var originalText = $rating.find('.rating-stats').html();
+        const $stars = $rating.find('.stars');
+        const ratingId = $rating.data('id');
+        const maxStars = parseInt($rating.data('max-stars')) || 5;
+        let originalText = $rating.find('.rating-stats').html();
         
         $.ajax({
             url: shurikenReviews.ajaxurl,
@@ -265,8 +285,8 @@ jQuery(document).ready(function($) {
                     });
                     
                     // Use scaled average and max_stars from response for display
-                    var displayAverage = response.data.new_scaled_average || response.data.new_average;
-                    var displayMaxStars = response.data.max_stars || 5;
+                    const displayAverage = response.data.new_scaled_average || response.data.new_average;
+                    const displayMaxStars = response.data.max_stars || 5;
                     
                     // Update text with translated string using numbered placeholders
                     originalText = shurikenReviews.i18n.averageRating
@@ -278,11 +298,11 @@ jQuery(document).ready(function($) {
                     
                     // If there's a parent rating on the page, update it too
                     if (response.data.parent_id) {
-                        var $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
+                        const $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
                         if ($parentRating.length) {
-                            var parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
-                            var parentMaxStars = response.data.parent_max_stars || 5;
-                            var parentText = shurikenReviews.i18n.averageRating
+                            const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
+                            const parentMaxStars = response.data.parent_max_stars || 5;
+                            const parentText = shurikenReviews.i18n.averageRating
                                 .replace('%1$s', parentDisplayAverage)
                                 .replace('%2$s', parentMaxStars)
                                 .replace('%3$s', response.data.parent_total_votes);
@@ -410,16 +430,16 @@ jQuery(document).ready(function($) {
     // Only allow clicking on votable ratings (not display-only)
     $('.shuriken-rating:not(.display-only) .star').on('click', function(e) {
         e.preventDefault();
-        var $rating = $(this).closest('.shuriken-rating');
-        var $stars = $rating.find('.stars');
-        var value = $(this).data('value');
+        const $rating = $(this).closest('.shuriken-rating');
+        const $stars = $rating.find('.stars');
+        const value = $(this).data('value');
 
         // Check if voting is allowed (logged in or guest voting enabled)
-        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
-        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        const isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             
             // Add login message using translated string
             if (!$rating.find('.login-message').length) {
@@ -467,8 +487,8 @@ jQuery(document).ready(function($) {
     function submitBinaryRating($rating, value, retryCount) {
         retryCount = retryCount || 0;
         
-        var ratingId = $rating.data('id');
-        var ratingType = $rating.data('rating-type');
+        const ratingId = $rating.data('id');
+        const ratingType = $rating.data('rating-type');
         
         $.ajax({
             url: shurikenReviews.ajaxurl,
@@ -483,7 +503,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     if (ratingType === 'like_dislike') {
-                        var likes = response.data.new_total_votes > 0 
+                        const likes = response.data.new_total_votes > 0 
                             ? Math.round((response.data.new_average) * response.data.new_total_votes / (response.data.new_average > 0 ? 1 : 1))
                             : 0;
                         // total_rating stores like count directly for like_dislike
@@ -492,10 +512,10 @@ jQuery(document).ready(function($) {
                         // But the response gives normalized_average. Let's use the raw counts from response
                         // Actually new_scaled_average is the approval %, total_votes is total_votes
                         // For like_dislike, the AJAX response sends rating_type, we can compute from total_votes and new_scaled_average
-                        var totalVotes = response.data.new_total_votes;
-                        var approvalPct = response.data.new_scaled_average; // This is actually likes/(likes+dislikes)*100
-                        var likeCount = Math.round(totalVotes * approvalPct / 100);
-                        var dislikeCount = totalVotes - likeCount;
+                        const totalVotes = response.data.new_total_votes;
+                        const approvalPct = response.data.new_scaled_average; // This is actually likes/(likes+dislikes)*100
+                        const likeCount = Math.round(totalVotes * approvalPct / 100);
+                        const dislikeCount = totalVotes - likeCount;
                         
                         $rating.find('.shuriken-like-count').text(likeCount);
                         $rating.find('.shuriken-dislike-count').text(dislikeCount);
@@ -540,15 +560,15 @@ jQuery(document).ready(function($) {
     // Like/Dislike button click handler
     $('.shuriken-rating:not(.display-only) .shuriken-like-btn, .shuriken-rating:not(.display-only) .shuriken-dislike-btn').on('click', function(e) {
         e.preventDefault();
-        var $rating = $(this).closest('.shuriken-rating');
-        var value = parseInt($(this).data('value'));
+        const $rating = $(this).closest('.shuriken-rating');
+        const value = parseInt($(this).data('value'));
 
         // Check if voting is allowed
-        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
-        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        const isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-like-dislike').after(
                     '<div class="login-message">[' + 
@@ -568,23 +588,23 @@ jQuery(document).ready(function($) {
 
     // Numeric slider: live value update on input
     $('.shuriken-rating:not(.display-only) .shuriken-slider').on('input', function() {
-        var value = $(this).val();
+        const value = $(this).val();
         $(this).closest('.shuriken-numeric').find('.shuriken-slider-value').text(value);
     });
 
     // Numeric slider: submit button click handler
     $('.shuriken-rating:not(.display-only) .shuriken-slider-submit').on('click', function(e) {
         e.preventDefault();
-        var $rating = $(this).closest('.shuriken-rating');
-        var $slider = $rating.find('.shuriken-slider');
-        var value = parseInt($slider.val());
+        const $rating = $(this).closest('.shuriken-rating');
+        const $slider = $rating.find('.shuriken-slider');
+        const value = parseInt($slider.val());
 
         // Check if voting is allowed
-        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
-        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        const isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-numeric').after(
                     '<div class="login-message">[' + 
@@ -603,7 +623,7 @@ jQuery(document).ready(function($) {
         submitRating($rating, value, 0);
         
         // Re-enable after a delay
-        var $btn = $(this);
+        const $btn = $(this);
         setTimeout(function() {
             $slider.prop('disabled', false);
             $btn.prop('disabled', false);
@@ -613,14 +633,14 @@ jQuery(document).ready(function($) {
     // Approval (upvote) button click handler
     $('.shuriken-rating:not(.display-only) .shuriken-upvote-btn').on('click', function(e) {
         e.preventDefault();
-        var $rating = $(this).closest('.shuriken-rating');
+        const $rating = $(this).closest('.shuriken-rating');
 
         // Check if voting is allowed
-        var isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
-        var guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
+        const isLoggedIn = shurikenReviews.logged_in === true || shurikenReviews.logged_in === "1" || shurikenReviews.logged_in === 1;
+        const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            var loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-approval').after(
                     '<div class="login-message">[' + 

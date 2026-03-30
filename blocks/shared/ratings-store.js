@@ -21,7 +21,15 @@
     // When multiple blocks mount at the same time they all dispatch the same
     // thunks before the store state (e.g. parentsFetched) has been updated.
     // This map ensures only one network request is ever in-flight per key.
-    var _inflight = {};
+    const _inflight = {};
+
+    /**
+     * Validate that an ID is a positive integer (or numeric string).
+     */
+    function isValidId(id) {
+        const n = Number(id);
+        return Number.isInteger(n) && n > 0;
+    }
 
     /**
      * Return the existing promise if a request for `key` is already in-flight,
@@ -31,7 +39,7 @@
         if (_inflight[key]) {
             return _inflight[key];
         }
-        var p = fn().then(function(result) {
+        const p = fn().then(function(result) {
             delete _inflight[key];
             return result;
         }).catch(function(err) {
@@ -48,8 +56,8 @@
     // Instead of firing N individual /ratings/{id} requests when N blocks mount
     // simultaneously, we collect IDs for a microtask tick and fire a single
     // /ratings/batch?ids=... request.
-    var _batchQueue = [];       // Array of { id, resolve, reject }
-    var _batchTimer = null;
+    let _batchQueue = [];       // Array of { id, resolve, reject }
+    let _batchTimer = null;
 
     function scheduleBatchFetch(ratingId, args) {
         return new Promise(function(resolve, reject) {
@@ -63,22 +71,22 @@
     }
 
     function flushBatchFetch(args) {
-        var queue = _batchQueue;
+        const queue = _batchQueue;
         _batchQueue = [];
         _batchTimer = null;
 
         if (queue.length === 0) return;
 
         // Deduplicate IDs
-        var idMap = {};
+        const idMap = {};
         queue.forEach(function(item) {
             if (!idMap[item.id]) idMap[item.id] = [];
             idMap[item.id].push(item);
         });
-        var uniqueIds = Object.keys(idMap).map(Number);
+        const uniqueIds = Object.keys(idMap).map(Number);
 
         // Single request for 1 ID, batch for multiple
-        var fetchPromise;
+        let fetchPromise;
         if (uniqueIds.length === 1) {
             fetchPromise = apiFetch({
                 path: '/shuriken-reviews/v1/ratings/' + uniqueIds[0],
@@ -96,12 +104,12 @@
         }
 
         fetchPromise.then(function(ratings) {
-            var byId = {};
+            const byId = {};
             ratings.forEach(function(r) { if (r && r.id) byId[r.id] = r; });
             args.dispatch.setRatings(ratings);
             uniqueIds.forEach(function(id) {
                 args.dispatch.setIsLoadingRating(id, false);
-                var items = idMap[id];
+                const items = idMap[id];
                 items.forEach(function(item) {
                     item.resolve(byId[id] || null);
                 });
@@ -110,7 +118,7 @@
             console.error('batch fetchRating error:', error);
             uniqueIds.forEach(function(id) {
                 args.dispatch.setIsLoadingRating(id, false);
-                var items = idMap[id];
+                const items = idMap[id];
                 items.forEach(function(item) {
                     item.resolve(null);
                 });
@@ -236,12 +244,12 @@
     const thunks = {
         fetchRating: function(ratingId) {
             return function(args) {
-                if (!ratingId) {
+                if (!isValidId(ratingId)) {
                     return Promise.resolve(null);
                 }
 
                 // Check cache first
-                var cached = args.select.getRating(ratingId);
+                const cached = args.select.getRating(ratingId);
                 if (cached) {
                     return Promise.resolve(cached);
                 }
@@ -268,13 +276,13 @@
                 args.dispatch.setIsSearching(true);
                 args.dispatch.clearError();
 
-                var path = '/shuriken-reviews/v1/ratings/search?q=' + encodeURIComponent(searchTerm.trim()) + '&type=' + type + '&limit=' + limit;
+                const path = '/shuriken-reviews/v1/ratings/search?q=' + encodeURIComponent(searchTerm.trim()) + '&type=' + type + '&limit=' + limit;
                 
                 return apiFetch({
                     path: path,
                     method: 'GET',
                 }).then(function(results) {
-                    var resultsArray = Array.isArray(results) ? results : [];
+                    const resultsArray = Array.isArray(results) ? results : [];
                     args.dispatch.setRatings(resultsArray);
                     args.dispatch.setSearchResults(resultsArray);
                     args.dispatch.setIsSearching(false);
@@ -305,7 +313,7 @@
                         path: '/shuriken-reviews/v1/ratings/parents',
                         method: 'GET',
                     }).then(function(ratings) {
-                        var ratingsArray = Array.isArray(ratings) ? ratings : [];
+                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
                         args.dispatch.setParentRatings(ratingsArray);
                         args.dispatch.setRatings(ratingsArray);
                         args.dispatch.setParentsFetched(true);
@@ -336,7 +344,7 @@
                         path: '/shuriken-reviews/v1/ratings/mirrorable',
                         method: 'GET',
                     }).then(function(ratings) {
-                        var ratingsArray = Array.isArray(ratings) ? ratings : [];
+                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
                         args.dispatch.setMirrorableRatings(ratingsArray);
                         args.dispatch.setRatings(ratingsArray);
                         args.dispatch.setMirrorableFetched(true);
@@ -354,7 +362,7 @@
 
         fetchChildRatings: function(parentId) {
             return function(args) {
-                if (!parentId) {
+                if (!isValidId(parentId)) {
                     return Promise.resolve([]);
                 }
 
@@ -363,7 +371,7 @@
                         path: '/shuriken-reviews/v1/ratings/' + parentId + '/children',
                         method: 'GET',
                     }).then(function(ratings) {
-                        var ratingsArray = Array.isArray(ratings) ? ratings : [];
+                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
                         // Add children to the ratings cache
                         args.dispatch.setRatings(ratingsArray);
                         return ratingsArray;
@@ -404,6 +412,10 @@
 
         updateRating: function(ratingId, ratingData) {
             return function(args) {
+                if (!isValidId(ratingId)) {
+                    return Promise.reject(new Error('Invalid rating ID'));
+                }
+
                 return apiFetch({
                     path: '/shuriken-reviews/v1/ratings/' + ratingId,
                     method: 'PUT',
@@ -422,6 +434,10 @@
 
         deleteRating: function(ratingId) {
             return function(args) {
+                if (!isValidId(ratingId)) {
+                    return Promise.reject(new Error('Invalid rating ID'));
+                }
+
                 return apiFetch({
                     path: '/shuriken-reviews/v1/ratings/' + ratingId,
                     method: 'DELETE',
@@ -447,7 +463,7 @@
                 }
 
                 // Filter out IDs already in cache
-                var missing = ids.filter(function(id) {
+                const missing = ids.filter(function(id) {
                     return !args.select.getRating(id);
                 });
 
@@ -459,7 +475,7 @@
                     path: '/shuriken-reviews/v1/ratings/batch?ids=' + missing.join(','),
                     method: 'GET',
                 }).then(function(ratings) {
-                    var arr = Array.isArray(ratings) ? ratings : [];
+                    const arr = Array.isArray(ratings) ? ratings : [];
                     args.dispatch.setRatings(arr);
                     return arr;
                 }).catch(function(error) {
@@ -476,12 +492,12 @@
 
         fetchMirrorsForRating: function(ratingId) {
             return function(args) {
-                if (!ratingId) {
+                if (!isValidId(ratingId)) {
                     return Promise.resolve([]);
                 }
 
                 // Check cache first
-                var cached = args.select.getMirrorsForRating(ratingId);
+                const cached = args.select.getMirrorsForRating(ratingId);
                 if (cached !== null) {
                     return Promise.resolve(cached);
                 }
@@ -493,7 +509,7 @@
                         path: '/shuriken-reviews/v1/ratings/' + ratingId + '/mirrors',
                         method: 'GET',
                     }).then(function(mirrors) {
-                        var mirrorsArray = Array.isArray(mirrors) ? mirrors : [];
+                        const mirrorsArray = Array.isArray(mirrors) ? mirrors : [];
                         // Also cache each mirror in ratingsById
                         args.dispatch.setRatings(mirrorsArray);
                         args.dispatch.setMirrorsForRating(ratingId, mirrorsArray);
@@ -514,7 +530,7 @@
     };
 
     // Combine simple actions and thunks
-    var allActions = Object.assign({}, actions, thunks);
+    const allActions = Object.assign({}, actions, thunks);
 
     // Reducer
     function reducer(state = DEFAULT_STATE, action) {
@@ -712,7 +728,7 @@
                 };
 
             case ACTIONS.INVALIDATE_MIRRORS_CACHE:
-                var clearedMirrors = { ...state.mirrorsById };
+                const clearedMirrors = { ...state.mirrorsById };
                 delete clearedMirrors[action.ratingId];
                 return {
                     ...state,
@@ -775,7 +791,7 @@
     };
 
     // Create and register the store using createReduxStore (supports thunks natively)
-    var store = createReduxStore(STORE_NAME, {
+    const store = createReduxStore(STORE_NAME, {
         reducer: reducer,
         actions: allActions,
         selectors: selectors,

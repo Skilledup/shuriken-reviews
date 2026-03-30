@@ -35,16 +35,16 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Numeric slider UI — HTML5 range input, scale raised to 2–100, format_vote_display returns X/N (1.12.2)
 - Exception system SPL refactor — `Shuriken_Exception_Interface` + `Shuriken_Exception_Trait`; logic-family extends SPL counterparts (1.12.2)
 - FSE blocks: type-aware editor preview + create/edit modal fields + block-helpers + keywords (1.12.3)
+- PHP 8.1+ type hints — native property types, parameter types, return types across all classes
+- Magic number constants — extract hardcoded values (`5` for scale default, `60` for cooldown, etc.) to named class constants
+- Vote normalization helper — extract duplicated type-aware normalization logic from AJAX into a shared method
+- Frontend JS modernization — replace `var` with `const`/`let`, add event handler cleanup, remove global state
+- Block store input validation — validate `ratingId` and other inputs before API calls in `ratings-store.js`
 
 🚧 In progress (1.12.x):
-- **Post Linked Ratings block** — new FSE dynamic block for site editor templates (renders linked ratings at block position, alternative to `the_content` auto-injection)
+- **Post Linked Ratings block** — new FSE dynamic block for site editor templates (renders linked ratings at block position, alternative to `the_conVtent` auto-injection)
 
 🚧 In progress (1.13.x — code quality):
-- **PHP 8.1+ type hints** — native property types, parameter types, return types across all classes
-- **Magic number constants** — extract hardcoded values (`5` for scale default, `60` for cooldown, etc.) to named class constants
-- **Vote normalization helper** — extract duplicated type-aware normalization logic from AJAX into a shared method
-- **Frontend JS modernization** — replace `var` with `const`/`let`, add event handler cleanup, remove global state
-- **Block store input validation** — validate `ratingId` and other inputs before API calls in `ratings-store.js`
 - **PHPUnit test suite** — add proper test configuration and unit tests (later)
 
 🚧 Next up:
@@ -209,10 +209,10 @@ Add property types, parameter types, and return types to all PHP classes.
 
 ### Frontend JS Modernization (1.13.0)
 
-- [ ] `shuriken-reviews.js`: replace all `var` with `const`/`let`
-- [ ] `shuriken-reviews.js`: wrap in IIFE or module to eliminate global state
-- [ ] `shuriken-reviews.js`: add event handler cleanup on dynamic element removal
-- [ ] `ratings-store.js`: validate `ratingId` (positive integer) before API calls
+- [x] `shuriken-reviews.js`: replace all `var` with `const`/`let`
+- [x] `shuriken-reviews.js`: wrap in IIFE or module to eliminate global state
+- [x] `shuriken-reviews.js`: add event handler cleanup on dynamic element removal
+- [x] `ratings-store.js`: validate `ratingId` (positive integer) before API calls
 
 ---
 
