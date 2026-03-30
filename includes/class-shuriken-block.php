@@ -182,6 +182,27 @@ class Shuriken_Block {
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
             'render_callback' => array($this, 'render_grouped_block'),
         ));
+
+        // Register the post-linked-ratings editor script
+        wp_register_script(
+            'shuriken-post-linked-ratings-editor',
+            plugins_url('blocks/shuriken-post-linked-ratings/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-blocks',
+                'wp-element',
+                'wp-block-editor',
+                'wp-components',
+                'wp-i18n',
+                'wp-core-data',
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
+        // Register the post-linked-ratings block (dynamic, server-side rendered)
+        register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-post-linked-ratings', array(
+            'render_callback' => array($this, 'render_post_linked_ratings_block'),
+        ));
     }
 
     /**
@@ -426,6 +447,49 @@ class Shuriken_Block {
         }
 
         return $html;
+    }
+
+    /**
+     * Render callback for the Post Linked Ratings block
+     *
+     * Reads `_shuriken_rating_ids` from the current post context and renders
+     * each linked rating using the shortcode renderer.
+     *
+     * @param array    $attributes Block attributes.
+     * @param string   $content    Block content.
+     * @param WP_Block $block      Block instance (provides context).
+     * @return string Rendered block output.
+     * @since 1.12.4
+     */
+    public function render_post_linked_ratings_block(array $attributes, string $content, \WP_Block $block): string {
+        $post_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
+
+        if (!$post_id) {
+            return '';
+        }
+
+        $rating_ids = get_post_meta($post_id, Shuriken_Post_Meta::META_KEY, true);
+        if (!is_array($rating_ids) || empty($rating_ids)) {
+            return '';
+        }
+
+        $ratings_html = '';
+        foreach ($rating_ids as $rating_id) {
+            $id = absint($rating_id);
+            if ($id > 0) {
+                $ratings_html .= do_shortcode('[shuriken_rating id="' . $id . '"]');
+            }
+        }
+
+        if (empty($ratings_html)) {
+            return '';
+        }
+
+        $wrapper_attributes = get_block_wrapper_attributes(array(
+            'class' => 'shuriken-post-ratings',
+        ));
+
+        return '<div ' . $wrapper_attributes . '>' . $ratings_html . '</div>';
     }
 }
 

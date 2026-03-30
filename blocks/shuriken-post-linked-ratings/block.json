@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "shuriken-reviews/post-linked-ratings",
+    "version": "1.0.0",
+    "title": "Post Linked Ratings",
+    "category": "widgets",
+    "icon": "star-filled",
+    "description": "Display ratings linked to the current post. Use in site editor templates as an alternative to automatic content injection.",
+    "keywords": ["rating", "review", "stars", "post", "linked", "meta"],
+    "usesContext": ["postId", "postType"],
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "spacing": {
+            "padding": true,
+            "margin": true
+        }
+    },
+    "textdomain": "shuriken-reviews",
+    "attributes": {},
+    "editorScript": "shuriken-post-linked-ratings-editor",
+    "style": "shuriken-reviews-frontend"
+}
