@@ -14,7 +14,7 @@ This document lists all available hooks (actions and filters) in the Shuriken Re
   - [Rate Limiting](#rate-limiting-filters)
   - [Database Operations](#database-filters)
   - [Frontend Assets](#frontend-filters)
-  - [Post Meta](#post-meta-filters)
+  - [Contextual Voting](#contextual-voting-filters)
 - [Actions](#actions)
   - [Rating Display](#rating-display-actions)
   - [Vote Submission](#vote-submission-actions)
@@ -424,10 +424,12 @@ Return `true` to allow the vote, `false` to block it with a generic message, or 
 | `$rating_value` | int | The star value (1-5) being submitted |
 | `$user_id` | int | The user ID (0 for guests) |
 | `$rating` | object | The rating object |
+| `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
+| `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
 **Example 1: Require minimum user role**
 ```php
-add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating) {
+add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating, $context_id, $context_type) {
     // Only allow users with 'subscriber' role or higher to vote
     if ($user_id === 0) {
         return new WP_Error('login_required', 'Please log in to vote.');
@@ -439,12 +441,12 @@ add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $
     }
     
     return $can_vote;
-}, 10, 5);
+}, 10, 7);
 ```
 
 **Example 2: Limit votes per day**
 ```php
-add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating) {
+add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating, $context_id, $context_type) {
     if ($user_id === 0) {
         return $can_vote; // Skip limit for guests
     }
@@ -458,33 +460,33 @@ add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $
     }
     
     return $can_vote;
-}, 10, 5);
+}, 10, 7);
 
 // Don't forget to increment the counter when vote is created
-add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars, $context_id, $context_type) {
     if ($user_id > 0) {
         $today = date('Y-m-d');
         $votes_today = get_user_meta($user_id, 'shuriken_votes_' . $today, true) ?: 0;
         update_user_meta($user_id, 'shuriken_votes_' . $today, $votes_today + 1);
     }
-}, 10, 7);
+}, 10, 9);
 ```
 
 **Example 3: Block voting on specific ratings**
 ```php
-add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating) {
+add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating, $context_id, $context_type) {
     // Block voting on ratings that contain "Closed" in the name
     if (strpos($rating->name, 'Closed') !== false) {
         return new WP_Error('voting_closed', 'Voting is closed for this item.');
     }
     
     return $can_vote;
-}, 10, 5);
+}, 10, 7);
 ```
 
 **Example 4: Only allow voting during a specific time period**
 ```php
-add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating) {
+add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $user_id, $rating, $context_id, $context_type) {
     $start_date = strtotime('2024-01-01');
     $end_date = strtotime('2024-12-31');
     $now = time();
@@ -494,7 +496,7 @@ add_filter('shuriken_can_submit_vote', function($can_vote, $rating_id, $value, $
     }
     
     return $can_vote;
-}, 10, 5);
+}, 10, 7);
 ```
 
 ---
@@ -769,117 +771,70 @@ add_filter('shuriken_i18n_strings', function($strings) {
 
 ---
 
-### Post Meta Filters
+### Contextual Voting Filters
 
-> These filters are part of the Post Meta module, which manages per-post rating associations, automatic content injection, and JSON-LD structured data output.
+#### `shuriken_allowed_context_types`
 
-#### `shuriken_meta_box_post_types`
-
-Filters the list of post types that display the Shuriken Ratings meta box in the post editor.
+Filters the list of allowed `context_type` values for per-post voting. Any vote or stats request whose `context_type` is not in this list is treated as a global (context-free) vote.
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$post_types` | array | Array of post type slugs (default: `['post', 'page']`) |
+| `$allowed_types` | array | Allowed context type strings (default: `['post', 'page', 'product']`) |
 
-**Example 1: Add support for a custom post type**
+**Example 1: Add a custom post type**
 ```php
-add_filter('shuriken_meta_box_post_types', function($post_types) {
-    $post_types[] = 'product';  // WooCommerce products
-    $post_types[] = 'review';   // Custom review post type
-    return $post_types;
+add_filter('shuriken_allowed_context_types', function($types) {
+    $types[] = 'movie';   // custom 'movie' post type
+    $types[] = 'episode'; // custom 'episode' post type
+    return $types;
 });
 ```
 
-**Example 2: Restrict to only posts**
+**Example 2: Restrict to products only**
 ```php
-add_filter('shuriken_meta_box_post_types', function($post_types) {
-    return ['post'];
+add_filter('shuriken_allowed_context_types', function($types) {
+    return ['product'];
 });
 ```
 
 ---
 
-#### `shuriken_content_injection_position`
+#### `shuriken_contextual_stats`
 
-Filters where linked ratings are automatically injected relative to post content. Return `'disabled'` to turn off automatic injection entirely.
-
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$position` | string | Injection position: `'before'`, `'after'`, or `'disabled'` (saved in Settings) |
-
-**Example 1: Always inject before content**
-```php
-add_filter('shuriken_content_injection_position', function($position) {
-    return 'before';
-});
-```
-
-**Example 2: Disable injection on archive pages**
-```php
-add_filter('shuriken_content_injection_position', function($position) {
-    if (is_archive()) {
-        return 'disabled';
-    }
-    return $position;
-});
-```
-
-**Example 3: Disable injection on specific post types**
-```php
-add_filter('shuriken_content_injection_position', function($position) {
-    if (is_singular('product')) {
-        return 'disabled';  // Handle WooCommerce products separately
-    }
-    return $position;
-});
-```
-
----
-
-#### `shuriken_rating_jsonld`
-
-Filters the JSON-LD structured data array before it's output in the `<head>`. Use this to extend or modify the schema markup for SEO purposes.
+Filters the per-context stats object before it is applied to the rating for rendering. Use this to override or augment the context-scoped vote counts and average displayed on a specific post.
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$jsonld` | array | JSON-LD data with `@context`, `@type`, `name`, `url`, and `aggregateRating` fields |
-| `$rating` | object | The rating object |
-| `$post_id` | int | The post ID the rating is linked to |
+| `$ctx_stats` | object | Stats object with `total_votes` (int), `total_rating` (float), and `average` (float 1-5) properties |
+| `$rating` | object | The rating object (global stats still intact — not yet overlaid) |
+| `$context_id` | int | The context post/entity ID |
+| `$context_type` | string | The context type, e.g. `'post'`, `'product'` |
 
-**Example 1: Add author information to structured data**
+**Example 1: Hide stats until a minimum vote threshold**
 ```php
-add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
-    $author = get_the_author_meta('display_name', get_post_field('post_author', $post_id));
-    $jsonld['author'] = [
-        '@type' => 'Person',
-        'name'  => $author,
-    ];
-    return $jsonld;
-}, 10, 3);
+add_filter('shuriken_contextual_stats', function($stats, $rating, $context_id, $context_type) {
+    // Don't show real average until at least 3 votes
+    if ($stats->total_votes < 3) {
+        $stats->average = 0;
+        $stats->total_rating = 0;
+    }
+    return $stats;
+}, 10, 4);
 ```
 
-**Example 2: Change the schema type for WooCommerce products**
+**Example 2: Serve cached stats from a transient**
 ```php
-add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
-    if (get_post_type($post_id) === 'product') {
-        $jsonld['@type'] = 'Product';
+add_filter('shuriken_contextual_stats', function($stats, $rating, $context_id, $context_type) {
+    $key = "ctx_stats_{$rating->source_id}_{$context_id}";
+    $cached = get_transient($key);
+    if ($cached !== false) {
+        return $cached;
     }
-    return $jsonld;
-}, 10, 3);
-```
-
-**Example 3: Disable JSON-LD output for a specific rating**
-```php
-add_filter('shuriken_rating_jsonld', function($jsonld, $rating, $post_id) {
-    // Return an empty array to suppress output
-    if ($rating->display_only) {
-        return [];
-    }
-    return $jsonld;
-}, 10, 3);
+    set_transient($key, $stats, MINUTE_IN_SECONDS * 5);
+    return $stats;
+}, 10, 4);
 ```
 
 ---
@@ -946,22 +901,26 @@ Fires immediately before a vote is processed. The vote has passed all validation
 | `$user_ip` | string | The user's IP address (only for guests) |
 | `$rating` | object | The rating object |
 | `$max_stars` | int | The maximum stars for this rating |
+| `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
+| `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
 **Example: Log all vote attempts**
 ```php
-add_action('shuriken_before_submit_vote', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+add_action('shuriken_before_submit_vote', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars, $context_id, $context_type) {
+    $context = $context_id ? "$context_type #$context_id" : 'global';
     $log = sprintf(
-        '[%s] Vote attempt - Rating: %d (%s), Value: %s/%d (normalized: %s), User: %s',
+        '[%s] Vote attempt - Rating: %d (%s), Value: %s/%d (normalized: %s), User: %s, Context: %s',
         date('Y-m-d H:i:s'),
         $rating_id,
         $rating->name,
         $value,
         $max_stars,
         $normalized,
-        $user_id > 0 ? "User #$user_id" : "Guest ($ip)"
+        $user_id > 0 ? "User #$user_id" : "Guest ($ip)",
+        $context
     );
     error_log($log);
-}, 10, 7);
+}, 10, 9);
 ```
 
 ---
@@ -980,36 +939,40 @@ Fires after a NEW vote is successfully saved to the database. Does not fire for 
 | `$user_ip` | string | The user's IP address (only for guests) |
 | `$rating` | object | The rating object (before the vote was counted) |
 | `$max_stars` | int | The maximum stars for this rating |
+| `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
+| `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
 **Example 1: Send email notification for low ratings**
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars, $context_id, $context_type) {
     // Notify for ratings in the bottom 40% of the scale
     $threshold = $max_stars * 0.4;
     if ($value <= $threshold) {
+        $context = $context_id ? " on $context_type #$context_id" : '';
         $subject = 'Low Rating Alert: ' . $rating->name;
         $message = sprintf(
-            "A %s/%d star rating was submitted for '%s'.\n\nUser: %s\nTime: %s",
+            "A %s/%d star rating was submitted for '%s'%s.\n\nUser: %s\nTime: %s",
             $value,
             $max_stars,
             $rating->name,
+            $context,
             $user_id > 0 ? "User #$user_id" : "Guest",
             date('Y-m-d H:i:s')
         );
         wp_mail(get_option('admin_email'), $subject, $message);
     }
-}, 10, 7);
+}, 10, 9);
 ```
 
 **Example 2: Award points to users for voting**
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars, $context_id, $context_type) {
     if ($user_id > 0) {
         // Award 5 points for voting (integrate with a points plugin)
         $current_points = get_user_meta($user_id, 'user_points', true) ?: 0;
         update_user_meta($user_id, 'user_points', $current_points + 5);
     }
-}, 10, 7);
+}, 10, 9);
 ```
 
 ---
@@ -1029,22 +992,26 @@ Fires after an existing vote is changed. This happens when a user changes their 
 | `$user_id` | int | The user ID (0 for guests) |
 | `$rating` | object | The rating object |
 | `$max_stars` | int | The maximum stars for this rating |
+| `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
+| `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
 **Example: Track vote changes**
 ```php
-add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $new_value, $new_norm, $user_id, $rating, $max_stars) {
+add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $new_value, $new_norm, $user_id, $rating, $max_stars, $context_id, $context_type) {
     // Convert old normalized value to display scale for logging
     $old_display = ($old_norm / 5) * $max_stars;
+    $context = $context_id ? " ($context_type #$context_id)" : '';
     $log = sprintf(
-        'Vote changed: Rating "%s" - User #%d changed from %s to %s (out of %d)',
+        'Vote changed: Rating "%s"%s - User #%d changed from %s to %s (out of %d)',
         $rating->name,
+        $context,
         $user_id,
         $old_display,
         $new_value,
         $max_stars
     );
     error_log($log);
-}, 10, 8);
+}, 10, 10);
 ```
 
 ---
@@ -1063,23 +1030,28 @@ Fires after any vote (new or update) is successfully processed. This is the best
 | `$is_update` | bool | `true` if vote was updated, `false` if new |
 | `$updated_rating` | object | The rating object with updated totals |
 | `$max_stars` | int | The maximum stars for this rating |
+| `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
+| `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
 **Example 1: Clear cache after voting**
 ```php
-add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars) {
+add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars, $context_id, $context_type) {
     // Clear any cached rating data
     wp_cache_delete('shuriken_rating_' . $rating_id);
-    
+    // Also clear per-context cache key if this was a contextual vote
+    if ($context_id) {
+        wp_cache_delete("ctx_stats_{$rating_id}_{$context_id}");
+    }
     // If using a caching plugin, clear the page cache
     if (function_exists('wp_cache_clear_cache')) {
         wp_cache_clear_cache();
     }
-}, 10, 7);
+}, 10, 9);
 ```
 
 **Example 2: Update a "trending" list**
 ```php
-add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars) {
+add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars, $context_id, $context_type) {
     // Get current trending list
     $trending = get_option('shuriken_trending_ratings', []);
     
@@ -1092,7 +1064,7 @@ add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalize
     });
     
     update_option('shuriken_trending_ratings', $trending);
-}, 10, 7);
+}, 10, 9);
 ```
 
 ---
@@ -1354,21 +1326,23 @@ add_filter('shuriken_rating_css_classes', function($classes, $rating) {
 ### Send Slack Notification on New Votes
 
 ```php
-add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars) {
+add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $user_id, $ip, $rating, $max_stars, $context_id, $context_type) {
     $webhook_url = 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL';
     
+    $context = $context_id ? " on $context_type #$context_id" : '';
     $message = sprintf(
-        '⭐ New %s/%d star rating for "%s"',
+        '⭐ New %s/%d star rating for "%s"%s',
         $value,
         $max_stars,
-        $rating->name
+        $rating->name,
+        $context
     );
     
     wp_remote_post($webhook_url, [
         'body' => json_encode(['text' => $message]),
         'headers' => ['Content-Type' => 'application/json']
     ]);
-}, 10, 7);
+}, 10, 9);
 ```
 
 ---

@@ -203,8 +203,10 @@ class Shuriken_AJAX {
              * @param float         $rating_value The rating value (in the display scale, e.g., 1-10 for 10-star).
              * @param int           $user_id      The user ID (0 for guests).
              * @param object        $rating       The rating object.
+             * @param int|null      $context_id   The context post/entity ID (null for global votes).
+             * @param string|null   $context_type The context type, e.g. 'post', 'product' (null for global votes).
              */
-            $can_vote = apply_filters('shuriken_can_submit_vote', true, $rating_id, $rating_value, $user_id, $rating);
+            $can_vote = apply_filters('shuriken_can_submit_vote', true, $rating_id, $rating_value, $user_id, $rating, $context_id, $context_type);
             
             if (is_wp_error($can_vote)) {
                 throw Shuriken_Permission_Exception::voting_not_allowed($can_vote->get_error_message());
@@ -222,15 +224,17 @@ class Shuriken_AJAX {
          * Fires before a vote is submitted.
          *
          * @since 1.7.0
-         * @param int    $rating_id        The rating ID.
-         * @param float  $rating_value     The rating value (in the display scale).
-         * @param float  $normalized_value The normalized value (1-5 scale for storage).
-         * @param int    $user_id          The user ID (0 for guests).
-         * @param string $user_ip          The user IP (for guests).
-         * @param object $rating           The rating object.
-         * @param int    $max_stars        The maximum stars for this rating.
+         * @param int         $rating_id        The rating ID.
+         * @param float       $rating_value     The rating value (in the display scale).
+         * @param float       $normalized_value The normalized value (1-5 scale for storage).
+         * @param int         $user_id          The user ID (0 for guests).
+         * @param string      $user_ip          The user IP (for guests).
+         * @param object      $rating           The rating object.
+         * @param int         $max_stars        The maximum stars for this rating.
+         * @param int|null    $context_id       The context post/entity ID (null for global votes).
+         * @param string|null $context_type     The context type, e.g. 'post', 'product' (null for global votes).
          */
-        do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
+        do_action('shuriken_before_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars, $context_id, $context_type);
 
         try {
             // Check if the user has already voted
@@ -250,16 +254,18 @@ class Shuriken_AJAX {
                  * Fires after a vote is updated.
                  *
                  * @since 1.7.0
-                 * @param int    $vote_id          The vote ID.
-                 * @param int    $rating_id        The rating ID.
-                 * @param float  $old_value        The previous rating value (normalized 1-5 scale).
-                 * @param float  $new_value        The new rating value (in display scale).
-                 * @param float  $normalized_value The new normalized value (1-5 scale).
-                 * @param int    $user_id          The user ID (0 for guests).
-                 * @param object $rating           The rating object.
-                 * @param int    $max_stars        The maximum stars for this rating.
+                 * @param int         $vote_id          The vote ID.
+                 * @param int         $rating_id        The rating ID.
+                 * @param float       $old_value        The previous rating value (normalized 1-5 scale).
+                 * @param float       $new_value        The new rating value (in display scale).
+                 * @param float       $normalized_value The new normalized value (1-5 scale).
+                 * @param int         $user_id          The user ID (0 for guests).
+                 * @param object      $rating           The rating object.
+                 * @param int         $max_stars        The maximum stars for this rating.
+                 * @param int|null    $context_id       The context post/entity ID (null for global votes).
+                 * @param string|null $context_type     The context type, e.g. 'post', 'product' (null for global votes).
                  */
-                do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars);
+                do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars, $context_id, $context_type);
             } else {
                 // Insert a new vote (use normalized value for storage)
                 $this->db->create_vote($rating_id, $normalized_value, $user_id, $user_ip, $context_id, $context_type);
@@ -268,15 +274,17 @@ class Shuriken_AJAX {
                  * Fires after a new vote is created.
                  *
                  * @since 1.7.0
-                 * @param int    $rating_id        The rating ID.
-                 * @param float  $rating_value     The rating value (in display scale).
-                 * @param float  $normalized_value The normalized value (1-5 scale for storage).
-                 * @param int    $user_id          The user ID (0 for guests).
-                 * @param string $user_ip          The user IP (for guests).
-                 * @param object $rating           The rating object.
-                 * @param int    $max_stars        The maximum stars for this rating.
+                 * @param int         $rating_id        The rating ID.
+                 * @param float       $rating_value     The rating value (in display scale).
+                 * @param float       $normalized_value The normalized value (1-5 scale for storage).
+                 * @param int         $user_id          The user ID (0 for guests).
+                 * @param string      $user_ip          The user IP (for guests).
+                 * @param object      $rating           The rating object.
+                 * @param int         $max_stars        The maximum stars for this rating.
+                 * @param int|null    $context_id       The context post/entity ID (null for global votes).
+                 * @param string|null $context_type     The context type, e.g. 'post', 'product' (null for global votes).
                  */
-                do_action('shuriken_vote_created', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars);
+                do_action('shuriken_vote_created', $rating_id, $rating_value, $normalized_value, $user_id, $user_ip, $rating, $max_stars, $context_id, $context_type);
             }
 
             // If this is a sub-rating, recalculate the parent rating
@@ -377,15 +385,17 @@ class Shuriken_AJAX {
          * Fires after a vote is successfully submitted.
          *
          * @since 1.7.0
-         * @param int    $rating_id        The rating ID.
-         * @param float  $rating_value     The rating value (in display scale).
-         * @param float  $normalized_value The normalized value (1-5 scale).
-         * @param int    $user_id          The user ID (0 for guests).
-         * @param bool   $is_update        Whether this was an update or new vote.
-         * @param object $updated_rating   The updated rating object.
-         * @param int    $max_stars        The maximum stars for this rating.
+         * @param int         $rating_id        The rating ID.
+         * @param float       $rating_value     The rating value (in display scale).
+         * @param float       $normalized_value The normalized value (1-5 scale).
+         * @param int         $user_id          The user ID (0 for guests).
+         * @param bool        $is_update        Whether this was an update or new vote.
+         * @param object      $updated_rating   The rating object with updated totals.
+         * @param int         $max_stars        The maximum stars for this rating.
+         * @param int|null    $context_id       The context post/entity ID (null for global votes).
+         * @param string|null $context_type     The context type, e.g. 'post', 'product' (null for global votes).
          */
-        do_action('shuriken_after_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $is_update, $updated_rating, $max_stars);
+        do_action('shuriken_after_submit_vote', $rating_id, $rating_value, $normalized_value, $user_id, $is_update, $updated_rating, $max_stars, $context_id, $context_type);
 
         wp_send_json_success($response_data);
     }

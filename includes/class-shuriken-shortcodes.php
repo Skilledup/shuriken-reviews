@@ -246,6 +246,18 @@ class Shuriken_Shortcodes {
         $context_attrs = '';
         if ($context_id !== null && $context_type !== null) {
             $ctx_stats = shuriken_db()->get_contextual_stats((int) $rating->source_id, $context_id, $context_type);
+
+            /**
+             * Filter the per-context stats before they are applied to the rating for rendering.
+             *
+             * @since 1.6.0
+             * @param object      $ctx_stats    Stats object with `total_votes`, `total_rating`, and `average` properties.
+             * @param object      $rating       The rating object (stats not yet overlaid).
+             * @param int         $context_id   The context post/entity ID.
+             * @param string      $context_type The context type, e.g. 'post', 'product'.
+             */
+            $ctx_stats = apply_filters('shuriken_contextual_stats', $ctx_stats, $rating, $context_id, $context_type);
+
             $rating->total_votes = $ctx_stats->total_votes;
             $rating->total_rating = $ctx_stats->total_rating;
             $rating->average = $ctx_stats->average;
