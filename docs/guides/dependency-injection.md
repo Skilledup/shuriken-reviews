@@ -16,7 +16,6 @@ All services with database dependencies now use constructor injection:
 | `Shuriken_AJAX` | `database` | ✅ DI-ready |
 | `Shuriken_Block` | `database` | ✅ DI-ready |
 | `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
-| `Shuriken_Post_Meta` | `database` | ✅ DI-ready |
 | `Shuriken_Frontend` | None | No DI needed |
 
 ## What is Dependency Injection?
@@ -82,7 +81,6 @@ The following services are automatically registered:
 | `ajax` | `Shuriken_AJAX` | - |
 | `frontend` | `Shuriken_Frontend` | - |
 | `admin` | `Shuriken_Admin` | - |
-| `post_meta` | `Shuriken_Post_Meta` | - |
 
 ### Getting Services
 

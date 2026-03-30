@@ -14,6 +14,25 @@ What's planned and why. For deep details, see:
 
 ---
 
+## Shipped
+
+### Contextual Voting (DB v1.6.0)
+
+Ratings are created once and reused across any number of posts. Votes are scoped per post via `context_id` / `context_type` columns on the votes table — one grouped rating with all its sub-ratings serves every post in a template; each post gets its own independent vote tallies.
+
+- `context_id` (BIGINT) + `context_type` (VARCHAR 50) columns on `wp_shuriken_votes`
+- Unique key updated to `(rating_id, user_id, user_ip, context_id, context_type)` via COALESCE for NULL safety
+- `get_contextual_stats()` / `get_contextual_stats_batch()` methods on the Database service
+- `GET /ratings/stats` REST endpoint accepts optional `context_id` + `context_type`
+- Both single and grouped rating blocks expose a **"Per-post voting"** toggle (`postContext` attribute)
+- Block `usesContext: ["postId", "postType"]` — PHP render reads FSE context and passes it through the entire stack
+- Frontend JS groups on-page ratings by context and makes batched stats requests per group
+- `shuriken_allowed_context_types` filter controls which post types are accepted (default: `post`, `page`, `product`)
+- Post Linked Ratings block removed — superseded by `postContext` mode
+- Content injection disabled by default — superseded by per-post contextual blocks
+
+---
+
 ## Up Next
 
 ### 1.14.x — Modern PHP & Architecture
@@ -34,7 +53,7 @@ Replace the raw `string` rating type (`'stars'`, `'like_dislike'`, `'numeric'`, 
 All injected dependencies and immutable table/config values are set once and never mutated. Apply PHP 8.1 language features throughout.
 
 - `readonly` on: `$ratings_table`, `$votes_table`, `$wpdb` in `Shuriken_Database`; all `$db` / `$analytics` / `$rate_limiter` injection fields in every class
-- Constructor property promotion on classes that accept injected dependencies: `Shuriken_REST_API`, `Shuriken_Admin`, `Shuriken_Shortcodes`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Frontend`, `Shuriken_Post_Meta`, `Shuriken_Analytics`
+- Constructor property promotion on classes that accept injected dependencies: `Shuriken_REST_API`, `Shuriken_Admin`, `Shuriken_Shortcodes`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Frontend`, `Shuriken_Analytics`
 - Removes roughly 2–4 redundant lines per class (explicit property declaration + manual `$this->x = $x` assignment)
 
 #### First-Class Callables for Hooks
@@ -42,7 +61,7 @@ All injected dependencies and immutable table/config values are set once and nev
 Replace all `array($this, 'method_name')` callback syntax in `add_action` / `add_filter` calls.
 
 - `add_action('rest_api_init', array($this, 'register_routes'))` → `add_action('rest_api_init', $this->register_routes(...))`
-- Applies across `Shuriken_Admin`, `Shuriken_REST_API`, `Shuriken_Frontend`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Post_Meta`, `Shuriken_Rate_Limiter`
+- Applies across `Shuriken_Admin`, `Shuriken_REST_API`, `Shuriken_Frontend`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Rate_Limiter`
 - Statically analysable — IDEs and PHPStan can follow the callable to the method without string resolution
 
 #### `Shuriken_Database` Repository Decomposition
@@ -92,8 +111,7 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - [ ] Emoji reactions — separate system from rating types
 
 ### Admin & Editor
-- [ ] Bulk-link tool — assign ratings to multiple posts at once
-- [ ] Block editor sidebar — show linked rating info in post sidebar
+- [ ] Block editor sidebar — show contextual rating info in post sidebar
 - [ ] Archive injection — `pre_get_posts` sorting by rating
 
 ### Internationalization

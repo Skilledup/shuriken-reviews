@@ -77,6 +77,14 @@ if (!defined('ABSPATH')) exit;
             
             <div class="feature-card">
                 <div class="feature-icon">
+                    <span class="dashicons dashicons-id"></span>
+                </div>
+                <h3><?php esc_html_e('Per-Post Voting', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('One rating template serves every post in your site. Enable the Per-post voting toggle and each post gets its own independent vote tallies — zero extra configuration.', 'shuriken-reviews'); ?></p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
                     <span class="dashicons dashicons-admin-comments"></span>
                 </div>
                 <h3><?php esc_html_e('Comments Enhancement', 'shuriken-reviews'); ?></h3>
@@ -126,93 +134,33 @@ if (!defined('ABSPATH')) exit;
         
         <div class="whats-new-content">
             <div class="new-feature-highlight">
-                <h3><?php esc_html_e('Editor Request Optimization & CDN Compatibility', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('This release drastically reduces the number of REST API requests fired by block editor instances, preventing server resource exhaustion on shared hosting and improving compatibility with Cloudflare and other CDNs.', 'shuriken-reviews'); ?></p>
+                <h3><?php esc_html_e('Contextual Voting (Per-Post Ratings)', 'shuriken-reviews'); ?></h3>
+                <p><?php esc_html_e('Shuriken now competes head-to-head with traditional post-rating plugins — but without forcing you to create a separate rating for every post. Place one rating (or grouped rating) in your single post template, flip the "Per-post voting" toggle, and every post on your site immediately gets its own independent vote tallies.', 'shuriken-reviews'); ?></p>
 
                 <ul class="new-features-list">
                     <li>
-                        <strong><?php esc_html_e('Request Deduplication', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('When multiple Shuriken blocks mount simultaneously, shared data requests (parent ratings, mirrorable ratings) are now deduplicated at the promise level — only one network request is made regardless of block count', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Zero-Config Per-Post Ratings', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Add a rating block to your Single Post template, enable Per-post voting — done. Every post gets its own scores without creating hundreds of individual ratings.', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Automatic Batch Fetching', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Individual rating fetches from multiple blocks are automatically collected and sent as a single batch request, replacing N individual calls with one', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('One Template, Many Posts', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('The rating entity is defined once (name, type, scale, sub-ratings). Votes are scoped to each post via context_id / context_type columns on the votes table. Global aggregates remain intact for standalone use.', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('CDN-Safe REST Headers', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All Shuriken REST API responses now include Cache-Control and CDN-Cache-Control no-store headers to prevent Cloudflare and other CDNs from caching or transforming JSON responses', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Grouped Ratings Too', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('The grouped rating block supports the same toggle. One parent + sub-rating configuration serves all posts — add or remove sub-ratings once and every post reflects the change instantly.', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Output Buffer Protection', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('A pre-serve filter discards any stray PHP output (warnings from other plugins) before JSON encoding, preventing "invalid JSON response" errors', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Headless / REST Compatible', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('The /ratings/stats endpoint accepts optional context_id and context_type parameters, returning per-post stats for any custom frontend or headless WordPress setup.', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Authentication Fix', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('The REST authentication filter has been scoped to only bypass nonce verification for the two public endpoints (/nonce and /ratings/stats), instead of globally overriding authentication for all REST endpoints', 'shuriken-reviews'); ?>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="new-feature-highlight" style="margin-top: 2em;">
-                <h3><?php esc_html_e('Mirror Management in Block Editor', 'shuriken-reviews'); ?></h3>
-                <p><?php esc_html_e('The Grouped Rating block now provides full mirror management directly inside the editor — no need to leave the block to manage mirrors:', 'shuriken-reviews'); ?></p>
-
-                <ul class="new-features-list">
-                    <li>
-                        <strong><?php esc_html_e('Unified Rating Selector', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('A single searchable dropdown that shows both parent ratings and their mirrors, automatically decomposing the selection into the correct rating and mirror IDs', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Extensible Context Types', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Supports post, page, and product out of the box. Add any custom post type via the shuriken_allowed_context_types filter.', 'shuriken-reviews'); ?>
                     </li>
                     <li>
-                        <strong><?php esc_html_e('Inline Mirror CRUD', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Create, rename, and delete mirrors for both the parent rating and each sub-rating from the Edit Parent and Manage Sub-Ratings modals', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Inline Rename', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Click the edit icon on any mirror card to rename it in place with keyboard support (Enter to save, Escape to cancel)', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Polished Modal UI', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('All modal dialogs (Create, Edit Parent, Manage Sub-Ratings) have been redesigned with consistent card layouts, section headers, badges, and hover states', 'shuriken-reviews'); ?>
-                    </li>
-                </ul>
-
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shared Block Helpers', 'shuriken-reviews'); ?></h4>
-                <ul class="new-features-list">
-                    <li>
-                        <strong><?php esc_html_e('Code Sharing', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Common utilities (error handling, search debounce, title tag options, average calculation) extracted into a shared helpers module used by both blocks', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('New Search Type', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('The REST search endpoint now supports a "parents_and_mirrors" type that returns parent ratings alongside their mirrors, with vote data automatically resolved', 'shuriken-reviews'); ?>
-                    </li>
-                </ul>
-
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('New REST Endpoints', 'shuriken-reviews'); ?></h4>
-                <ul class="new-features-list">
-                    <li>
-                        <code>GET /ratings/{id}/mirrors</code> —
-                        <?php esc_html_e('Returns all mirrors of a given rating, used by the block editor to populate mirror lists', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <code>GET /ratings/batch?ids=…</code> —
-                        <?php esc_html_e('Batch-fetches multiple ratings in one request with mirror vote data resolved, replacing many individual API calls', 'shuriken-reviews'); ?>
-                    </li>
-                </ul>
-
-                <h4 style="margin-top: 1.5em;"><?php esc_html_e('Shortcode Extensions', 'shuriken-reviews'); ?></h4>
-                <ul class="new-features-list">
-                    <li>
-                        <strong><?php esc_html_e('Grouped Rating Shortcode', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('New [shuriken_grouped_rating] shortcode displays a parent rating with all its sub-ratings, supporting grid and list layouts', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Preset Styles', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Both shortcodes now accept a style parameter to apply the same preset styles available in the block editor (e.g. card, dark, gradient)', 'shuriken-reviews'); ?>
-                    </li>
-                    <li>
-                        <strong><?php esc_html_e('Custom Colors', 'shuriken-reviews'); ?></strong>
-                        <?php esc_html_e('Use accent_color and star_color parameters to customize colors directly from the shortcode', 'shuriken-reviews'); ?>
+                        <strong><?php esc_html_e('Fully Backward Compatible', 'shuriken-reviews'); ?></strong>
+                        <?php esc_html_e('Per-post voting is opt-in per block. Existing standalone ratings and global tallies are completely unchanged.', 'shuriken-reviews'); ?>
                     </li>
                 </ul>
             </div>
@@ -388,6 +336,7 @@ if (!defined('ABSPATH')) exit;
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/search?q=term</code>
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/{id}/children</code>
                         <code>GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3</code>
+                        <code>GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1&amp;context_id=42&amp;context_type=post</code>
                     </div>
                     <a href="https://github.com/Skilledup/shuriken-reviews/blob/main/docs/guides/rest-api.md" target="_blank" rel="noopener noreferrer" class="resource-link">
                         <?php esc_html_e('REST API Documentation', 'shuriken-reviews'); ?> →

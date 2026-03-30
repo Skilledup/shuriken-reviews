@@ -54,7 +54,6 @@ block         → Shuriken_Block
 ajax          → Shuriken_AJAX
 frontend      → Shuriken_Frontend
 admin         → Shuriken_Admin
-post_meta     → Shuriken_Post_Meta
 ```
 
 **Note:** `Shuriken_Exception_Handler` is a utility class loaded directly (not registered in the container) — it provides static-style error formatting and does not depend on other services.
@@ -81,8 +80,12 @@ post_meta     → Shuriken_Post_Meta
 - `delete_rating($id)` - Delete rating
 - `get_rating_children($parent_id)` - Get child ratings for a parent
 - `get_rating_mirrors($rating_id)` - Get mirror ratings for a source
-- `create_vote($rating_id, $value, $user_id)` - Record vote
-- `get_votes_for_rating($rating_id)` - Get votes
+- `create_vote($rating_id, $value, $user_id, $context_id, $context_type)` - Record vote (context optional)
+- `get_user_vote($rating_id, $user_id, $user_ip, $context_id, $context_type)` - Check existing vote for context
+- `get_last_vote_time($rating_id, $user_id, $user_ip, $context_id, $context_type)` - Last vote timestamp for rate limiting
+- `get_contextual_stats($rating_id, $context_id, $context_type)` - Per-context vote totals and average
+- `get_contextual_stats_batch($rating_ids, $context_id, $context_type)` - Batch contextual stats in one query
+- `get_votes_for_rating($rating_id)` - Get all votes
 
 **Exception Handling:**
 Throws `Shuriken_Database_Exception` on failures instead of returning false.
@@ -260,7 +263,7 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 - `GET    /wp-json/shuriken-reviews/v1/ratings/batch` - Batch-fetch by IDs (max 50)
 - `GET    /wp-json/shuriken-reviews/v1/ratings/{id}/children` - Child ratings
 - `GET    /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - Mirror ratings
-- `GET    /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized)
+- `GET    /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized; supports `context_id` + `context_type` for per-post stats)
 - `GET    /wp-json/shuriken-reviews/v1/nonce` - Fresh nonce for AJAX fallback
 
 **Note:** Vote submission uses the WordPress AJAX handler (`wp_ajax_submit_rating`) rather than a REST endpoint.
@@ -287,9 +290,8 @@ Registers and renders Gutenberg blocks.
 - Shared data store registration
 
 **Blocks:**
-- `shuriken-reviews/rating` - Single rating display
-- `shuriken-reviews/grouped-rating` - Parent with child ratings
-- `shuriken-reviews/post-linked-ratings` - All ratings linked to the current post (FSE/Query Loop aware)
+- `shuriken-reviews/rating` - Single rating display (supports `postContext` for per-post voting)
+- `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` for per-post voting)
 
 ### Shared Data Store (`blocks/shared/ratings-store.js`)
 
@@ -400,8 +402,8 @@ Hooks fired
         │
         ▼
 Return response to frontend
-- New average
-- New total votes
+- New average (contextual if context provided)
+- New total votes (contextual)
 - Parent rating updates
         │
         ▼
@@ -444,6 +446,38 @@ Fire action
 Return success response
 - Redirect to ratings page
 - Show success message
+```
+
+---
+
+## Contextual Voting
+
+Ratings are **standalone entities** — not tied to any specific post. Contextual voting (DB v1.6.0) lets votes be scoped per post/page/product without duplicating the rating configuration.
+
+### How it works
+
+The votes table has two extra columns: `context_id` (BIGINT) and `context_type` (VARCHAR 50). When a vote is cast without context it behaves exactly as before. When cast with context the vote is tagged to that post, and per-post independent tallies are computed on demand.
+
+| Column | Purpose |
+|--------|---------|
+| `context_id` | The post/page/product ID (NULL = global) |
+| `context_type` | The post type slug: `post`, `page`, `product`, … |
+
+**Unique key:** `(rating_id, user_id, user_ip, context_id, context_type)` — each user can vote once per rating per context. NULLs are accounted for via `COALESCE`.
+
+### Global vs contextual aggregates
+
+`total_votes` / `total_rating` on the ratings table remain **global** aggregates (backward compatible). Per-context totals and averages are computed from the votes table via `get_contextual_stats()`.
+
+### Block integration
+
+Both `shuriken-reviews/rating` and `shuriken-reviews/grouped-rating` expose a **"Per-post voting"** toggle (`postContext` attribute). When enabled, the PHP render callback reads the `postId` / `postType` from the block's FSE context and passes them through the entire render → AJAX → DB chain. The rendered HTML carries `data-context-id` and `data-context-type` attributes which the frontend JS reads when submitting votes and refreshing stats.
+
+### Allowed context types
+
+```php
+// Default: post, page, product
+apply_filters('shuriken_allowed_context_types', ['post', 'page', 'product']);
 ```
 
 ---
@@ -562,10 +596,9 @@ All services with database dependencies now use constructor injection:
 | `Shuriken_AJAX` | `database` | ✅ DI-ready |
 | `Shuriken_Block` | `database` | ✅ DI-ready |
 | `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
-| `Shuriken_Post_Meta` | `database` | ✅ DI-ready |
 | `Shuriken_Frontend` | None | No DI needed |
 
-**Coverage:** 88.9% (8 of 9 services)
+**Coverage:** 100% (all services with dependencies)
 
 ### Service Registration
 
