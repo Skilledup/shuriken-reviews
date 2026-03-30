@@ -30,7 +30,7 @@ Reference for all global helper functions providing access to plugin services an
 - Usage patterns and examples
 
 #### [Hooks Reference](guides/hooks-reference.md)
-Complete API reference for all 20 WordPress hooks (12 filters + 8 actions) with examples and use cases.
+Complete API reference for all 29 WordPress hooks (18 filters + 11 actions) with examples and use cases.
 - Rating display filters
 - Vote submission filters  
 - Database operation filters
@@ -51,7 +51,7 @@ Guide to the lightweight DI container for flexible service management and testab
 - Registering services
 - Constructor injection pattern
 - Testing with mocks
-- DI adoption status (87.5% coverage)
+- DI adoption status (88.9% coverage)
 - Best practices
 
 #### [Testing & Testing Utilities](guides/testing.md)

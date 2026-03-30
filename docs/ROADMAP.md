@@ -34,10 +34,9 @@ This document is a high-level roadmap (what’s done + what’s next). For deep 
 - Backend protections — mirror type inheritance from source, type/scale conversion lock when votes exist (1.12.2)
 - Numeric slider UI — HTML5 range input, scale raised to 2–100, format_vote_display returns X/N (1.12.2)
 - Exception system SPL refactor — `Shuriken_Exception_Interface` + `Shuriken_Exception_Trait`; logic-family extends SPL counterparts (1.12.2)
+- FSE blocks: type-aware editor preview + create/edit modal fields + block-helpers + keywords (1.12.3)
 
 🚧 In progress (1.12.x — type-awareness gaps):
-- **FSE blocks: type-aware editor preview** — both blocks hardcode `[1,2,3,4,5].map(★)` and `/5`; need type-branched rendering (thumbs, upvote, dynamic scale)
-- **FSE blocks: create/edit modal fields** — modals lack `rating_type` + `scale` fields; all block-created ratings default to stars/5
 - **Post Linked Ratings block** — new FSE dynamic block for site editor templates (renders linked ratings at block position, alternative to `the_content` auto-injection)
 
 🚧 Next up:
@@ -92,10 +91,10 @@ Four rating type modes with full-stack support from DB to frontend shortcodes.
 - Admin: Rating type + scale fields in create form; type badge in list column; Mirror merged into type dropdown; sub-rating moved to checkbox; JS toggles scale max (10 for stars, 100 for numeric); type/scale locked in inline edit when votes exist or for mirrors
 
 **Remaining — FSE Blocks:**
-- [ ] Both blocks: type-aware editor preview (replace hardcoded 5-star loop with type-branched rendering)
-- [ ] Both blocks: add `rating_type` + `scale` to create/edit modals
-- [ ] `block-helpers.js`: type-aware `calculateAverage()` display helper
-- [ ] `block.json`: add `like`, `approval`, `numeric` keywords
+- [x] Both blocks: type-aware editor preview (replace hardcoded 5-star loop with type-branched rendering)
+- [x] Both blocks: add `rating_type` + `scale` to create/edit modals
+- [x] `block-helpers.js`: type-aware rendering helpers (`renderRatingPreview`, `formatCompactStats`, `calculateScaledAverage`, etc.)
+- [x] `block.json`: add `like`, `approval`, `numeric`, `slider`, `upvote` keywords
 
 **Done — Analytics & Admin (1.12.1):**
 - [x] `class-shuriken-analytics.php`: scale-aware inversion (`get_inversion_constant`), binary distribution (`build_empty_distribution`), display helpers (`format_average_display`, `format_vote_display`), `is_binary_type` check; fixed 9+ SQL/PHP locations
@@ -129,7 +128,13 @@ Four rating type modes with full-stack support from DB to frontend shortcodes.
 - [x] `Shuriken_Exception_Handler` methods type-hint on `Shuriken_Exception_Interface`
 - [x] Autoloader loads interface + trait before exception classes
 
-**Remaining — Post Linked Ratings Block:**
+**Done — FSE Blocks Type-Awareness (1.12.3):**
+- [x] `block-helpers.js`: new helpers — `renderRatingPreview(rating, h)` returns type-branched [widget, stats] elements; `formatCompactStats(rating)` one-line summary; `calculateScaledAverage(rating)` normalized→scale conversion; `getRatingType()`, `getRatingScale()`, `getScaleRange()` accessors; `ratingTypeOptions` shared select options
+- [x] Single rating block (`index.js`): preview uses `renderRatingPreview()` — renders thumbs for like/dislike, upvote arrow for approval, numeric value/max for numeric, dynamic star count for stars; create modal has Rating Type + Scale fields; edit modal has same fields with type locked when votes exist
+- [x] Grouped rating block (`index.js`): parent + child previews both use `renderRatingPreview()`; Manage Sub-Ratings modal stats use `formatCompactStats()`
+- [x] Both `block.json`: added keywords `like`, `dislike`, `numeric`, `slider`, `approval`, `upvote`
+
+**Remaining — Post Linked Ratings Block:****
 - [ ] New dynamic FSE block (`shuriken/post-linked-ratings`) for site editor templates
 - [ ] Reads `_shuriken_rating_ids` from current post context
 - [ ] Server-side renders linked ratings (delegates to shortcode renderer)

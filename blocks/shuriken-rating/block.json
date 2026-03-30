@@ -7,7 +7,7 @@
     "category": "widgets",
     "icon": "star-filled",
     "description": "Display an interactive rating widget for collecting user ratings.",
-    "keywords": ["rating", "review", "stars", "vote"],
+    "keywords": ["rating", "review", "stars", "vote", "like", "dislike", "numeric", "slider", "approval", "upvote"],
     "supports": {
         "html": false,
         "align": ["wide", "full"],

@@ -46,7 +46,11 @@
         makeErrorDismissers,
         useSearchHandler,
         titleTagOptions,
-        calculateAverage
+        calculateAverage,
+        renderRatingPreview,
+        formatCompactStats,
+        ratingTypeOptions,
+        getScaleRange
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/grouped-rating', {
@@ -1238,7 +1242,7 @@
                                         'div',
                                         { className: 'shuriken-child-card-meta' },
                                         wp.element.createElement('span', { className: 'shuriken-stat-text' },
-                                            calculateAverage(child) + '/5 (' + (child.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
+                                            formatCompactStats(child)
                                         ),
                                         wp.element.createElement(Button, {
                                             icon: 'trash',
@@ -1463,23 +1467,8 @@
                                                 { className: 'rating-title' },
                                                 parentDisplayRating.name
                                             ),
-                                            wp.element.createElement(
-                                                'div',
-                                                { className: 'stars display-only-stars' },
-                                                [1, 2, 3, 4, 5].map(function (i) {
-                                                    var isActive = i <= calculateAverage(parentDisplayRating);
-                                                    return wp.element.createElement(
-                                                        'span',
-                                                        { key: i, className: 'star' + (isActive ? ' active' : '') },
-                                                        '\u2605'
-                                                    );
-                                                })
-                                            ),
-                                            wp.element.createElement(
-                                                'div',
-                                                { className: 'rating-stats' },
-                                                __('Average:', 'shuriken-reviews') + ' ' + calculateAverage(parentDisplayRating) + '/5 (' + (parentDisplayRating.total_votes || 0) + ' ' + __('votes', 'shuriken-reviews') + ')'
-                                            )
+                                            renderRatingPreview(parentDisplayRating, wp.element.createElement)[0],
+                                            renderRatingPreview(parentDisplayRating, wp.element.createElement)[1]
                                         )
                                     ),
                                     // Child ratings — using ordered visible children
@@ -1498,23 +1487,8 @@
                                                         { className: 'rating-title' },
                                                         child.name
                                                     ),
-                                                    wp.element.createElement(
-                                                        'div',
-                                                        { className: 'stars display-only-stars' },
-                                                        [1, 2, 3, 4, 5].map(function (i) {
-                                                            var isActive = i <= calculateAverage(child);
-                                                            return wp.element.createElement(
-                                                                'span',
-                                                                { key: i, className: 'star' + (isActive ? ' active' : '') },
-                                                                '\u2605'
-                                                            );
-                                                        })
-                                                    ),
-                                                    wp.element.createElement(
-                                                        'div',
-                                                        { className: 'rating-stats' },
-                                                        calculateAverage(child) + '/5'
-                                                    )
+                                                    renderRatingPreview(child, wp.element.createElement)[0],
+                                                    renderRatingPreview(child, wp.element.createElement)[1]
                                                 )
                                             );
                                         })

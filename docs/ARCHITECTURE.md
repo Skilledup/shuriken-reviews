@@ -52,7 +52,10 @@ block         → Shuriken_Block
 ajax          → Shuriken_AJAX
 frontend      → Shuriken_Frontend
 admin         → Shuriken_Admin
+post_meta     → Shuriken_Post_Meta
 ```
+
+**Note:** `Shuriken_Exception_Handler` is a utility class loaded directly (not registered in the container) — it provides static-style error formatting and does not depend on other services.
 
 ### 3. Database Service (`class-shuriken-database.php`)
 
@@ -68,10 +71,14 @@ admin         → Shuriken_Admin
 **Key Methods:**
 - `get_rating($id)` - Retrieve rating
 - `get_ratings_by_ids($ids)` - Batch retrieve multiple ratings (single query)
+- `get_all_ratings($orderby, $order)` - Retrieve all ratings
+- `get_ratings_paginated()` - Paginated ratings for admin list
 - `search_ratings($term, $limit, $type)` - Search ratings by name (for AJAX autocomplete)
-- `create_rating($data)` - Insert new rating
-- `update_rating($id, $data)` - Update rating
+- `create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale)` - Insert new rating
+- `update_rating($id, $data)` - Update rating (type/scale locked when votes exist)
 - `delete_rating($id)` - Delete rating
+- `get_rating_children($parent_id)` - Get child ratings for a parent
+- `get_rating_mirrors($rating_id)` - Get mirror ratings for a source
 - `create_vote($rating_id, $value, $user_id)` - Record vote
 - `get_votes_for_rating($rating_id)` - Get votes
 
@@ -208,16 +215,21 @@ Responsible for enqueuing frontend assets and localizing JavaScript data.
 Provides REST endpoints for programmatic access and AJAX fallback.
 
 **Endpoints:**
-- `GET /wp-json/shuriken-reviews/v1/ratings`
-- `GET /wp-json/shuriken-reviews/v1/ratings/search` - AJAX autocomplete search
-- `GET /wp-json/shuriken-reviews/v1/ratings/parents` - Parent ratings only
-- `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - Mirrorable ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/batch` - Batch-fetch by IDs (max 50)
-- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - Child ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - Mirror ratings
-- `POST /wp-json/shuriken-reviews/v1/votes`
-- `GET /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized)
-- `GET /wp-json/shuriken-reviews/v1/nonce`
+- `GET    /wp-json/shuriken-reviews/v1/ratings` - List all ratings
+- `POST   /wp-json/shuriken-reviews/v1/ratings` - Create rating (rating_type, scale supported)
+- `GET    /wp-json/shuriken-reviews/v1/ratings/{id}` - Get single rating
+- `PUT    /wp-json/shuriken-reviews/v1/ratings/{id}` - Update rating
+- `DELETE /wp-json/shuriken-reviews/v1/ratings/{id}` - Delete rating
+- `GET    /wp-json/shuriken-reviews/v1/ratings/search` - AJAX autocomplete search
+- `GET    /wp-json/shuriken-reviews/v1/ratings/parents` - Parent ratings only
+- `GET    /wp-json/shuriken-reviews/v1/ratings/mirrorable` - Mirrorable ratings
+- `GET    /wp-json/shuriken-reviews/v1/ratings/batch` - Batch-fetch by IDs (max 50)
+- `GET    /wp-json/shuriken-reviews/v1/ratings/{id}/children` - Child ratings
+- `GET    /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - Mirror ratings
+- `GET    /wp-json/shuriken-reviews/v1/ratings/stats` - Batch stats (optimized)
+- `GET    /wp-json/shuriken-reviews/v1/nonce` - Fresh nonce for AJAX fallback
+
+**Note:** Vote submission uses the WordPress AJAX handler (`wp_ajax_submit_rating`) rather than a REST endpoint.
 
 ### Shortcodes Module (`class-shuriken-shortcodes.php`)
 
@@ -290,6 +302,13 @@ Reusable utilities shared between both block editors.
 - `useSearchHandler(searchFn, type, limit, delay)` - Debounced search hook
 - `titleTagOptions` - Shared array of title tag select options
 - `calculateAverage(rating)` - Calculate rating average from total_rating/total_votes
+- `ratingTypeOptions` - Shared array of rating type select options (stars, like/dislike, numeric, approval)
+- `getScaleRange(ratingType)` - Get valid {min, max} scale range for a rating type
+- `getRatingType(rating)` - Safe accessor for rating_type (defaults to 'stars')
+- `getRatingScale(rating)` - Safe accessor for scale (defaults to 5)
+- `calculateScaledAverage(rating)` - Convert normalized 1–5 average to the rating's custom scale
+- `renderRatingPreview(rating, createElement)` - Type-branched editor preview returning [widgetEl, statsEl]
+- `formatCompactStats(rating)` - One-line type-aware stats string for compact display
 
 ### AJAX Module (`class-shuriken-ajax.php`)
 
@@ -461,19 +480,32 @@ add_filter('shuriken_rating_css_classes', function($classes, $rating) {
 });
 ```
 
-### 6. Template Method Pattern
+### 6. Interface + Trait Pattern (Exceptions)
 
-Base exception class defines the template, subclasses provide specifics:
+Exceptions share behaviour across the SPL hierarchy via an interface and a trait:
 
 ```php
-class Shuriken_Exception extends Exception {
-    public function get_error_code() { ... }
-    public function log($context) { ... }
+// Contract for all plugin exceptions
+interface Shuriken_Exception_Interface extends Throwable {
+    public function get_error_code();
+    public function to_wp_error();
+    public function log($context);
 }
 
-class Shuriken_Database_Exception extends Shuriken_Exception {
-    public static function insert_failed($table) { ... }
-}
+// Shared implementation mixed into every exception class
+trait Shuriken_Exception_Trait { /* get_error_code, to_wp_error, log */ }
+
+// Runtime-family extends \RuntimeException
+class Shuriken_Exception extends \RuntimeException
+    implements Shuriken_Exception_Interface { use Shuriken_Exception_Trait; }
+
+// Logic-family extends SPL counterparts
+class Shuriken_Validation_Exception extends \InvalidArgumentException
+    implements Shuriken_Exception_Interface { use Shuriken_Exception_Trait; }
+```
+
+All catch sites use `catch (Shuriken_Exception_Interface $e)` for unified handling.
+Subclasses still provide factory methods (e.g. `Shuriken_Database_Exception::insert_failed()`).
 ```
 
 ---
@@ -495,9 +527,10 @@ All services with database dependencies now use constructor injection:
 | `Shuriken_AJAX` | `database` | ✅ DI-ready |
 | `Shuriken_Block` | `database` | ✅ DI-ready |
 | `Shuriken_Shortcodes` | `database` | ✅ DI-ready |
+| `Shuriken_Post_Meta` | `database` | ✅ DI-ready |
 | `Shuriken_Frontend` | None | No DI needed |
 
-**Coverage:** 87.5% (7 of 8 services)
+**Coverage:** 88.9% (8 of 9 services)
 
 ### Service Registration
 

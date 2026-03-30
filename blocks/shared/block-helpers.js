@@ -157,13 +157,176 @@
         return 0;
     }
 
+    /**
+     * Rating type options shared by both blocks.
+     */
+    var ratingTypeOptions = [
+        { label: __('Stars', 'shuriken-reviews'), value: 'stars' },
+        { label: __('Like / Dislike', 'shuriken-reviews'), value: 'like_dislike' },
+        { label: __('Numeric Slider', 'shuriken-reviews'), value: 'numeric' },
+        { label: __('Approval (Upvote)', 'shuriken-reviews'), value: 'approval' }
+    ];
+
+    /**
+     * Get valid scale range for a rating type.
+     *
+     * @param {string} ratingType
+     * @return {{ min: number, max: number }}
+     */
+    function getScaleRange(ratingType) {
+        if (ratingType === 'numeric') return { min: 2, max: 100 };
+        if (ratingType === 'stars')   return { min: 2, max: 10 };
+        return { min: 5, max: 5 };
+    }
+
+    /**
+     * Get the rating type from a rating object, defaulting to 'stars'.
+     *
+     * @param {Object} rating
+     * @return {string}
+     */
+    function getRatingType(rating) {
+        return (rating && rating.rating_type) ? rating.rating_type : 'stars';
+    }
+
+    /**
+     * Get the scale from a rating object, defaulting to 5.
+     *
+     * @param {Object} rating
+     * @return {number}
+     */
+    function getRatingScale(rating) {
+        return (rating && rating.scale) ? parseInt(rating.scale, 10) : 5;
+    }
+
+    /**
+     * Calculate the scaled average (convert from normalized 1–5 to custom scale).
+     *
+     * @param {Object} rating
+     * @return {number}
+     */
+    function calculateScaledAverage(rating) {
+        var avg   = calculateAverage(rating);
+        var scale = getRatingScale(rating);
+        return Math.round((avg / 5) * scale * 10) / 10;
+    }
+
+    /**
+     * Render type-aware rating widget and stats for the editor preview.
+     *
+     * @param {Object}   rating - Rating object from store.
+     * @param {Function} h      - wp.element.createElement.
+     * @return {Array} [widgetElement, statsElement]
+     */
+    function renderRatingPreview(rating, h) {
+        var type        = getRatingType(rating);
+        var scale       = getRatingScale(rating);
+        var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
+        var totalRating = parseInt(rating.total_rating, 10) || 0;
+
+        if (type === 'like_dislike') {
+            var likes    = totalRating;
+            var dislikes = Math.max(0, totalVotes - totalRating);
+            return [
+                h('div', { className: 'shuriken-like-dislike display-only-stars' },
+                    h('span', { className: 'shuriken-btn shuriken-like-btn' },
+                        h('span', { className: 'shuriken-thumb' }, '\uD83D\uDC4D'),
+                        h('span', { className: 'shuriken-count shuriken-like-count' }, String(likes))
+                    ),
+                    h('span', { className: 'shuriken-btn shuriken-dislike-btn' },
+                        h('span', { className: 'shuriken-thumb' }, '\uD83D\uDC4E'),
+                        h('span', { className: 'shuriken-count shuriken-dislike-count' }, String(dislikes))
+                    )
+                ),
+                h('div', { className: 'rating-stats' },
+                    likes + ' ' + __('likes', 'shuriken-reviews') + ' \u00B7 ' + dislikes + ' ' + __('dislikes', 'shuriken-reviews')
+                )
+            ];
+        }
+
+        if (type === 'approval') {
+            return [
+                h('div', { className: 'shuriken-approval display-only-stars' },
+                    h('span', { className: 'shuriken-btn shuriken-upvote-btn' },
+                        h('span', { className: 'shuriken-thumb' }, '\u25B2'),
+                        h('span', { className: 'shuriken-count shuriken-upvote-count' }, String(totalVotes))
+                    )
+                ),
+                h('div', { className: 'rating-stats' },
+                    totalVotes + ' ' + __('upvotes', 'shuriken-reviews')
+                )
+            ];
+        }
+
+        if (type === 'numeric') {
+            var numAvg = calculateScaledAverage(rating);
+            return [
+                h('div', { className: 'shuriken-numeric display-only-stars' },
+                    h('span', { className: 'shuriken-numeric-display' },
+                        h('span', { className: 'shuriken-numeric-value' }, String(numAvg)),
+                        h('span', { className: 'shuriken-slider-max' }, ' / ' + scale)
+                    )
+                ),
+                h('div', { className: 'rating-stats' },
+                    __('Average:', 'shuriken-reviews') + ' ' + numAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+                )
+            ];
+        }
+
+        // Default: stars
+        var starAvg = calculateScaledAverage(rating);
+        var starEls = [];
+        for (var i = 1; i <= scale; i++) {
+            starEls.push(h('span', {
+                key: i,
+                className: 'star' + (i <= starAvg ? ' active' : '')
+            }, '\u2605'));
+        }
+        return [
+            h('div', { className: 'stars display-only-stars' }, starEls),
+            h('div', { className: 'rating-stats' },
+                __('Average:', 'shuriken-reviews') + ' ' + starAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+            )
+        ];
+    }
+
+    /**
+     * Format a compact stats string for card headers etc.
+     *
+     * @param {Object} rating
+     * @return {string}
+     */
+    function formatCompactStats(rating) {
+        var type        = getRatingType(rating);
+        var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
+        var totalRating = parseInt(rating.total_rating, 10) || 0;
+
+        if (type === 'like_dislike') {
+            return '\uD83D\uDC4D ' + totalRating + ' / \uD83D\uDC4E ' + Math.max(0, totalVotes - totalRating);
+        }
+        if (type === 'approval') {
+            return '\u25B2 ' + totalVotes;
+        }
+
+        var scale     = getRatingScale(rating);
+        var scaledAvg = calculateScaledAverage(rating);
+        return scaledAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')';
+    }
+
     // Expose on global namespace so both blocks can import without a bundler
     window.ShurikenBlockHelpers = {
-        formatApiError:      formatApiError,
-        makeErrorHandler:    makeErrorHandler,
-        makeErrorDismissers: makeErrorDismissers,
-        useSearchHandler:    useSearchHandler,
-        titleTagOptions:     titleTagOptions,
-        calculateAverage:    calculateAverage
+        formatApiError:         formatApiError,
+        makeErrorHandler:       makeErrorHandler,
+        makeErrorDismissers:    makeErrorDismissers,
+        useSearchHandler:       useSearchHandler,
+        titleTagOptions:        titleTagOptions,
+        calculateAverage:       calculateAverage,
+        ratingTypeOptions:      ratingTypeOptions,
+        getScaleRange:          getScaleRange,
+        getRatingType:          getRatingType,
+        getRatingScale:         getRatingScale,
+        calculateScaledAverage: calculateScaledAverage,
+        renderRatingPreview:    renderRatingPreview,
+        formatCompactStats:     formatCompactStats
     };
 })(window.wp);

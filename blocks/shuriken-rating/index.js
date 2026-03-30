@@ -30,7 +30,10 @@
         makeErrorDismissers,
         useSearchHandler,
         titleTagOptions,
-        calculateAverage
+        calculateAverage,
+        renderRatingPreview,
+        ratingTypeOptions,
+        getScaleRange
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/rating', {
@@ -55,6 +58,10 @@
             const [updating, setUpdating] = useState(false);
             const [localError, setLocalError] = useState(null);
             const [lastFailedAction, setLastFailedAction] = useState(null);
+            const [newRatingType, setNewRatingType] = useState('stars');
+            const [newRatingScale, setNewRatingScale] = useState(5);
+            const [editRatingType, setEditRatingType] = useState('stars');
+            const [editRatingScale, setEditRatingScale] = useState(5);
 
             // Search state
             const [searchTerm, setSearchTerm] = useState('');
@@ -160,6 +167,9 @@
                 if (newRatingMirrorOf) {
                     requestData.mirror_of = parseInt(newRatingMirrorOf, 10);
                 } else {
+                    requestData.rating_type = newRatingType;
+                    var scaleRange = getScaleRange(newRatingType);
+                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, newRatingScale));
                     if (newRatingParentId) {
                         requestData.parent_id = parseInt(newRatingParentId, 10);
                         requestData.effect_type = newRatingEffectType;
@@ -175,6 +185,8 @@
                         setNewRatingParentId('');
                         setNewRatingEffectType('positive');
                         setNewRatingDisplayOnly(false);
+                        setNewRatingType('stars');
+                        setNewRatingScale(5);
                         setIsModalOpen(false);
                         setCreating(false);
                     })
@@ -196,6 +208,8 @@
                 var displayOnlyValue = selectedRating.display_only;
                 var isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
                 setEditRatingDisplayOnly(isDisplayOnly);
+                setEditRatingType(selectedRating.rating_type || 'stars');
+                setEditRatingScale(parseInt(selectedRating.scale, 10) || 5);
                 setIsEditModalOpen(true);
             }
 
@@ -216,6 +230,9 @@
                     requestData.display_only = false;
                 } else {
                     requestData.mirror_of = 0;
+                    requestData.rating_type = editRatingType;
+                    var scaleRange = getScaleRange(editRatingType);
+                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, editRatingScale));
                     if (editRatingParentId) {
                         requestData.parent_id = parseInt(editRatingParentId, 10);
                         requestData.effect_type = editRatingEffectType;
@@ -281,15 +298,8 @@
                 return options;
             }, [searchResults, selectedRating, searchTerm]);
 
-            // Calculate average for preview
-            var average = 0;
-            var totalVotes = 0;
-            if (selectedRating) {
-                totalVotes = parseInt(selectedRating.total_votes, 10) || 0;
-                if (totalVotes > 0) {
-                    average = Math.round((parseInt(selectedRating.total_rating, 10) / totalVotes) * 10) / 10;
-                }
-            }
+            // Type-aware preview elements
+            var preview = selectedRating ? renderRatingPreview(selectedRating, wp.element.createElement) : [null, null];
 
             // Loading state
             var loading = isLoadingRating || (ratingId && !selectedRating && !error);
@@ -384,6 +394,8 @@
                             setNewRatingParentId('');
                             setNewRatingEffectType('positive');
                             setNewRatingDisplayOnly(false);
+                            setNewRatingType('stars');
+                            setNewRatingScale(5);
                         },
                         style: { width: '500px' }
                     },
@@ -411,6 +423,34 @@
                             }
                         },
                         help: __('Mirrors share vote data with another rating.', 'shuriken-reviews')
+                    }),
+                    !newRatingMirrorOf && wp.element.createElement(SelectControl, {
+                        label: __('Rating Type', 'shuriken-reviews'),
+                        value: newRatingType,
+                        options: ratingTypeOptions,
+                        onChange: function (value) {
+                            setNewRatingType(value);
+                            var range = getScaleRange(value);
+                            if (newRatingScale < range.min || newRatingScale > range.max) {
+                                setNewRatingScale(range.min === range.max ? range.min : 5);
+                            }
+                        },
+                        help: __('Choose how users will rate this item.', 'shuriken-reviews')
+                    }),
+                    !newRatingMirrorOf && (newRatingType === 'stars' || newRatingType === 'numeric') && wp.element.createElement(TextControl, {
+                        label: __('Scale', 'shuriken-reviews'),
+                        type: 'number',
+                        value: String(newRatingScale),
+                        onChange: function (value) {
+                            var range = getScaleRange(newRatingType);
+                            var num = parseInt(value, 10);
+                            if (!isNaN(num)) {
+                                setNewRatingScale(Math.max(range.min, Math.min(range.max, num)));
+                            }
+                        },
+                        help: newRatingType === 'stars'
+                            ? __('Number of stars (2–10).', 'shuriken-reviews')
+                            : __('Maximum slider value (2–100).', 'shuriken-reviews')
                     }),
                     !newRatingMirrorOf && wp.element.createElement(SelectControl, {
                         label: __('Parent Rating', 'shuriken-reviews'),
@@ -486,6 +526,37 @@
                         }
                     }),
                     !editRatingMirrorOf && wp.element.createElement(SelectControl, {
+                        label: __('Rating Type', 'shuriken-reviews'),
+                        value: editRatingType,
+                        options: ratingTypeOptions,
+                        onChange: function (value) {
+                            setEditRatingType(value);
+                            var range = getScaleRange(value);
+                            if (editRatingScale < range.min || editRatingScale > range.max) {
+                                setEditRatingScale(range.min === range.max ? range.min : 5);
+                            }
+                        },
+                        disabled: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0,
+                        help: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
+                            ? __('Type cannot be changed after votes have been cast.', 'shuriken-reviews')
+                            : __('Choose how users will rate this item.', 'shuriken-reviews')
+                    }),
+                    !editRatingMirrorOf && (editRatingType === 'stars' || editRatingType === 'numeric') && wp.element.createElement(TextControl, {
+                        label: __('Scale', 'shuriken-reviews'),
+                        type: 'number',
+                        value: String(editRatingScale),
+                        onChange: function (value) {
+                            var range = getScaleRange(editRatingType);
+                            var num = parseInt(value, 10);
+                            if (!isNaN(num)) {
+                                setEditRatingScale(Math.max(range.min, Math.min(range.max, num)));
+                            }
+                        },
+                        help: editRatingType === 'stars'
+                            ? __('Number of stars (2–10).', 'shuriken-reviews')
+                            : __('Maximum slider value (2–100).', 'shuriken-reviews')
+                    }),
+                    !editRatingMirrorOf && wp.element.createElement(SelectControl, {
                         label: __('Parent Rating', 'shuriken-reviews'),
                         value: editRatingParentId,
                         options: [{ label: __(' None ', 'shuriken-reviews'), value: '' }].concat(
@@ -554,23 +625,11 @@
                             )
                             : selectedRating
                                 ? wp.element.createElement(
-                                    // Render wrapper directly inside blockProps (no extra .shuriken-rating div)
                                     'div',
                                     { className: 'shuriken-rating-wrapper' },
                                     wp.element.createElement(titleTag, { className: 'rating-title' }, selectedRating.name),
-                                    wp.element.createElement(
-                                        'div',
-                                        { className: 'stars' },
-                                        [1, 2, 3, 4, 5].map(function (i) {
-                                            return wp.element.createElement('span', {
-                                                key: i,
-                                                className: 'star' + (i <= average ? ' active' : '')
-                                            }, '\u2605');
-                                        })
-                                    ),
-                                    wp.element.createElement('div', { className: 'rating-stats' },
-                                        __('Average:', 'shuriken-reviews') + ' ' + average + '/5 (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
-                                    )
+                                    preview[0],
+                                    preview[1]
                                 )
                                 : wp.element.createElement(
                                     'div',
