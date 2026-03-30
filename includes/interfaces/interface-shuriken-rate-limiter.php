@@ -87,5 +87,5 @@ interface Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP address.
      * @return bool True if user bypasses rate limiting.
      */
-    public function should_bypass($user_id, $user_ip);
+    public function should_bypass(int $user_id, ?string $user_ip): bool;
 }
