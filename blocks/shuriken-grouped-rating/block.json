@@ -4,7 +4,7 @@
     "name": "shuriken-reviews/grouped-rating",
     "version": "2.0.0",
     "title": "Shuriken Grouped Rating",
-    "category": "widgets",
+    "category": "shuriken-reviews",
     "icon": "networking",
     "description": "Display a parent rating along with all its child ratings.",
     "keywords": ["rating", "review", "stars", "vote", "group", "parent", "child", "like", "dislike", "numeric", "slider", "approval", "upvote"],

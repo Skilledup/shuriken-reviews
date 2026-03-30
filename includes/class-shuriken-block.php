@@ -45,7 +45,25 @@ class Shuriken_Block {
     public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
+        add_filter('block_categories_all', array($this, 'register_block_category'), 10, 2);
         add_action('init', array($this, 'register_block'));
+    }
+
+    /**
+     * Register a custom block category for Shuriken Reviews blocks
+     *
+     * @param array                   $categories Existing block categories.
+     * @param WP_Block_Editor_Context $context    Block editor context.
+     * @return array Modified categories.
+     * @since 1.14.0
+     */
+    public function register_block_category(array $categories, \WP_Block_Editor_Context $context): array {
+        array_unshift($categories, array(
+            'slug'  => 'shuriken-reviews',
+            'title' => __('Shuriken Reviews', 'shuriken-reviews'),
+            'icon'  => 'star-filled',
+        ));
+        return $categories;
     }
 
     /**
@@ -79,7 +97,7 @@ class Shuriken_Block {
     }
 
     /**
-     * Register the Shuriken Rating FSE block
+     * Register the Shuriken Single Rating FSE block
      *
      * @return void
      * @since 1.1.9
@@ -194,6 +212,10 @@ class Shuriken_Block {
                 'wp-components',
                 'wp-i18n',
                 'wp-core-data',
+                'wp-data',
+                'wp-api-fetch',
+                'shuriken-ratings-store',
+                'shuriken-block-helpers',
             ),
             SHURIKEN_REVIEWS_VERSION,
             true
@@ -206,7 +228,7 @@ class Shuriken_Block {
     }
 
     /**
-     * Render callback for the Shuriken Rating block
+     * Render callback for the Shuriken Single Rating block
      *
      * Uses the shared render method from Shuriken_Shortcodes to ensure
      * all hooks and filters work consistently across shortcodes and blocks.

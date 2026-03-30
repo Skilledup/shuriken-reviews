@@ -111,10 +111,13 @@ class Shuriken_Post_Meta {
                 'default'
             );
         }
+
+        // Ensure wp-api-fetch is available for the tag-search meta box
+        wp_enqueue_script('wp-api-fetch');
     }
 
     /**
-     * Render meta box content
+     * Render meta box content — tag-style search & select UI
      *
      * @param WP_Post $post Current post object.
      * @return void
@@ -123,39 +126,294 @@ class Shuriken_Post_Meta {
         wp_nonce_field('shuriken_meta_box', 'shuriken_meta_box_nonce');
 
         $linked_ids = $this->get_linked_rating_ids($post->ID);
-        $all_ratings = $this->db->get_all_ratings();
+
+        // Pre-load names for already-linked ratings so tags render immediately
+        $linked_ratings = array();
+        foreach ($linked_ids as $id) {
+            $rating = $this->db->get_rating($id);
+            if ($rating) {
+                $linked_ratings[] = array(
+                    'id'   => (int) $rating->id,
+                    'name' => $rating->name,
+                    'type' => isset($rating->rating_type) ? $rating->rating_type : 'stars',
+                );
+            }
+        }
         ?>
-        <div class="shuriken-meta-box-inner">
+        <div class="shuriken-meta-box-inner" id="shuriken-tag-meta-box">
             <p class="description">
-                <?php esc_html_e('Select ratings to display with this content.', 'shuriken-reviews'); ?>
+                <?php esc_html_e('Type to search ratings, then click to add.', 'shuriken-reviews'); ?>
             </p>
-            <div class="shuriken-rating-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; margin-top: 8px;">
-                <?php if (empty($all_ratings)): ?>
-                    <p class="description">
-                        <?php esc_html_e('No ratings found. Create ratings first.', 'shuriken-reviews'); ?>
-                    </p>
-                <?php else: ?>
-                    <?php foreach ($all_ratings as $rating): ?>
-                        <?php
-                        // Skip sub-ratings and mirrors — only show top-level and standalone
-                        if (!empty($rating->parent_id) || !empty($rating->mirror_of)) {
-                            continue;
-                        }
-                        ?>
-                        <label style="display: block; margin-bottom: 4px;">
-                            <input type="checkbox"
-                                   name="shuriken_rating_ids[]"
-                                   value="<?php echo esc_attr($rating->id); ?>"
-                                   <?php checked(in_array((int) $rating->id, $linked_ids, true)); ?>>
-                            <?php echo esc_html($rating->name); ?>
-                            <?php if (isset($rating->rating_type) && $rating->rating_type !== 'stars'): ?>
-                                <small>(<?php echo esc_html($rating->rating_type); ?>)</small>
-                            <?php endif; ?>
-                        </label>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+
+            <!-- Selected tags -->
+            <div class="shuriken-tags-wrap" id="shuriken-selected-tags"></div>
+
+            <!-- Hidden inputs (the actual form data) -->
+            <div id="shuriken-hidden-inputs"></div>
+
+            <!-- Search input -->
+            <div class="shuriken-tag-search-wrap" style="margin-top: 8px; position: relative;">
+                <input type="text"
+                       id="shuriken-rating-search"
+                       class="widefat"
+                       placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>"
+                       autocomplete="off">
+                <ul id="shuriken-rating-suggestions"
+                    class="shuriken-suggestions"
+                    style="display:none;"></ul>
             </div>
         </div>
+
+        <style>
+            .shuriken-tags-wrap {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-top: 8px;
+                min-height: 28px;
+            }
+            .shuriken-tag {
+                display: inline-flex;
+                align-items: center;
+                background: #e0e0e0;
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 12px;
+                line-height: 1.6;
+                max-width: 100%;
+                word-break: break-word;
+            }
+            .shuriken-tag .shuriken-tag-remove {
+                margin-left: 4px;
+                cursor: pointer;
+                color: #a00;
+                font-weight: bold;
+                font-size: 14px;
+                line-height: 1;
+                border: none;
+                background: none;
+                padding: 0 2px;
+            }
+            .shuriken-tag .shuriken-tag-remove:hover {
+                color: #dc3232;
+            }
+            .shuriken-tag .shuriken-tag-type {
+                color: #888;
+                margin-left: 3px;
+            }
+            .shuriken-suggestions {
+                position: absolute;
+                z-index: 1000;
+                background: #fff;
+                border: 1px solid #ddd;
+                border-top: none;
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                max-height: 180px;
+                overflow-y: auto;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .shuriken-suggestions li {
+                padding: 6px 8px;
+                cursor: pointer;
+                font-size: 13px;
+            }
+            .shuriken-suggestions li:hover,
+            .shuriken-suggestions li.active {
+                background: #0073aa;
+                color: #fff;
+            }
+            .shuriken-suggestions li.disabled {
+                opacity: .5;
+                cursor: default;
+            }
+            .shuriken-suggestions li.disabled:hover {
+                background: transparent;
+                color: inherit;
+            }
+        </style>
+
+        <script>
+        (function () {
+            'use strict';
+
+            var selected    = <?php echo wp_json_encode($linked_ratings); ?>;
+            var tagsWrap    = document.getElementById('shuriken-selected-tags');
+            var hiddenWrap  = document.getElementById('shuriken-hidden-inputs');
+            var searchInput = document.getElementById('shuriken-rating-search');
+            var sugList     = document.getElementById('shuriken-rating-suggestions');
+            var debounceTimer = null;
+            var activeIdx     = -1;
+            var suggestions   = [];
+
+            function render() {
+                // Tags
+                tagsWrap.innerHTML = '';
+                selected.forEach(function (r) {
+                    var tag = document.createElement('span');
+                    tag.className = 'shuriken-tag';
+                    tag.textContent = r.name;
+                    if (r.type && r.type !== 'stars') {
+                        var small = document.createElement('span');
+                        small.className = 'shuriken-tag-type';
+                        small.textContent = '(' + r.type + ')';
+                        tag.appendChild(small);
+                    }
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'shuriken-tag-remove';
+                    btn.setAttribute('aria-label', 'Remove');
+                    btn.textContent = '\u00D7';
+                    btn.addEventListener('click', function () {
+                        removeRating(r.id);
+                    });
+                    tag.appendChild(btn);
+                    tagsWrap.appendChild(tag);
+                });
+
+                // Hidden inputs
+                hiddenWrap.innerHTML = '';
+                selected.forEach(function (r) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'shuriken_rating_ids[]';
+                    input.value = r.id;
+                    hiddenWrap.appendChild(input);
+                });
+            }
+
+            function isSelected(id) {
+                return selected.some(function (r) { return r.id === id; });
+            }
+
+            function addRating(item) {
+                if (isSelected(item.id)) return;
+                selected.push(item);
+                render();
+                searchInput.value = '';
+                closeSuggestions();
+                searchInput.focus();
+            }
+
+            function removeRating(id) {
+                selected = selected.filter(function (r) { return r.id !== id; });
+                render();
+            }
+
+            function closeSuggestions() {
+                sugList.style.display = 'none';
+                sugList.innerHTML = '';
+                suggestions = [];
+                activeIdx = -1;
+            }
+
+            function showSuggestions(items) {
+                suggestions = items;
+                activeIdx = -1;
+                sugList.innerHTML = '';
+
+                if (!items.length) {
+                    var li = document.createElement('li');
+                    li.className = 'disabled';
+                    li.textContent = <?php echo wp_json_encode(__('No ratings found.', 'shuriken-reviews')); ?>;
+                    sugList.appendChild(li);
+                    sugList.style.display = 'block';
+                    return;
+                }
+
+                items.forEach(function (item, idx) {
+                    var li = document.createElement('li');
+                    var already = isSelected(item.id);
+                    li.textContent = item.name;
+                    if (item.type && item.type !== 'stars') {
+                        li.textContent += ' (' + item.type + ')';
+                    }
+                    if (already) {
+                        li.className = 'disabled';
+                        li.textContent += ' \u2713';
+                    }
+                    li.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        if (!already) addRating(item);
+                    });
+                    sugList.appendChild(li);
+                });
+                sugList.style.display = 'block';
+            }
+
+            function fetchSuggestions(term) {
+                // Using the existing REST search endpoint
+                wp.apiFetch({
+                    path: '/shuriken-reviews/v1/ratings/search?q=' + encodeURIComponent(term) + '&limit=20&type=all'
+                }).then(function (results) {
+                    var items = (Array.isArray(results) ? results : []).map(function (r) {
+                        return {
+                            id: parseInt(r.id, 10),
+                            name: r.name,
+                            type: r.rating_type || 'stars'
+                        };
+                    }).filter(function (r) {
+                        // Skip sub-ratings and mirrors
+                        return true;
+                    });
+                    showSuggestions(items);
+                }).catch(function () {
+                    closeSuggestions();
+                });
+            }
+
+            searchInput.addEventListener('input', function () {
+                var term = searchInput.value.trim();
+                clearTimeout(debounceTimer);
+                if (term.length < 1) {
+                    closeSuggestions();
+                    return;
+                }
+                debounceTimer = setTimeout(function () {
+                    fetchSuggestions(term);
+                }, 300);
+            });
+
+            searchInput.addEventListener('keydown', function (e) {
+                var lis = sugList.querySelectorAll('li:not(.disabled)');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeIdx = Math.min(activeIdx + 1, lis.length - 1);
+                    highlightActive(lis);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeIdx = Math.max(activeIdx - 1, 0);
+                    highlightActive(lis);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeIdx >= 0 && activeIdx < suggestions.length) {
+                        var item = suggestions.filter(function (s) { return !isSelected(s.id); })[activeIdx];
+                        if (item) addRating(item);
+                    }
+                } else if (e.key === 'Escape') {
+                    closeSuggestions();
+                }
+            });
+
+            searchInput.addEventListener('blur', function () {
+                // Small delay to allow click events on suggestions
+                setTimeout(closeSuggestions, 200);
+            });
+
+            function highlightActive(lis) {
+                sugList.querySelectorAll('li').forEach(function (li) { li.classList.remove('active'); });
+                if (lis[activeIdx]) {
+                    lis[activeIdx].classList.add('active');
+                    lis[activeIdx].scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            // Initial render
+            render();
+        })();
+        </script>
         <?php
     }
 
