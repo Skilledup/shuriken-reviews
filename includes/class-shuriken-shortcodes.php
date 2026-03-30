@@ -188,7 +188,7 @@ class Shuriken_Shortcodes {
          * @param object $rating    The rating object.
          */
         $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
-        $scale = isset($rating->scale) ? intval($rating->scale) : 5;
+        $scale = isset($rating->scale) ? intval($rating->scale) : Shuriken_Database::RATING_SCALE_DEFAULT;
         $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
         
         // Ensure max_stars is at least 1
@@ -204,7 +204,7 @@ class Shuriken_Shortcodes {
         $star_symbol = apply_filters('shuriken_rating_star_symbol', '★', $rating);
         
         // Calculate the scaled average for display (convert from 5-scale to custom scale)
-        $scaled_average = ($rating->average / 5) * $max_stars;
+        $scaled_average = Shuriken_Database::denormalize_average($rating->average, $max_stars);
         $scaled_average = round($scaled_average, 1);
         
         // Start output buffering

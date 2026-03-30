@@ -24,6 +24,31 @@ if (!defined('ABSPATH')) {
 class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
 
     /**
+     * Default cooldown in seconds between votes on the same rating.
+     */
+    public const COOLDOWN_DEFAULT = 60;
+
+    /**
+     * Default hourly vote limit for guests.
+     */
+    public const GUEST_HOURLY_LIMIT_DEFAULT = 10;
+
+    /**
+     * Default hourly vote limit for members.
+     */
+    public const MEMBER_HOURLY_LIMIT_DEFAULT = 30;
+
+    /**
+     * Default daily vote limit for guests.
+     */
+    public const GUEST_DAILY_LIMIT_DEFAULT = 30;
+
+    /**
+     * Default daily vote limit for members.
+     */
+    public const MEMBER_DAILY_LIMIT_DEFAULT = 100;
+
+    /**
      * @var Shuriken_Database_Interface Database instance
      */
     private Shuriken_Database_Interface $db;
@@ -133,13 +158,13 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
 
         $settings = array(
             'enabled'      => get_option('shuriken_rate_limiting_enabled', '0') === '1',
-            'cooldown'     => (int) get_option('shuriken_vote_cooldown', 60),
+            'cooldown'     => (int) get_option('shuriken_vote_cooldown', self::COOLDOWN_DEFAULT),
             'hourly_limit' => $is_guest 
-                ? (int) get_option('shuriken_guest_hourly_limit', 10)
-                : (int) get_option('shuriken_hourly_vote_limit', 30),
+                ? (int) get_option('shuriken_guest_hourly_limit', self::GUEST_HOURLY_LIMIT_DEFAULT)
+                : (int) get_option('shuriken_hourly_vote_limit', self::MEMBER_HOURLY_LIMIT_DEFAULT),
             'daily_limit'  => $is_guest
-                ? (int) get_option('shuriken_guest_daily_limit', 30)
-                : (int) get_option('shuriken_daily_vote_limit', 100),
+                ? (int) get_option('shuriken_guest_daily_limit', self::GUEST_DAILY_LIMIT_DEFAULT)
+                : (int) get_option('shuriken_daily_vote_limit', self::MEMBER_DAILY_LIMIT_DEFAULT),
         );
 
         /**

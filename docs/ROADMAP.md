@@ -197,15 +197,15 @@ Add property types, parameter types, and return types to all PHP classes.
 
 ### Magic Number Constants (1.13.0)
 
-- [ ] Extract `RATING_SCALE_DEFAULT = 5` (used in AJAX, Database, Shortcodes)
-- [ ] Extract `STARS_SCALE_MAX = 10`, `NUMERIC_SCALE_MAX = 100` (used in create/update)
-- [ ] Extract `RATE_LIMIT_COOLDOWN_DEFAULT = 60` and other rate limit defaults
-- [ ] Replace all hardcoded usages
+- [x] Extract `RATING_SCALE_DEFAULT = 5` (used in AJAX, Database, Shortcodes)
+- [x] Extract `STARS_SCALE_MAX = 10`, `NUMERIC_SCALE_MAX = 100` (used in create/update)
+- [x] Extract `RATE_LIMIT_COOLDOWN_DEFAULT = 60` and other rate limit defaults
+- [x] Replace all hardcoded usages
 
 ### Vote Normalization Helper (1.13.0)
 
-- [ ] Extract type-aware normalization logic from `handle_submit_rating()` into `normalize_vote_value()` helper
-- [ ] Use in AJAX handler, admin forms, and any future vote entry points
+- [x] Extract type-aware normalization logic from `handle_submit_rating()` into `normalize_vote_value()` helper
+- [x] Use in AJAX handler, admin forms, and any future vote entry points
 
 ### Frontend JS Modernization (1.13.0)
 

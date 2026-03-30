@@ -39,11 +39,11 @@ if (isset($_POST['save_rate_limiting_settings'])) {
 
 // Get current values with defaults
 $enabled = get_option('shuriken_rate_limiting_enabled', '0');
-$vote_cooldown = get_option('shuriken_vote_cooldown', 60);
-$hourly_limit = get_option('shuriken_hourly_vote_limit', 30);
-$daily_limit = get_option('shuriken_daily_vote_limit', 100);
-$guest_hourly_limit = get_option('shuriken_guest_hourly_limit', 10);
-$guest_daily_limit = get_option('shuriken_guest_daily_limit', 30);
+$vote_cooldown = get_option('shuriken_vote_cooldown', Shuriken_Rate_Limiter::COOLDOWN_DEFAULT);
+$hourly_limit = get_option('shuriken_hourly_vote_limit', Shuriken_Rate_Limiter::MEMBER_HOURLY_LIMIT_DEFAULT);
+$daily_limit = get_option('shuriken_daily_vote_limit', Shuriken_Rate_Limiter::MEMBER_DAILY_LIMIT_DEFAULT);
+$guest_hourly_limit = get_option('shuriken_guest_hourly_limit', Shuriken_Rate_Limiter::GUEST_HOURLY_LIMIT_DEFAULT);
+$guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limiter::GUEST_DAILY_LIMIT_DEFAULT);
 ?>
 
 <form method="post" action="" class="shuriken-settings-form">

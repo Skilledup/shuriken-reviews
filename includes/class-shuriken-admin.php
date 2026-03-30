@@ -201,7 +201,7 @@ class Shuriken_Admin {
 
         add_screen_option('per_page', array(
             'label'   => __('Ratings', 'shuriken-reviews'),
-            'default' => 20,
+            'default' => Shuriken_Database::RATINGS_PER_PAGE_DEFAULT,
             'option'  => 'shuriken_ratings_per_page',
         ));
     }
@@ -270,13 +270,13 @@ class Shuriken_Admin {
                 $mirror_of = isset($_POST['mirror_of']) && !empty($_POST['mirror_of']) ? intval($_POST['mirror_of']) : null;
                 $parent_id = null;
                 $rating_type = 'stars'; // Placeholder — create_rating() inherits from source
-                $scale = 5;
+                $scale = Shuriken_Database::RATING_SCALE_DEFAULT;
                 $effect_type = 'positive';
                 $display_only = false;
             } else {
                 // Non-mirror: no mirror_of
                 $mirror_of = null;
-                $scale = isset($_POST['scale']) ? intval($_POST['scale']) : 5;
+                $scale = isset($_POST['scale']) ? intval($_POST['scale']) : Shuriken_Database::RATING_SCALE_DEFAULT;
                 $effect_type = isset($_POST['effect_type']) ? sanitize_text_field($_POST['effect_type']) : 'positive';
                 $display_only = isset($_POST['display_only']) && $_POST['display_only'] === '1';
 

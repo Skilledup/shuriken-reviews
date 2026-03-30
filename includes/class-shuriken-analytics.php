@@ -266,7 +266,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $total_rating Total rating sum (needed for binary types)
      * @return string Formatted display string
      */
-    public function format_average_display(float $average, string $rating_type = 'stars', int $scale = 5, int $total_votes = 0, int $total_rating = 0): string {
+    public function format_average_display(float $average, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, int $total_votes = 0, int $total_rating = 0): string {
         if ($rating_type === 'like_dislike') {
             $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
             return $pct . '% ' . __('positive', 'shuriken-reviews');
@@ -291,7 +291,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Rating scale
      * @return string HTML display string
      */
-    public function format_vote_display(int $rating_value, string $rating_type = 'stars', int $scale = 5): string {
+    public function format_vote_display(int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
         $value = intval($rating_value);
         if ($rating_type === 'like_dislike') {
             return $value === 1 ? '👍' : '👎';
@@ -830,12 +830,12 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
         // Determine the target rating's type and scale for proper bucketing
         $rating_type = 'stars';
-        $scale = 5;
+        $scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         if ($rating_id) {
             $rating = $this->db->get_rating($rating_id);
             if ($rating) {
                 $rating_type = $rating->rating_type ?: 'stars';
-                $scale = (int) ($rating->scale ?: 5);
+                $scale = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
             }
         }
 
@@ -1163,7 +1163,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
         // Use parent rating's type/scale for distribution buckets
         $parent_type = $rating->rating_type ?: 'stars';
-        $parent_scale = (int) ($rating->scale ?: 5);
+        $parent_scale = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
         
         $breakdown->subs->distribution = $this->build_empty_distribution($parent_type, $parent_scale);
         foreach ($subs_distribution_results as $row) {
@@ -1535,7 +1535,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                AND r.rating_type NOT IN ('like_dislike', 'approval')"
         );
         if ($max_scale < 1) {
-            $max_scale = 5;
+            $max_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         }
         
         $distribution = array_fill(1, $max_scale, 0);

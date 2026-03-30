@@ -298,7 +298,7 @@ class Shuriken_Post_Meta {
                 continue;
             }
 
-            $scale = isset($rating->scale) ? intval($rating->scale) : 5;
+            $scale = isset($rating->scale) ? intval($rating->scale) : Shuriken_Database::RATING_SCALE_DEFAULT;
             $average = $rating->total_votes > 0
                 ? round($rating->total_rating / $rating->total_votes, 2)
                 : 0;

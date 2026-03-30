@@ -49,6 +49,91 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, rating_type, scale, date_created';
 
     /**
+     * Default internal normalization scale (all votes are stored on a 0–5 scale).
+     */
+    public const RATING_SCALE_DEFAULT = 5;
+
+    /**
+     * Minimum allowed scale for any rating type.
+     */
+    public const SCALE_MIN = 2;
+
+    /**
+     * Maximum allowed scale for star ratings.
+     */
+    public const STARS_SCALE_MAX = 10;
+
+    /**
+     * Maximum allowed scale for numeric ratings.
+     */
+    public const NUMERIC_SCALE_MAX = 100;
+
+    /**
+     * Default number of ratings per page in admin list.
+     */
+    public const RATINGS_PER_PAGE_DEFAULT = 20;
+
+    /**
+     * Maximum IDs allowed in a single batch request.
+     */
+    public const BATCH_IDS_MAX = 50;
+
+    /**
+     * Maximum results for a search query.
+     */
+    public const SEARCH_LIMIT_MAX = 100;
+
+    /**
+     * Normalize a raw vote value to the internal storage scale.
+     *
+     * Validates the value against the rating type and scale, then converts
+     * stars/numeric votes to the 0–5 internal scale. Binary types pass through.
+     *
+     * @param float  $rating_value Raw vote value from the user.
+     * @param string $rating_type  Rating type (stars, like_dislike, numeric, approval).
+     * @param int    $scale        The rating's display scale.
+     * @return float Normalized value for storage.
+     * @throws Shuriken_Validation_Exception If the value is out of range for the type.
+     */
+    public static function normalize_vote_value(float $rating_value, string $rating_type, int $scale): float {
+        if ($rating_type === 'like_dislike') {
+            $int_value = intval($rating_value);
+            if ($int_value !== 0 && $int_value !== 1) {
+                throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
+            }
+            return (float) $int_value;
+        }
+
+        if ($rating_type === 'approval') {
+            $int_value = intval($rating_value);
+            if ($int_value !== 1) {
+                throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
+            }
+            return 1.0;
+        }
+
+        // Stars/numeric: validate against scale, normalize to 1–RATING_SCALE_DEFAULT
+        if ($rating_value < 1 || $rating_value > $scale) {
+            throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, $scale);
+        }
+
+        $normalized = ($rating_value / $scale) * self::RATING_SCALE_DEFAULT;
+        $normalized = round($normalized, 2);
+        return (float) max(1, min(self::RATING_SCALE_DEFAULT, $normalized));
+    }
+
+    /**
+     * Convert a normalized average back to the display scale.
+     *
+     * @param float $average Normalized average (0–5 internal scale).
+     * @param int   $scale   The rating's display scale.
+     * @return float Scaled average for display.
+     */
+    public static function denormalize_average(float $average, int $scale): float {
+        return round(($average / self::RATING_SCALE_DEFAULT) * $scale, 1);
+    }
+
+    /**
      * Constructor
      */
     private function __construct() {
@@ -250,7 +335,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Database_Exception If insert fails
      * @throws Shuriken_Validation_Exception If name is empty
      */
-    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = 5): int {
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = self::RATING_SCALE_DEFAULT): int {
         $sanitized_name = sanitize_text_field($name);
         
         if (empty($sanitized_name)) {
@@ -265,7 +350,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $source = $this->get_rating(intval($mirror_of));
             if ($source) {
                 $rating_type = isset($source->rating_type) ? $source->rating_type : 'stars';
-                $scale = isset($source->scale) ? intval($source->scale) : 5;
+                $scale = isset($source->scale) ? intval($source->scale) : self::RATING_SCALE_DEFAULT;
             }
         }
 
@@ -273,9 +358,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
             $scale = 1; // Binary types always use scale 1
         } elseif ($rating_type === 'numeric') {
-            $scale = max(2, min(100, intval($scale))); // Numeric: 2-100 (slider UI)
+            $scale = max(self::SCALE_MIN, min(self::NUMERIC_SCALE_MAX, intval($scale))); // Numeric: 2-100 (slider UI)
         } else {
-            $scale = max(2, min(10, intval($scale))); // Stars: 2-10
+            $scale = max(self::SCALE_MIN, min(self::STARS_SCALE_MAX, intval($scale))); // Stars: 2-10
         }
         
         $insert_data = array(
@@ -347,7 +432,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     unset($data['rating_type'], $data['scale']);
                 } elseif ($existing->total_votes > 0) {
                     $type_changed = isset($data['rating_type']) && $data['rating_type'] !== ($existing->rating_type ?? 'stars');
-                    $scale_changed = isset($data['scale']) && intval($data['scale']) !== intval($existing->scale ?? 5);
+                    $scale_changed = isset($data['scale']) && intval($data['scale']) !== intval($existing->scale ?? self::RATING_SCALE_DEFAULT);
                     if ($type_changed || $scale_changed) {
                         throw Shuriken_Validation_Exception::invalid_value(
                             'rating_type',
@@ -376,7 +461,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $update_data[$key] = in_array($value, $allowed_types, true) ? $value : 'stars';
                     $format[] = '%s';
                 } elseif ($key === 'scale') {
-                    $update_data[$key] = max(1, min(100, intval($value)));
+                    $update_data[$key] = max(1, min(self::NUMERIC_SCALE_MAX, intval($value)));
                     $format[] = '%d';
                 } elseif ($key === 'parent_id' || $key === 'mirror_of') {
                     // Allow null for parent_id and mirror_of
@@ -977,8 +1062,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      */
     public function create_vote(int $rating_id, float|int $rating_value, int $user_id = 0, ?string $user_ip = null): bool {
         // Validate rating value against normalized scale (1-5 for stars/numeric, 0/1 for binary types)
-        if ($rating_value < 0 || $rating_value > 5) {
-            throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 0, 5);
+        if ($rating_value < 0 || $rating_value > self::RATING_SCALE_DEFAULT) {
+            throw Shuriken_Validation_Exception::out_of_range('rating_value', $rating_value, 0, self::RATING_SCALE_DEFAULT);
         }
 
         $this->wpdb->query('START TRANSACTION');

@@ -449,7 +449,7 @@ class Shuriken_REST_API {
             $effect_type = $request->get_param('effect_type') ?: 'positive';
             $display_only = $request->get_param('display_only') ?: false;
             $rating_type = $request->get_param('rating_type') ?: 'stars';
-            $scale = $request->get_param('scale') ?: 5;
+            $scale = $request->get_param('scale') ?: Shuriken_Database::RATING_SCALE_DEFAULT;
             
             // Convert 0 to null for parent_id and mirror_of
             $parent_id = $parent_id ? intval($parent_id) : null;
@@ -704,8 +704,8 @@ class Shuriken_REST_API {
             }
             
             // Validate limit
-            if ($limit < 1 || $limit > 100) {
-                throw Shuriken_Validation_Exception::out_of_range('limit', $limit, 1, 100);
+            if ($limit < 1 || $limit > Shuriken_Database::SEARCH_LIMIT_MAX) {
+                throw Shuriken_Validation_Exception::out_of_range('limit', $limit, 1, Shuriken_Database::SEARCH_LIMIT_MAX);
             }
             
             $ratings = $this->db->search_ratings($search_term, $limit, $type);
@@ -735,8 +735,8 @@ class Shuriken_REST_API {
                 throw Shuriken_Validation_Exception::required_field('ids');
             }
 
-            if (count($ids) > 50) {
-                throw Shuriken_Validation_Exception::out_of_range('ids count', count($ids), 1, 50);
+            if (count($ids) > Shuriken_Database::BATCH_IDS_MAX) {
+                throw Shuriken_Validation_Exception::out_of_range('ids count', count($ids), 1, Shuriken_Database::BATCH_IDS_MAX);
             }
 
             $ratings = $this->db->get_ratings_by_ids($ids);
