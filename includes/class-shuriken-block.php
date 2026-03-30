@@ -507,9 +507,31 @@ class Shuriken_Block {
             return '';
         }
 
-        $wrapper_attributes = get_block_wrapper_attributes(array(
-            'class' => 'shuriken-post-ratings',
-        ));
+        // Apply universal style/color settings as defaults
+        $wrapper_classes = array('shuriken-post-ratings');
+        $style_preset = get_option('shuriken_linked_ratings_style', '');
+        if ($style_preset && in_array($style_preset, array('classic', 'card', 'minimal', 'dark', 'outlined'), true)) {
+            $wrapper_classes[] = 'is-style-' . $style_preset;
+        }
+
+        $style_vars = array();
+        $accent_color = get_option('shuriken_linked_ratings_accent_color', '');
+        if ($accent_color) {
+            $style_vars[] = '--shuriken-user-accent: ' . esc_attr($accent_color);
+        }
+        $star_color = get_option('shuriken_linked_ratings_star_color', '');
+        if ($star_color) {
+            $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($star_color);
+        }
+
+        $wrapper_args = array(
+            'class' => implode(' ', $wrapper_classes),
+        );
+        if (!empty($style_vars)) {
+            $wrapper_args['style'] = implode('; ', $style_vars) . ';';
+        }
+
+        $wrapper_attributes = get_block_wrapper_attributes($wrapper_args);
 
         return '<div ' . $wrapper_attributes . '>' . $ratings_html . '</div>';
     }

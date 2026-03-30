@@ -7,6 +7,13 @@ if (!defined('ABSPATH')) exit;
 // Get database instance
 $db = shuriken_db();
 
+/**
+ * Get the type class for a rating type: 'continuous' or 'binary'
+ */
+function shuriken_get_type_class(string $type): string {
+    return in_array($type, array('like_dislike', 'approval'), true) ? 'binary' : 'continuous';
+}
+
 $user_id = get_current_user_id();
 $per_page = get_user_meta($user_id, 'shuriken_ratings_per_page', true);
 $per_page = $per_page ? absint($per_page) : 20;
@@ -308,6 +315,18 @@ $col_class = function($col) use ($hidden_columns) {
                                 <div class="parent-info">
                                     <?php printf(esc_html__('Parent: %s', 'shuriken-reviews'), esc_html($parent_name)); ?>
                                 </div>
+                                <?php
+                                // Type-compatibility warning for sub-ratings
+                                if ($parent) {
+                                    $child_class = shuriken_get_type_class(isset($rating->rating_type) ? $rating->rating_type : 'stars');
+                                    $parent_class = shuriken_get_type_class(isset($parent->rating_type) ? $parent->rating_type : 'stars');
+                                    if ($child_class !== $parent_class) :
+                                ?>
+                                    <div class="shuriken-type-warning" title="<?php esc_attr_e('Mixing binary and continuous rating types may produce incorrect aggregated scores.', 'shuriken-reviews'); ?>">
+                                        <span class="dashicons dashicons-warning"></span>
+                                        <?php esc_html_e('Type mismatch', 'shuriken-reviews'); ?>
+                                    </div>
+                                <?php endif; } ?>
                             <?php elseif ($rating->display_only): ?>
                                 <span class="rating-type parent-badge display-only">
                                     <?php esc_html_e('Display Only', 'shuriken-reviews'); ?>
@@ -506,11 +525,15 @@ $col_class = function($col) use ($hidden_columns) {
                                                     $available_parents = $db->get_parent_ratings($rating->id);
                                                     foreach ($available_parents as $parent): 
                                                     ?>
-                                                        <option value="<?php echo esc_attr($parent->id); ?>" <?php selected($rating->parent_id, $parent->id); ?>>
+                                                        <option value="<?php echo esc_attr($parent->id); ?>" data-rating-type="<?php echo esc_attr(isset($parent->rating_type) ? $parent->rating_type : 'stars'); ?>" <?php selected($rating->parent_id, $parent->id); ?>>
                                                             <?php echo esc_html($parent->name); ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
+                                                <div class="shuriken-inline-type-warning shuriken-type-warning" style="display:none; margin-top: 4px;">
+                                                    <span class="dashicons dashicons-warning"></span>
+                                                    <?php esc_html_e('Type mismatch: Mixing binary and continuous types.', 'shuriken-reviews'); ?>
+                                                </div>
                                             </span>
                                         </label>
                                         
@@ -732,11 +755,15 @@ $col_class = function($col) use ($hidden_columns) {
                         <td>
                             <select name="parent_id" id="parent_id" class="regular-text">
                                 <?php foreach ($parent_ratings as $parent): ?>
-                                    <option value="<?php echo esc_attr($parent->id); ?>">
+                                    <option value="<?php echo esc_attr($parent->id); ?>" data-rating-type="<?php echo esc_attr(isset($parent->rating_type) ? $parent->rating_type : 'stars'); ?>">
                                         <?php echo esc_html($parent->name); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div id="add-new-type-warning" class="shuriken-type-warning" style="display:none; margin-top: 6px;">
+                                <span class="dashicons dashicons-warning"></span>
+                                <?php esc_html_e('Type mismatch: Mixing binary and continuous rating types may produce incorrect aggregated scores.', 'shuriken-reviews'); ?>
+                            </div>
                             <p class="description">
                                 <?php esc_html_e('Select the parent rating. Sub-ratings contribute to their parent\'s score.', 'shuriken-reviews'); ?>
                             </p>

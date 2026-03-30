@@ -37,6 +37,9 @@
             
             // Set initial scale visibility based on rating type
             updateScaleVisibility($editRow, '.rating-type-select', '.scale-label');
+
+            // Set initial type-compatibility warning state
+            updateInlineTypeWarning($editRow);
         });
         
         /**
@@ -178,6 +181,13 @@
         });
 
         /**
+         * Determine the type class: 'binary' or 'continuous'
+         */
+        function getTypeClass(type) {
+            return (type === 'like_dislike' || type === 'approval') ? 'binary' : 'continuous';
+        }
+
+        /**
          * Update field visibility based on rating type and sub-rating state
          * for the Add New Rating form
          */
@@ -215,10 +225,37 @@
                 $('#parent_id').val($('#parent_id option:first').val());
                 $('#effect_type').val('positive');
             }
+
+            // Type-compatibility warning for Add New form
+            updateAddNewTypeWarning();
+        }
+
+        /**
+         * Check type compatibility between the selected type and parent in Add New form
+         */
+        function updateAddNewTypeWarning() {
+            const $warning = $('#add-new-type-warning');
+            const isSub = $('#is_sub_rating').is(':checked');
+            const type = $('#rating_type').val();
+
+            if (!isSub || type === 'mirror') {
+                $warning.hide();
+                return;
+            }
+
+            const $parentOption = $('#parent_id option:selected');
+            const parentType = $parentOption.data('rating-type') || 'stars';
+
+            if (getTypeClass(type) !== getTypeClass(parentType)) {
+                $warning.show();
+            } else {
+                $warning.hide();
+            }
         }
 
         $('#rating_type').on('change', updateAddNewVisibility);
         $('#is_sub_rating').on('change', updateAddNewVisibility);
+        $('#parent_id').on('change', updateAddNewTypeWarning);
         // Initial state
         updateAddNewVisibility();
 
@@ -237,6 +274,38 @@
                 $row.find('.effect-type-label').hide();
                 $row.find('.display-only-label').show();
             }
+            updateInlineTypeWarning($row);
+        });
+
+        /**
+         * Check type compatibility in an inline edit row
+         */
+        function updateInlineTypeWarning($row) {
+            const $warning = $row.find('.shuriken-inline-type-warning');
+            const $parentSelect = $row.find('.parent-select');
+            const parentVal = $parentSelect.val();
+
+            if (!parentVal) {
+                $warning.hide();
+                return;
+            }
+
+            // Get current rating type — either from a select or a hidden input
+            const $typeSelect = $row.find('.rating-type-select');
+            const childType = $typeSelect.length ? $typeSelect.val() : $row.find('input[name="rating_type"]').val();
+            const parentType = $parentSelect.find('option:selected').data('rating-type') || 'stars';
+
+            if (getTypeClass(childType) !== getTypeClass(parentType)) {
+                $warning.show();
+            } else {
+                $warning.hide();
+            }
+        }
+
+        // Also check type warning when the rating type changes in inline edit
+        $(document).on('change', '.inline-edit-row-rating .rating-type-select', function() {
+            const $row = $(this).closest('.inline-edit-row-rating');
+            updateInlineTypeWarning($row);
         });
 
         /**

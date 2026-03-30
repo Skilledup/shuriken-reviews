@@ -34,6 +34,27 @@ if (isset($_POST['save_content_settings'])) {
     }
     update_option('shuriken_content_injection_position', $position);
 
+    // Linked ratings style preset
+    $style = isset($_POST['linked_ratings_style'])
+        ? sanitize_key($_POST['linked_ratings_style'])
+        : '';
+    if (!in_array($style, array('', 'classic', 'card', 'minimal', 'dark', 'outlined'), true)) {
+        $style = '';
+    }
+    update_option('shuriken_linked_ratings_style', $style);
+
+    // Linked ratings accent color
+    $accent_color = isset($_POST['linked_ratings_accent_color'])
+        ? sanitize_hex_color($_POST['linked_ratings_accent_color'])
+        : '';
+    update_option('shuriken_linked_ratings_accent_color', $accent_color ?: '');
+
+    // Linked ratings star/slider color
+    $star_color = isset($_POST['linked_ratings_star_color'])
+        ? sanitize_hex_color($_POST['linked_ratings_star_color'])
+        : '';
+    update_option('shuriken_linked_ratings_star_color', $star_color ?: '');
+
     echo '<div class="notice notice-success is-dismissible"><p>' .
         esc_html__('Settings saved successfully!', 'shuriken-reviews') .
         '</p></div>';
@@ -45,6 +66,9 @@ if (!is_array($saved_post_types)) {
     $saved_post_types = array('post', 'page');
 }
 $saved_position = get_option('shuriken_content_injection_position', 'after');
+$saved_style = get_option('shuriken_linked_ratings_style', '');
+$saved_accent_color = get_option('shuriken_linked_ratings_accent_color', '');
+$saved_star_color = get_option('shuriken_linked_ratings_star_color', '');
 
 // Available public post types
 $available_post_types = get_post_types(array('public' => true), 'objects');
@@ -109,6 +133,106 @@ $available_post_types = get_post_types(array('public' => true), 'objects');
             </div>
         </div>
     </div>
+
+    <div class="shuriken-settings-card">
+        <div class="settings-card-header">
+            <span class="settings-card-icon">🎨</span>
+            <h3><?php esc_html_e('Linked Ratings Style', 'shuriken-reviews'); ?></h3>
+        </div>
+        <div class="settings-card-body">
+            <p class="settings-field-description" style="margin-bottom: 12px;">
+                <?php esc_html_e('These style and color settings apply to both auto-injected content ratings and the Post Linked Ratings block (as defaults).', 'shuriken-reviews'); ?>
+            </p>
+
+            <div class="settings-field">
+                <div class="settings-field-header">
+                    <label for="linked_ratings_style"><?php esc_html_e('Style Preset', 'shuriken-reviews'); ?></label>
+                </div>
+                <select name="linked_ratings_style" id="linked_ratings_style" style="margin-top: 8px;">
+                    <option value="" <?php selected($saved_style, ''); ?>>
+                        <?php esc_html_e('Default (no preset)', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="classic" <?php selected($saved_style, 'classic'); ?>>
+                        <?php esc_html_e('Classic', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="card" <?php selected($saved_style, 'card'); ?>>
+                        <?php esc_html_e('Card', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="minimal" <?php selected($saved_style, 'minimal'); ?>>
+                        <?php esc_html_e('Minimal', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="dark" <?php selected($saved_style, 'dark'); ?>>
+                        <?php esc_html_e('Dark', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="outlined" <?php selected($saved_style, 'outlined'); ?>>
+                        <?php esc_html_e('Outlined', 'shuriken-reviews'); ?>
+                    </option>
+                </select>
+            </div>
+
+            <div class="settings-field" style="margin-top: 16px;">
+                <div class="settings-field-header">
+                    <label for="linked_ratings_accent_color"><?php esc_html_e('Accent Color', 'shuriken-reviews'); ?></label>
+                </div>
+                <p class="settings-field-description">
+                    <?php esc_html_e('Override the default accent color for buttons, progress bars, and interactive elements.', 'shuriken-reviews'); ?>
+                </p>
+                <input type="color"
+                       name="linked_ratings_accent_color"
+                       id="linked_ratings_accent_color"
+                       value="<?php echo esc_attr($saved_accent_color ?: '#f5a623'); ?>"
+                       style="margin-top: 8px; width: 50px; height: 34px; padding: 2px; cursor: pointer;">
+                <label style="margin-left: 8px;">
+                    <input type="checkbox"
+                           id="linked_ratings_accent_color_enabled"
+                           <?php checked(!empty($saved_accent_color)); ?>>
+                    <?php esc_html_e('Enable custom accent color', 'shuriken-reviews'); ?>
+                </label>
+            </div>
+
+            <div class="settings-field" style="margin-top: 16px;">
+                <div class="settings-field-header">
+                    <label for="linked_ratings_star_color"><?php esc_html_e('Star / Slider Color', 'shuriken-reviews'); ?></label>
+                </div>
+                <p class="settings-field-description">
+                    <?php esc_html_e('Override the default star or numeric slider fill color. Only applies to Stars and Numeric rating types.', 'shuriken-reviews'); ?>
+                </p>
+                <input type="color"
+                       name="linked_ratings_star_color"
+                       id="linked_ratings_star_color"
+                       value="<?php echo esc_attr($saved_star_color ?: '#f5a623'); ?>"
+                       style="margin-top: 8px; width: 50px; height: 34px; padding: 2px; cursor: pointer;">
+                <label style="margin-left: 8px;">
+                    <input type="checkbox"
+                           id="linked_ratings_star_color_enabled"
+                           <?php checked(!empty($saved_star_color)); ?>>
+                    <?php esc_html_e('Enable custom star/slider color', 'shuriken-reviews'); ?>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // Clear color value when checkbox is unchecked so empty string is saved
+        var accentCheck = document.getElementById('linked_ratings_accent_color_enabled');
+        var accentInput = document.getElementById('linked_ratings_accent_color');
+        var starCheck = document.getElementById('linked_ratings_star_color_enabled');
+        var starInput = document.getElementById('linked_ratings_star_color');
+
+        accentInput.disabled = !accentCheck.checked;
+        starInput.disabled = !starCheck.checked;
+
+        accentCheck.addEventListener('change', function() {
+            accentInput.disabled = !this.checked;
+            if (!this.checked) accentInput.value = '';
+        });
+        starCheck.addEventListener('change', function() {
+            starInput.disabled = !this.checked;
+            if (!this.checked) starInput.value = '';
+        });
+    })();
+    </script>
 
     <div class="shuriken-settings-submit">
         <button type="submit" name="save_content_settings" class="button button-primary button-large">

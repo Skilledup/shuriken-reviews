@@ -495,6 +495,11 @@ class Shuriken_Post_Meta {
             return $content;
         }
 
+        // Skip injection if the Post Linked Ratings block is present in this content
+        if (has_block('shuriken-reviews/post-linked-ratings', $post_id)) {
+            return $content;
+        }
+
         // Check post type support
         if (!in_array(get_post_type($post_id), $this->get_supported_post_types(), true)) {
             return $content;
@@ -505,8 +510,27 @@ class Shuriken_Post_Meta {
             return $content;
         }
 
+        // Build wrapper attributes from universal style/color settings
+        $wrapper_classes = array('shuriken-post-ratings');
+        $style_preset = get_option('shuriken_linked_ratings_style', '');
+        if ($style_preset && in_array($style_preset, array('classic', 'card', 'minimal', 'dark', 'outlined'), true)) {
+            $wrapper_classes[] = 'is-style-' . $style_preset;
+        }
+
+        $style_vars = array();
+        $accent_color = get_option('shuriken_linked_ratings_accent_color', '');
+        if ($accent_color) {
+            $style_vars[] = '--shuriken-user-accent: ' . esc_attr($accent_color);
+        }
+        $star_color = get_option('shuriken_linked_ratings_star_color', '');
+        if ($star_color) {
+            $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($star_color);
+        }
+
+        $style_attr = !empty($style_vars) ? ' style="' . esc_attr(implode('; ', $style_vars)) . ';"' : '';
+
         // Build shortcode HTML
-        $ratings_html = '<div class="shuriken-post-ratings">';
+        $ratings_html = '<div class="' . esc_attr(implode(' ', $wrapper_classes)) . '"' . $style_attr . '>';
         foreach ($rating_ids as $rating_id) {
             $ratings_html .= do_shortcode('[shuriken_rating id="' . intval($rating_id) . '"]');
         }
