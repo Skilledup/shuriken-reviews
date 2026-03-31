@@ -377,7 +377,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                         ?>
                             <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
                                 <td><a href="<?php echo esc_url($stats_url); ?>" class="rating-item-link"><?php echo esc_html($item->name); ?></a></td>
-                                <td><span class="star-display low">★</span> <?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
+                                <td><?php if (!in_array($item->rating_type ?? 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display low">★</span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
                         <?php endforeach; ?>

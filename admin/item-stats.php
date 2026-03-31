@@ -116,7 +116,20 @@ if ($rating_type === 'like_dislike') {
     $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range);
 } else {
     // stars/numeric: dual-axis chart data
-    $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range);
+    // For parent ratings, include votes from sub-ratings based on the current view
+    if ($is_parent && $stats_breakdown) {
+        $sub_rating_ids = array_map(fn($s) => $s->id, $sub_ratings);
+        if ($current_view === 'direct') {
+            $chart_ids = array($rating_id);
+        } elseif ($current_view === 'subs') {
+            $chart_ids = !empty($sub_rating_ids) ? $sub_rating_ids : array($rating_id);
+        } else {
+            $chart_ids = array_merge(array($rating_id), $sub_rating_ids);
+        }
+        $dual_axis_data = $analytics->get_votes_with_rolling_avg_for_ids($chart_ids, $date_range);
+    } else {
+        $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range);
+    }
 }
 ?>
 
@@ -372,13 +385,13 @@ if ($rating_type === 'like_dislike') {
     <div class="shuriken-stats-grid secondary">
         <div class="shuriken-stat-card small">
             <div class="stat-content">
-                <h4><?php echo esc_html($analytics->format_time_ago($first_vote)); ?></h4>
+                <h4><?php echo esc_html($first_vote ? $analytics->format_time_ago($first_vote) : __('N/A', 'shuriken-reviews')); ?></h4>
                 <p><?php esc_html_e('First Vote', 'shuriken-reviews'); ?></p>
             </div>
         </div>
         <div class="shuriken-stat-card small">
             <div class="stat-content">
-                <h4><?php echo esc_html($analytics->format_time_ago($last_vote)); ?></h4>
+                <h4><?php echo esc_html($last_vote ? $analytics->format_time_ago($last_vote) : __('N/A', 'shuriken-reviews')); ?></h4>
                 <p><?php esc_html_e('Last Vote', 'shuriken-reviews'); ?></p>
             </div>
         </div>
@@ -465,8 +478,7 @@ if ($rating_type === 'like_dislike') {
                             </span>
                         </td>
                         <td>
-                            <span class="star-display">★</span>
-                            <?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
+                            <?php if (!in_array($sub->rating_type ?: 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display">★</span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                         </td>
                         <td>
                             <span class="effective-score <?php echo $sub->effect_type === 'negative' ? 'inverted' : ''; ?>">

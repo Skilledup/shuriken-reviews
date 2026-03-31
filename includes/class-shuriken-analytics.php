@@ -558,7 +558,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // If no date filter, use the cached totals from ratings table (faster)
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
+                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                         ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
                  FROM {$this->ratings_table} 
                  WHERE total_votes >= %d 
@@ -576,7 +576,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // With date filter, calculate from votes table
         // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
+            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
@@ -624,7 +624,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // If no date filter, use the cached totals from ratings table (faster)
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
+                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                         ROUND(total_rating / NULLIF(total_votes, 0), 1) as average
                  FROM {$this->ratings_table} 
                  WHERE mirror_of IS NULL
@@ -638,7 +638,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // With date filter, calculate from votes table
         // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
+            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
@@ -686,7 +686,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // If no date filter, use the cached totals from ratings table (faster)
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
+                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
                         ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
                  FROM {$this->ratings_table} 
                  WHERE total_votes >= %d 
@@ -704,7 +704,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         // With date filter, calculate from votes table
         // For parent ratings, include votes from sub-ratings with effect_type conversion
         return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
+            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
                     COUNT(v.id) as total_votes,
                     COALESCE(SUM(
                         CASE 
@@ -1630,5 +1630,31 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              ORDER BY vote_date",
             $rating_id
         ));
+    }
+
+    /**
+     * Like get_votes_with_rolling_avg but accepts multiple rating IDs (for parent ratings).
+     *
+     * @param array $rating_ids Array of rating IDs to include
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date, vote_count, daily_avg
+     */
+    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30): array {
+        if (empty($rating_ids)) {
+            return array();
+        }
+
+        $ids_placeholder = implode(',', array_map('intval', $rating_ids));
+        $date_condition = $this->build_date_condition($date_range);
+
+        return $this->wpdb->get_results(
+            "SELECT DATE(date_created) as vote_date,
+                    COUNT(*) as vote_count,
+                    ROUND(AVG(rating_value), 2) as daily_avg
+             FROM {$this->votes_table}
+             WHERE rating_id IN ({$ids_placeholder}) {$date_condition}
+             GROUP BY DATE(date_created)
+             ORDER BY vote_date"
+        );
     }
 }

@@ -322,5 +322,14 @@ interface Shuriken_Analytics_Interface {
      * @return array Array of objects with vote_date, vote_count, avg_rating.
      */
     public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30): array;
+
+    /**
+     * Like get_votes_with_rolling_avg but accepts multiple rating IDs.
+     *
+     * @param array $rating_ids Rating IDs to include
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with vote_date, vote_count, daily_avg.
+     */
+    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30): array;
 }
 
