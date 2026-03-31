@@ -93,22 +93,27 @@ class Shuriken_Shortcodes {
      *     @type string $style        Optional. Preset style name (classic, card, minimal, dark, outlined). Default empty.
      *     @type string $accent_color Optional. Hex color for accent elements. Default empty.
      *     @type string $star_color   Optional. Hex color for active stars. Default empty.
+     *     @type int    $context_id   Optional. Post/entity ID for per-context voting. Default 0 (global).
+     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product'). Default empty.
      * }
      * @return string HTML content for the rating interface.
      * @since 1.1.0
      * 
      * @example [shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
      * @example [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
+     * @example [shuriken_rating id="1" context_id="42" context_type="post"]
      */
     public function render_rating(array|string $atts): string {
         // Validate and sanitize attributes with proper defaults and parsing
         $atts = shortcode_atts(array(
-            'id' => 0,
-            'tag' => 'h2',
-            'anchor_tag' => '',
-            'style' => '',
+            'id'           => 0,
+            'tag'          => 'h2',
+            'anchor_tag'   => '',
+            'style'        => '',
             'accent_color' => '',
-            'star_color' => '',
+            'star_color'   => '',
+            'context_id'   => 0,
+            'context_type' => '',
         ), $atts, 'shuriken_rating');
 
         // Validate ID is numeric and positive
@@ -123,6 +128,20 @@ class Shuriken_Shortcodes {
         // Sanitize anchor tag
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
 
+        // Resolve optional contextual voting parameters
+        $context_id   = absint($atts['context_id']);
+        $context_type = sanitize_key($atts['context_type']);
+        if ($context_id && $context_type) {
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+            if (!in_array($context_type, $allowed_types, true)) {
+                $context_id   = 0;
+                $context_type = '';
+            }
+        } else {
+            $context_id   = 0;
+            $context_type = '';
+        }
+
         // Get rating data
         $rating = $this->db->get_rating($id);
 
@@ -130,7 +149,13 @@ class Shuriken_Shortcodes {
             return '';
         }
 
-        $html = $this->render_rating_html($rating, $tag, $anchor_id);
+        $html = $this->render_rating_html(
+            $rating,
+            $tag,
+            $anchor_id,
+            $context_id   ?: null,
+            $context_type ?: null
+        );
 
         return $this->wrap_with_style_attributes($html, $atts);
     }
@@ -460,11 +485,14 @@ class Shuriken_Shortcodes {
      *     @type string $accent_color Optional. Hex color for accent elements. Default empty.
      *     @type string $star_color   Optional. Hex color for active stars. Default empty.
      *     @type string $layout       Optional. Child layout: 'grid' or 'list'. Default 'grid'.
+     *     @type int    $context_id   Optional. Post/entity ID for per-context voting. Default 0 (global).
+     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product'). Default empty.
      * }
      * @return string HTML content for the grouped rating interface.
      *
      * @example [shuriken_grouped_rating id="1"]
      * @example [shuriken_grouped_rating id="1" style="dark" layout="list" accent_color="#e74c3c"]
+     * @example [shuriken_grouped_rating id="1" context_id="42" context_type="post"]
      */
     public function render_grouped_rating(array|string $atts): string {
         $atts = shortcode_atts(array(
@@ -475,6 +503,8 @@ class Shuriken_Shortcodes {
             'accent_color' => '',
             'star_color'   => '',
             'layout'       => 'grid',
+            'context_id'   => 0,
+            'context_type' => '',
         ), $atts, 'shuriken_grouped_rating');
 
         $id = absint($atts['id']);
@@ -485,6 +515,22 @@ class Shuriken_Shortcodes {
         $tag = in_array(strtolower($atts['tag']), self::ALLOWED_TITLE_TAGS, true) ? $atts['tag'] : 'h2';
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
         $layout = ($atts['layout'] === 'list') ? 'list' : 'grid';
+
+        // Resolve optional contextual voting parameters
+        $context_id   = absint($atts['context_id']);
+        $context_type = sanitize_key($atts['context_type']);
+        if ($context_id && $context_type) {
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+            if (!in_array($context_type, $allowed_types, true)) {
+                $context_id   = 0;
+                $context_type = '';
+            }
+        } else {
+            $context_id   = 0;
+            $context_type = '';
+        }
+        $ctx_id   = $context_id   ?: null;
+        $ctx_type = $context_type ?: null;
 
         $parent = $this->db->get_rating($id);
         if (!$parent) {
@@ -509,7 +555,7 @@ class Shuriken_Shortcodes {
               . $style_attr . '>';
 
         // Render parent
-        $parent_html = $this->render_rating_html($parent, $tag);
+        $parent_html = $this->render_rating_html($parent, $tag, '', $ctx_id, $ctx_type);
         $parent_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
         $html .= $parent_html;
 
@@ -517,7 +563,7 @@ class Shuriken_Shortcodes {
         if (!empty($child_ratings)) {
             $html .= '<div class="shuriken-child-ratings">';
             foreach ($child_ratings as $child) {
-                $child_html = $this->render_rating_html($child, 'h4');
+                $child_html = $this->render_rating_html($child, 'h4', '', $ctx_id, $ctx_type);
                 $child_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
                 $html .= $child_html;
             }
