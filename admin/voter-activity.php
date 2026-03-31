@@ -47,13 +47,16 @@ $end_date = is_array($date_range) && !empty($date_range['end']) ? $date_range['e
 $stats = $voter_analytics->get_voter_stats($user_id, $user_ip, $date_range);
 $distribution_array = $voter_analytics->get_voter_rating_distribution($user_id, $user_ip, $date_range);
 $votes_over_time = $voter_analytics->get_voter_activity_over_time($user_id, $user_ip, $date_range);
+$type_breakdown = $voter_analytics->get_voter_type_breakdown($user_id, $user_ip, $date_range);
 
 // Pagination for votes
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+$orderby = isset($_GET['orderby']) && in_array($_GET['orderby'], array('date', 'rating', 'item'), true) ? $_GET['orderby'] : 'date';
+$order = isset($_GET['order']) && strtoupper($_GET['order']) === 'ASC' ? 'ASC' : 'DESC';
 
 // Get paginated votes
-$votes_result = $voter_analytics->get_voter_votes_paginated($user_id, $user_ip, $current_page, $per_page, $date_range);
+$votes_result = $voter_analytics->get_voter_votes_paginated($user_id, $user_ip, $current_page, $per_page, $date_range, $orderby, $order);
 $votes = $votes_result->votes;
 $total_votes_count = $votes_result->total_count;
 $total_pages = $votes_result->total_pages;
@@ -210,16 +213,42 @@ $tendency_icons = array(
         <div class="shuriken-stat-card">
             <span class="stat-icon dashicons dashicons-star-filled"></span>
             <div class="stat-content">
-                <h3><?php echo esc_html($stats->average_rating_given ?: '0'); ?></h3>
-                <p><?php esc_html_e('Average Rating Given', 'shuriken-reviews'); ?></p>
-                <?php if ($stats->average_effective_rating && $stats->average_effective_rating !== $stats->average_rating_given) : ?>
-                    <small class="effective-rating-note" title="<?php esc_attr_e('Rating adjusted for negative-effect sub-ratings', 'shuriken-reviews'); ?>">
-                        <?php printf(
-                            /* translators: %s: effective rating value */
-                            esc_html__('Effective: %s', 'shuriken-reviews'),
-                            esc_html($stats->average_effective_rating)
-                        ); ?>
-                    </small>
+                <?php
+                $has_binary_only = ((int) $stats->non_binary_votes === 0 && (int) $stats->binary_votes > 0);
+                $has_non_binary = (int) $stats->non_binary_votes > 0;
+                if ($has_binary_only) :
+                    // Binary-only voter: show approval rate
+                    $voter_approval_rate = (int) $stats->binary_votes > 0
+                        ? round(((int) $stats->binary_positive / (int) $stats->binary_votes) * 100)
+                        : 0;
+                ?>
+                    <h3><?php echo esc_html($voter_approval_rate); ?>%</h3>
+                    <p><?php esc_html_e('Approval Rate', 'shuriken-reviews'); ?></p>
+                <?php elseif ($has_non_binary) : ?>
+                    <h3><?php echo esc_html($stats->average_effective_rating ?: $stats->average_rating_given ?: '0'); ?></h3>
+                    <p><?php esc_html_e('Average Rating Given', 'shuriken-reviews'); ?></p>
+                    <?php if ($stats->average_effective_rating && $stats->average_effective_rating !== $stats->average_rating_given) : ?>
+                        <small class="effective-rating-note" title="<?php esc_attr_e('Rating adjusted for negative-effect sub-ratings', 'shuriken-reviews'); ?>">
+                            <?php printf(
+                                /* translators: %s: effective rating value */
+                                esc_html__('Effective: %s', 'shuriken-reviews'),
+                                esc_html($stats->average_effective_rating)
+                            ); ?>
+                        </small>
+                    <?php endif; ?>
+                <?php else : ?>
+                    <h3>—</h3>
+                    <p><?php esc_html_e('Average Rating Given', 'shuriken-reviews'); ?></p>
+                <?php endif; ?>
+                <?php if (!empty($type_breakdown) && count($type_breakdown) > 1) : ?>
+                    <div class="type-breakdown-row">
+                        <?php foreach ($type_breakdown as $tb) : ?>
+                            <span class="type-badge" title="<?php echo esc_attr($tb->vote_count . ' votes'); ?>">
+                                <?php echo esc_html(ucfirst(str_replace('_', '/', $tb->rating_type))); ?>:
+                                <?php echo esc_html($tb->vote_count); ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -302,14 +331,27 @@ $tendency_icons = array(
             <span class="dashicons dashicons-list-view"></span>
             <?php esc_html_e('Vote History', 'shuriken-reviews'); ?>
         </h2>
-        <p class="table-description">
-            <?php printf(
-                esc_html__('Showing %1$d-%2$d of %3$d votes', 'shuriken-reviews'),
-                min($offset + 1, $total_votes_count),
-                min($offset + $per_page, $total_votes_count),
-                $total_votes_count
-            ); ?>
-        </p>
+        <div class="table-toolbar">
+            <p class="table-description">
+                <?php printf(
+                    esc_html__('Showing %1$d-%2$d of %3$d votes', 'shuriken-reviews'),
+                    min($offset + 1, $total_votes_count),
+                    min($offset + $per_page, $total_votes_count),
+                    $total_votes_count
+                ); ?>
+            </p>
+            <div class="sort-controls">
+                <label for="voter-sort"><?php esc_html_e('Sort by:', 'shuriken-reviews'); ?></label>
+                <select id="voter-sort" class="sort-select">
+                    <option value="date-DESC" <?php selected($orderby . '-' . $order, 'date-DESC'); ?>><?php esc_html_e('Newest First', 'shuriken-reviews'); ?></option>
+                    <option value="date-ASC" <?php selected($orderby . '-' . $order, 'date-ASC'); ?>><?php esc_html_e('Oldest First', 'shuriken-reviews'); ?></option>
+                    <option value="rating-DESC" <?php selected($orderby . '-' . $order, 'rating-DESC'); ?>><?php esc_html_e('Highest Rating', 'shuriken-reviews'); ?></option>
+                    <option value="rating-ASC" <?php selected($orderby . '-' . $order, 'rating-ASC'); ?>><?php esc_html_e('Lowest Rating', 'shuriken-reviews'); ?></option>
+                    <option value="item-ASC" <?php selected($orderby . '-' . $order, 'item-ASC'); ?>><?php esc_html_e('Item Name (A-Z)', 'shuriken-reviews'); ?></option>
+                    <option value="item-DESC" <?php selected($orderby . '-' . $order, 'item-DESC'); ?>><?php esc_html_e('Item Name (Z-A)', 'shuriken-reviews'); ?></option>
+                </select>
+            </div>
+        </div>
         
         <table class="wp-list-table widefat fixed striped">
             <thead>
@@ -426,7 +468,7 @@ $tendency_icons = array(
 // Pass PHP data to JavaScript for charts
 var shurikenVoterActivityData = {
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
-    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' \u2605'; }, array_keys($distribution_array))); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' ★'; }, array_keys($distribution_array))); ?>,
     votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
     i18n: {
         votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
@@ -470,6 +512,16 @@ jQuery(document).ready(function($) {
                 return false;
             }
         }
+    });
+    
+    // Sort control
+    $('#voter-sort').on('change', function() {
+        var parts = $(this).val().split('-');
+        var url = new URL(window.location.href);
+        url.searchParams.set('orderby', parts[0]);
+        url.searchParams.set('order', parts[1]);
+        url.searchParams.delete('paged');
+        window.location.href = url.toString();
     });
     
     // Initialize charts if Chart.js is available

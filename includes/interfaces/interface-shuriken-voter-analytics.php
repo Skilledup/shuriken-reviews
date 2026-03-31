@@ -80,4 +80,14 @@ interface Shuriken_Voter_Analytics_Interface {
      * @return array Array of vote objects with rating info.
      */
     public function get_voter_votes_for_export(int $user_id, ?string $user_ip = null): array;
+
+    /**
+     * Get per-type vote breakdown for a voter
+     *
+     * @param int         $user_id    User ID (0 for guests).
+     * @param string|null $user_ip    IP address for guest identification.
+     * @param string|int|array $date_range Date range filter.
+     * @return array Array of objects with rating_type, vote_count, avg_value, etc.
+     */
+    public function get_voter_type_breakdown(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): array;
 }

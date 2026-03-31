@@ -54,6 +54,24 @@ interface Shuriken_Analytics_Interface {
     public function get_vote_change_percent(string|int|array $date_range): ?float;
 
     /**
+     * Get vote change percentage for a specific rating item
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range.
+     * @return float|null Percentage change or null.
+     */
+    public function get_rating_vote_change_percent(int $rating_id, string|int|array $date_range): ?float;
+
+    /**
+     * Get benchmark stats for all items of a given rating type
+     *
+     * @param string           $rating_type Rating type.
+     * @param string|int|array $date_range  Date range filter.
+     * @return object Object with avg_rating, avg_votes, item_count.
+     */
+    public function get_type_benchmark(string $rating_type, string|int|array $date_range = 'all'): object;
+
+    /**
      * Get top rated items
      *
      * @param int    $limit       Number of results.

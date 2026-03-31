@@ -67,7 +67,7 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
      * @param string|array $date_range Date range filter
      * @return object Object with votes array, total_count, total_pages, current_page
      */
-    public function get_voter_votes_paginated(int $user_id, ?string $user_ip = null, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all'): object {
+    public function get_voter_votes_paginated(int $user_id, ?string $user_ip = null, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $orderby = 'date', string $order = 'DESC'): object {
         $offset = ($page - 1) * $per_page;
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         
@@ -90,13 +90,21 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
         $result->current_page = $page;
         $result->per_page = $per_page;
         
+        // Build ORDER BY clause (whitelist to prevent SQL injection)
+        $order_dir = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        $order_clause = match ($orderby) {
+            'rating'  => "v.rating_value {$order_dir}, v.date_created DESC",
+            'item'    => "r.name {$order_dir}, v.date_created DESC",
+            default   => "v.date_created {$order_dir}",
+        };
+        
         // Paginated votes with rating name
         $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT v.*, r.name as rating_name, r.parent_id, r.effect_type, r.rating_type, r.scale
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE {$voter_condition} {$date_condition}
-             ORDER BY v.date_created DESC
+             ORDER BY {$order_clause}
              LIMIT %d OFFSET %d",
             $per_page,
             $offset
@@ -129,7 +137,8 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
         // Calculate effect-aware rating values:
         // For positive effect ratings: use rating_value as-is
         // For negative effect ratings: invert using scale-aware formula
-        // Excludes binary types from average since their 0/1 values are incompatible with star scales
+        // Excludes binary types from effective average since their 0/1 values are incompatible with star scales
+        // Includes binary types in positive/negative sentiment counts
         $stats = $this->wpdb->get_row(
             "SELECT 
                 COUNT(*) as total_votes,
@@ -141,26 +150,57 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
                         ELSE v.rating_value 
                     END
                 ), 1) as average_effective_rating,
+                AVG(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') THEN CAST(r.scale AS DECIMAL) ELSE NULL END) as avg_scale,
+                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') THEN 1 ELSE 0 END) as non_binary_votes,
+                SUM(CASE WHEN r.rating_type IN ('like_dislike', 'approval') THEN 1 ELSE 0 END) as binary_votes,
+                SUM(CASE WHEN r.rating_type IN ('like_dislike', 'approval') AND v.rating_value > 0 THEN 1 ELSE 0 END) as binary_positive,
                 MIN(v.date_created) as first_vote,
                 MAX(v.date_created) as last_vote,
                 COUNT(DISTINCT v.rating_id) as unique_items_rated,
-                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value >= CEIL(r.scale * 0.8) THEN 1 ELSE 0 END) as positive_votes,
-                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value <= CEIL(r.scale * 0.4) THEN 1 ELSE 0 END) as negative_votes,
-                SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value > CEIL(r.scale * 0.4) AND v.rating_value < CEIL(r.scale * 0.8) THEN 1 ELSE 0 END) as neutral_votes
+                SUM(CASE 
+                    WHEN r.rating_type IN ('like_dislike', 'approval') AND v.rating_value > 0 THEN 1
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value >= CEIL(r.scale * 0.8) THEN 1
+                    ELSE 0 END) as positive_votes,
+                SUM(CASE 
+                    WHEN r.rating_type = 'like_dislike' AND v.rating_value = 0 THEN 1
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value <= CEIL(r.scale * 0.4) THEN 1
+                    ELSE 0 END) as negative_votes,
+                SUM(CASE 
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value > CEIL(r.scale * 0.4) AND v.rating_value < CEIL(r.scale * 0.8) THEN 1
+                    ELSE 0 END) as neutral_votes
              FROM {$this->votes_table} v
              LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE {$voter_condition} {$date_condition_aliased}"
         );
         
-        // Calculate voting tendency based on EFFECTIVE rating (considers negative effect ratings)
+        // Calculate voting tendency — scale-aware for star/numeric, ratio-based for binary
         if ($stats && $stats->total_votes > 0) {
-            $effective_avg = floatval($stats->average_effective_rating);
-            if ($effective_avg >= 4.0) {
-                $stats->voting_tendency = 'generous';
-            } elseif ($effective_avg <= 2.5) {
-                $stats->voting_tendency = 'critical';
+            $non_binary = (int) $stats->non_binary_votes;
+            $binary = (int) $stats->binary_votes;
+            
+            if ($non_binary > 0 && $stats->average_effective_rating !== null) {
+                // Scale-aware: normalize effective average to 0-1 range
+                $avg_scale = floatval($stats->avg_scale) ?: 5;
+                $normalized = floatval($stats->average_effective_rating) / $avg_scale;
+                if ($normalized >= 0.75) {
+                    $stats->voting_tendency = 'generous';
+                } elseif ($normalized <= 0.40) {
+                    $stats->voting_tendency = 'critical';
+                } else {
+                    $stats->voting_tendency = 'balanced';
+                }
+            } elseif ($binary > 0) {
+                // Binary-only voter: use like/approval ratio
+                $like_ratio = (int) $stats->binary_positive / $binary;
+                if ($like_ratio >= 0.70) {
+                    $stats->voting_tendency = 'generous';
+                } elseif ($like_ratio <= 0.30) {
+                    $stats->voting_tendency = 'critical';
+                } else {
+                    $stats->voting_tendency = 'balanced';
+                }
             } else {
-                $stats->voting_tendency = 'balanced';
+                $stats->voting_tendency = 'none';
             }
         } else {
             $stats->voting_tendency = 'none';
@@ -273,6 +313,57 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
         $info->avatar_url = get_avatar_url($user->ID, array('size' => 96));
         
         return $info;
+    }
+
+    /**
+     * Get per-type vote breakdown for a voter
+     *
+     * Returns vote count and type-appropriate metric for each rating type the voter has used.
+     * For stars/numeric: average rating. For like_dislike/approval: approval rate.
+     *
+     * @param int $user_id User ID (0 for guests)
+     * @param string|null $user_ip IP address for guest identification
+     * @param string|int|array $date_range Date range filter
+     * @return array Array of objects with rating_type, vote_count, avg_value, approval_rate
+     */
+    public function get_voter_type_breakdown(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): array {
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
+        
+        if ($user_id > 0) {
+            $voter_condition = $this->wpdb->prepare("v.user_id = %d", $user_id);
+        } else {
+            $voter_condition = $this->wpdb->prepare("v.user_id = 0 AND v.user_ip = %s", $user_ip);
+        }
+        
+        $results = $this->wpdb->get_results(
+            "SELECT 
+                COALESCE(r.rating_type, 'stars') as rating_type,
+                COUNT(*) as vote_count,
+                ROUND(AVG(v.rating_value), 1) as avg_value,
+                AVG(r.scale) as avg_scale,
+                SUM(CASE WHEN v.rating_value > 0 THEN 1 ELSE 0 END) as positive_count
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE {$voter_condition} {$date_condition}
+             GROUP BY COALESCE(r.rating_type, 'stars')
+             ORDER BY vote_count DESC"
+        );
+        
+        foreach ($results as &$row) {
+            $row->vote_count = (int) $row->vote_count;
+            $row->avg_value = (float) $row->avg_value;
+            $row->avg_scale = (float) $row->avg_scale;
+            $row->positive_count = (int) $row->positive_count;
+            $row->is_binary = in_array($row->rating_type, array('like_dislike', 'approval'), true);
+            if ($row->is_binary) {
+                $row->approval_rate = $row->vote_count > 0
+                    ? round(($row->positive_count / $row->vote_count) * 100)
+                    : 0;
+            }
+        }
+        unset($row);
+        
+        return $results;
     }
 
     /**

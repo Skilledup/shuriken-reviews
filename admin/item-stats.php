@@ -99,6 +99,10 @@ $offset = ($current_page - 1) * $per_page;
 $back_url = admin_url('admin.php?page=shuriken-reviews-analytics');
 $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->name) . '#rating-' . $rating->id);
 
+// Comparison and velocity data
+$type_benchmark = $analytics->get_type_benchmark($rating_type, $date_range);
+$vote_velocity = $analytics->get_rating_vote_change_percent($rating_id, $date_range);
+
 // Base URL for filters (preserves rating_id)
 $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
 
@@ -293,6 +297,29 @@ if ($rating_type === 'like_dislike') {
                     }
                     ?>
                 </p>
+                <?php
+                // Comparison to type benchmark
+                if ($type_benchmark->item_count > 1 && $display_total_votes > 0) :
+                    if ($rating_type === 'like_dislike' && $type_benchmark->avg_approval_rate !== null) {
+                        $diff = $approval_pct - $type_benchmark->avg_approval_rate;
+                        $diff_display = ($diff >= 0 ? '+' : '') . round($diff) . '%';
+                    } elseif ($rating_type === 'approval' && $type_benchmark->avg_votes !== null) {
+                        $diff = $display_total_rating - round($type_benchmark->avg_votes);
+                        $diff_display = ($diff >= 0 ? '+' : '') . intval($diff);
+                    } elseif (!$is_binary && $type_benchmark->avg_rating !== null) {
+                        $diff = $average - $type_benchmark->avg_rating;
+                        $diff_display = ($diff >= 0 ? '+' : '') . round($diff, 1);
+                    } else {
+                        $diff = null;
+                        $diff_display = '';
+                    }
+                    if ($diff !== null) :
+                ?>
+                    <small class="benchmark-badge <?php echo $diff >= 0 ? 'above' : 'below'; ?>" title="<?php esc_attr_e('vs. type average', 'shuriken-reviews'); ?>">
+                        <?php echo esc_html($diff_display); ?>
+                        <?php esc_html_e('vs avg', 'shuriken-reviews'); ?>
+                    </small>
+                <?php endif; endif; ?>
             </div>
         </div>
         
@@ -308,6 +335,13 @@ if ($rating_type === 'like_dislike') {
                     <?php endif; ?>
                 </h3>
                 <p><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></p>
+                <?php if ($vote_velocity !== null) : ?>
+                    <small class="velocity-badge <?php echo $vote_velocity >= 0 ? 'positive' : 'negative'; ?>">
+                        <span class="dashicons dashicons-arrow-<?php echo $vote_velocity >= 0 ? 'up' : 'down'; ?>-alt"></span>
+                        <?php echo esc_html(($vote_velocity >= 0 ? '+' : '') . $vote_velocity . '%'); ?>
+                        <?php esc_html_e('vs prev period', 'shuriken-reviews'); ?>
+                    </small>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -618,7 +652,7 @@ var shurikenItemStatsData = {
     cumulativeApprovals: <?php echo wp_json_encode($cumulative_approvals); ?>,
     <?php else : ?>
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
-    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' \u2605'; }, array_keys($distribution_array))); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' ★'; }, array_keys($distribution_array))); ?>,
     dualAxisData: <?php echo wp_json_encode($dual_axis_data); ?>,
     <?php endif; ?>
     i18n: {

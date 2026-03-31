@@ -419,6 +419,117 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     }
 
     /**
+     * Get vote change percentage for a specific rating item compared to previous period
+     *
+     * @param int $rating_id Rating ID
+     * @param string|int|array $date_range Date range
+     * @return float|null Percentage change or null if not applicable
+     */
+    public function get_rating_vote_change_percent(int $rating_id, string|int|array $date_range): ?float {
+        if ($date_range === 'all' || empty($date_range)) {
+            return null;
+        }
+
+        if (is_array($date_range)) {
+            $start = !empty($date_range['start']) ? $date_range['start'] : null;
+            $end = !empty($date_range['end']) ? $date_range['end'] : date('Y-m-d');
+            if (!$start) {
+                return null;
+            }
+            $start_time = strtotime($start);
+            $end_time = strtotime($end);
+            $period_days = max(1, ($end_time - $start_time) / 86400);
+            $prev_end = date('Y-m-d', $start_time - 86400);
+            $prev_start = date('Y-m-d', $start_time - ($period_days * 86400));
+
+            $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table}
+                 WHERE rating_id = %d AND date_created >= %s AND date_created <= %s",
+                $rating_id, $start . ' 00:00:00', $end . ' 23:59:59'
+            ));
+            $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table}
+                 WHERE rating_id = %d AND date_created >= %s AND date_created <= %s",
+                $rating_id, $prev_start . ' 00:00:00', $prev_end . ' 23:59:59'
+            ));
+        } else {
+            $days = intval($date_range);
+            $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table}
+                 WHERE rating_id = %d AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)",
+                $rating_id, $days
+            ));
+            $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->votes_table}
+                 WHERE rating_id = %d AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
+                   AND date_created < DATE_SUB(NOW(), INTERVAL %d DAY)",
+                $rating_id, $days * 2, $days
+            ));
+        }
+
+        if ($previous_votes > 0) {
+            return round((($current_votes - $previous_votes) / $previous_votes) * 100, 1);
+        }
+        return $current_votes > 0 ? 100.0 : null;
+    }
+
+    /**
+     * Get benchmark stats for all items of a given rating type
+     *
+     * Returns the average metric across all items of the same type, useful for
+     * comparing a single item's performance against the site-wide average.
+     *
+     * @param string $rating_type Rating type (stars, numeric, like_dislike, approval)
+     * @param string|int|array $date_range Date range filter
+     * @return object Object with avg_rating, avg_votes, item_count
+     */
+    public function get_type_benchmark(string $rating_type, string|int|array $date_range = 'all'): object {
+        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
+        $is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+
+        $result = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT 
+                COUNT(*) as item_count,
+                AVG(sub.avg_value) as avg_rating,
+                AVG(sub.vote_count) as avg_votes,
+                AVG(sub.approval_rate) as avg_approval_rate
+             FROM (
+                SELECT r.id,
+                       AVG(v.rating_value) as avg_value,
+                       COUNT(v.id) as vote_count,
+                       CASE WHEN %s IN ('like_dislike', 'approval')
+                            THEN ROUND(SUM(CASE WHEN v.rating_value > 0 THEN 1 ELSE 0 END) / COUNT(v.id) * 100)
+                            ELSE NULL END as approval_rate
+                FROM {$this->ratings_table} r
+                JOIN {$this->votes_table} v ON v.rating_id = r.id
+                WHERE COALESCE(r.rating_type, 'stars') = %s
+                  AND r.mirror_of IS NULL
+                  AND r.parent_id IS NULL
+                  {$date_condition}
+                GROUP BY r.id
+             ) sub",
+            $rating_type,
+            $rating_type
+        ));
+
+        if (!$result || !$result->item_count) {
+            $default = new stdClass();
+            $default->avg_rating = null;
+            $default->avg_votes = null;
+            $default->avg_approval_rate = null;
+            $default->item_count = 0;
+            return $default;
+        }
+
+        $result->item_count = (int) $result->item_count;
+        $result->avg_rating = $result->avg_rating !== null ? round((float) $result->avg_rating, 2) : null;
+        $result->avg_votes = $result->avg_votes !== null ? round((float) $result->avg_votes, 1) : null;
+        $result->avg_approval_rate = $result->avg_approval_rate !== null ? round((float) $result->avg_approval_rate) : null;
+
+        return $result;
+    }
+
+    /**
      * Get top rated items (standalone and parent ratings only)
      *
      * @param int $limit Maximum number of items to return
