@@ -114,13 +114,17 @@ class Shuriken_Frontend {
 
         $orderby = get_option('shuriken_archive_sort_orderby', 'average');
 
+        // Tag the query so filter callbacks can identify it — including any Query Loop
+        // block instances that inherit the main query vars on block themes.
+        $query->set('_shuriken_sort', true);
+
         global $wpdb;
         $votes_table = $wpdb->prefix . 'shuriken_votes';
         $post_type = $query->get('post_type') ?: 'post';
 
         // Use a subquery to compute per-post scores for this rating
-        add_filter('posts_join', function (string $join, \WP_Query $q) use ($query, $votes_table, $rating_id, $post_type) {
-            if ($q !== $query) {
+        add_filter('posts_join', function (string $join, \WP_Query $q) use ($votes_table, $rating_id, $post_type) {
+            if (!$q->get('_shuriken_sort')) {
                 return $join;
             }
             global $wpdb;
@@ -139,8 +143,8 @@ class Shuriken_Frontend {
             return $join;
         }, 10, 2);
 
-        add_filter('posts_orderby', function (string $orderby_clause, \WP_Query $q) use ($query, $orderby) {
-            if ($q !== $query) {
+        add_filter('posts_orderby', function (string $orderby_clause, \WP_Query $q) use ($orderby) {
+            if (!$q->get('_shuriken_sort')) {
                 return $orderby_clause;
             }
             if ($orderby === 'votes') {

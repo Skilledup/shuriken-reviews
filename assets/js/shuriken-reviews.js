@@ -290,6 +290,7 @@ jQuery(document).ready(function($) {
         const contextId = $rating.data('context-id') || '';
         const contextType = $rating.data('context-type') || '';
         let originalText = $rating.find('.rating-stats').html();
+        $rating.addClass('shuriken-loading');
 
         var postData = {
             action: 'submit_rating',
@@ -455,6 +456,7 @@ jQuery(document).ready(function($) {
                 }, 4000);
             },
             complete: function() {
+                $rating.removeClass('shuriken-loading');
                 // Re-enable stars (only if we're not retrying)
                 if (retryCount > 0 || !$rating.data('retrying')) {
                     $stars.css('pointer-events', 'auto');
@@ -522,11 +524,32 @@ jQuery(document).ready(function($) {
      */
     function submitBinaryRating($rating, value, retryCount) {
         retryCount = retryCount || 0;
-        
+
         const ratingId = $rating.data('id');
         const ratingType = $rating.data('rating-type');
         const contextId = $rating.data('context-id') || '';
         const contextType = $rating.data('context-type') || '';
+        const $feedback = $rating.find('.shuriken-feedback');
+
+        function showFeedback(msg, duration) {
+            $feedback.html(msg);
+            setTimeout(function() { $feedback.html(''); }, duration || 3000);
+        }
+
+        function showError(response, xhr) {
+            var msg;
+            if (response && response.data && typeof response.data === 'string') {
+                msg = shurikenReviews.i18n.error.replace('%s', response.data);
+            } else if (xhr && xhr.responseJSON && xhr.responseJSON.data && typeof xhr.responseJSON.data === 'string') {
+                msg = shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data);
+            } else {
+                msg = shurikenReviews.i18n.genericError;
+            }
+            showFeedback(msg, 4000);
+        }
+
+        // Show spinner while AJAX is in-flight
+        $feedback.html('<span class="shuriken-spinner" aria-hidden="true"></span>');
 
         var postData = {
             action: 'submit_rating',
@@ -539,7 +562,7 @@ jQuery(document).ready(function($) {
             postData.context_id = contextId;
             postData.context_type = contextType;
         }
-        
+
         $.ajax({
             url: shurikenReviews.ajaxurl,
             type: 'POST',
@@ -547,34 +570,28 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     if (ratingType === 'like_dislike') {
-                        const likes = response.data.new_total_votes > 0 
-                            ? Math.round((response.data.new_average) * response.data.new_total_votes / (response.data.new_average > 0 ? 1 : 1))
-                            : 0;
-                        // total_rating stores like count directly for like_dislike
-                        // Server returns new_average which is total_rating/total_votes
-                        // We need: likes = total_rating, dislikes = total_votes - total_rating
-                        // But the response gives normalized_average. Let's use the raw counts from response
-                        // Actually new_scaled_average is the approval %, total_votes is total_votes
-                        // For like_dislike, the AJAX response sends rating_type, we can compute from total_votes and new_scaled_average
+                        // new_scaled_average is likes/(likes+dislikes)*100
                         const totalVotes = response.data.new_total_votes;
-                        const approvalPct = response.data.new_scaled_average; // This is actually likes/(likes+dislikes)*100
+                        const approvalPct = response.data.new_scaled_average;
                         const likeCount = Math.round(totalVotes * approvalPct / 100);
                         const dislikeCount = totalVotes - likeCount;
-                        
                         $rating.find('.shuriken-like-count').text(likeCount);
                         $rating.find('.shuriken-dislike-count').text(dislikeCount);
                     } else if (ratingType === 'approval') {
                         $rating.find('.shuriken-upvote-count').text(response.data.new_total_votes);
                     }
-                    
-                    // Brief visual feedback
+
+                    // Brief visual feedback on the button
                     $rating.find('.shuriken-btn').addClass('shuriken-voted');
                     setTimeout(function() {
                         $rating.find('.shuriken-btn').removeClass('shuriken-voted');
                     }, 1500);
+
+                    // Show thank-you message then clear
+                    showFeedback(shurikenReviews.i18n.thankYou, 3000);
                 } else {
                     // Handle nonce retry for binary ratings
-                    if (response.data && typeof response.data === 'string' && 
+                    if (response.data && typeof response.data === 'string' &&
                         response.data.toLowerCase().indexOf('nonce') !== -1 && retryCount === 0) {
                         $.ajax({
                             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
@@ -584,16 +601,44 @@ jQuery(document).ready(function($) {
                                 if (nonceResponse && nonceResponse.nonce) {
                                     shurikenReviews.nonce = nonceResponse.nonce;
                                     submitBinaryRating($rating, value, 1);
+                                } else {
+                                    showError(response, null);
                                 }
+                            },
+                            error: function() {
+                                showError(response, null);
                             }
                         });
                         return;
                     }
-                    console.error('Binary rating error:', response.data);
+                    showError(response, null);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Binary rating submission error:', error);
+                // Handle nonce retry for AJAX-level errors
+                if (xhr.responseJSON && xhr.responseJSON.data &&
+                    typeof xhr.responseJSON.data === 'string' &&
+                    xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 &&
+                    retryCount === 0) {
+                    $.ajax({
+                        url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
+                        type: 'GET',
+                        cache: false,
+                        success: function(nonceResponse) {
+                            if (nonceResponse && nonceResponse.nonce) {
+                                shurikenReviews.nonce = nonceResponse.nonce;
+                                submitBinaryRating($rating, value, 1);
+                            } else {
+                                showError(null, xhr);
+                            }
+                        },
+                        error: function() {
+                            showError(null, xhr);
+                        }
+                    });
+                    return;
+                }
+                showError(null, xhr);
             },
             complete: function() {
                 $rating.find('.shuriken-btn').css('pointer-events', 'auto');

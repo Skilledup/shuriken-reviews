@@ -33,6 +33,11 @@
 }
 
 /* Disable pointer events on stars in the editor (read-only preview) */
-.shuriken-rating-block-editor .stars {
+.shuriken-rating-block-editor .stars,
+.shuriken-rating-block-editor .shuriken-btn,
+.shuriken-rating-block-editor .shuriken-upvote-btn,
+.shuriken-rating-block-editor .shuriken-slider,
+.shuriken-rating-block-editor .shuriken-slider-submit {
     pointer-events: none;
+    cursor: default;
 }

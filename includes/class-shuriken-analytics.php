@@ -1465,14 +1465,21 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     public function get_participation_rate(): object {
         $result = new stdClass();
 
+        // Count only top-level, non-mirror ratings (sub-ratings and mirrors are excluded).
+        // Participation is based on ratings that have received at least one direct (global)
+        // vote — per-post (contextual) votes are intentionally excluded: a rating displayed
+        // on N posts could theoretically appear on any number of posts, making "total items"
+        // undefined until a user actually votes on them.
         $result->total_items = (int) $this->wpdb->get_var(
             "SELECT COUNT(*) FROM {$this->ratings_table}
              WHERE mirror_of IS NULL AND parent_id IS NULL"
         );
 
         $result->active_items = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table}
-             WHERE mirror_of IS NULL AND parent_id IS NULL AND total_votes > 0"
+            "SELECT COUNT(DISTINCT v.rating_id)
+             FROM {$this->votes_table} v
+             INNER JOIN {$this->ratings_table} r ON r.id = v.rating_id
+             WHERE r.mirror_of IS NULL AND r.parent_id IS NULL AND v.context_id IS NULL"
         );
 
         $result->rate = $result->total_items > 0

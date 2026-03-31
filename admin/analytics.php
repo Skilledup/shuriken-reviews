@@ -200,9 +200,17 @@ $contextual_posts     = $analytics->get_contextual_post_count();
             <strong><?php echo esc_html($participation->rate); ?>%</strong>
         </div>
         <div class="participation-track">
-            <div class="participation-fill" style="width: <?php echo esc_attr(max(2, $participation->rate)); ?>%;"></div>
+            <div class="participation-fill" style="width: <?php echo esc_attr($participation->rate > 0 ? max(2, $participation->rate) : 0); ?>%;"></div>
         </div>
-        <small><?php printf(esc_html__('%d of %d rating items have received votes', 'shuriken-reviews'), $participation->active_items, $participation->total_items); ?></small>
+        <small>
+            <?php printf(
+                esc_html__('%d of %d ratings have received direct votes', 'shuriken-reviews'),
+                $participation->active_items,
+                $participation->total_items
+            ); ?>
+            &nbsp;&mdash;&nbsp;
+            <span class="participation-note"><?php esc_html_e('Per-post ratings are excluded; the denominator is unknown until a user votes on them.', 'shuriken-reviews'); ?></span>
+        </small>
     </div>
     
     <!-- Charts Section -->

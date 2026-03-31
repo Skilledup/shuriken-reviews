@@ -238,9 +238,7 @@
                         h('span', { className: 'shuriken-count shuriken-dislike-count' }, String(dislikes))
                     )
                 ),
-                h('div', { className: 'rating-stats' },
-                    likes + ' ' + __('likes', 'shuriken-reviews') + ' \u00B7 ' + dislikes + ' ' + __('dislikes', 'shuriken-reviews')
-                )
+                null
             ];
         }
 
@@ -252,9 +250,7 @@
                         h('span', { className: 'shuriken-count shuriken-upvote-count' }, String(totalVotes))
                     )
                 ),
-                h('div', { className: 'rating-stats' },
-                    totalVotes + ' ' + __('upvotes', 'shuriken-reviews')
-                )
+                null
             ];
         }
 

@@ -26,9 +26,14 @@
     margin-top: 0;
 }
 
-/* Disable pointer events on stars in editor (preview only, no voting) */
-.shuriken-grouped-rating-block-editor .stars {
+/* Disable pointer events on interactive widgets in editor (preview only, no voting) */
+.shuriken-grouped-rating-block-editor .stars,
+.shuriken-grouped-rating-block-editor .shuriken-btn,
+.shuriken-grouped-rating-block-editor .shuriken-upvote-btn,
+.shuriken-grouped-rating-block-editor .shuriken-slider,
+.shuriken-grouped-rating-block-editor .shuriken-slider-submit {
     pointer-events: none;
+    cursor: default;
 }
 
 /* ---- Sub-Ratings Display panel (drag-to-reorder) ---- */

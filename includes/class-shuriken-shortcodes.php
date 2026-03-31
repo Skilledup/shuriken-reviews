@@ -308,6 +308,9 @@ class Shuriken_Shortcodes {
                     </span>
                     <?php endif; ?>
                 </div>
+                <?php if (!$is_display_only): ?>
+                <div class="shuriken-feedback" role="status" aria-live="polite"></div>
+                <?php endif; ?>
                 
                 <?php elseif ($rating_type === 'approval'):
                     /**
@@ -332,6 +335,9 @@ class Shuriken_Shortcodes {
                     </span>
                     <?php endif; ?>
                 </div>
+                <?php if (!$is_display_only): ?>
+                <div class="shuriken-feedback" role="status" aria-live="polite"></div>
+                <?php endif; ?>
                 
                 <?php elseif ($rating_type === 'numeric'):
                     /**

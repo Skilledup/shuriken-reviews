@@ -1580,6 +1580,11 @@
     font-size: 12px;
 }
 
+.shuriken-participation-bar .participation-note {
+    font-style: italic;
+    color: #b0bec5;
+}
+
 /* Momentum Section */
 .shuriken-momentum-section {
     background: #fff;

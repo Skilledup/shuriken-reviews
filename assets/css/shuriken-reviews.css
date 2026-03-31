@@ -112,7 +112,7 @@
 .rating-title {
     margin: 0 !important;
     flex: 0 0 auto;
-    width: 100%;
+    max-width: 100%;
 }
 
 /* Mobile styles */
@@ -1059,4 +1059,59 @@ button.shuriken-upvote-btn:hover,
 
 .shuriken-rating.is-style-dark .shuriken-slider-submit:hover {
     background: #e6c200;
+}
+
+/* =====================================================
+   Loading state — spinner during AJAX submission
+   (stars / numeric: appended after .rating-stats text)
+   ===================================================== */
+.shuriken-rating.shuriken-loading .rating-stats::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid #ddd;
+    border-top-color: #666;
+    border-radius: 50%;
+    animation: shuriken-spin 0.8s linear infinite;
+    vertical-align: middle;
+}
+
+/* =====================================================
+   Feedback area — like/dislike & approval types
+   ===================================================== */
+.shuriken-feedback {
+    font-size: 14px;
+    color: #666;
+    flex: 0 0 100%;  /* force onto its own line in the flex wrapper */
+    line-height: 1.4;
+}
+
+/* Hidden when empty — no layout gap when idle */
+.shuriken-feedback:empty {
+    display: none;
+}
+
+/* Collapsing spinner for binary types (inline, before text appears) */
+.shuriken-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ddd;
+    border-top-color: #666;
+    border-radius: 50%;
+    animation: shuriken-spin 0.8s linear infinite;
+    vertical-align: middle;
+}
+
+/* Dark preset */
+.shuriken-rating.is-style-dark .shuriken-feedback {
+    color: #a0aec0;
+}
+
+.shuriken-rating.is-style-dark .shuriken-spinner,
+.shuriken-rating.is-style-dark.shuriken-loading .rating-stats::after {
+    border-color: #4a5568;
+    border-top-color: #a0aec0;
 }
