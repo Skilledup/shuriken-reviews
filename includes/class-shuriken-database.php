@@ -913,7 +913,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      */
     public function get_context_usage_counts(): array {
         $rows = $this->wpdb->get_results(
-            "SELECT rating_id, COUNT(DISTINCT context_id, context_type) as context_count
+            "SELECT rating_id, COUNT(DISTINCT CONCAT(context_id, ':', context_type)) as context_count
              FROM {$this->votes_table}
              WHERE context_id IS NOT NULL
              GROUP BY rating_id"
@@ -938,8 +938,6 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @since 1.15.0
      */
     public function get_ratings_for_context(int $context_id, string $context_type): array {
-        $fields = self::RATING_FIELDS;
-
         $rows = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.rating_type, r.scale, r.mirror_of,
                     COUNT(v.id) as ctx_votes,

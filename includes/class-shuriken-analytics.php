@@ -273,7 +273,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     public function get_contextual_post_count(): int {
         return (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT context_id, context_type)
+            "SELECT COUNT(DISTINCT CONCAT(context_id, ':', context_type))
              FROM {$this->votes_table}
              WHERE context_id IS NOT NULL"
         );
