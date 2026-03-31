@@ -31,7 +31,7 @@ Ratings are created once and reused across any number of posts. Votes are scoped
 - Post Linked Ratings block removed — superseded by `postContext` mode
 - Content injection disabled by default — superseded by per-post contextual blocks
 
-### Admin & Editor Enhancements (v1.15.0)
+### Admin & Editor Enhancements (v1.14.4)
 
 Per-post voting visibility — admin pages and the block editor now surface contextual vote data.
 
@@ -47,7 +47,7 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 
 ## Up Next
 
-### 1.14.x — Modern PHP & Architecture
+### 1.15.x — Modern PHP & Architecture
 
 #### `RatingType` Backed Enum
 

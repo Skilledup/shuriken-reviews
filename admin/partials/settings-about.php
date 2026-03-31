@@ -50,32 +50,30 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <h4><?php esc_html_e('Contextual Voting (Per-Post Ratings)', 'shuriken-reviews'); ?></h4>
-            <p><?php esc_html_e('Shuriken now competes head-to-head with traditional post-rating plugins — but without forcing you to create a separate rating for every post. Place one rating (or grouped rating) in your single post template, flip the "Per-post voting" toggle, and every post on your site immediately gets its own independent vote tallies.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
-                    <strong><?php esc_html_e('Zero-Config Per-Post Ratings', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('Add a rating block to your Single Post template, enable Per-post voting — done. Every post gets its own scores without creating hundreds of individual ratings.', 'shuriken-reviews'); ?>
+                    <div>
+                        <strong><?php esc_html_e('Comments Settings', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('A dedicated settings page for comment filtering with conditional hook registration — exclude author and reply comments from the Latest Comments block without touching theme code.', 'shuriken-reviews'); ?></span>
+                    </div>
                 </li>
                 <li>
-                    <strong><?php esc_html_e('One Template, Many Posts', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('The rating entity is defined once. Votes are scoped to each post via context_id / context_type columns on the votes table. Global aggregates remain intact for standalone use.', 'shuriken-reviews'); ?>
+                    <div>
+                        <strong><?php esc_html_e('Participation Feedback', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Voters now see real-time feedback messages and a loading indicator while their vote is being submitted, giving a clear signal that the action registered.', 'shuriken-reviews'); ?></span>
+                    </div>
                 </li>
                 <li>
-                    <strong><?php esc_html_e('Grouped Ratings Too', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('The grouped rating block supports the same toggle. One parent + sub-rating configuration serves all posts — add or remove sub-ratings once and every post reflects the change instantly.', 'shuriken-reviews'); ?>
+                    <div>
+                        <strong><?php esc_html_e('Analytics: Multi-ID Rolling Averages', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Rolling average calculations now process multiple rating IDs simultaneously, reducing query overhead on dashboards that track many ratings at once.', 'shuriken-reviews'); ?></span>
+                    </div>
                 </li>
                 <li>
-                    <strong><?php esc_html_e('REST Compatible', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('The /ratings/stats endpoint accepts optional context_id and context_type parameters, returning per-post stats for any custom frontend or headless WordPress setup.', 'shuriken-reviews'); ?>
-                </li>
-                <li>
-                    <strong><?php esc_html_e('Extensible Context Types', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('Supports post, page, and product out of the box. Add any custom post type via the shuriken_allowed_context_types filter.', 'shuriken-reviews'); ?>
-                </li>
-                <li>
-                    <strong><?php esc_html_e('Fully Backward Compatible', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('Per-post voting is opt-in per block. Existing standalone ratings and global tallies are completely unchanged.', 'shuriken-reviews'); ?>
+                    <div>
+                        <strong><?php esc_html_e('About Tab in Settings', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The standalone About page has been consolidated into the Settings screen. Documentation, shortcode reference, developer resources, and system info are now a single click away from anywhere in the plugin.', 'shuriken-reviews'); ?></span>
+                    </div>
                 </li>
             </ul>
         </div>

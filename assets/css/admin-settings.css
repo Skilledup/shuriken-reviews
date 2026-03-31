@@ -581,10 +581,15 @@
 
 .about-features-list li {
     display: flex;
+    align-items: flex-start;
     gap: 10px;
     font-size: 14px;
     color: #475569;
     line-height: 1.55;
+}
+
+.about-features-list li > div {
+    flex: 1;
 }
 
 .about-features-list li::before {
@@ -602,10 +607,10 @@
 }
 
 .about-features-list li strong {
+    display: block;
     color: #1e293b;
     font-weight: 600;
-    margin-right: 4px;
-    white-space: nowrap;
+    margin-bottom: 2px;
 }
 
 /* ==========================================================================
