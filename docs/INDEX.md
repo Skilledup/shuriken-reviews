@@ -83,11 +83,6 @@ High-level overview of the plugin's structure, design decisions, module organiza
 
 #### [Changelog](CHANGELOG.md)
 Full history of changes, features, and fixes organised by version.
-Current status of features, implementation progress, and planned work.
-- Implemented features
-- Rate limiting roadmap
-- Integration features
-- Future extensions
 
 ---
 

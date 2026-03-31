@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Comments system settings page with conditional hook registration for comment filtering.
 - Participation tracking with user feedback messages and loading state indicators.
 - Analytics: rolling average calculations now support multiple rating IDs simultaneously.
+- **About tab** in Settings (`admin/partials/settings-about.php`) — consolidates What's New, Quick Start, Shortcode Reference, Developer Resources, and System Info into the existing settings UI; About tab styles added to `admin-settings.css`.
+
+### Removed
+- Standalone About admin page (`admin/about.php`) merged into Settings → About tab.
+- `assets/css/admin-about.css` — styles migrated into `admin-settings.css`.
 
 ### Fixed
 - SQL queries updated to use `COUNT(DISTINCT context_id)` for accurate post-count metrics.

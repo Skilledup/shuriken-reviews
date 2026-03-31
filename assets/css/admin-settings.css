@@ -421,7 +421,7 @@
 .about-hero-strip {
     background-color: #0f172a;
     background-size: cover;
-    background-position: right -115px center;
+    background-position: right;
     background-repeat: no-repeat;
     border-radius: 12px;
     padding: 28px 32px;
@@ -433,6 +433,12 @@
     flex-wrap: wrap;
     position: relative;
     overflow: hidden;
+}
+
+@media (min-width: 600px) {
+    .about-hero-strip {
+        background-position: right -95px;
+    }
 }
 
 .about-hero-strip::before {

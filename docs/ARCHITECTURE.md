@@ -365,8 +365,7 @@ Manages WordPress admin pages.
 - Ratings management
 - Comments settings
 - Analytics dashboard
-- Plugin settings
-- About page
+- Plugin settings (includes **About tab** with What's New, Quick Start, Shortcode Reference, Developer Resources, and System Info)
 
 ---
 
