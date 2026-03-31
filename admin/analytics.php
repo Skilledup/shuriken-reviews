@@ -44,6 +44,7 @@ $current_period_votes = $vote_counts->period_votes;
 $member_votes         = $vote_counts->member_votes;
 $guest_votes          = $vote_counts->guest_votes;
 $unique_voters        = $analytics->get_overall_stats()->unique_voters;
+$contextual_posts     = $analytics->get_contextual_post_count();
 ?>
 
 <div class="wrap shuriken-analytics">
@@ -135,6 +136,16 @@ $unique_voters        = $analytics->get_overall_stats()->unique_voters;
                 <p><?php printf(esc_html__('Members (%s) / Guests (%s)', 'shuriken-reviews'), esc_html($member_votes), esc_html($guest_votes)); ?></p>
             </div>
         </div>
+        
+        <?php if ($contextual_posts > 0) : ?>
+        <div class="shuriken-stat-card">
+            <span class="stat-icon dashicons dashicons-location"></span>
+            <div class="stat-content">
+                <h3><?php echo esc_html($contextual_posts); ?></h3>
+                <p><?php esc_html_e('Posts with Per-Post Votes', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
     
     <!-- Per-Type Summary Row -->
@@ -388,6 +399,7 @@ $unique_voters        = $analytics->get_overall_stats()->unique_voters;
                     <tr>
                         <th><?php esc_html_e('Item', 'shuriken-reviews'); ?></th>
                         <th><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                        <th><?php esc_html_e('Context', 'shuriken-reviews'); ?></th>
                         <th><?php esc_html_e('Voter', 'shuriken-reviews'); ?></th>
                         <th><?php esc_html_e('Date', 'shuriken-reviews'); ?></th>
                     </tr>
@@ -400,6 +412,22 @@ $unique_voters        = $analytics->get_overall_stats()->unique_voters;
                             <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
                                 <td><a href="<?php echo esc_url($stats_url); ?>" class="rating-item-link"><?php echo esc_html($vote->rating_name); ?></a></td>
                                 <td><span class="star-rating-display"><?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? 'stars', $vote->scale ?? 5); ?></span></td>
+                                <td>
+                                    <?php if (!empty($vote->context_id)) :
+                                        $ctx_title = get_the_title($vote->context_id);
+                                        $ctx_edit  = get_edit_post_link($vote->context_id);
+                                    ?>
+                                        <?php if ($ctx_edit) : ?>
+                                            <a href="<?php echo esc_url($ctx_edit); ?>" class="context-link" title="<?php echo esc_attr($vote->context_type); ?>">
+                                                📍 <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?>
+                                            </a>
+                                        <?php else : ?>
+                                            <span class="context-label">📍 <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?></span>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <span class="context-global"><?php esc_html_e('Global', 'shuriken-reviews'); ?></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php 
                                     $voter_url = $vote->user_id > 0 
@@ -418,7 +446,7 @@ $unique_voters        = $analytics->get_overall_stats()->unique_voters;
                             </tr>
                         <?php endforeach; ?>
                     <?php else : ?>
-                        <tr><td colspan="4"><?php esc_html_e('No recent activity', 'shuriken-reviews'); ?></td></tr>
+                        <tr><td colspan="5"><?php esc_html_e('No recent activity', 'shuriken-reviews'); ?></td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

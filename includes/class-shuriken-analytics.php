@@ -266,6 +266,20 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     }
 
     /**
+     * Count distinct posts/entities that have at least one contextual vote
+     *
+     * @return int Number of unique contexts with votes.
+     * @since 1.15.0
+     */
+    public function get_contextual_post_count(): int {
+        return (int) $this->wpdb->get_var(
+            "SELECT COUNT(DISTINCT context_id, context_type)
+             FROM {$this->votes_table}
+             WHERE context_id IS NOT NULL"
+        );
+    }
+
+    /**
      * Get rating type counts breakdown
      *
      * @return object Object with standalone, parent, sub, display_only, mirror counts
@@ -864,6 +878,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT v.id, v.rating_id, v.rating_value, v.date_created, v.user_id, v.user_ip,
+                    v.context_id, v.context_type,
                     r.name as rating_name, r.rating_type, r.scale, u.display_name, u.user_email
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id

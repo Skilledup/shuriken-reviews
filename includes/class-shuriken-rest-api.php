@@ -286,6 +286,27 @@ class Shuriken_REST_API {
             'callback'            => array($this, 'get_fresh_nonce'),
             'permission_callback' => '__return_true',
         ));
+
+        // Context stats endpoint (editor only — returns ratings with per-context votes)
+        register_rest_route(self::NAMESPACE, '/context-stats', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'get_context_stats'),
+            'permission_callback' => array($this, 'can_edit_posts'),
+            'args'                => array(
+                'context_id' => array(
+                    'required'          => true,
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                    'description'       => 'Post/entity ID to get contextual ratings for',
+                ),
+                'context_type' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_key',
+                    'description'       => 'Context type (post, page, product, etc.)',
+                ),
+            ),
+        ));
     }
 
     // =========================================================================
@@ -935,6 +956,51 @@ class Shuriken_REST_API {
     // =========================================================================
     // Public Endpoint Callbacks
     // =========================================================================
+
+    /**
+     * Get ratings with contextual votes for a specific post/entity
+     *
+     * Returns all ratings that have per-context votes for the given context,
+     * along with their per-context statistics.
+     *
+     * @param WP_REST_Request $request The request object.
+     * @return WP_REST_Response|WP_Error
+     * @since 1.15.0
+     */
+    public function get_context_stats(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
+        try {
+            $context_id = (int) $request->get_param('context_id');
+            $context_type = $request->get_param('context_type');
+
+            if (!$context_id || !$context_type) {
+                throw Shuriken_Validation_Exception::required_field('context_id and context_type');
+            }
+
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+            if (!in_array($context_type, $allowed_types, true)) {
+                throw Shuriken_Validation_Exception::out_of_range('context_type', $context_type, 0, 0);
+            }
+
+            $ratings = $this->db->get_ratings_for_context($context_id, $context_type);
+
+            $result = array();
+            foreach ($ratings as $rating) {
+                $result[] = array(
+                    'id'          => (int) $rating->id,
+                    'name'        => $rating->name,
+                    'rating_type' => $rating->rating_type,
+                    'scale'       => (int) $rating->scale,
+                    'votes'       => $rating->ctx_votes,
+                    'total'       => $rating->ctx_total,
+                    'average'     => $rating->ctx_average,
+                );
+            }
+
+            return rest_ensure_response($result);
+        } catch (Shuriken_Exception_Interface $e) {
+            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        }
+    }
 
     /**
      * Get a fresh nonce (bypasses cache)

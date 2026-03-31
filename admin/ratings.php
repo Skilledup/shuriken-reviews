@@ -93,6 +93,9 @@ $ratings = $ratings_result->ratings;
 $total_items = $ratings_result->total_count;
 $total_pages = $ratings_result->total_pages;
 
+// Get context usage counts (how many distinct posts/entities per rating)
+$context_counts = $db->get_context_usage_counts();
+
 // Hidden columns for Screen Options
 $hidden_columns = get_hidden_columns(get_current_screen());
 $col_class = function($col) use ($hidden_columns) {
@@ -376,6 +379,17 @@ $col_class = function($col) use ($hidden_columns) {
                                     <span class="rating-scale-badge"><?php printf(esc_html__('1-%d', 'shuriken-reviews'), $scale_display); ?></span>
                                 <?php endif; ?>
                             </div>
+                            <?php
+                            // Show contextual usage badge
+                            $ctx_count = isset($context_counts[(int) $rating->id]) ? $context_counts[(int) $rating->id] : 0;
+                            if ($ctx_count > 0) :
+                            ?>
+                            <div class="context-usage-info">
+                                <span class="context-usage-badge" title="<?php esc_attr_e('Per-post voting is active on this many posts/pages', 'shuriken-reviews'); ?>">
+                                    📍 <?php printf(esc_html(_n('%d post', '%d posts', $ctx_count, 'shuriken-reviews')), $ctx_count); ?>
+                                </span>
+                            </div>
+                            <?php endif; ?>
                         </td>
                         <td class="shortcode column-shortcode<?php echo $col_class('shortcode'); ?>" data-colname="<?php esc_attr_e('Shortcode', 'shuriken-reviews'); ?>">
                             <code class="shuriken-copy-shortcode" title="<?php esc_attr_e('Click to copy', 'shuriken-reviews'); ?>">[shuriken_rating id="<?php echo esc_attr($rating->id); ?>"]</code>

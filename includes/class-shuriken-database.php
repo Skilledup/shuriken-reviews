@@ -903,6 +903,68 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /**
+     * Count distinct contexts (posts/entities) per rating
+     *
+     * Returns an associative array of rating_id => context_count for every
+     * rating that has at least one contextual vote.
+     *
+     * @return array<int, int> [rating_id => count_of_distinct_contexts]
+     * @since 1.15.0
+     */
+    public function get_context_usage_counts(): array {
+        $rows = $this->wpdb->get_results(
+            "SELECT rating_id, COUNT(DISTINCT context_id, context_type) as context_count
+             FROM {$this->votes_table}
+             WHERE context_id IS NOT NULL
+             GROUP BY rating_id"
+        );
+
+        $result = array();
+        foreach ($rows as $row) {
+            $result[(int) $row->rating_id] = (int) $row->context_count;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get all ratings that have contextual votes for a specific context
+     *
+     * Returns rating objects enriched with per-context stats.
+     *
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type ('post', 'page', 'product', etc.).
+     * @return array Array of objects with rating info + contextual stats.
+     * @since 1.15.0
+     */
+    public function get_ratings_for_context(int $context_id, string $context_type): array {
+        $fields = self::RATING_FIELDS;
+
+        $rows = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT r.id, r.name, r.rating_type, r.scale, r.mirror_of,
+                    COUNT(v.id) as ctx_votes,
+                    COALESCE(SUM(v.rating_value), 0) as ctx_total
+             FROM {$this->votes_table} v
+             JOIN {$this->ratings_table} r ON v.rating_id = r.id
+             WHERE v.context_id = %d AND v.context_type = %s
+             GROUP BY r.id
+             ORDER BY ctx_votes DESC",
+            $context_id,
+            $context_type
+        ));
+
+        foreach ($rows as &$row) {
+            $row->ctx_votes = (int) $row->ctx_votes;
+            $row->ctx_total = (int) $row->ctx_total;
+            $row->ctx_average = $row->ctx_votes > 0
+                ? round($row->ctx_total / $row->ctx_votes, 1)
+                : 0;
+        }
+
+        return $rows;
+    }
+
+    /**
      * Get child ratings of a parent rating
      *
      * Returns all ratings that have the specified parent_id.

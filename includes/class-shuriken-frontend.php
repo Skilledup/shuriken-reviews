@@ -32,6 +32,11 @@ class Shuriken_Frontend {
      */
     private function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'), 10);
+
+        // Archive sorting by rating
+        if (get_option('shuriken_archive_sort_enabled', '0') === '1') {
+            add_action('pre_get_posts', array($this, 'sort_archives_by_rating'));
+        }
     }
 
     /**
@@ -84,6 +89,66 @@ class Shuriken_Frontend {
         
         // Localize script with data and translations
         wp_localize_script('shuriken-reviews', 'shurikenReviews', $this->get_localized_data());
+    }
+
+    /**
+     * Sort archive queries by contextual rating scores
+     *
+     * Adds a LEFT JOIN to the votes table and orders by the chosen metric
+     * (average rating or total votes) for the configured rating ID.
+     * Only applies to the main query on archive pages.
+     *
+     * @param WP_Query $query The query object.
+     * @return void
+     * @since 1.15.0
+     */
+    public function sort_archives_by_rating(\WP_Query $query): void {
+        if (is_admin() || !$query->is_main_query() || !$query->is_archive()) {
+            return;
+        }
+
+        $rating_id = absint(get_option('shuriken_archive_sort_rating', 0));
+        if (!$rating_id) {
+            return;
+        }
+
+        $orderby = get_option('shuriken_archive_sort_orderby', 'average');
+
+        global $wpdb;
+        $votes_table = $wpdb->prefix . 'shuriken_votes';
+        $post_type = $query->get('post_type') ?: 'post';
+
+        // Use a subquery to compute per-post scores for this rating
+        add_filter('posts_join', function (string $join, \WP_Query $q) use ($query, $votes_table, $rating_id, $post_type) {
+            if ($q !== $query) {
+                return $join;
+            }
+            global $wpdb;
+            $join .= $wpdb->prepare(
+                " LEFT JOIN (
+                    SELECT context_id,
+                           COUNT(*) as shuriken_votes,
+                           COALESCE(SUM(rating_value), 0) as shuriken_total
+                    FROM {$votes_table}
+                    WHERE rating_id = %d AND context_type = %s AND context_id IS NOT NULL
+                    GROUP BY context_id
+                ) shuriken_scores ON {$wpdb->posts}.ID = shuriken_scores.context_id ",
+                $rating_id,
+                $post_type
+            );
+            return $join;
+        }, 10, 2);
+
+        add_filter('posts_orderby', function (string $orderby_clause, \WP_Query $q) use ($query, $orderby) {
+            if ($q !== $query) {
+                return $orderby_clause;
+            }
+            if ($orderby === 'votes') {
+                return 'COALESCE(shuriken_scores.shuriken_votes, 0) DESC, ' . $orderby_clause;
+            }
+            // Default: average
+            return 'CASE WHEN COALESCE(shuriken_scores.shuriken_votes, 0) = 0 THEN 0 ELSE (shuriken_scores.shuriken_total / shuriken_scores.shuriken_votes) END DESC, ' . $orderby_clause;
+        }, 10, 2);
     }
 
     /**

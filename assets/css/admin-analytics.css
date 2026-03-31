@@ -1018,6 +1018,29 @@
     color: #64748b !important;
 }
 
+/* Context Indicators */
+.context-link {
+    text-decoration: none;
+    color: #9d174d;
+    font-size: 12px;
+    transition: color 0.2s ease;
+}
+
+.context-link:hover {
+    color: #be185d;
+}
+
+.context-label {
+    color: #9d174d;
+    font-size: 12px;
+}
+
+.context-global {
+    color: #94a3b8;
+    font-size: 12px;
+    font-style: italic;
+}
+
 /* Column for Rating Item */
 .column-item {
     width: auto;

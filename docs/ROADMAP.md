@@ -31,6 +31,18 @@ Ratings are created once and reused across any number of posts. Votes are scoped
 - Post Linked Ratings block removed — superseded by `postContext` mode
 - Content injection disabled by default — superseded by per-post contextual blocks
 
+### Admin & Editor Enhancements (v1.15.0)
+
+Per-post voting visibility — admin pages and the block editor now surface contextual vote data.
+
+- **Block editor sidebar panel** — `PluginDocumentSettingPanel` fetches `GET /context-stats` and shows per-post rating stats when editing any post that has contextual votes
+- **Archive sorting** — `pre_get_posts` hook sorts archive pages by contextual rating scores; configurable via Settings → General (rating selector, order by average or votes)
+- **Ratings management indicators** — Type column shows a 📍 badge with distinct-post count for any rating that has received contextual votes
+- **Analytics context column** — Recent Activity table includes a Context column showing the post title (linked to edit screen) for contextual votes, or "Global" for non-contextual ones
+- **Contextual Posts card** — Analytics overview grid shows a "Posts with Per-Post Votes" stat card when contextual votes exist
+- `get_context_usage_counts()` / `get_ratings_for_context()` DB methods + interface additions
+- `GET /shuriken-reviews/v1/context-stats` REST endpoint (editor-only, `can_edit_posts` permission)
+
 ---
 
 ## Up Next
@@ -109,10 +121,6 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - [ ] Rating notes/comments — notes table + CRUD; frontend UI; admin moderation; REST endpoints
 - [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users
 - [ ] Emoji reactions — separate system from rating types
-
-### Admin & Editor
-- [ ] Block editor sidebar — show contextual rating info in post sidebar
-- [ ] Archive injection — `pre_get_posts` sorting by rating
 
 ### Internationalization
 - [ ] Alternative calendar display hook — `shuriken_display_date` filter; route all dates through helper (Jalali/Shamsi)

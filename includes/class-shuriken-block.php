@@ -200,6 +200,36 @@ class Shuriken_Block {
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
             'render_callback' => array($this, 'render_grouped_block'),
         ));
+
+        // Register the post sidebar plugin (shows per-post rating stats)
+        wp_register_script(
+            'shuriken-post-sidebar',
+            plugins_url('blocks/shuriken-post-sidebar/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-plugins',
+                'wp-edit-post',
+                'wp-element',
+                'wp-components',
+                'wp-data',
+                'wp-i18n',
+                'wp-api-fetch',
+                'wp-editor'
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
+        add_action('enqueue_block_editor_assets', array($this, 'enqueue_sidebar_script'));
+    }
+
+    /**
+     * Enqueue the post sidebar plugin script in the block editor
+     *
+     * @return void
+     * @since 1.15.0
+     */
+    public function enqueue_sidebar_script(): void {
+        wp_enqueue_script('shuriken-post-sidebar');
     }
 
     /**

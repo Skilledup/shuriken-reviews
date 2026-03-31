@@ -374,6 +374,22 @@ tr.mirror-rating .column-name {
     color: #64748b;
 }
 
+/* Context Usage Badge */
+.context-usage-info {
+    margin-top: 6px;
+}
+
+.context-usage-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    color: #9d174d;
+    letter-spacing: 0.2px;
+}
+
 /* Rating Display */
 .shuriken-rating-display {
     display: flex;

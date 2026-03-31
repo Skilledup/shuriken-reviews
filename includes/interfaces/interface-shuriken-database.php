@@ -258,5 +258,21 @@ interface Shuriken_Database_Interface {
      * @return string|null Datetime string or null if no votes in window.
      */
     public function get_oldest_vote_in_window(int $user_id, ?string $user_ip, int $window_seconds): ?string;
+
+    /**
+     * Count distinct contexts per rating
+     *
+     * @return array<int, int> [rating_id => context_count]
+     */
+    public function get_context_usage_counts(): array;
+
+    /**
+     * Get all ratings with contextual votes for a specific context
+     *
+     * @param int    $context_id   Post/entity ID.
+     * @param string $context_type Context type.
+     * @return array Array of rating objects with per-context stats.
+     */
+    public function get_ratings_for_context(int $context_id, string $context_type): array;
 }
 
