@@ -25,6 +25,11 @@ $tabs = array(
         'icon'  => '🛡️',
         'file'  => 'settings-rate-limiting.php',
     ),
+    'about' => array(
+        'label' => __('About', 'shuriken-reviews'),
+        'icon'  => 'ℹ️',
+        'file'  => 'settings-about.php',
+    ),
 );
 
 /**

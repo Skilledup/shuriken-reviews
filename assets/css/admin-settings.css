@@ -413,3 +413,550 @@
         gap: 10px;
     }
 }
+
+/* ==========================================================================
+   About Tab — Hero Strip
+   ========================================================================== */
+
+.about-hero-strip {
+    background-color: #0f172a;
+    background-size: cover;
+    background-position: right -115px center;
+    background-repeat: no-repeat;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.about-hero-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to right,
+        rgba(10, 8, 35, 0.92) 0%,
+        rgba(10, 8, 35, 0.75) 55%,
+        rgba(10, 8, 35, 0.1) 100%
+    );
+    pointer-events: none;
+}
+
+.about-hero-content,
+.about-hero-aside {
+    position: relative;
+    z-index: 1;
+}
+
+.about-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #a5b4fc;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.about-hero-eyebrow .dashicons {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+    color: #fbbf24;
+}
+
+.about-hero-content h2 {
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.about-hero-tagline {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 14px;
+    margin: 0;
+}
+
+.about-hero-aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.about-version-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.5px;
+}
+
+.about-hero-links {
+    display: flex;
+    gap: 12px;
+}
+
+.about-hero-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.about-hero-links a:hover {
+    color: #fff;
+}
+
+.about-hero-links .dashicons {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+}
+
+@media (max-width: 600px) {
+    .about-hero-strip {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 22px 20px;
+    }
+
+    .about-hero-aside {
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   About Tab — What's New
+   ========================================================================== */
+
+.about-new-highlight h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 10px 0;
+}
+
+.about-new-highlight > p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+}
+
+.about-features-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.about-features-list li {
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.55;
+}
+
+.about-features-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-size: 12px 12px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.about-features-list li strong {
+    color: #1e293b;
+    font-weight: 600;
+    margin-right: 4px;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   About Tab — Quick Start Steps
+   ========================================================================== */
+
+.about-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    .about-steps {
+        grid-template-columns: 1fr;
+    }
+}
+
+.about-step-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.about-step-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.about-step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
+}
+
+.about-step-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 6px 0;
+}
+
+.about-step-content p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+.about-step-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    transition: color 0.2s ease;
+}
+
+.about-step-link:hover {
+    color: #764ba2;
+}
+
+.about-shortcode-example {
+    display: inline-block;
+    background: #1e293b;
+    color: #22d3ee;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+}
+
+/* ==========================================================================
+   About Tab — Shortcode Reference
+   ========================================================================== */
+
+.about-shortcode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.about-shortcode-group-title {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 8px 0 0 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.about-shortcode-group-title:first-child {
+    margin-top: 0;
+}
+
+.about-shortcode-box {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.about-shortcode-box h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 10px 0;
+}
+
+.about-shortcode-box code {
+    display: block;
+    background: #1e293b;
+    color: #22d3ee;
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.about-shortcode-desc {
+    font-size: 12px;
+    color: #64748b;
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   About Tab — Developer Resources
+   ========================================================================== */
+
+.about-dev-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 700px) {
+    .about-dev-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.about-resource-card {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.about-resource-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.about-resource-icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-resource-icon .dashicons {
+    color: #fff;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.about-resource-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 6px 0;
+}
+
+.about-resource-content p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+.about-code-list {
+    margin: 0 0 10px 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.about-code-list code {
+    display: block;
+    background: #1e293b;
+    color: #22d3ee;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 11px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.about-resource-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.about-resource-link:hover {
+    color: #764ba2;
+}
+
+/* Hooks Summary */
+.about-hooks-summary {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 20px;
+}
+
+.about-hooks-summary h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 14px 0;
+}
+
+.about-hooks-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.about-hooks-table th,
+.about-hooks-table td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.about-hooks-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.about-hooks-table td {
+    color: #1e293b;
+}
+
+.about-hooks-table tr:last-child td {
+    border-bottom: none;
+}
+
+.about-hooks-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.about-hooks-table code {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   About Tab — System Info
+   ========================================================================== */
+
+.about-system-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+@media (max-width: 700px) {
+    .about-system-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.about-system-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: #f8fafc;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.about-system-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.about-system-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* ==========================================================================
+   About Tab — Credit Footer
+   ========================================================================== */
+
+.about-credit-footer {
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+    padding: 14px 0 4px;
+}
+
+.about-credit-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.about-credit-footer a:hover {
+    color: #764ba2;
+}

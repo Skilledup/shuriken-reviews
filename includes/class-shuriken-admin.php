@@ -52,7 +52,6 @@ class Shuriken_Admin {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_ratings_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_analytics_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_settings_scripts'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_about_scripts'));
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
         add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
         add_action('admin_post_shuriken_export_voter_votes', array($this, 'export_voter_votes'));
@@ -168,15 +167,6 @@ class Shuriken_Admin {
             array($this, 'render_voter_activity_page')
         );
 
-        // Add About submenu
-        add_submenu_page(
-            'shuriken-reviews',
-            __('About', 'shuriken-reviews'),
-            __('About', 'shuriken-reviews'),
-            'manage_options',
-            'shuriken-reviews-about',
-            array($this, 'render_about_page')
-        );
     }
 
     /**
@@ -402,26 +392,6 @@ class Shuriken_Admin {
     }
 
     /**
-     * Enqueue styles for the About admin page
-     *
-     * @param string $hook The current admin page hook (unused, kept for hook signature).
-     * @return void
-     * @since 1.5.8
-     */
-    public function enqueue_about_scripts(string $hook): void {
-        // Check using page slug - works regardless of language/locale
-        if (!$this->is_plugin_page('shuriken-reviews-about')) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'shuriken-admin-about',
-            plugins_url('assets/css/admin-about.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
-            array(),
-            SHURIKEN_REVIEWS_VERSION
-        );
-    }
-
     /**
      * Enqueue scripts and styles for the Settings admin page
      *
@@ -505,16 +475,6 @@ class Shuriken_Admin {
      */
     public function render_voter_activity_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/voter-activity.php';
-    }
-
-    /**
-     * Render the About page
-     *
-     * @return void
-     * @since 1.5.8
-     */
-    public function render_about_page(): void {
-        include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/about.php';
     }
 
     // =========================================================================
