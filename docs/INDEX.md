@@ -78,6 +78,11 @@ High-level overview of the plugin's structure, design decisions, module organiza
 ### 🗺️ Roadmap
 
 #### [Development Roadmap](ROADMAP.md)
+
+### 📜 Changelog
+
+#### [Changelog](CHANGELOG.md)
+Full history of changes, features, and fixes organised by version.
 Current status of features, implementation progress, and planned work.
 - Implemented features
 - Rate limiting roadmap
