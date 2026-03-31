@@ -99,16 +99,16 @@ $offset = ($current_page - 1) * $per_page;
 $back_url = admin_url('admin.php?page=shuriken-reviews-analytics');
 $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->name) . '#rating-' . $rating->id);
 
+// Type-specific chart data
+$rating_type = $rating->rating_type ?: 'stars';
+$is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+
 // Comparison and velocity data
 $type_benchmark = $analytics->get_type_benchmark($rating_type, $date_range);
 $vote_velocity = $analytics->get_rating_vote_change_percent($rating_id, $date_range);
 
 // Base URL for filters (preserves rating_id)
 $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
-
-// Type-specific chart data
-$rating_type = $rating->rating_type ?: 'stars';
-$is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
 
 if ($rating_type === 'like_dislike') {
     $approval_trend = $analytics->get_approval_trend($rating_id, $date_range);
