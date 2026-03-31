@@ -23,11 +23,17 @@ if (isset($_POST['save_general_settings'])) {
     $archive_sort_orderby = isset($_POST['shuriken_archive_sort_orderby']) && in_array($_POST['shuriken_archive_sort_orderby'], array('average', 'votes'), true)
         ? sanitize_key($_POST['shuriken_archive_sort_orderby'])
         : 'average';
+    $comments_system_enabled  = isset($_POST['shuriken_comments_system_enabled']) ? '1' : '0';
+    $exclude_author_comments  = isset($_POST['shuriken_exclude_author_comments']) ? '1' : '0';
+    $exclude_reply_comments   = isset($_POST['shuriken_exclude_reply_comments']) ? '1' : '0';
     
     update_option('shuriken_allow_guest_voting', $allow_guest_voting);
     update_option('shuriken_archive_sort_enabled', $archive_sort_enabled);
     update_option('shuriken_archive_sort_rating', $archive_sort_rating_id);
     update_option('shuriken_archive_sort_orderby', $archive_sort_orderby);
+    update_option('shuriken_comments_system_enabled', $comments_system_enabled);
+    update_option('shuriken_exclude_author_comments', $exclude_author_comments);
+    update_option('shuriken_exclude_reply_comments', $exclude_reply_comments);
     
     echo '<div class="notice notice-success is-dismissible"><p>' . 
         esc_html__('Settings saved successfully!', 'shuriken-reviews') . 
@@ -118,6 +124,77 @@ if (isset($_POST['save_general_settings'])) {
         </div>
     </div>
     
+    <!-- WordPress Comments System Card -->
+    <div class="shuriken-settings-card shuriken-settings-card-highlight">
+        <div class="settings-card-header">
+            <span class="settings-card-icon">💬</span>
+            <h3><?php esc_html_e('WordPress Comments System', 'shuriken-reviews'); ?></h3>
+        </div>
+        <div class="settings-card-body">
+            <div class="settings-field">
+                <div class="settings-field-header">
+                    <label for="shuriken_comments_system_enabled"><?php esc_html_e('Enable Comments System Modifier', 'shuriken-reviews'); ?></label>
+                    <label class="shuriken-toggle">
+                        <input type="checkbox"
+                               name="shuriken_comments_system_enabled"
+                               id="shuriken_comments_system_enabled"
+                               value="1"
+                               <?php checked('1', get_option('shuriken_comments_system_enabled', '1')); ?>
+                               data-controls="comments-system-options">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <p class="settings-field-description">
+                    <?php esc_html_e('When enabled, Shuriken Reviews modifies the WordPress comments system — filtering the Latest Comments block and turning it into a Swiper slider. Disable to leave WordPress comments completely unmodified.', 'shuriken-reviews'); ?>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments System Options (collapsible) -->
+    <div id="comments-system-options" class="shuriken-settings-collapsible <?php echo get_option('shuriken_comments_system_enabled', '1') === '1' ? 'is-expanded' : ''; ?>">
+        <div class="shuriken-settings-card">
+            <div class="settings-card-header">
+                <span class="settings-card-icon">🔧</span>
+                <h3><?php esc_html_e('Latest Comments Block Filtering', 'shuriken-reviews'); ?></h3>
+            </div>
+            <div class="settings-card-body">
+                <div class="settings-field">
+                    <div class="settings-field-header">
+                        <label for="shuriken_exclude_author_comments"><?php esc_html_e('Exclude Author Comments', 'shuriken-reviews'); ?></label>
+                        <label class="shuriken-toggle">
+                            <input type="checkbox"
+                                   name="shuriken_exclude_author_comments"
+                                   id="shuriken_exclude_author_comments"
+                                   value="1"
+                                   <?php checked('1', get_option('shuriken_exclude_author_comments', '1')); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="settings-field-description">
+                        <?php esc_html_e('When enabled, comments made by post authors will not appear in the Latest Comments block.', 'shuriken-reviews'); ?>
+                    </p>
+                </div>
+                <div class="settings-field">
+                    <div class="settings-field-header">
+                        <label for="shuriken_exclude_reply_comments"><?php esc_html_e('Show Only Top-Level Comments', 'shuriken-reviews'); ?></label>
+                        <label class="shuriken-toggle">
+                            <input type="checkbox"
+                                   name="shuriken_exclude_reply_comments"
+                                   id="shuriken_exclude_reply_comments"
+                                   value="1"
+                                   <?php checked('1', get_option('shuriken_exclude_reply_comments', '1')); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="settings-field-description">
+                        <?php esc_html_e('When enabled, only top-level comments are shown in the Latest Comments block — replies are hidden.', 'shuriken-reviews'); ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="shuriken-settings-submit">
         <button type="submit" name="save_general_settings" class="button button-primary button-large">
             <?php esc_html_e('Save Settings', 'shuriken-reviews'); ?>

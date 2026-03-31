@@ -56,7 +56,9 @@ function exclude_comments_from_latest_comments($query) {
         }
     }
 }
-add_action('pre_get_comments', 'exclude_comments_from_latest_comments');
+if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+    add_action('pre_get_comments', 'exclude_comments_from_latest_comments');
+}
 
 /**
  * Clear transients when comments are modified.
@@ -72,9 +74,11 @@ function clear_author_comments_transients($comment_id) {
 }
 
 // Hook into comment actions to clear cache
-add_action('wp_insert_comment', 'clear_author_comments_transients');
-add_action('edit_comment', 'clear_author_comments_transients');
-add_action('delete_comment', 'clear_author_comments_transients');
+if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+    add_action('wp_insert_comment', 'clear_author_comments_transients');
+    add_action('edit_comment', 'clear_author_comments_transients');
+    add_action('delete_comment', 'clear_author_comments_transients');
+}
 
 /**
  * Enqueue Swiper.js for the comments slider.
@@ -121,7 +125,9 @@ function enqueue_swiper_for_comments() {
         ');
     }
 }
-add_action('wp_enqueue_scripts', 'enqueue_swiper_for_comments');
+if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+    add_action('wp_enqueue_scripts', 'enqueue_swiper_for_comments');
+}
 
 /**
  * Filter block content before it is rendered.
@@ -253,4 +259,6 @@ function customize_latest_comments_block($block_content, $block) {
 
     return $modified_content;
 }
-add_filter('render_block', 'customize_latest_comments_block', 10, 2);
+if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+    add_filter('render_block', 'customize_latest_comments_block', 10, 2);
+}

@@ -128,16 +128,6 @@ class Shuriken_Admin {
         // Register screen options for the ratings page
         add_action("load-{$ratings_hook}", array($this, 'ratings_screen_options'));
 
-        // Add Comments Settings submenu
-        add_submenu_page(
-            'shuriken-reviews',
-            __('Comments Settings', 'shuriken-reviews'),
-            __('Comments Settings', 'shuriken-reviews'),
-            'manage_options',
-            'shuriken-reviews-comments',
-            array($this, 'render_comments_page')
-        );
-
         // Add Analytics submenu
         add_submenu_page(
             'shuriken-reviews',
@@ -475,16 +465,6 @@ class Shuriken_Admin {
      */
     public function render_ratings_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/ratings.php';
-    }
-
-    /**
-     * Render the Comments Settings page
-     *
-     * @return void
-     * @since 1.1.5
-     */
-    public function render_comments_page(): void {
-        include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/comments.php';
     }
 
     /**
