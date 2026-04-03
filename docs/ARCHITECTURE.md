@@ -273,10 +273,27 @@ Provides REST endpoints for programmatic access and AJAX fallback.
 Handles `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcode registration and rendering.
 
 **Responsibility:**
-- Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout)
-- Validate input
+- Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout, context_id, context_type) — `context_id` and `context_type` enable per-context (per-post) voting when provided.
+- Validate input: `id` is coerced to int; `context_id` is coerced to int; `context_type` is sanitized and validated against the `shuriken_allowed_context_types` filter (defaults: `post`, `page`, `product`).
+- When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and `get_contextual_stats()` overlays per-context vote totals.
+- For grouped ratings, the same context is applied to the parent and all children so vote tallies are scoped consistently.
 - Render single or grouped ratings with preset style classes and CSS custom properties
 - Return HTML
+
+**Usage examples:**
+
+Shortcode (in post content):
+
+```
+[shuriken_rating id="5" context_id="42" context_type="post"]
+[shuriken_grouped_rating id="3" context_id="42" context_type="post"]
+```
+
+PHP (in theme templates):
+
+```
+echo do_shortcode( '[shuriken_rating id="5" context_id="' . get_the_ID() . '" context_type="post"]' );
+```
 
 ### Block Module (`class-shuriken-block.php`)
 

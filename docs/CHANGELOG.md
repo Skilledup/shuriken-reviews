@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Participation tracking with user feedback messages and loading state indicators.
 - Analytics: rolling average calculations now support multiple rating IDs simultaneously.
 - **About tab** in Settings (`admin/partials/settings-about.php`) — consolidates What's New, Quick Start, Shortcode Reference, Developer Resources, and System Info into the existing settings UI; About tab styles added to `admin-settings.css`.
+- Shortcodes now support optional `context_id` and `context_type` attributes so contextual voting can be used outside the block editor.
 
 ### Removed
 - Standalone About admin page (`admin/about.php`) merged into Settings → About tab.

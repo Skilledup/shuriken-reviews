@@ -777,6 +777,8 @@ add_filter('shuriken_i18n_strings', function($strings) {
 
 Filters the list of allowed `context_type` values for per-post voting. Any vote or stats request whose `context_type` is not in this list is treated as a global (context-free) vote.
 
+This also applies to shortcode-driven contextual voting via `[shuriken_rating context_id="..." context_type="..."]` and `[shuriken_grouped_rating context_id="..." context_type="..."]`.
+
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -796,6 +798,13 @@ add_filter('shuriken_allowed_context_types', function($types) {
 add_filter('shuriken_allowed_context_types', function($types) {
     return ['product'];
 });
+```
+
+**Example 3: Use shortcode context in a template**
+```php
+echo do_shortcode(
+    '[shuriken_rating id="5" context_id="' . get_the_ID() . '" context_type="post"]'
+);
 ```
 
 ---
