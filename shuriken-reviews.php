@@ -25,7 +25,7 @@ if (!defined('SHURIKEN_REVIEWS_VERSION')) {
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
-    define('SHURIKEN_REVIEWS_DB_VERSION', '1.6.0');
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.7.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
