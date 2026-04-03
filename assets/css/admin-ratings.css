@@ -177,9 +177,9 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Checkbox column â€” vertical center */
+/* Checkbox column — tight fixed width */
 .wp-list-table.ratings .column-cb {
-    width: 2.2em;
+    width: 36px;
     vertical-align: middle;
     text-align: center;
 }
@@ -188,9 +188,9 @@
 .wp-list-table.ratings tfoot td.check-column,
 .wp-list-table.ratings tbody th.check-column {
     vertical-align: middle;
-    padding-top: 0;
-    padding-bottom: 0;
+    padding: 0 6px;
     text-align: center;
+    width: 36px;
 }
 
 .wp-list-table.ratings thead td.check-column input[type="checkbox"],
@@ -396,6 +396,35 @@ tr.mirror-rating .column-name {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+/* Numeric admin display — progress bar + value */
+.shuriken-numeric-admin {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.numeric-admin-bar {
+    width: 100%;
+    max-width: 140px;
+    height: 5px;
+    border-radius: 3px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.numeric-admin-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    min-width: 4px;
+}
+
+.rating-votes {
+    color: #94a3b8;
+    font-weight: 400;
+    font-size: 12px;
 }
 
 .shuriken-rating-stars {
@@ -1290,3 +1319,4 @@ html[dir=rtl] .shuriken-copy-notification {
     line-height: 14px;
     color: #d97706;
 }
+

@@ -796,111 +796,242 @@
 .shuriken-numeric {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
+/* Modern slider — track */
 .shuriken-numeric .shuriken-slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 200px;
-    height: 8px;
-    border-radius: 4px;
-    background: #ddd;
+    flex: 1 1 160px;
+    min-width: 120px;
+    max-width: 280px;
+    height: 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
     outline: none;
     cursor: pointer;
+    /* accent-color drives both the filled track and the thumb in modern browsers */
+    accent-color: var(--shuriken-star-color);
     transition: opacity 0.2s;
 }
 
+/* WebKit thumb */
 .shuriken-numeric .shuriken-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: #ffd700;
+    background: var(--shuriken-star-color);
     cursor: pointer;
-    border: 2px solid #e6c200;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.15s ease;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--shuriken-star-color), 0 2px 6px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .shuriken-numeric .shuriken-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
+    transform: scale(1.18);
+    box-shadow: 0 0 0 3px var(--shuriken-star-color), 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
+/* WebKit track */
+.shuriken-numeric .shuriken-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
+}
+
+/* Mozilla thumb */
 .shuriken-numeric .shuriken-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: #ffd700;
+    background: var(--shuriken-star-color);
     cursor: pointer;
-    border: 2px solid #e6c200;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.15s ease;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--shuriken-star-color), 0 2px 6px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .shuriken-numeric .shuriken-slider::-moz-range-thumb:hover {
-    transform: scale(1.15);
+    transform: scale(1.18);
+    box-shadow: 0 0 0 3px var(--shuriken-star-color), 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
+/* Mozilla track (unfilled portion) */
 .shuriken-numeric .shuriken-slider::-moz-range-track {
-    height: 8px;
-    border-radius: 4px;
-    background: #ddd;
+    height: 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
+}
+
+/* Mozilla filled portion */
+.shuriken-numeric .shuriken-slider::-moz-range-progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--shuriken-star-color);
 }
 
 .shuriken-numeric .shuriken-slider:disabled {
-    opacity: 0.5;
+    opacity: 0.55;
     cursor: not-allowed;
 }
 
 .shuriken-slider-value {
-    font-size: 1.4em;
+    font-size: 1.5em;
     font-weight: 700;
-    color: #333;
+    color: var(--shuriken-star-color);
     min-width: 2ch;
     text-align: center;
+    line-height: 1;
 }
 
 .shuriken-slider-max {
-    font-size: 1em;
+    font-size: 0.9em;
     color: #888;
+    margin-left: -4px;
 }
 
 .shuriken-slider-submit {
-    padding: 5px 14px;
+    padding: 6px 16px;
     border: none;
-    border-radius: 4px;
-    background: #ffd700;
-    color: #333;
-    font-weight: 600;
+    border-radius: 6px;
+    background: var(--shuriken-star-color);
+    color: #1a1a1a;
+    font-size: 0.85em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
+    transition: filter 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .shuriken-slider-submit:hover {
-    background: #e6c200;
+    filter: brightness(0.88);
     transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.shuriken-slider-submit:active {
+    filter: brightness(0.8);
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
 }
 
 .shuriken-slider-submit:disabled {
-    opacity: 0.5;
+    opacity: 0.55;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
 }
 
+/* Display-only numeric (average readout) */
 .shuriken-numeric-display {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
     font-size: 1.4em;
 }
 
 .shuriken-numeric-display .shuriken-numeric-value {
     font-weight: 700;
-    color: #333;
+    color: var(--shuriken-star-color);
 }
 
 .shuriken-numeric.display-only-stars {
     cursor: default;
+}
+
+/* =====================================================
+   Numeric Slider — Single Rating Preset Overrides
+   ===================================================== */
+
+/* Card: wider slider, slightly larger value text */
+.shuriken-rating.is-style-card .shuriken-numeric .shuriken-slider {
+    flex-basis: 220px;
+}
+
+.shuriken-rating.is-style-card .shuriken-slider-value {
+    font-size: 1.8em;
+}
+
+.shuriken-rating.is-style-card .shuriken-slider-submit {
+    padding: 8px 22px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+/* Minimal: clean value, ghost accent button — no full-width override */
+.shuriken-rating.is-style-minimal .shuriken-slider-value {
+    font-size: 1.7em;
+    font-weight: 800;
+    color: #1a202c;
+}
+
+.shuriken-rating.is-style-minimal .shuriken-slider-submit {
+    background: transparent;
+    color: var(--shuriken-accent);
+    border: 1.5px solid var(--shuriken-accent);
+    border-radius: 4px;
+    box-shadow: none;
+    font-size: 0.8em;
+    padding: 4px 12px;
+    filter: none;
+}
+
+.shuriken-rating.is-style-minimal .shuriken-slider-submit:hover {
+    background: var(--shuriken-accent);
+    color: #fff;
+    filter: none;
+    transform: none;
+}
+
+/* Dark: light track */
+.shuriken-rating.is-style-dark .shuriken-numeric .shuriken-slider {
+    background: #2d3748;
+}
+
+.shuriken-rating.is-style-dark .shuriken-numeric .shuriken-slider::-webkit-slider-runnable-track {
+    background: #2d3748;
+}
+
+.shuriken-rating.is-style-dark .shuriken-numeric .shuriken-slider::-moz-range-track {
+    background: #2d3748;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-max {
+    color: #718096;
+}
+
+/* Dark: outlined button that follows slider/thumb color */
+.shuriken-rating.is-style-dark .shuriken-slider-submit {
+    background: transparent;
+    color: var(--shuriken-star-color);
+    border: 1.5px solid var(--shuriken-star-color);
+    box-shadow: none;
+    filter: none;
+}
+
+.shuriken-rating.is-style-dark .shuriken-slider-submit:hover {
+    background: var(--shuriken-star-color);
+    color: #1a202c;
+    filter: none;
+}
+
+/* Outlined: slider color inherits accent */
+.shuriken-rating.is-style-outlined .shuriken-slider-submit {
+    border: 2px solid var(--shuriken-star-color);
+    background: transparent;
+    color: var(--shuriken-star-color);
+    box-shadow: none;
+}
+
+.shuriken-rating.is-style-outlined .shuriken-slider-submit:hover {
+    background: var(--shuriken-star-color);
+    color: #fff;
+    filter: none;
 }
 
 /* =====================================================

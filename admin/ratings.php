@@ -425,6 +425,19 @@ $col_class = function($col) use ($hidden_columns) {
                                     <?php printf(esc_html__('%s upvotes', 'shuriken-reviews'), number_format_i18n($rating->total_votes)); ?>
                                 </span>
                             </div>
+                            <?php elseif ($r_type === 'numeric'):
+                                $scaled_avg = $r_scale > 0 ? round($average / 5 * $r_scale, 1) : 0;
+                                $fill_pct  = $r_scale > 0 ? min(100, round($average / 5 * 100)) : 0;
+                            ?>
+                            <div class="shuriken-rating-display shuriken-numeric-admin">
+                                <div class="numeric-admin-bar" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $scaled_avg, $r_scale); ?>">
+                                    <div class="numeric-admin-fill" style="width:<?php echo esc_attr($fill_pct); ?>%"></div>
+                                </div>
+                                <span class="rating-text">
+                                    <strong><?php echo esc_html($scaled_avg); ?></strong>/<?php echo esc_html($r_scale); ?>
+                                    <span class="rating-votes">(<?php echo number_format_i18n($rating->total_votes); ?> <?php esc_html_e('votes', 'shuriken-reviews'); ?>)</span>
+                                </span>
+                            </div>
                             <?php else: ?>
                             <div class="shuriken-rating-display">
                                 <span class="shuriken-rating-stars" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $average, $r_scale); ?>">

@@ -255,13 +255,27 @@
         }
 
         if (type === 'numeric') {
-            var numAvg = calculateScaledAverage(rating);
+            var numAvg    = calculateScaledAverage(rating);
+            var sliderVal = numAvg > 0 ? Math.round(numAvg) : Math.round(scale / 2);
             return [
-                h('div', { className: 'shuriken-numeric display-only-stars' },
-                    h('span', { className: 'shuriken-numeric-display' },
-                        h('span', { className: 'shuriken-numeric-value' }, String(numAvg)),
-                        h('span', { className: 'shuriken-slider-max' }, ' / ' + scale)
-                    )
+                h('div', { className: 'shuriken-numeric' },
+                    h('input', {
+                        type: 'range',
+                        className: 'shuriken-slider',
+                        min: '1',
+                        max: String(scale),
+                        value: String(sliderVal),
+                        step: '1',
+                        readOnly: true,
+                        disabled: true
+                    }),
+                    h('span', { className: 'shuriken-slider-value' }, String(sliderVal)),
+                    h('span', { className: 'shuriken-slider-max' }, '/ ' + scale),
+                    h('button', {
+                        type: 'button',
+                        className: 'shuriken-slider-submit',
+                        disabled: true
+                    }, __('Rate', 'shuriken-reviews'))
                 ),
                 h('div', { className: 'rating-stats' },
                     __('Average:', 'shuriken-reviews') + ' ' + numAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
