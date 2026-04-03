@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Shuriken Reviews Database Class
  *
@@ -219,7 +219,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             }
             
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
         }
 
@@ -241,7 +241,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
         if ($rating) {
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
         }
 
@@ -613,7 +613,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             
             // Calculate average
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
         }
 
@@ -737,7 +737,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $mirror->display_only = $source->display_only;
                 }
                 $mirror->average = $mirror->total_votes > 0
-                    ? round($mirror->total_rating / $mirror->total_votes, 1)
+                    ? round($mirror->total_rating / $mirror->total_votes, 2)
                     : 0;
             }
         }
@@ -782,7 +782,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             
             // Calculate average
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
             
             $result[$rating->id] = $rating;
@@ -808,7 +808,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $originals_map = array();
             foreach ($originals as $orig) {
                 $orig->average = $orig->total_votes > 0 
-                    ? round($orig->total_rating / $orig->total_votes, 1) 
+                    ? round($orig->total_rating / $orig->total_votes, 2) 
                     : 0;
                 $originals_map[$orig->id] = $orig;
             }
@@ -852,9 +852,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
         $stats = new \stdClass();
         $stats->total_votes = $row ? (int) $row->total_votes : 0;
-        $stats->total_rating = $row ? (int) $row->total_rating : 0;
+        $stats->total_rating = $row ? (float) $row->total_rating : 0.0;
         $stats->average = $stats->total_votes > 0
-            ? round($stats->total_rating / $stats->total_votes, 1)
+            ? round($stats->total_rating / $stats->total_votes, 2)
             : 0;
 
         return $stats;
@@ -892,9 +892,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         foreach ($rows as $row) {
             $stats = new \stdClass();
             $stats->total_votes = (int) $row->total_votes;
-            $stats->total_rating = (int) $row->total_rating;
+            $stats->total_rating = (float) $row->total_rating;
             $stats->average = $stats->total_votes > 0
-                ? round($stats->total_rating / $stats->total_votes, 1)
+                ? round($stats->total_rating / $stats->total_votes, 2)
                 : 0;
             $result[(int) $row->rating_id] = $stats;
         }
@@ -990,7 +990,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         foreach ($ratings as &$rating) {
             $rating->source_id = $rating->id;
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
         }
 
@@ -1096,7 +1096,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
         foreach ($ratings as &$rating) {
             $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 1) 
+                ? round($rating->total_rating / $rating->total_votes, 2) 
                 : 0;
         }
 
@@ -1236,7 +1236,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 'date_created' => $current_time,
                 'date_modified' => $current_time,
             );
-            $format = array('%d', '%d', '%d', '%s', '%s');
+            $format = array('%d', '%d', '%f', '%s', '%s');
 
             if ($user_id === 0 && $user_ip) {
                 $insert_data['user_ip'] = $user_ip;
@@ -1260,7 +1260,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             // Update rating totals
             $update_result = $this->wpdb->query($this->wpdb->prepare(
                 "UPDATE {$this->ratings_table} 
-                 SET total_votes = total_votes + 1, total_rating = total_rating + %d 
+                 SET total_votes = total_votes + 1, total_rating = total_rating + %f 
                  WHERE id = %d",
                 $rating_value,
                 $rating_id
@@ -1311,7 +1311,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     'date_modified' => current_time('mysql'),
                 ),
                 array('id' => $vote_id),
-                array('%d', '%s'),
+                array('%f', '%s'),
                 array('%d')
             );
 
@@ -1323,7 +1323,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             // Update rating total (subtract old, add new)
             $update_result = $this->wpdb->query($this->wpdb->prepare(
                 "UPDATE {$this->ratings_table} 
-                 SET total_rating = total_rating - %d + %d 
+                 SET total_rating = total_rating - %f + %f 
                  WHERE id = %d",
                 $old_value,
                 $new_value,
