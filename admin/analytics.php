@@ -246,7 +246,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                 ?>
                     <div class="momentum-item">
                         <a href="<?php echo esc_url($stats_url); ?>"><?php echo esc_html($item->name); ?></a>
-                        <span class="momentum-delta positive">+<?php echo esc_html($item->delta); ?></span>
+                        <span class="momentum-delta positive">+<?php echo esc_html(round($item->display_delta, 1)); ?></span>
                         <small><?php echo esc_html($analytics->format_average_display($item->recent_avg, $item->rating_type ?? 'stars', $item->scale ?? 5, 0, 0)); ?></small>
                     </div>
                 <?php endforeach; ?>
@@ -261,7 +261,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                 ?>
                     <div class="momentum-item">
                         <a href="<?php echo esc_url($stats_url); ?>"><?php echo esc_html($item->name); ?></a>
-                        <span class="momentum-delta negative"><?php echo esc_html($item->delta); ?></span>
+                        <span class="momentum-delta negative"><?php echo esc_html(round($item->display_delta, 1)); ?></span>
                         <small><?php echo esc_html($analytics->format_average_display($item->recent_avg, $item->rating_type ?? 'stars', $item->scale ?? 5, 0, 0)); ?></small>
                     </div>
                 <?php endforeach; ?>

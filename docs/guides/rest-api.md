@@ -63,6 +63,8 @@ Retrieve all ratings.
     "effect_type": "positive",
     "display_only": false,
     "average": 4.5,
+    "display_average": 22.5,
+    "scale": 10,
     "total_votes": 120
   }
 ]

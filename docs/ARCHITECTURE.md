@@ -83,8 +83,8 @@ admin         → Shuriken_Admin
 - `create_vote($rating_id, $value, $user_id, $context_id, $context_type)` - Record vote (context optional)
 - `get_user_vote($rating_id, $user_id, $user_ip, $context_id, $context_type)` - Check existing vote for context
 - `get_last_vote_time($rating_id, $user_id, $user_ip, $context_id, $context_type)` - Last vote timestamp for rate limiting
-- `get_contextual_stats($rating_id, $context_id, $context_type)` - Per-context vote totals and average
-- `get_contextual_stats_batch($rating_ids, $context_id, $context_type)` - Batch contextual stats in one query
+- `get_contextual_stats($rating_id, $context_id, $context_type, $scale)` - Per-context vote totals, `average`, and `display_average`
+- `get_contextual_stats_batch($rating_ids, $context_id, $context_type, $scales)` - Batch contextual stats; `$scales` is a `rating_id => display_scale` map
 - `get_votes_for_rating($rating_id)` - Get all votes
 
 **Exception Handling:**

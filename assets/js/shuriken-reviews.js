@@ -21,20 +21,11 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Reset stars to show the current average
-     * Uses scaled-average if available, falls back to converting from normalized average
+     * Reset stars to show the current average (reads from scaled-average data attr set by server-rendered HTML)
      */
     function resetStars($rating) {
         const $stats = $rating.find('.rating-stats');
-        let scaledAverage = parseFloat($stats.data('scaled-average'));
-        
-        // If no scaled average, calculate from normalized average
-        if (isNaN(scaledAverage)) {
-            const normalizedAverage = parseFloat($stats.data('average')) || 0;
-            const maxStars = parseInt($rating.data('max-stars')) || 5;
-            scaledAverage = (normalizedAverage / 5) * maxStars;
-        }
-        
+        const scaledAverage = parseFloat($stats.data('scaled-average')) || 0;
         updateStars($rating, scaledAverage);
     }
 
@@ -130,11 +121,8 @@ jQuery(document).ready(function($) {
                             } else if (ratingType === 'approval') {
                                 $rating.find('.shuriken-upvote-count').text(stats.total_votes);
                             } else if (ratingType === 'numeric') {
-                                const normalizedAverage = parseFloat(stats.average) || 0;
-                                let scaledAverage = (normalizedAverage / 5) * maxStars;
-                                scaledAverage = Math.round(scaledAverage * 10) / 10;
+                                const scaledAverage = parseFloat(stats.display_average) || 0;
                                 
-                                $statsEl.data('average', stats.average);
                                 $statsEl.data('scaled-average', scaledAverage);
                                 
                                 const text = shurikenReviews.i18n.averageRating
@@ -145,11 +133,8 @@ jQuery(document).ready(function($) {
                                 
                                 $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
                             } else {
-                                const normalizedAverage = parseFloat(stats.average) || 0;
-                                let scaledAverage = (normalizedAverage / 5) * maxStars;
-                                scaledAverage = Math.round(scaledAverage * 10) / 10;
+                                const scaledAverage = parseFloat(stats.display_average) || 0;
                                 
-                                $statsEl.data('average', stats.average);
                                 $statsEl.data('scaled-average', scaledAverage);
                                 
                                 const text = shurikenReviews.i18n.averageRating

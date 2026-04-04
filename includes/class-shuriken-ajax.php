@@ -302,14 +302,16 @@ class Shuriken_AJAX {
 
         // For contextual votes, return context-scoped stats instead of global totals
         if ($context_id !== null && $context_type !== null) {
-            $ctx_stats = $this->db->get_contextual_stats($rating_id, $context_id, $context_type);
+            $ctx_stats = $this->db->get_contextual_stats($rating_id, $context_id, $context_type, $max_stars);
             $ctx_total_votes = $ctx_stats->total_votes;
             $ctx_total_rating = $ctx_stats->total_rating;
             $ctx_average = $ctx_stats->average;
+            $ctx_display_average = $ctx_stats->display_average;
         } else {
             $ctx_total_votes = $updated_rating->total_votes;
             $ctx_total_rating = $updated_rating->total_rating;
             $ctx_average = $updated_rating->average;
+            $ctx_display_average = $updated_rating->display_average;
         }
 
         // Calculate scaled average for the response (type-aware)
@@ -321,7 +323,7 @@ class Shuriken_AJAX {
         } elseif ($rating_type === 'approval') {
             $scaled_average = $ctx_total_votes;
         } else {
-            $scaled_average = Shuriken_Database::denormalize_average($ctx_average, $max_stars);
+            $scaled_average = $ctx_display_average;
         }
 
         // Build response data with both normalized and scaled values
@@ -350,18 +352,16 @@ class Shuriken_AJAX {
 
                 // Use contextual stats for parent too if in context mode
                 if ($context_id !== null && $context_type !== null) {
-                    $parent_ctx = $this->db->get_contextual_stats($parent_rating->source_id, $context_id, $context_type);
-                    $parent_scaled_average = Shuriken_Database::denormalize_average($parent_ctx->average, $parent_max_stars);
+                    $parent_ctx = $this->db->get_contextual_stats($parent_rating->source_id, $context_id, $context_type, $parent_max_stars);
                     $response_data['parent_id'] = $parent_rating->id;
                     $response_data['parent_average'] = $parent_ctx->average;
-                    $response_data['parent_scaled_average'] = $parent_scaled_average;
+                    $response_data['parent_scaled_average'] = $parent_ctx->display_average;
                     $response_data['parent_total_votes'] = $parent_ctx->total_votes;
                     $response_data['parent_max_stars'] = $parent_max_stars;
                 } else {
-                    $parent_scaled_average = Shuriken_Database::denormalize_average($parent_rating->average, $parent_max_stars);
                     $response_data['parent_id'] = $parent_rating->id;
                     $response_data['parent_average'] = $parent_rating->average;
-                    $response_data['parent_scaled_average'] = $parent_scaled_average;
+                    $response_data['parent_scaled_average'] = $parent_rating->display_average;
                     $response_data['parent_total_votes'] = $parent_rating->total_votes;
                     $response_data['parent_max_stars'] = $parent_max_stars;
                 }

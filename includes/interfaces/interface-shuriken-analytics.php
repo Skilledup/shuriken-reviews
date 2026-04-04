@@ -319,17 +319,19 @@ interface Shuriken_Analytics_Interface {
      *
      * @param int              $rating_id  Rating ID.
      * @param string|int|array $date_range Date range filter.
-     * @return array Array of objects with vote_date, vote_count, avg_rating.
+     * @param int              $scale      Display scale for display_daily_avg.
+     * @return array Array of objects with vote_date, vote_count, avg_rating, display_daily_avg.
      */
-    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30): array;
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array;
 
     /**
      * Like get_votes_with_rolling_avg but accepts multiple rating IDs.
      *
-     * @param array $rating_ids Rating IDs to include
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date, vote_count, daily_avg.
+     * @param array            $rating_ids Rating IDs to include.
+     * @param string|int|array $date_range Date range filter.
+     * @param int              $scale      Display scale for display_daily_avg.
+     * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg.
      */
-    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30): array;
+    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array;
 }
 

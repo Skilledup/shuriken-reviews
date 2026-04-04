@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.14.7] — 2026-04-04
+
+### Added
+- All rating and stats objects now carry a `display_average` field — the average denormalized to the rating's own display scale — alongside the existing `average` (internal 1–5 normalized value). This applies to every method that returns rating or stats objects: `get_rating()`, `get_ratings_by_ids()`, `get_all_ratings()`, `get_ratings_paginated()`, `get_sub_ratings()`, `get_mirrors()`, `get_child_ratings()`, `search_ratings()`, `get_contextual_stats()`, `get_contextual_stats_batch()`, and `get_ratings_for_context()`.
+- Analytics layer attaches display-scale variants to all computed aggregates: `display_daily_avg` on rolling-average rows, `display_delta` / `display_recent_avg` / `display_prev_avg` on momentum items, and `display_average` on all stats/breakdown objects.
+- `get_contextual_stats()` and `get_contextual_stats_batch()` accept a `$scale` / `$scales` parameter so callers can request the correct display scale without a second round-trip.
+- `get_votes_with_rolling_avg()` and `get_votes_with_rolling_avg_for_ids()` accept a `$scale` parameter for `display_daily_avg`.
+
+### Changed
+- **Architectural (SRP fix):** Denormalization of the internal 1–5 average to display scale is now performed exclusively inside the data layer (`Shuriken_Database::attach_averages()`). All consumers (admin views, REST API, AJAX, shortcodes, FSE block helpers) read the pre-computed `display_average` instead of calling `denormalize_average()` inline.
+- FSE `calculateScaledAverage()` in `block-helpers.js` now prefers `rating.display_average` from the API response and falls back to client-side math only for legacy data that pre-dates this release.
+- Interface signatures for `get_contextual_stats`, `get_contextual_stats_batch`, `get_votes_with_rolling_avg`, and `get_votes_with_rolling_avg_for_ids` updated to reflect new optional parameters.
+
+### Fixed
+- Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
+
+---
+
 ## [1.14.5] — 2026-03-31
 
 ### Added

@@ -152,7 +152,7 @@
     function calculateAverage(rating) {
         var tv = parseInt(rating.total_votes, 10) || 0;
         if (tv > 0) {
-            return Math.round((parseInt(rating.total_rating, 10) / tv) * 10) / 10;
+            return Math.round((parseFloat(rating.total_rating) / tv) * 100) / 100;
         }
         return 0;
     }
@@ -206,6 +206,16 @@
      * @return {number}
      */
     function calculateScaledAverage(rating) {
+        // Prefer pre-computed display_average from the API/data layer
+        if (rating.display_average !== undefined && rating.display_average !== null) {
+            return parseFloat(rating.display_average) || 0;
+        }
+        // Fallback: compute client-side (legacy data without display_average)
+        // Prefer pre-computed display_average from the API/data layer
+        if (rating.display_average !== undefined && rating.display_average !== null) {
+            return parseFloat(rating.display_average) || 0;
+        }
+        // Fallback: compute client-side (legacy data without display_average)
         var avg   = calculateAverage(rating);
         var scale = getRatingScale(rating);
         return Math.round((avg / 5) * scale * 10) / 10;
@@ -222,7 +232,7 @@
         var type        = getRatingType(rating);
         var scale       = getRatingScale(rating);
         var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
-        var totalRating = parseInt(rating.total_rating, 10) || 0;
+        var totalRating = parseFloat(rating.total_rating) || 0;
 
         if (type === 'like_dislike') {
             var likes    = totalRating;
@@ -309,7 +319,7 @@
     function formatCompactStats(rating) {
         var type        = getRatingType(rating);
         var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
-        var totalRating = parseInt(rating.total_rating, 10) || 0;
+        var totalRating = parseFloat(rating.total_rating) || 0;
 
         if (type === 'like_dislike') {
             return '\uD83D\uDC4D ' + totalRating + ' / \uD83D\uDC4E ' + Math.max(0, totalVotes - totalRating);

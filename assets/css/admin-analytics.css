@@ -570,7 +570,7 @@
 /* Item Stats Page Specific Styles */
 .shuriken-item-stats h1 {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 12px;
     flex-wrap: wrap;
     font-size: 28px;

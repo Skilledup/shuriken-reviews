@@ -134,6 +134,24 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /**
+     * Compute normalized average and attach display_average to a rating/stats object.
+     *
+     * Every method that computes `->average` MUST call this instead of doing inline math.
+     * This ensures `display_average` is always present alongside `average`, so consumers
+     * never need to denormalize manually.
+     *
+     * @param object   $obj   The object to attach averages to (rating, stats, etc.).
+     * @param int|null $scale The display scale. If null, reads from $obj->scale (defaults to RATING_SCALE_DEFAULT).
+     */
+    private static function attach_averages(object $obj, ?int $scale = null): void {
+        $s = $scale ?? (isset($obj->scale) ? (int) $obj->scale : self::RATING_SCALE_DEFAULT);
+        $obj->average = (isset($obj->total_votes) && $obj->total_votes > 0)
+            ? round((float) $obj->total_rating / (int) $obj->total_votes, 2)
+            : 0;
+        $obj->display_average = self::denormalize_average((float) $obj->average, $s);
+    }
+
+    /**
      * Constructor
      */
     private function __construct() {
@@ -218,9 +236,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 }
             }
             
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
         }
 
         return $rating;
@@ -240,9 +256,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         ));
 
         if ($rating) {
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
         }
 
         return $rating;
@@ -261,9 +275,16 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         $fields = self::RATING_FIELDS;
 
-        return $this->wpdb->get_results(
+        $ratings = $this->wpdb->get_results(
             "SELECT {$fields} FROM {$this->ratings_table} ORDER BY {$orderby} {$order}"
         );
+
+        foreach ($ratings as &$rating) {
+            self::attach_averages($rating);
+        }
+        unset($rating);
+
+        return $ratings;
     }
 
     /**
@@ -319,6 +340,14 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         }
 
         $result->total_pages = ceil($result->total_count / $per_page);
+
+        // Attach average and display_average to each rating
+        if (!empty($result->ratings)) {
+            foreach ($result->ratings as &$rating) {
+                self::attach_averages($rating);
+            }
+            unset($rating);
+        }
 
         return $result;
     }
@@ -612,9 +641,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $rating->source_id = $rating->id;
             
             // Calculate average
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
         }
 
         return $ratings;
@@ -736,9 +763,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $mirror->total_rating = $source->total_rating;
                     $mirror->display_only = $source->display_only;
                 }
-                $mirror->average = $mirror->total_votes > 0
-                    ? round($mirror->total_rating / $mirror->total_votes, 2)
-                    : 0;
+                self::attach_averages($mirror);
             }
         }
 
@@ -781,9 +806,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $rating->source_id = $rating->id;
             
             // Calculate average
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
             
             $result[$rating->id] = $rating;
         }
@@ -807,13 +830,11 @@ class Shuriken_Database implements Shuriken_Database_Interface {
 
             $originals_map = array();
             foreach ($originals as $orig) {
-                $orig->average = $orig->total_votes > 0 
-                    ? round($orig->total_rating / $orig->total_votes, 2) 
-                    : 0;
+                self::attach_averages($orig);
                 $originals_map[$orig->id] = $orig;
             }
 
-            // Apply mirror data
+            // Apply mirror data — mirror uses its own scale for display_average
             foreach ($result as $id => $rating) {
                 if (!empty($rating->mirror_of) && isset($originals_map[$rating->mirror_of])) {
                     $original = $originals_map[$rating->mirror_of];
@@ -821,6 +842,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $result[$id]->total_rating = $original->total_rating;
                     $result[$id]->display_only = $original->display_only;
                     $result[$id]->average = $original->average;
+                    $result[$id]->display_average = self::denormalize_average((float) $original->average, (int) $result[$id]->scale);
                     $result[$id]->source_id = $original->id;
                 }
             }
@@ -838,9 +860,10 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int    $rating_id    Rating ID.
      * @param int    $context_id   Post/entity ID.
      * @param string $context_type Context type ('post', 'product', etc.).
-     * @return object Object with total_votes, total_rating, average properties.
+     * @param int    $scale        Display scale for denormalization.
+     * @return object Object with total_votes, total_rating, average, display_average properties.
      */
-    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type): object {
+    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type, int $scale = self::RATING_SCALE_DEFAULT): object {
         $row = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
              FROM {$this->votes_table}
@@ -853,9 +876,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $stats = new \stdClass();
         $stats->total_votes = $row ? (int) $row->total_votes : 0;
         $stats->total_rating = $row ? (float) $row->total_rating : 0.0;
-        $stats->average = $stats->total_votes > 0
-            ? round($stats->total_rating / $stats->total_votes, 2)
-            : 0;
+        self::attach_averages($stats, $scale);
 
         return $stats;
     }
@@ -866,9 +887,10 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param array  $rating_ids   Array of rating IDs.
      * @param int    $context_id   Post/entity ID.
      * @param string $context_type Context type ('post', 'product', etc.).
+     * @param array  $scales       Associative array of rating_id => display scale. Defaults to RATING_SCALE_DEFAULT for missing entries.
      * @return array Associative array keyed by rating_id => stats object.
      */
-    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type): array {
+    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type, array $scales = array()): array {
         if (empty($rating_ids)) {
             return array();
         }
@@ -893,10 +915,9 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $stats = new \stdClass();
             $stats->total_votes = (int) $row->total_votes;
             $stats->total_rating = (float) $row->total_rating;
-            $stats->average = $stats->total_votes > 0
-                ? round($stats->total_rating / $stats->total_votes, 2)
-                : 0;
-            $result[(int) $row->rating_id] = $stats;
+            $rid = (int) $row->rating_id;
+            self::attach_averages($stats, $scales[$rid] ?? self::RATING_SCALE_DEFAULT);
+            $result[$rid] = $stats;
         }
 
         return $result;
@@ -957,6 +978,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             $row->ctx_average = $row->ctx_votes > 0
                 ? round($row->ctx_total / $row->ctx_votes, 1)
                 : 0;
+            $s = isset($row->scale) ? (int) $row->scale : self::RATING_SCALE_DEFAULT;
+            $row->ctx_display_average = self::denormalize_average((float) $row->ctx_average, $s);
         }
 
         return $rows;
@@ -989,9 +1012,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         // Calculate averages and set source_id
         foreach ($ratings as &$rating) {
             $rating->source_id = $rating->id;
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
         }
 
         return $ratings;
@@ -1095,9 +1116,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         }
 
         foreach ($ratings as &$rating) {
-            $rating->average = $rating->total_votes > 0 
-                ? round($rating->total_rating / $rating->total_votes, 2) 
-                : 0;
+            self::attach_averages($rating);
         }
 
         return $ratings;

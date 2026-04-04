@@ -225,13 +225,13 @@ $tendency_icons = array(
                     <h3><?php echo esc_html($voter_approval_rate); ?>%</h3>
                     <p><?php esc_html_e('Approval Rate', 'shuriken-reviews'); ?></p>
                 <?php elseif ($has_non_binary) : ?>
-                    <h3><?php echo esc_html($stats->average_effective_rating ?: $stats->average_rating_given ?: '0'); ?></h3>
+                    <h3><?php echo esc_html(($stats->average_effective_rating ?: $stats->average_rating_given ?: '0') . '/5'); ?></h3>
                     <p><?php esc_html_e('Average Rating Given', 'shuriken-reviews'); ?></p>
                     <?php if ($stats->average_effective_rating && $stats->average_effective_rating !== $stats->average_rating_given) : ?>
                         <small class="effective-rating-note" title="<?php esc_attr_e('Rating adjusted for negative-effect sub-ratings', 'shuriken-reviews'); ?>">
                             <?php printf(
                                 /* translators: %s: effective rating value */
-                                esc_html__('Effective: %s', 'shuriken-reviews'),
+                                esc_html__('Effective: %s/5', 'shuriken-reviews'),
                                 esc_html($stats->average_effective_rating)
                             ); ?>
                         </small>
@@ -384,7 +384,11 @@ $tendency_icons = array(
                                 <span class="star-rating-display">
                                     <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? 'stars', $vote->scale ?? 5); ?>
                                 </span>
-                                <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
+                                <?php
+                                $vote_scale = $vote->scale ?? 5;
+                                $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
+                                ?>
+                                <span class="rating-number">(<?php echo esc_html($denorm_vote); ?>)</span>
                             </td>
                             <td class="column-date">
                                 <?php echo esc_html($analytics->format_date($vote->date_created)); ?>

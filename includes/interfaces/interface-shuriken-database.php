@@ -223,9 +223,10 @@ interface Shuriken_Database_Interface {
      * @param int    $rating_id    Rating ID.
      * @param int    $context_id   Post/entity ID.
      * @param string $context_type Context type.
-     * @return object Object with total_votes, total_rating, average.
+     * @param int    $scale        Display scale for display_average.
+     * @return object Object with total_votes, total_rating, average, display_average.
      */
-    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type): object;
+    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type, int $scale = self::RATING_SCALE_DEFAULT): object;
 
     /**
      * Get contextual stats for multiple ratings in a single query
@@ -233,9 +234,10 @@ interface Shuriken_Database_Interface {
      * @param array  $rating_ids   Array of rating IDs.
      * @param int    $context_id   Post/entity ID.
      * @param string $context_type Context type.
+     * @param array  $scales       Map of rating_id => display scale.
      * @return array Associative array keyed by rating_id.
      */
-    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type): array;
+    public function get_contextual_stats_batch(array $rating_ids, int $context_id, string $context_type, array $scales = array()): array;
 
     /**
      * Count votes by a user/guest since a given datetime

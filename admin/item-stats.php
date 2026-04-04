@@ -60,6 +60,7 @@ if ($is_parent && $stats_breakdown) {
     // For parent ratings with view selector, use breakdown data with date range applied
     $current_stats = $stats_breakdown->$current_view;
     $average = $current_stats->average;
+    $display_average = $current_stats->display_average;
     $member_votes = $current_stats->member_votes;
     $guest_votes_count = $current_stats->guest_votes;
     $unique_voters = $current_stats->unique_voters;
@@ -72,6 +73,7 @@ if ($is_parent && $stats_breakdown) {
 } else {
     // For non-parent ratings, use date-filtered stats
     $average = $stats->average;
+    $display_average = $stats->display_average;
     $member_votes = $stats->member_votes;
     $guest_votes_count = $stats->guest_votes;
     $unique_voters = $stats->unique_voters;
@@ -117,6 +119,7 @@ if ($rating_type === 'like_dislike') {
 } else {
     // stars/numeric: dual-axis chart data
     // For parent ratings, include votes from sub-ratings based on the current view
+    $item_scale = (int) ($rating->scale ?: 5);
     if ($is_parent && $stats_breakdown) {
         $sub_rating_ids = array_map(fn($s) => $s->id, $sub_ratings);
         if ($current_view === 'direct') {
@@ -126,9 +129,9 @@ if ($rating_type === 'like_dislike') {
         } else {
             $chart_ids = array_merge(array($rating_id), $sub_rating_ids);
         }
-        $dual_axis_data = $analytics->get_votes_with_rolling_avg_for_ids($chart_ids, $date_range);
+        $dual_axis_data = $analytics->get_votes_with_rolling_avg_for_ids($chart_ids, $date_range, $item_scale);
     } else {
-        $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range);
+        $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range, $item_scale);
     }
 }
 ?>
@@ -320,7 +323,8 @@ if ($rating_type === 'like_dislike') {
                         $diff = $display_total_rating - round($type_benchmark->avg_votes);
                         $diff_display = ($diff >= 0 ? '+' : '') . intval($diff);
                     } elseif (!$is_binary && $type_benchmark->avg_rating !== null) {
-                        $diff = $average - $type_benchmark->avg_rating;
+                        $bench_display = Shuriken_Database::denormalize_average((float) $type_benchmark->avg_rating, (int) ($rating->scale ?: 5));
+                        $diff = $display_average - $bench_display;
                         $diff_display = ($diff >= 0 ? '+' : '') . round($diff, 1);
                     } else {
                         $diff = null;
@@ -540,7 +544,11 @@ if ($rating_type === 'like_dislike') {
                                 <span class="star-rating-display">
                                     <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? $rating->rating_type ?? 'stars', $vote->scale ?? $rating->scale ?? 5); ?>
                                 </span>
-                                <span class="rating-number">(<?php echo esc_html($vote->rating_value); ?>)</span>
+                                <?php
+                                $vote_scale = $vote->scale ?? $rating->scale ?? 5;
+                                $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
+                                ?>
+                                <span class="rating-number">(<?php echo esc_html($denorm_vote); ?>)</span>
                             </td>
                             <?php if ($show_source_column) : ?>
                             <td class="column-source">
@@ -664,7 +672,13 @@ var shurikenItemStatsData = {
     cumulativeApprovals: <?php echo wp_json_encode($cumulative_approvals); ?>,
     <?php else : ?>
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
-    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' ★'; }, array_keys($distribution_array))); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_map(function($k) use ($rating, $rating_type) {
+        $scale = (int) ($rating->scale ?: 5);
+        $denorm = Shuriken_Database::denormalize_average((float) $k, $scale);
+        $label = ($scale === 5) ? $k : round($denorm);
+        $suffix = ($rating_type === 'numeric') ? '' : ' ★';
+        return $label . $suffix;
+    }, array_keys($distribution_array))); ?>,
     dualAxisData: <?php echo wp_json_encode($dual_axis_data); ?>,
     <?php endif; ?>
     i18n: {
@@ -874,7 +888,7 @@ jQuery(document).ready(function($) {
                         {
                             type: 'line',
                             label: d.i18n.average,
-                            data: d.dualAxisData.map(function(r) { return parseFloat(r.daily_avg); }),
+                            data: d.dualAxisData.map(function(r) { return parseFloat(r.display_daily_avg); }),
                             borderColor: '#f59e0b',
                             backgroundColor: 'transparent',
                             borderWidth: 2,

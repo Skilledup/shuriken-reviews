@@ -80,7 +80,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return int The constant C where inverted_value = C - original_value
      */
     private function get_inversion_constant(string $rating_type, int $scale): int {
-        return $this->is_binary_type($rating_type) ? (int) $scale : ((int) $scale + 1);
+        // Votes are normalized to 1-5 (RATING_SCALE_DEFAULT), so inversion uses the internal scale
+        return $this->is_binary_type($rating_type) ? (int) $scale : (Shuriken_Database::RATING_SCALE_DEFAULT + 1);
     }
 
     /**
@@ -97,7 +98,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if ($this->is_binary_type($rating_type)) {
             return array(0 => 0, 1 => 0);
         }
-        return array_fill(1, (int) $scale, 0);
+        // Always use the internal normalized scale (1-5) for distribution buckets
+        // since vote values are stored normalized regardless of the display scale.
+        return array_fill(1, Shuriken_Database::RATING_SCALE_DEFAULT, 0);
     }
 
     /**
@@ -198,7 +201,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
             return $pct . '% ' . __('approved', 'shuriken-reviews');
         }
-        return number_format((float) $average, 1) . '/' . intval($scale);
+        $display_avg = Shuriken_Database::denormalize_average((float) $average, $scale);
+        return number_format($display_avg, 1) . '/' . intval($scale);
     }
 
     /**
@@ -214,19 +218,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Rating scale
      * @return string HTML display string
      */
-    public function format_vote_display(int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
-        $value = intval($rating_value);
+    public function format_vote_display(float|int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
         if ($rating_type === 'like_dislike') {
-            return $value === 1 ? '👍' : '👎';
+            return intval($rating_value) === 1 ? '👍' : '👎';
         }
         if ($rating_type === 'approval') {
             return '👍';
         }
         $s = (int) $scale;
+        $display_value = (int) round(((float) $rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $s);
         if ($rating_type === 'numeric') {
-            return $value . '/' . $s;
+            return $display_value . '/' . $s;
         }
-        return str_repeat('★', $value) . str_repeat('☆', max(0, $s - $value));
+        return str_repeat('★', $display_value) . str_repeat('☆', max(0, $s - $display_value));
     }
 
     /**
@@ -814,15 +818,16 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         }
 
         // Join with ratings table to get effect_type and invert negative effect votes
-        // Scale-aware inversion: binary uses scale, stars/numeric uses (scale + 1)
+        // Votes are normalized to 1-5 internally, so inversion uses RATING_SCALE_DEFAULT
+        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         $results = $this->wpdb->get_results(
             "SELECT 
                 CASE 
                     WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
                         THEN CAST(r.scale AS SIGNED) - v.rating_value
                     WHEN r.effect_type = 'negative' 
-                        THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value 
-                    ELSE v.rating_value 
+                        THEN ({$internal_scale} + 1) - ROUND(v.rating_value) 
+                    ELSE ROUND(v.rating_value) 
                 END as effective_value, 
                 COUNT(*) as count 
              FROM {$this->votes_table} v
@@ -934,6 +939,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $stats->average = $rating->average;
         }
         
+        $scale = isset($rating->scale) ? (int) $rating->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
+        $stats->display_average = Shuriken_Database::denormalize_average((float) $stats->average, $scale);
+        
         // Vote counts by user type
         $stats->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition}",
@@ -1017,6 +1025,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $breakdown->direct->average = $breakdown->direct->total_votes > 0 
             ? round($breakdown->direct->total_rating / $breakdown->direct->total_votes, 1) 
             : 0;
+        $scale = isset($rating->scale) ? (int) $rating->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
+        $breakdown->direct->display_average = Shuriken_Database::denormalize_average((float) $breakdown->direct->average, $scale);
         
         $breakdown->direct->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition}",
@@ -1085,6 +1095,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $breakdown->subs->average = $subs_total_votes > 0 
             ? round($subs_total_rating / $subs_total_votes, 1) 
             : 0;
+        $breakdown->subs->display_average = Shuriken_Database::denormalize_average((float) $breakdown->subs->average, $scale);
         
         // Aggregate vote counts from sub-ratings with date filter
         $breakdown->subs->member_votes = (int) $this->wpdb->get_var(
@@ -1111,14 +1122,15 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         );
         
         // Distribution from sub-ratings (with effect_type conversion) and date filter
-        // Scale-aware inversion: binary uses r.scale, stars/numeric uses (r.scale + 1)
+        // Scale-aware inversion: binary uses r.scale, stars/numeric uses internal scale (RATING_SCALE_DEFAULT + 1)
+        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         $subs_distribution_results = $this->wpdb->get_results(
             "SELECT 
                 CASE 
                     WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
                         THEN CAST(r.scale AS SIGNED) - v.rating_value
                     WHEN r.effect_type = 'negative' 
-                        THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value 
+                        THEN ({$internal_scale} + 1) - v.rating_value 
                     ELSE v.rating_value 
                 END as effective_value, 
                 COUNT(*) as count 
@@ -1152,6 +1164,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $breakdown->total->average = $breakdown->total->total_votes > 0 
             ? round($breakdown->total->total_rating / $breakdown->total->total_votes, 1) 
             : 0;
+        $breakdown->total->display_average = Shuriken_Database::denormalize_average((float) $breakdown->total->average, $scale);
         
         $breakdown->total->member_votes = $breakdown->direct->member_votes + $breakdown->subs->member_votes;
         $breakdown->total->guest_votes = $breakdown->direct->guest_votes + $breakdown->subs->guest_votes;
@@ -1437,7 +1450,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             }
             $summaries[$type]->item_count  += (int) $row->item_count;
             $summaries[$type]->total_votes += (int) $row->total_votes;
-            $summaries[$type]->total_rating += (int) $row->total_rating;
+            $summaries[$type]->total_rating += (float) $row->total_rating;
         }
 
         // Calculate display metrics per type
@@ -1448,7 +1461,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                     : 0;
             } else {
                 $s->weighted_average = $s->total_votes > 0
-                    ? round($s->total_rating / $s->total_votes, 1)
+                    ? Shuriken_Database::denormalize_average($s->total_rating / $s->total_votes, $s->scale)
                     : 0;
             }
         }
@@ -1543,6 +1556,11 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $item->recent_avg = round($recent, 1);
             $item->prev_avg = round($prev, 1);
 
+            $s = isset($item->scale) ? (int) $item->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
+            $item->display_delta = Shuriken_Database::denormalize_average(abs((float) $item->delta), $s) * ($delta < 0 ? -1 : 1);
+            $item->display_recent_avg = Shuriken_Database::denormalize_average((float) $item->recent_avg, $s);
+            $item->display_prev_avg = Shuriken_Database::denormalize_average((float) $item->prev_avg, $s);
+
             if ($delta > 0) {
                 $result->rising[] = $item;
             } elseif ($delta < 0) {
@@ -1622,12 +1640,13 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @param int $rating_id Rating ID
      * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date, vote_count, daily_avg
+     * @param int $scale Display scale for denormalization
+     * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg
      */
-    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30): array {
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
         $date_condition = $this->build_date_condition($date_range);
 
-        return $this->wpdb->get_results($this->wpdb->prepare(
+        $rows = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(date_created) as vote_date,
                     COUNT(*) as vote_count,
                     ROUND(AVG(rating_value), 2) as daily_avg
@@ -1637,6 +1656,13 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              ORDER BY vote_date",
             $rating_id
         ));
+
+        foreach ($rows as &$row) {
+            $row->display_daily_avg = Shuriken_Database::denormalize_average((float) $row->daily_avg, $scale);
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -1644,9 +1670,10 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @param array $rating_ids Array of rating IDs to include
      * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date, vote_count, daily_avg
+     * @param int $scale Display scale for denormalization
+     * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg
      */
-    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30): array {
+    public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
         if (empty($rating_ids)) {
             return array();
         }
@@ -1654,7 +1681,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $ids_placeholder = implode(',', array_map('intval', $rating_ids));
         $date_condition = $this->build_date_condition($date_range);
 
-        return $this->wpdb->get_results(
+        $rows = $this->wpdb->get_results(
             "SELECT DATE(date_created) as vote_date,
                     COUNT(*) as vote_count,
                     ROUND(AVG(rating_value), 2) as daily_avg
@@ -1663,5 +1690,12 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              GROUP BY DATE(date_created)
              ORDER BY vote_date"
         );
+
+        foreach ($rows as &$row) {
+            $row->display_daily_avg = Shuriken_Database::denormalize_average((float) $row->daily_avg, $scale);
+        }
+        unset($row);
+
+        return $rows;
     }
 }

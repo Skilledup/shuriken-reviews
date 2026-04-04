@@ -862,11 +862,14 @@ class Shuriken_REST_API {
             if ($has_context) {
                 // Collect source_ids for context query (mirrors use original's votes)
                 $source_ids = array();
+                $scales_map = array();
                 foreach ($ratings as $rating) {
-                    $source_ids[] = (int) $rating->source_id;
+                    $sid = (int) $rating->source_id;
+                    $source_ids[] = $sid;
+                    $scales_map[$sid] = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
                 }
                 $source_ids = array_unique($source_ids);
-                $ctx_stats = $this->db->get_contextual_stats_batch($source_ids, (int) $context_id, $context_type);
+                $ctx_stats = $this->db->get_contextual_stats_batch($source_ids, (int) $context_id, $context_type, $scales_map);
             }
             
             $stats = array();
@@ -876,25 +879,28 @@ class Shuriken_REST_API {
                 if ($has_context && isset($ctx_stats[$source_id])) {
                     $ctx = $ctx_stats[$source_id];
                     $stats[$id] = array(
-                        'average' => $ctx->average,
-                        'total_votes' => $ctx->total_votes,
-                        'total_rating' => $ctx->total_rating,
-                        'source_id' => $source_id,
+                        'average'         => $ctx->average,
+                        'display_average' => $ctx->display_average,
+                        'total_votes'     => $ctx->total_votes,
+                        'total_rating'    => $ctx->total_rating,
+                        'source_id'       => $source_id,
                     );
                 } elseif ($has_context) {
                     // Context requested but no votes yet for this context
                     $stats[$id] = array(
-                        'average' => 0,
-                        'total_votes' => 0,
-                        'total_rating' => 0,
-                        'source_id' => $source_id,
+                        'average'         => 0,
+                        'display_average' => 0,
+                        'total_votes'     => 0,
+                        'total_rating'    => 0,
+                        'source_id'       => $source_id,
                     );
                 } else {
                     $stats[$id] = array(
-                        'average' => $rating->average,
-                        'total_votes' => $rating->total_votes,
-                        'total_rating' => $rating->total_rating,
-                        'source_id' => $rating->source_id,
+                        'average'         => $rating->average,
+                        'display_average' => $rating->display_average,
+                        'total_votes'     => $rating->total_votes,
+                        'total_rating'    => $rating->total_rating,
+                        'source_id'       => $rating->source_id,
                     );
                 }
             }
@@ -986,13 +992,14 @@ class Shuriken_REST_API {
             $result = array();
             foreach ($ratings as $rating) {
                 $result[] = array(
-                    'id'          => (int) $rating->id,
-                    'name'        => $rating->name,
-                    'rating_type' => $rating->rating_type,
-                    'scale'       => (int) $rating->scale,
-                    'votes'       => $rating->ctx_votes,
-                    'total'       => $rating->ctx_total,
-                    'average'     => $rating->ctx_average,
+                    'id'              => (int) $rating->id,
+                    'name'            => $rating->name,
+                    'rating_type'     => $rating->rating_type,
+                    'scale'           => (int) $rating->scale,
+                    'votes'           => $rating->ctx_votes,
+                    'total'           => $rating->ctx_total,
+                    'average'         => $rating->ctx_average,
+                    'display_average' => $rating->ctx_display_average,
                 );
             }
 

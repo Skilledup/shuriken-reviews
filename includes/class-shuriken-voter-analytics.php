@@ -139,6 +139,8 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
         // For negative effect ratings: invert using scale-aware formula
         // Excludes binary types from effective average since their 0/1 values are incompatible with star scales
         // Includes binary types in positive/negative sentiment counts
+        // All v.rating_value are normalized to 1-5 (RATING_SCALE_DEFAULT) regardless of display scale
+        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         $stats = $this->wpdb->get_row(
             "SELECT 
                 COUNT(*) as total_votes,
@@ -146,11 +148,10 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
                 ROUND(AVG(
                     CASE 
                         WHEN r.rating_type IN ('like_dislike', 'approval') THEN NULL
-                        WHEN r.effect_type = 'negative' THEN (CAST(r.scale AS SIGNED) + 1) - v.rating_value
+                        WHEN r.effect_type = 'negative' THEN ({$internal_scale} + 1) - v.rating_value
                         ELSE v.rating_value 
                     END
                 ), 1) as average_effective_rating,
-                AVG(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') THEN CAST(r.scale AS DECIMAL) ELSE NULL END) as avg_scale,
                 SUM(CASE WHEN r.rating_type NOT IN ('like_dislike', 'approval') THEN 1 ELSE 0 END) as non_binary_votes,
                 SUM(CASE WHEN r.rating_type IN ('like_dislike', 'approval') THEN 1 ELSE 0 END) as binary_votes,
                 SUM(CASE WHEN r.rating_type IN ('like_dislike', 'approval') AND v.rating_value > 0 THEN 1 ELSE 0 END) as binary_positive,
@@ -159,14 +160,14 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
                 COUNT(DISTINCT v.rating_id) as unique_items_rated,
                 SUM(CASE 
                     WHEN r.rating_type IN ('like_dislike', 'approval') AND v.rating_value > 0 THEN 1
-                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value >= CEIL(r.scale * 0.8) THEN 1
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value >= CEIL({$internal_scale} * 0.8) THEN 1
                     ELSE 0 END) as positive_votes,
                 SUM(CASE 
                     WHEN r.rating_type = 'like_dislike' AND v.rating_value = 0 THEN 1
-                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value <= CEIL(r.scale * 0.4) THEN 1
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value <= CEIL({$internal_scale} * 0.4) THEN 1
                     ELSE 0 END) as negative_votes,
                 SUM(CASE 
-                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value > CEIL(r.scale * 0.4) AND v.rating_value < CEIL(r.scale * 0.8) THEN 1
+                    WHEN r.rating_type NOT IN ('like_dislike', 'approval') AND v.rating_value > CEIL({$internal_scale} * 0.4) AND v.rating_value < CEIL({$internal_scale} * 0.8) THEN 1
                     ELSE 0 END) as neutral_votes
              FROM {$this->votes_table} v
              LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
@@ -179,9 +180,8 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
             $binary = (int) $stats->binary_votes;
             
             if ($non_binary > 0 && $stats->average_effective_rating !== null) {
-                // Scale-aware: normalize effective average to 0-1 range
-                $avg_scale = floatval($stats->avg_scale) ?: 5;
-                $normalized = floatval($stats->average_effective_rating) / $avg_scale;
+                // Normalize effective average (already on 1-5 internal scale) to 0-1 range
+                $normalized = floatval($stats->average_effective_rating) / Shuriken_Database::RATING_SCALE_DEFAULT;
                 if ($normalized >= 0.75) {
                     $stats->voting_tendency = 'generous';
                 } elseif ($normalized <= 0.40) {

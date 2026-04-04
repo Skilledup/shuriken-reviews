@@ -270,13 +270,13 @@ class Shuriken_Shortcodes {
         // If contextual, overlay per-context stats onto the rating object
         $context_attrs = '';
         if ($context_id !== null && $context_type !== null) {
-            $ctx_stats = shuriken_db()->get_contextual_stats((int) $rating->source_id, $context_id, $context_type);
+            $ctx_stats = shuriken_db()->get_contextual_stats((int) $rating->source_id, $context_id, $context_type, $max_stars);
 
             /**
              * Filter the per-context stats before they are applied to the rating for rendering.
              *
              * @since 1.6.0
-             * @param object      $ctx_stats    Stats object with `total_votes`, `total_rating`, and `average` properties.
+             * @param object      $ctx_stats    Stats object with `total_votes`, `total_rating`, `average`, and `display_average` properties.
              * @param object      $rating       The rating object (stats not yet overlaid).
              * @param int         $context_id   The context post/entity ID.
              * @param string      $context_type The context type, e.g. 'post', 'product'.
@@ -286,12 +286,12 @@ class Shuriken_Shortcodes {
             $rating->total_votes = $ctx_stats->total_votes;
             $rating->total_rating = $ctx_stats->total_rating;
             $rating->average = $ctx_stats->average;
+            $rating->display_average = $ctx_stats->display_average;
             $context_attrs = ' data-context-id="' . esc_attr($context_id) . '" data-context-type="' . esc_attr($context_type) . '"';
         }
         
-        // Calculate the scaled average for display (convert from 5-scale to custom scale)
-        $scaled_average = Shuriken_Database::denormalize_average($rating->average, $max_stars);
-        $scaled_average = round($scaled_average, 1);
+        // Use the pre-computed display_average from the data layer
+        $scaled_average = round($rating->display_average, 1);
         
         // Start output buffering
         ob_start();

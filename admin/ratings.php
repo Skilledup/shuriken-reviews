@@ -229,7 +229,9 @@ $col_class = function($col) use ($hidden_columns) {
             </thead>
             <tbody id="the-list">
                 <?php foreach ($ratings as $rating):
-                    $average = $rating->total_votes > 0 ? round($rating->total_rating / $rating->total_votes, 1) : 0;
+                    $r_type_early = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+                    $r_scale_early = isset($rating->scale) ? intval($rating->scale) : 5;
+                    $average = isset($rating->display_average) ? $rating->display_average : 0;
                     $stars_filled = floor($average);
                     $half_star = ($average - $stars_filled) >= 0.5;
                     $edit_link = '#inline-edit-' . $rating->id;
@@ -426,15 +428,14 @@ $col_class = function($col) use ($hidden_columns) {
                                 </span>
                             </div>
                             <?php elseif ($r_type === 'numeric'):
-                                $scaled_avg = $r_scale > 0 ? round($average / 5 * $r_scale, 1) : 0;
-                                $fill_pct  = $r_scale > 0 ? min(100, round($average / 5 * 100)) : 0;
+                                $fill_pct  = $r_scale > 0 ? min(100, round($average / $r_scale * 100)) : 0;
                             ?>
                             <div class="shuriken-rating-display shuriken-numeric-admin">
-                                <div class="numeric-admin-bar" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $scaled_avg, $r_scale); ?>">
+                                <div class="numeric-admin-bar" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $average, $r_scale); ?>">
                                     <div class="numeric-admin-fill" style="width:<?php echo esc_attr($fill_pct); ?>%"></div>
                                 </div>
                                 <span class="rating-text">
-                                    <strong><?php echo esc_html($scaled_avg); ?></strong>/<?php echo esc_html($r_scale); ?>
+                                    <strong><?php echo esc_html($average); ?></strong>/<?php echo esc_html($r_scale); ?>
                                     <span class="rating-votes">(<?php echo number_format_i18n($rating->total_votes); ?> <?php esc_html_e('votes', 'shuriken-reviews'); ?>)</span>
                                 </span>
                             </div>
