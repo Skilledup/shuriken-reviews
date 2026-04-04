@@ -21,6 +21,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
+ - Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
+
+---
+
+## [1.14.6] — 2026-04-03
+
+### Added
+- Numeric rating display with slider support — single-rating numeric type now renders a display-only slider, value readout, and compact submit control in the block and frontend; the Ratings admin list now shows a compact numeric progress bar with scaled average and vote counts. Files updated: `blocks/shared/block-helpers.js`, `assets/css/shuriken-reviews.css`, `assets/css/admin-ratings.css`, `admin/ratings.php`.
+- Database precision: migrated `rating_value` (votes) and `total_rating` (aggregates) from `INT` to `DECIMAL` to allow fractional values; corresponding schema changes and migration logic were added. Database version bumped to `1.7.0`.
+
+### Changed
+- Slider and admin styling refinements (thumbs, buttons, and checkbox column width).
+
+### Fixed
+- Migration scripts hardened with `SHOW COLUMNS` guards and safer index updates to handle partial migrations and include context-aware keys.
 
 ---
 
