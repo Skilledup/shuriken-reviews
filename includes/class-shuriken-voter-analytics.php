@@ -238,18 +238,9 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
              ORDER BY v.rating_value"
         );
 
-        // Use the max scale across the voter's rated items for bucket size
-        $max_scale = (int) $this->wpdb->get_var(
-            "SELECT MAX(r.scale) FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE {$voter_condition}
-               AND r.rating_type NOT IN ('like_dislike', 'approval')"
-        );
-        if ($max_scale < 1) {
-            $max_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        }
-        
-        $distribution = array_fill(1, $max_scale, 0);
+        // Votes are stored normalized to the internal 1-5 scale,
+        // so distribution buckets must use RATING_SCALE_DEFAULT, not the display scale.
+        $distribution = array_fill(1, Shuriken_Database::RATING_SCALE_DEFAULT, 0);
         foreach ($results as $row) {
             $key = intval($row->rating_value);
             if (array_key_exists($key, $distribution)) {

@@ -563,7 +563,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
                 "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
+                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average 
                  FROM {$this->ratings_table} 
                  WHERE total_votes >= %d 
                    AND (total_rating / NULLIF(total_votes, 0)) >= %f
@@ -599,7 +599,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                                 THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
-                    ), 1) as average
+                    ), 4) as average
              FROM {$this->ratings_table} r
              LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
              LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
@@ -629,7 +629,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
                 "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 1) as average
+                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average
                  FROM {$this->ratings_table} 
                  WHERE mirror_of IS NULL
                    AND parent_id IS NULL
@@ -661,7 +661,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                                 THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
-                    ), 1) as average
+                    ), 4) as average
              FROM {$this->ratings_table} r
              LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
              LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
@@ -691,7 +691,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if (empty($date_condition)) {
             return $this->wpdb->get_results($this->wpdb->prepare(
                 "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 1) as average 
+                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average 
                  FROM {$this->ratings_table} 
                  WHERE total_votes >= %d 
                    AND (total_rating / NULLIF(total_votes, 0)) < %f
@@ -727,7 +727,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                                 THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
                             ELSE v.rating_value
                         END
-                    ), 1) as average
+                    ), 4) as average
              FROM {$this->ratings_table} r
              LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
              LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
@@ -757,7 +757,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         $subs = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT id, name, total_votes, total_rating, effect_type, rating_type, scale,
-                    ROUND(total_rating / NULLIF(total_votes, 0), 1) as average,
+                    ROUND(total_rating / NULLIF(total_votes, 0), 4) as average,
                     ROUND((total_votes / %d) * 100, 1) as vote_contribution_percent
              FROM {$this->ratings_table}
              WHERE parent_id = %d

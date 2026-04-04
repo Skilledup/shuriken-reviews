@@ -23,8 +23,16 @@ Most endpoints require authentication. The API supports:
 | Permission | Required Capability | Endpoints |
 |------------|---------------------|-----------|
 | Read | `edit_posts` | GET endpoints (except public) |
-| Write | `manage_options` | POST, PUT, DELETE endpoints |
+| Write | `manage_options` *(filterable)* | POST, PUT, DELETE endpoints |
 | Public | None | `/nonce`, `/ratings/stats` |
+
+The write capability is filterable via `shuriken_rest_manage_capability`. For example, to allow editors on a multi-author site:
+
+```php
+add_filter('shuriken_rest_manage_capability', function($cap) {
+    return 'edit_posts';
+});
+```
 
 > **Auth bypass scope (v1.11.4+):** The `rest_authentication_errors` filter only bypasses nonce verification for the two public endpoints listed above. All other endpoints require standard WordPress cookie + nonce authentication.
 
@@ -76,7 +84,7 @@ Retrieve all ratings.
 
 Create a new rating.
 
-**Permission:** `manage_options`
+**Permission:** `manage_options` *(filterable — see `shuriken_rest_manage_capability`)*
 
 **Parameters:**
 
@@ -98,6 +106,8 @@ Create a new rating.
 ```
 
 **Response:** Returns the created rating object.
+
+> **Mirror notice:** When `mirror_of` is provided and the requested `rating_type` or `scale` differs from the source rating, the response includes a `mirror_notice` string describing what was inherited. This is purely informational — the operation succeeds with the source rating's values applied.
 
 ---
 
@@ -123,7 +133,7 @@ Retrieve a single rating by ID.
 
 Update an existing rating.
 
-**Permission:** `manage_options`
+**Permission:** `manage_options` *(filterable — see `shuriken_rest_manage_capability`)*
 
 **Parameters:**
 
@@ -144,7 +154,7 @@ Update an existing rating.
 
 Delete a rating.
 
-**Permission:** `manage_options`
+**Permission:** `manage_options` *(filterable — see `shuriken_rest_manage_capability`)*
 
 **Parameters:**
 

@@ -15,6 +15,7 @@ This document lists all available hooks (actions and filters) in the Shuriken Re
   - [Database Operations](#database-filters)
   - [Frontend Assets](#frontend-filters)
   - [Contextual Voting](#contextual-voting-filters)
+  - [REST API](#rest-api-filters)
 - [Actions](#actions)
   - [Rating Display](#rating-display-actions)
   - [Vote Submission](#vote-submission-actions)
@@ -845,6 +846,35 @@ add_filter('shuriken_contextual_stats', function($stats, $rating, $context_id, $
     return $stats;
 }, 10, 4);
 ```
+
+---
+
+### REST API Filters
+
+#### `shuriken_rest_manage_capability`
+
+Filters the WordPress capability required to perform **write operations** via the REST API (POST, PUT, DELETE). The default is `manage_options` (administrator only). Override this on multi-author sites to allow editors or authors to create and manage ratings programmatically.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$capability` | string | Required capability string (default: `'manage_options'`) |
+
+**Example 1: Allow editors on a multi-author site**
+```php
+add_filter('shuriken_rest_manage_capability', function($cap) {
+    return 'edit_posts'; // editors and authors can create/update/delete ratings
+});
+```
+
+**Example 2: Use a custom capability**
+```php
+add_filter('shuriken_rest_manage_capability', function($cap) {
+    return 'manage_ratings'; // requires a custom capability registered by your theme/plugin
+});
+```
+
+> **Security note:** Lowering this below `manage_options` means any user with the specified capability can create, update, or delete ratings via the API. Ensure your capability choice matches your site's trust model.
 
 ---
 

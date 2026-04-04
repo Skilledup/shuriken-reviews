@@ -26,6 +26,24 @@ if (isset($_POST['save_general_settings'])) {
     $comments_system_enabled  = isset($_POST['shuriken_comments_system_enabled']) ? '1' : '0';
     $exclude_author_comments  = isset($_POST['shuriken_exclude_author_comments']) ? '1' : '0';
     $exclude_reply_comments   = isset($_POST['shuriken_exclude_reply_comments']) ? '1' : '0';
+
+    $allowed_capabilities = array('manage_options', 'edit_others_posts', 'edit_posts', 'custom');
+    $rest_write_cap = isset($_POST['shuriken_rest_write_capability'])
+        ? sanitize_key($_POST['shuriken_rest_write_capability'])
+        : 'manage_options';
+    if (!in_array($rest_write_cap, $allowed_capabilities, true)) {
+        $rest_write_cap = 'manage_options';
+    }
+    $rest_write_cap_custom = '';
+    if ($rest_write_cap === 'custom') {
+        $rest_write_cap_custom = isset($_POST['shuriken_rest_write_capability_custom'])
+            ? sanitize_key($_POST['shuriken_rest_write_capability_custom'])
+            : '';
+        // Fall back to manage_options if custom field was left blank
+        if (empty($rest_write_cap_custom)) {
+            $rest_write_cap = 'manage_options';
+        }
+    }
     
     update_option('shuriken_allow_guest_voting', $allow_guest_voting);
     update_option('shuriken_archive_sort_enabled', $archive_sort_enabled);
@@ -34,6 +52,8 @@ if (isset($_POST['save_general_settings'])) {
     update_option('shuriken_comments_system_enabled', $comments_system_enabled);
     update_option('shuriken_exclude_author_comments', $exclude_author_comments);
     update_option('shuriken_exclude_reply_comments', $exclude_reply_comments);
+    update_option('shuriken_rest_write_capability', $rest_write_cap);
+    update_option('shuriken_rest_write_capability_custom', $rest_write_cap_custom);
     
     echo '<div class="notice notice-success is-dismissible"><p>' . 
         esc_html__('Settings saved successfully!', 'shuriken-reviews') . 
@@ -195,9 +215,69 @@ if (isset($_POST['save_general_settings'])) {
         </div>
     </div>
 
+    <!-- REST API Access Card -->
+    <div class="shuriken-settings-card">
+        <div class="settings-card-header">
+            <span class="settings-card-icon">🔑</span>
+            <h3><?php esc_html_e('REST API Access', 'shuriken-reviews'); ?></h3>
+        </div>
+        <div class="settings-card-body">
+            <div class="settings-field">
+                <label for="shuriken_rest_write_capability"><?php esc_html_e('Write Operations (POST / PUT / DELETE)', 'shuriken-reviews'); ?></label>
+                <?php
+                $saved_cap = get_option('shuriken_rest_write_capability', 'manage_options');
+                ?>
+                <select name="shuriken_rest_write_capability"
+                        id="shuriken_rest_write_capability"
+                        data-controls-custom="rest-write-cap-custom">
+                    <option value="manage_options" <?php selected($saved_cap, 'manage_options'); ?>>
+                        <?php esc_html_e('Administrator (manage_options)', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="edit_others_posts" <?php selected($saved_cap, 'edit_others_posts'); ?>>
+                        <?php esc_html_e('Editor (edit_others_posts)', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="edit_posts" <?php selected($saved_cap, 'edit_posts'); ?>>
+                        <?php esc_html_e('Author (edit_posts)', 'shuriken-reviews'); ?>
+                    </option>
+                    <option value="custom" <?php selected($saved_cap, 'custom'); ?>>
+                        <?php esc_html_e('Custom…', 'shuriken-reviews'); ?>
+                    </option>
+                </select>
+                <div id="rest-write-cap-custom"
+                     class="settings-field settings-field-inline <?php echo $saved_cap === 'custom' ? '' : 'hidden'; ?>"
+                     style="margin-top:8px;">
+                    <label for="shuriken_rest_write_capability_custom"><?php esc_html_e('Custom capability slug', 'shuriken-reviews'); ?></label>
+                    <input type="text"
+                           name="shuriken_rest_write_capability_custom"
+                           id="shuriken_rest_write_capability_custom"
+                           value="<?php echo esc_attr(get_option('shuriken_rest_write_capability_custom', '')); ?>"
+                           placeholder="e.g. manage_ratings"
+                           class="regular-text">
+                </div>
+                <p class="settings-field-description">
+                    <?php esc_html_e('Minimum capability required to create, update, or delete ratings via the REST API. Defaults to Administrator. Useful for multi-author sites that need editors or authors to manage ratings programmatically.', 'shuriken-reviews'); ?>
+                    <br>
+                    <em><?php esc_html_e('Note: this setting can be overridden by code via the shuriken_rest_manage_capability filter.', 'shuriken-reviews'); ?></em>
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="shuriken-settings-submit">
         <button type="submit" name="save_general_settings" class="button button-primary button-large">
             <?php esc_html_e('Save Settings', 'shuriken-reviews'); ?>
         </button>
     </div>
 </form>
+
+<script>
+(function() {
+    var sel = document.getElementById('shuriken_rest_write_capability');
+    var customDiv = document.getElementById('rest-write-cap-custom');
+    if (sel && customDiv) {
+        sel.addEventListener('change', function() {
+            customDiv.classList.toggle('hidden', sel.value !== 'custom');
+        });
+    }
+})();
+</script>

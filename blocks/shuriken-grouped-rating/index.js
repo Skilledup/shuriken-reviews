@@ -1099,7 +1099,10 @@
                                     setEditParentScale(Math.max(range.min, Math.min(range.max, n)));
                                 }
                             },
-                            help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(editParentType).min + '–' + getScaleRange(editParentType).max
+                            disabled: selectedRating && parseInt(selectedRating.total_votes, 10) > 0,
+                            help: selectedRating && parseInt(selectedRating.total_votes, 10) > 0
+                                ? __('Scale cannot be changed after votes have been cast.', 'shuriken-reviews')
+                                : __('Scale range: ', 'shuriken-reviews') + getScaleRange(editParentType).min + '–' + getScaleRange(editParentType).max
                         }),
                         wp.element.createElement(
                             'div',
@@ -1454,7 +1457,10 @@
                                                         updateChildLocally(child.id, { scale: Math.max(range.min, Math.min(range.max, n)) });
                                                     }
                                                 },
-                                                help: __('Scale range: ', 'shuriken-reviews') + getScaleRange(childType).min + '–' + getScaleRange(childType).max
+                                                disabled: childHasVotes,
+                                                help: childHasVotes
+                                                    ? __('Scale cannot be changed after votes have been cast.', 'shuriken-reviews')
+                                                    : __('Scale range: ', 'shuriken-reviews') + getScaleRange(childType).min + '–' + getScaleRange(childType).max
                                             }),
                                             wp.element.createElement(CheckboxControl, {
                                                 label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),

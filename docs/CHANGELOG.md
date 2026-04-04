@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.14.8] — 2026-04-05
+
+### Added
+- **`shuriken_rest_manage_capability` filter** — allows overriding the WordPress capability required for REST API write operations (POST, PUT, DELETE). Defaults to `manage_options`; set to `edit_posts` to allow authors and editors on multi-author sites.
+- **REST API Write Capability setting** — Settings → General now includes a "REST API Access" card with a dropdown (Administrator / Editor / Author / Custom) that controls the minimum capability for write operations. The dropdown value is passed as the default to the `shuriken_rest_manage_capability` filter, so code-level filter callbacks always take precedence over the UI setting.
+- **Mirror transparency notice** — `POST /ratings` now includes a `mirror_notice` field in the response when the requested `rating_type` or `scale` was overridden by the source rating's values during mirror creation.
+
+### Fixed
+- Binary vote types (`like_dislike`, `approval`) were incorrectly denormalized to fractional values (e.g., `0.2` / `0`) in the Voter Activity admin page. They now display as their natural labels (`Like` / `Dislike`) without a numeric denormalized value.
+- Analytics averages for numeric ratings were losing precision after SQL `ROUND(..., 1)` on the internal 1–5 scale, which amplified rounding errors after denormalization (e.g., a 12/34 vote showing as `12.2/34`). All seven affected `ROUND` calls now use precision 4.
+- Voter Activity distribution chart was creating wrong bucket counts for ratings with a display scale other than 5 (e.g., 10-star ratings produced 10 buckets on an internal 1–5 scale, leaving buckets 6–10 permanently empty). Bucket count is now always `RATING_SCALE_DEFAULT` (5).
+- FSE block editor: non-retryable validation errors (`validation_rating_type_invalid`, `validation_name_invalid`, `validation_scale_invalid`, `rest_forbidden`) no longer show a **Retry** button.
+- FSE block editor: the Scale control in the single-rating block, grouped-rating parent modal, and grouped-rating child management modal is now disabled when the rating has existing votes, preventing repeated illegal-operation errors.
+- Star rating pointer-events re-enabling logic was conditional in the AJAX `complete` handler, allowing stars to remain permanently unclickable on certain error code paths. The handler now always re-enables pointer-events unconditionally; stars are explicitly kept disabled only during the async nonce-refresh-and-retry flow.
+
+---
+
 ## [1.14.7] — 2026-04-04
 
 ### Added

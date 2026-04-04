@@ -49,7 +49,18 @@
     }
 
     /**
-     * Build an error handler bound to local state setters.
+     * Error codes that indicate a non-retryable validation failure.
+     * Retry would produce the same error, so the Retry button is suppressed.
+     */
+    var NON_RETRYABLE_CODES = [
+        'validation_rating_type_invalid',
+        'validation_name_invalid',
+        'validation_scale_invalid',
+        'rest_forbidden'
+    ];
+
+    /**
+     * Build an error-handler callback bound to local state setters.
      *
      * @param {Function} setError           - setState for the error message.
      * @param {Function} setLastFailedAction - setState for the retry callback.
@@ -59,7 +70,13 @@
         return function handleApiError(err, retryAction) {
             console.error('Shuriken Reviews API Error:', err);
             setError(formatApiError(err));
-            setLastFailedAction(retryAction);
+            // Only offer retry for transient / retryable errors
+            var code = (err && err.code) ? err.code : '';
+            if (NON_RETRYABLE_CODES.indexOf(code) === -1) {
+                setLastFailedAction(retryAction);
+            } else {
+                setLastFailedAction(null);
+            }
         };
     }
 

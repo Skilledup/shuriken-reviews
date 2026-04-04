@@ -326,15 +326,22 @@ class Shuriken_REST_API {
     }
 
     /**
-     * Check if user can manage options
+     * Check if user can manage options (write operations)
+     *
+     * Filterable via `shuriken_rest_manage_capability` to allow editors/authors on multi-author sites.
+     * Default requires `manage_options` (administrator).
      *
      * @param WP_REST_Request $request The request object (optional).
      * @return bool
      */
     public function can_manage_options(\WP_REST_Request $request = null): bool {
-        // WordPress REST API handles authentication automatically
-        // This will work with cookie auth, application passwords, etc.
-        return current_user_can('manage_options');
+        $stored = get_option('shuriken_rest_write_capability', 'manage_options');
+        // When "custom" is selected, use the custom slug; fall back to manage_options if empty.
+        if ($stored === 'custom') {
+            $stored = get_option('shuriken_rest_write_capability_custom', '') ?: 'manage_options';
+        }
+        $capability = apply_filters('shuriken_rest_manage_capability', $stored);
+        return current_user_can($capability);
     }
 
     /**
@@ -514,6 +521,23 @@ class Shuriken_REST_API {
             
             $rating = $this->db->get_rating($new_id);
             $response_data = (array) $rating;
+
+            // Warn if mirror inherited a different type/scale from its source
+            if ($mirror_of) {
+                $source = $this->db->get_rating($mirror_of);
+                if ($source) {
+                    $source_type = $source->rating_type ?? 'stars';
+                    $source_scale = (int) ($source->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT);
+                    if ($rating_type !== $source_type || (int) $scale !== $source_scale) {
+                        $response_data['mirror_notice'] = sprintf(
+                            /* translators: 1: source type, 2: source scale */
+                            __('Mirror inherited type "%1$s" (scale %2$d) from the source rating.', 'shuriken-reviews'),
+                            $source_type,
+                            $source_scale
+                        );
+                    }
+                }
+            }
 
             // Warn if child type is incompatible with parent type
             if ($parent_id) {

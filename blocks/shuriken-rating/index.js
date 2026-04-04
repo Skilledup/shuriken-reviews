@@ -571,9 +571,12 @@
                                 setEditRatingScale(Math.max(range.min, Math.min(range.max, num)));
                             }
                         },
-                        help: editRatingType === 'stars'
-                            ? __('Number of stars (2–10).', 'shuriken-reviews')
-                            : __('Maximum slider value (2–100).', 'shuriken-reviews')
+                        disabled: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0,
+                        help: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
+                            ? __('Scale cannot be changed after votes have been cast.', 'shuriken-reviews')
+                            : editRatingType === 'stars'
+                                ? __('Number of stars (2–10).', 'shuriken-reviews')
+                                : __('Maximum slider value (2–100).', 'shuriken-reviews')
                     }),
                     !editRatingMirrorOf && wp.element.createElement(SelectControl, {
                         label: __('Parent Rating', 'shuriken-reviews'),

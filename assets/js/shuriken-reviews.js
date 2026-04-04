@@ -339,6 +339,8 @@ jQuery(document).ready(function($) {
                     // Check if it's a nonce error and we haven't retried yet
                     if (response.data && typeof response.data === 'string' && 
                         response.data.toLowerCase().indexOf('nonce') !== -1 && retryCount === 0) {
+                        // Keep stars disabled during nonce refresh + retry
+                        $stars.css('pointer-events', 'none');
                         // Fetch fresh nonce and retry (public endpoint - no auth needed)
                         $.ajax({
                             url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
@@ -388,6 +390,8 @@ jQuery(document).ready(function($) {
                     typeof xhr.responseJSON.data === 'string' && 
                     xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 && 
                     retryCount === 0) {
+                    // Keep stars disabled during nonce refresh + retry
+                    $stars.css('pointer-events', 'none');
                     // Fetch fresh nonce and retry (public endpoint - no auth needed)
                     $.ajax({
                         url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
@@ -442,10 +446,7 @@ jQuery(document).ready(function($) {
             },
             complete: function() {
                 $rating.removeClass('shuriken-loading');
-                // Re-enable stars (only if we're not retrying)
-                if (retryCount > 0 || !$rating.data('retrying')) {
-                    $stars.css('pointer-events', 'auto');
-                }
+                $stars.css('pointer-events', 'auto');
             }
         });
     }
