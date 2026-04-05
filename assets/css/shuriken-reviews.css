@@ -106,6 +106,13 @@
     font-size: 14px;
     color: #666;
     flex: 0 0 auto;
+    transition: opacity 0.3s ease;
+}
+
+/* Smooth crossfade when feedback / stats text changes */
+.rating-stats.shuriken-fading,
+.shuriken-feedback.shuriken-fading {
+    opacity: 0;
 }
 
 .stars:hover .star {
@@ -131,7 +138,7 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .rating-title {
@@ -822,7 +829,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 /* Modern slider — track */
@@ -831,13 +838,11 @@
     appearance: none;
     flex: 1 1 160px;
     min-width: 120px;
-    max-width: 280px;
     height: 6px;
     border-radius: 3px;
     background: #e2e8f0;
     outline: none;
     cursor: pointer;
-    /* accent-color drives both the filled track and the thumb in modern browsers */
     accent-color: var(--shuriken-star-color);
     transition: opacity 0.2s;
 }
@@ -854,6 +859,7 @@
     border: 3px solid #fff;
     box-shadow: 0 0 0 2px var(--shuriken-star-color), 0 2px 6px rgba(0, 0, 0, 0.18);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-top: -8px; /* center 22px thumb on 6px track */
 }
 
 .shuriken-numeric .shuriken-slider::-webkit-slider-thumb:hover {
@@ -861,11 +867,11 @@
     box-shadow: 0 0 0 3px var(--shuriken-star-color), 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
-/* WebKit track */
+/* WebKit track — gradient fill driven by --fill-pct (set via JS) */
 .shuriken-numeric .shuriken-slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 3px;
-    background: #e2e8f0;
+    background: linear-gradient(to right, var(--shuriken-star-color) var(--fill-pct, 50%), #e2e8f0 var(--fill-pct, 50%));
 }
 
 /* Mozilla thumb */
@@ -885,7 +891,7 @@
     box-shadow: 0 0 0 3px var(--shuriken-star-color), 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
-/* Mozilla track (unfilled portion) */
+/* Mozilla track — unfilled portion (Firefox uses ::-moz-range-progress for fill) */
 .shuriken-numeric .shuriken-slider::-moz-range-track {
     height: 6px;
     border-radius: 3px;
@@ -917,6 +923,8 @@
     font-size: 0.9em;
     color: #888;
     margin-left: -4px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .shuriken-slider-submit {
@@ -1019,7 +1027,7 @@
 }
 
 .shuriken-rating.is-style-dark .shuriken-numeric .shuriken-slider::-webkit-slider-runnable-track {
-    background: #2d3748;
+    background: linear-gradient(to right, var(--shuriken-star-color) var(--fill-pct, 50%), #2d3748 var(--fill-pct, 50%));
 }
 
 .shuriken-rating.is-style-dark .shuriken-numeric .shuriken-slider::-moz-range-track {
@@ -1215,15 +1223,6 @@ button.shuriken-upvote-btn:hover,
     color: #a0aec0;
 }
 
-.shuriken-rating.is-style-dark .shuriken-slider-submit {
-    background: #ffd700;
-    color: #1a202c;
-}
-
-.shuriken-rating.is-style-dark .shuriken-slider-submit:hover {
-    background: #e6c200;
-}
-
 /* =====================================================
    Loading state — spinner during AJAX submission
    (stars / numeric: appended after .rating-stats text)
@@ -1249,6 +1248,7 @@ button.shuriken-upvote-btn:hover,
     color: #666;
     flex: 0 0 100%;  /* force onto its own line in the flex wrapper */
     line-height: 1.4;
+    transition: opacity 0.3s ease;
 }
 
 /* Hidden when empty — no layout gap when idle */

@@ -2,48 +2,39 @@ jQuery(document).ready(function($) {
     'use strict';
 
     /**
-     * Smoothly update inner HTML with an animated height transition on the
-     * closest .shuriken-rating container, preventing abrupt layout jumps
-     * when feedback messages wrap to a new line.
+     * Smoothly crossfade inner HTML to prevent abrupt layout jumps when
+     * feedback / stats text changes.
+     *
+     * Uses a CSS-class-driven opacity fade-out → swap content → fade-in.
+     * The transition is defined in the stylesheet (.shuriken-fading),
+     * which is more reliable across browsers than inline style transitions.
      */
     $.fn.smoothHtml = function(html) {
         return this.each(function() {
             var $el = $(this);
-            var $container = $el.closest('.shuriken-rating');
-            var el = $container[0];
-            if (!el) { $el.html(html); return; }
 
-            var startHeight = el.getBoundingClientRect().height;
-
-            // Cancel any in-flight height animation
-            if (el._shurikenHeightHandler) {
-                el.removeEventListener('transitionend', el._shurikenHeightHandler);
-                el._shurikenHeightHandler = null;
+            // Cancel any pending swap
+            var timer = $el.data('shuriken-swap-timer');
+            if (timer) {
+                clearTimeout(timer);
+                $el.data('shuriken-swap-timer', null);
+                $el.removeClass('shuriken-fading');
             }
-            el.style.transition = 'none';
-            el.style.height = '';
-            el.style.overflow = '';
 
-            $el.html(html);
+            // If the content is identical, skip
+            if ($el.html() === html) return;
 
-            var endHeight = el.scrollHeight;
-            if (Math.abs(startHeight - endHeight) < 2) return;
+            // Fade out via CSS class
+            $el.addClass('shuriken-fading');
 
-            el.style.height = startHeight + 'px';
-            el.style.overflow = 'hidden';
-            el.offsetHeight; // force reflow
-            el.style.transition = 'height 0.3s ease';
-            el.style.height = endHeight + 'px';
+            // After the CSS fade-out completes, swap content and fade back in
+            timer = setTimeout(function() {
+                $el.html(html);
+                $el.removeClass('shuriken-fading');
+                $el.data('shuriken-swap-timer', null);
+            }, 300);
 
-            el._shurikenHeightHandler = function(e) {
-                if (e.propertyName !== 'height') return;
-                el.style.height = '';
-                el.style.overflow = '';
-                el.style.transition = '';
-                el.removeEventListener('transitionend', el._shurikenHeightHandler);
-                el._shurikenHeightHandler = null;
-            };
-            el.addEventListener('transitionend', el._shurikenHeightHandler);
+            $el.data('shuriken-swap-timer', timer);
         });
     };
 
@@ -707,10 +698,29 @@ jQuery(document).ready(function($) {
         submitBinaryRating($rating, value, 0);
     });
 
-    // Numeric slider: live value update on input
+    /**
+     * Update the --fill-pct custom property on a range slider so the
+     * track pseudo-elements can paint a filled-portion gradient.
+     * Works cross-browser (Chromium, Firefox, Safari).
+     */
+    function updateSliderFill($slider) {
+        var min = parseFloat($slider.attr('min')) || 0;
+        var max = parseFloat($slider.attr('max')) || 100;
+        var val = parseFloat($slider.val()) || 0;
+        var pct = ((val - min) / (max - min)) * 100;
+        $slider[0].style.setProperty('--fill-pct', pct + '%');
+    }
+
+    // Numeric slider: live value update on input + fill track
     $('.shuriken-rating:not(.display-only) .shuriken-slider').on('input', function() {
-        const value = $(this).val();
-        $(this).closest('.shuriken-numeric').find('.shuriken-slider-value').text(value);
+        var $s = $(this);
+        $s.closest('.shuriken-numeric').find('.shuriken-slider-value').text($s.val());
+        updateSliderFill($s);
+    });
+
+    // Paint the filled track on page load for every slider
+    $('.shuriken-slider').each(function() {
+        updateSliderFill($(this));
     });
 
     // Numeric slider: submit button click handler
