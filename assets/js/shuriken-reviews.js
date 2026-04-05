@@ -1,6 +1,52 @@
 jQuery(document).ready(function($) {
     'use strict';
 
+    /**
+     * Smoothly update inner HTML with an animated height transition on the
+     * closest .shuriken-rating container, preventing abrupt layout jumps
+     * when feedback messages wrap to a new line.
+     */
+    $.fn.smoothHtml = function(html) {
+        return this.each(function() {
+            var $el = $(this);
+            var $container = $el.closest('.shuriken-rating');
+            var el = $container[0];
+            if (!el) { $el.html(html); return; }
+
+            var startHeight = el.getBoundingClientRect().height;
+
+            // Cancel any in-flight height animation
+            if (el._shurikenHeightHandler) {
+                el.removeEventListener('transitionend', el._shurikenHeightHandler);
+                el._shurikenHeightHandler = null;
+            }
+            el.style.transition = 'none';
+            el.style.height = '';
+            el.style.overflow = '';
+
+            $el.html(html);
+
+            var endHeight = el.scrollHeight;
+            if (Math.abs(startHeight - endHeight) < 2) return;
+
+            el.style.height = startHeight + 'px';
+            el.style.overflow = 'hidden';
+            el.offsetHeight; // force reflow
+            el.style.transition = 'height 0.3s ease';
+            el.style.height = endHeight + 'px';
+
+            el._shurikenHeightHandler = function(e) {
+                if (e.propertyName !== 'height') return;
+                el.style.height = '';
+                el.style.overflow = '';
+                el.style.transition = '';
+                el.removeEventListener('transitionend', el._shurikenHeightHandler);
+                el._shurikenHeightHandler = null;
+            };
+            el.addEventListener('transitionend', el._shurikenHeightHandler);
+        });
+    };
+
     let isFetchingFreshData = false;
     
     /**
@@ -296,7 +342,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     // Show translated success feedback
-                    $rating.find('.rating-stats').html(shurikenReviews.i18n.thankYou);
+                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.thankYou);
                     // Highlight selected stars
                     $stars.find('.star').each(function() {
                         if ($(this).data('value') <= value) {
@@ -330,7 +376,7 @@ jQuery(document).ready(function($) {
                                 .replace('%3$s', response.data.parent_total_votes);
                             $parentRating.find('.rating-stats').data('average', response.data.parent_average);
                             $parentRating.find('.rating-stats').data('scaled-average', parentDisplayAverage);
-                            $parentRating.find('.rating-stats').html(parentText);
+                            $parentRating.find('.rating-stats').smoothHtml(parentText);
                             // Update stars based on normalized average (1-5 scale)
                             updateStars($parentRating, response.data.parent_average);
                         }
@@ -352,21 +398,21 @@ jQuery(document).ready(function($) {
                                     // Retry the rating submission
                                     submitRating($rating, value, 1);
                                 } else {
-                                    $rating.find('.rating-stats').html(
+                                    $rating.find('.rating-stats').smoothHtml(
                                         shurikenReviews.i18n.error.replace('%s', response.data)
                                     );
                                     setTimeout(function() {
-                                        $rating.find('.rating-stats').html(originalText);
+                                        $rating.find('.rating-stats').smoothHtml(originalText);
                                         $stars.css('pointer-events', 'auto');
                                     }, 4000);
                                 }
                             },
                             error: function() {
-                                $rating.find('.rating-stats').html(
+                                $rating.find('.rating-stats').smoothHtml(
                                     shurikenReviews.i18n.error.replace('%s', response.data)
                                 );
                                 setTimeout(function() {
-                                    $rating.find('.rating-stats').html(originalText);
+                                    $rating.find('.rating-stats').smoothHtml(originalText);
                                     $stars.css('pointer-events', 'auto');
                                 }, 4000);
                             }
@@ -374,12 +420,12 @@ jQuery(document).ready(function($) {
                         return; // Don't re-enable stars yet, wait for retry
                     }
                     
-                    $rating.find('.rating-stats').html(
+                    $rating.find('.rating-stats').smoothHtml(
                         shurikenReviews.i18n.error.replace('%s', response.data)
                     );
                 }
                 setTimeout(function() {
-                    $rating.find('.rating-stats').html(originalText);
+                    $rating.find('.rating-stats').smoothHtml(originalText);
                 }, 4000);
             },
             error: function(xhr, status, error) {
@@ -404,28 +450,28 @@ jQuery(document).ready(function($) {
                                 submitRating($rating, value, 1);
                             } else {
                                 if (xhr.responseJSON && xhr.responseJSON.data) {
-                                    $rating.find('.rating-stats').html(
+                                    $rating.find('.rating-stats').smoothHtml(
                                         shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                                     );
                                 } else {
-                                    $rating.find('.rating-stats').html(shurikenReviews.i18n.genericError);
+                                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
                                 }
                                 setTimeout(function() {
-                                    $rating.find('.rating-stats').html(originalText);
+                                    $rating.find('.rating-stats').smoothHtml(originalText);
                                     $stars.css('pointer-events', 'auto');
                                 }, 4000);
                             }
                         },
                         error: function() {
                             if (xhr.responseJSON && xhr.responseJSON.data) {
-                                $rating.find('.rating-stats').html(
+                                $rating.find('.rating-stats').smoothHtml(
                                     shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                                 );
                             } else {
-                                $rating.find('.rating-stats').html(shurikenReviews.i18n.genericError);
+                                $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
                             }
                             setTimeout(function() {
-                                $rating.find('.rating-stats').html(originalText);
+                                $rating.find('.rating-stats').smoothHtml(originalText);
                                 $stars.css('pointer-events', 'auto');
                             }, 4000);
                         }
@@ -434,14 +480,14 @@ jQuery(document).ready(function($) {
                 }
                 
                 if (xhr.responseJSON && xhr.responseJSON.data) {
-                    $rating.find('.rating-stats').html(
+                    $rating.find('.rating-stats').smoothHtml(
                         shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                     );
                 } else {
-                    $rating.find('.rating-stats').html(shurikenReviews.i18n.genericError);
+                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
                 }
                 setTimeout(function() {
-                    $rating.find('.rating-stats').html(originalText);
+                    $rating.find('.rating-stats').smoothHtml(originalText);
                 }, 4000);
             },
             complete: function() {
@@ -518,8 +564,8 @@ jQuery(document).ready(function($) {
         const $feedback = $rating.find('.shuriken-feedback');
 
         function showFeedback(msg, duration) {
-            $feedback.html(msg);
-            setTimeout(function() { $feedback.html(''); }, duration || 3000);
+            $feedback.smoothHtml(msg);
+            setTimeout(function() { $feedback.smoothHtml(''); }, duration || 3000);
         }
 
         function showError(response, xhr) {
@@ -535,7 +581,7 @@ jQuery(document).ready(function($) {
         }
 
         // Show spinner while AJAX is in-flight
-        $feedback.html('<span class="shuriken-spinner" aria-hidden="true"></span>');
+        $feedback.smoothHtml('<span class="shuriken-spinner" aria-hidden="true"></span>');
 
         var postData = {
             action: 'submit_rating',

@@ -997,8 +997,8 @@
 
 .shuriken-rating.is-style-minimal .shuriken-slider-submit {
     background: transparent;
-    color: var(--shuriken-accent);
-    border: 1.5px solid var(--shuriken-accent);
+    color: var(--shuriken-star-color);
+    border: 1.5px solid var(--shuriken-star-color);
     border-radius: 4px;
     box-shadow: none;
     font-size: 0.8em;
@@ -1007,8 +1007,8 @@
 }
 
 .shuriken-rating.is-style-minimal .shuriken-slider-submit:hover {
-    background: var(--shuriken-accent);
-    color: #fff;
+    background: var(--shuriken-star-color);
+    color: #1a1a1a;
     filter: none;
     transform: none;
 }
