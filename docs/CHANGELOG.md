@@ -13,6 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **REST API Write Capability setting** — Settings → General now includes a "REST API Access" card with a dropdown (Administrator / Editor / Author / Custom) that controls the minimum capability for write operations. The dropdown value is passed as the default to the `shuriken_rest_manage_capability` filter, so code-level filter callbacks always take precedence over the UI setting.
 - **Mirror transparency notice** — `POST /ratings` now includes a `mirror_notice` field in the response when the requested `rating_type` or `scale` was overridden by the source rating's values during mirror creation.
 
+### Changed
+- Settings: add a dismissible rate-limit warning banner and contextual sidebar tips; the banner is dismissible via AJAX and the dismissed state is reset when rate limiting is enabled. Files: `admin/settings.php`, `admin/partials/settings-rate-limiting.php`, `assets/css/admin-settings.css`, `assets/js/admin-settings.js`.
+- Voter Activity: chart renamed to "Deviation from Average" and distribution label generation adjusted. File: `admin/voter-activity.php`.
+- Ratings admin: added `id` attributes to table headers and adjusted column-width behavior for more responsive layout. Files: `admin/ratings.php`, `assets/css/admin-ratings.css`.
+- Blocks: simplified client-side `calculateScaledAverage()` to prefer `rating.display_average` from the API (legacy fallback removed). File: `blocks/shared/block-helpers.js`.
+
 ### Fixed
 - Binary vote types (`like_dislike`, `approval`) were incorrectly denormalized to fractional values (e.g., `0.2` / `0`) in the Voter Activity admin page. They now display as their natural labels (`Like` / `Dislike`) without a numeric denormalized value.
 - Analytics averages for numeric ratings were losing precision after SQL `ROUND(..., 1)` on the internal 1–5 scale, which amplified rounding errors after denormalization (e.g., a 12/34 vote showing as `12.2/34`). All seven affected `ROUND` calls now use precision 4.
