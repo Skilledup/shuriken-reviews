@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Voter Activity: chart renamed to "Deviation from Average" and distribution label generation adjusted. File: `admin/voter-activity.php`.
 - Ratings admin: added `id` attributes to table headers and adjusted column-width behavior for more responsive layout. Files: `admin/ratings.php`, `assets/css/admin-ratings.css`.
 - Blocks: simplified client-side `calculateScaledAverage()` to prefer `rating.display_average` from the API (legacy fallback removed). File: `blocks/shared/block-helpers.js`.
+- UI iconography migrated from emoji/glyph characters to inline Lucide SVG icons across frontend ratings, analytics, ratings list, item stats, settings pages, and block editor previews for consistent rendering and CSS styling control. Files: `includes/class-shuriken-icons.php`, `assets/css/shuriken-reviews.css`, `assets/css/admin-analytics.css`, `assets/css/admin-ratings.css`, `assets/css/admin-settings.css`, `admin/settings.php`, `admin/ratings.php`, `admin/analytics.php`, `admin/item-stats.php`, `admin/partials/settings-about.php`, `admin/partials/settings-general.php`, `admin/partials/settings-rate-limiting.php`, `blocks/shared/block-helpers.js`, `blocks/shuriken-post-sidebar/index.js`, `includes/class-shuriken-analytics.php`.
 
 ### Fixed
 - Binary vote types (`like_dislike`, `approval`) were incorrectly denormalized to fractional values (e.g., `0.2` / `0`) in the Voter Activity admin page. They now display as their natural labels (`Like` / `Dislike`) without a numeric denormalized value.
@@ -26,6 +27,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - FSE block editor: non-retryable validation errors (`validation_rating_type_invalid`, `validation_name_invalid`, `validation_scale_invalid`, `rest_forbidden`) no longer show a **Retry** button.
 - FSE block editor: the Scale control in the single-rating block, grouped-rating parent modal, and grouped-rating child management modal is now disabled when the rating has existing votes, preventing repeated illegal-operation errors.
 - Star rating pointer-events re-enabling logic was conditional in the AJAX `complete` handler, allowing stars to remain permanently unclickable on certain error code paths. The handler now always re-enables pointer-events unconditionally; stars are explicitly kept disabled only during the async nonce-refresh-and-retry flow.
+- Frontend rating containers no longer jump abruptly when temporary thank-you/error feedback wraps to a new line; stats/feedback content updates now animate container height smoothly during message swap and restore.
+- Single-rating minimal preset: numeric **Rate** button colors now follow slider/thumb color (`--shuriken-star-color`) for visual consistency.
 
 ---
 
