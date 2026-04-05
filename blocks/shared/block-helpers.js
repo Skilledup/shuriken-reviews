@@ -223,19 +223,7 @@
      * @return {number}
      */
     function calculateScaledAverage(rating) {
-        // Prefer pre-computed display_average from the API/data layer
-        if (rating.display_average !== undefined && rating.display_average !== null) {
-            return parseFloat(rating.display_average) || 0;
-        }
-        // Fallback: compute client-side (legacy data without display_average)
-        // Prefer pre-computed display_average from the API/data layer
-        if (rating.display_average !== undefined && rating.display_average !== null) {
-            return parseFloat(rating.display_average) || 0;
-        }
-        // Fallback: compute client-side (legacy data without display_average)
-        var avg   = calculateAverage(rating);
-        var scale = getRatingScale(rating);
-        return Math.round((avg / 5) * scale * 10) / 10;
+        return parseFloat(rating.display_average) || 0;
     }
 
     /**

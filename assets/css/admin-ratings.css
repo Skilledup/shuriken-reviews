@@ -203,7 +203,7 @@
 }
 
 .wp-list-table.ratings .column-name {
-    width: 30%;
+    width: auto;
 }
 
 .wp-list-table.ratings .column-type {

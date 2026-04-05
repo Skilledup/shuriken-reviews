@@ -221,10 +221,10 @@ $col_class = function($col) use ($hidden_columns) {
                         <label class="screen-reader-text" for="cb-select-all-1"><?php esc_html_e('Select All'); ?></label>
                         <input id="cb-select-all-1" type="checkbox">
                     </td>
-                    <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="name" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="type" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="shortcode" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="stats" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
             </thead>
             <tbody id="the-list">
@@ -602,10 +602,10 @@ $col_class = function($col) use ($hidden_columns) {
                         <label class="screen-reader-text" for="cb-select-all-2"><?php esc_html_e('Select All'); ?></label>
                         <input id="cb-select-all-2" type="checkbox">
                     </td>
-                    <th scope="col" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
-                    <th scope="col" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="name" class="manage-column column-name column-primary"><?php esc_html_e('Name', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="type" class="manage-column column-type<?php echo $col_class('type'); ?>"><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="shortcode" class="manage-column column-shortcode<?php echo $col_class('shortcode'); ?>"><?php esc_html_e('Shortcode', 'shuriken-reviews'); ?></th>
+                    <th scope="col" id="stats" class="manage-column column-stats<?php echo $col_class('stats'); ?>"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
                 </tr>
             </tfoot>
         </table>
