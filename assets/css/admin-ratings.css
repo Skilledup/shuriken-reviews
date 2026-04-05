@@ -171,6 +171,7 @@
 
 /* Table Column Widths */
 .wp-list-table.ratings {
+    table-layout: auto;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     overflow: hidden;
@@ -180,6 +181,7 @@
 /* Checkbox column — tight fixed width */
 .wp-list-table.ratings .column-cb {
     width: 36px;
+    max-width: 36px;
     vertical-align: middle;
     text-align: center;
 }

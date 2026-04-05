@@ -308,9 +308,9 @@ $tendency_icons = array(
     
     <!-- Charts Row -->
     <div class="shuriken-charts-row">
-        <!-- Rating Distribution -->
+        <!-- Deviation from Average Distribution -->
         <div class="shuriken-chart-card">
-            <h2><?php esc_html_e('Ratings Given Distribution', 'shuriken-reviews'); ?></h2>
+            <h2><?php esc_html_e('Deviation from Average', 'shuriken-reviews'); ?></h2>
             <div class="chart-container">
                 <canvas id="voterRatingDistributionChart"></canvas>
             </div>
@@ -475,11 +475,10 @@ $tendency_icons = array(
 // Pass PHP data to JavaScript for charts
 var shurikenVoterActivityData = {
     ratingDistribution: <?php echo wp_json_encode(array_values($distribution_array)); ?>,
-    distributionLabels: <?php echo wp_json_encode(array_map(function($k) { return $k . ' ★'; }, array_keys($distribution_array))); ?>,
+    distributionLabels: <?php echo wp_json_encode(array_keys($distribution_array)); ?>,
     votesOverTime: <?php echo wp_json_encode($votes_over_time); ?>,
     i18n: {
-        votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
-        stars: <?php echo wp_json_encode(__('Stars', 'shuriken-reviews')); ?>
+        votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>
     }
 };
 
@@ -533,21 +532,19 @@ jQuery(document).ready(function($) {
     
     // Initialize charts if Chart.js is available
     if (typeof Chart !== 'undefined') {
-        // Rating Distribution Chart
+        // Deviation from Average Distribution Chart
         var distCtx = document.getElementById('voterRatingDistributionChart');
         if (distCtx) {
             var distData = shurikenVoterActivityData.ratingDistribution;
-            var distLabels = shurikenVoterActivityData.distributionLabels || distData.map(function(_, i) { return (i + 1) + '\u2605'; });
-            var allBgColors = [
+            var distLabels = shurikenVoterActivityData.distributionLabels;
+            // Red for negative deviation, gray for neutral, green for positive
+            var deviationColors = [
                 'rgba(239, 68, 68, 0.8)',
                 'rgba(249, 115, 22, 0.8)',
-                'rgba(234, 179, 8, 0.8)',
+                'rgba(148, 163, 184, 0.8)',
                 'rgba(132, 204, 22, 0.8)',
                 'rgba(34, 197, 94, 0.8)'
             ];
-            var bgColors = distData.length <= allBgColors.length
-                ? allBgColors.slice(allBgColors.length - distData.length)
-                : allBgColors;
             new Chart(distCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -555,7 +552,7 @@ jQuery(document).ready(function($) {
                     datasets: [{
                         label: shurikenVoterActivityData.i18n.votes,
                         data: distData,
-                        backgroundColor: bgColors,
+                        backgroundColor: deviationColors,
                         borderRadius: 6
                     }]
                 },

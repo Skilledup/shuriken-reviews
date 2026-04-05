@@ -127,7 +127,7 @@ Throws `Shuriken_Database_Exception` on failures instead of returning false.
 **Key Methods:**
 - `get_voter_votes_paginated($user_id, $user_ip)` - Paginated vote history
 - `get_voter_stats($user_id, $user_ip)` - Voting statistics and tendency
-- `get_voter_rating_distribution($user_id, $user_ip)` - Rating value distribution
+- `get_voter_rating_distribution($user_id, $user_ip)` - Deviation-from-average distribution
 - `get_voter_activity_over_time($user_id, $user_ip)` - Activity timeline
 - `get_user_info($user_id)` - WordPress user profile data
 - `get_voter_votes_for_export($user_id, $user_ip)` - All votes for CSV export

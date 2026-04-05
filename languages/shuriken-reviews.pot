@@ -1730,7 +1730,7 @@ msgid "Negative"
 msgstr ""
 
 #: admin/voter-activity.php:313
-msgid "Ratings Given Distribution"
+msgid "Deviation from Average"
 msgstr ""
 
 #: admin/voter-activity.php:344

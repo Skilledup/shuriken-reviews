@@ -31,6 +31,12 @@ if (isset($_POST['save_rate_limiting_settings'])) {
     update_option('shuriken_daily_vote_limit', $daily_limit);
     update_option('shuriken_guest_hourly_limit', $guest_hourly_limit);
     update_option('shuriken_guest_daily_limit', $guest_daily_limit);
+
+    // Reset the dismissed warning when rate limiting is toggled so it
+    // re-appears if the user later disables it again.
+    if ($enabled === '1') {
+        delete_option('shuriken_rate_limit_warning_dismissed');
+    }
     
     echo '<div class="notice notice-success is-dismissible"><p>' . 
         esc_html__('Rate limiting settings saved successfully!', 'shuriken-reviews') . 
@@ -197,21 +203,6 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
             </div>
         </div>
         
-    </div>
-    
-    <!-- Developer Note -->
-    <div class="shuriken-settings-note">
-        <span class="note-icon">💡</span>
-        <div class="note-content">
-            <strong><?php esc_html_e('For Developers:', 'shuriken-reviews'); ?></strong>
-            <p><?php 
-                printf(
-                    /* translators: %s: filter hook name */
-                    esc_html__('Use the %s filter to bypass rate limiting for specific users or roles.', 'shuriken-reviews'),
-                    '<code>shuriken_bypass_rate_limit</code>'
-                ); 
-            ?></p>
-        </div>
     </div>
     
     <div class="shuriken-settings-submit">

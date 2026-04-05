@@ -67,19 +67,100 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
         <?php endforeach; ?>
     </nav>
     
-    <!-- Tab Content -->
-    <div class="shuriken-tab-content">
-        <?php
-        // Load the partial for the current tab
-        $partial_file = plugin_dir_path(__FILE__) . 'partials/' . $tabs[$current_tab]['file'];
-        
-        if (file_exists($partial_file)) {
-            include $partial_file;
-        } else {
-            echo '<div class="notice notice-error"><p>' . 
-                esc_html__('Settings tab file not found.', 'shuriken-reviews') . 
-                '</p></div>';
-        }
-        ?>
+    <?php
+    // Dismissible rate-limit warning — shown on every tab until dismissed
+    $rate_limit_enabled   = get_option('shuriken_rate_limiting_enabled', '0');
+    $rate_limit_dismissed = get_option('shuriken_rate_limit_warning_dismissed', '0');
+    if ($rate_limit_enabled !== '1' && $rate_limit_dismissed !== '1') : ?>
+    <div class="shuriken-rate-limit-warning" id="shuriken-rate-limit-warning">
+        <span class="warning-icon">⚠️</span>
+        <div class="warning-content">
+            <strong><?php esc_html_e('Rate Limiting is disabled', 'shuriken-reviews'); ?></strong>
+            <p><?php
+                printf(
+                    /* translators: %s: link to rate limiting tab */
+                    esc_html__('Your site is currently unprotected against vote spamming and abuse. We strongly recommend %s to safeguard your ratings.', 'shuriken-reviews'),
+                    '<a href="' . esc_url(add_query_arg('tab', 'rate-limiting', $base_url)) . '">' . esc_html__('enabling rate limiting', 'shuriken-reviews') . '</a>'
+                );
+            ?></p>
+        </div>
+        <button type="button" class="shuriken-dismiss-warning" aria-label="<?php esc_attr_e('Dismiss', 'shuriken-reviews'); ?>">&times;</button>
+    </div>
+    <?php endif; ?>
+
+    <!-- Tab Content + Sidebar -->
+    <div class="shuriken-settings-layout">
+        <div class="shuriken-settings-main">
+            <div class="shuriken-tab-content">
+                <?php
+                // Load the partial for the current tab
+                $partial_file = plugin_dir_path(__FILE__) . 'partials/' . $tabs[$current_tab]['file'];
+                
+                if (file_exists($partial_file)) {
+                    include $partial_file;
+                } else {
+                    echo '<div class="notice notice-error"><p>' . 
+                        esc_html__('Settings tab file not found.', 'shuriken-reviews') . 
+                        '</p></div>';
+                }
+                ?>
+            </div>
+        </div>
+
+        <aside class="shuriken-settings-sidebar">
+            <?php if ($current_tab === 'general') : ?>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">💡</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Settings not applying?', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('Some themes or plugins may override these options through code. If a setting seems to have no effect, contact your theme author to check for overriding filters.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">👥</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Guest Voting', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('Enabling guest voting increases engagement, but make sure rate limiting is turned on to prevent abuse from anonymous users.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">🔑</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('REST API Access', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('Lowering the required capability (e.g. to Author) lets more users manage ratings through the API. Only do this on trusted multi-author sites.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+            <?php elseif ($current_tab === 'rate-limiting') : ?>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">🛡️</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Why enable rate limiting?', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('Without rate limiting, a single user or bot can submit hundreds of votes in seconds, skewing your ratings and making them unreliable.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">⏱️</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Recommended defaults', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('A 60-second cooldown, 30 votes/hour for members, and 10 votes/hour for guests works well for most sites. Adjust based on your traffic.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+                <div class="sidebar-tip">
+                    <span class="tip-icon">💡</span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Settings not applying?', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('Some themes or plugins may override rate-limiting behaviour through code. If limits seem to have no effect, contact your theme author to check for overriding filters.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
+            <?php endif; ?>
+        </aside>
     </div>
 </div>

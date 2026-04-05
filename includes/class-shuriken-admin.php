@@ -55,6 +55,7 @@ class Shuriken_Admin {
         add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
         add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
         add_action('admin_post_shuriken_export_voter_votes', array($this, 'export_voter_votes'));
+        add_action('wp_ajax_shuriken_dismiss_rate_limit_warning', array($this, 'dismiss_rate_limit_warning'));
         add_filter('set-screen-option', array($this, 'save_screen_options'), 10, 3);
     }
 
@@ -421,6 +422,31 @@ class Shuriken_Admin {
             SHURIKEN_REVIEWS_VERSION,
             true
         );
+
+        wp_localize_script('shuriken-admin-settings', 'shurikenSettings', array(
+            'dismissNonce' => wp_create_nonce('shuriken_dismiss_rate_limit_warning'),
+        ));
+    }
+
+    // =========================================================================
+    // AJAX Handlers
+    // =========================================================================
+
+    /**
+     * Dismiss the rate-limit warning banner via AJAX.
+     *
+     * @return void
+     * @since 1.10.0
+     */
+    public function dismiss_rate_limit_warning(): void {
+        check_ajax_referer('shuriken_dismiss_rate_limit_warning');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+
+        update_option('shuriken_rate_limit_warning_dismissed', '1');
+        wp_send_json_success();
     }
 
     // =========================================================================

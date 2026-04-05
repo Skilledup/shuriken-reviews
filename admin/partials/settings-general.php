@@ -153,7 +153,7 @@ if (isset($_POST['save_general_settings'])) {
         <div class="settings-card-body">
             <div class="settings-field">
                 <div class="settings-field-header">
-                    <label for="shuriken_comments_system_enabled"><?php esc_html_e('Enable Comments System Modifier', 'shuriken-reviews'); ?></label>
+                    <label for="shuriken_comments_system_enabled"><?php esc_html_e('Enable Comments System Modifier (Beta)', 'shuriken-reviews'); ?></label>
                     <label class="shuriken-toggle">
                         <input type="checkbox"
                                name="shuriken_comments_system_enabled"
@@ -256,8 +256,6 @@ if (isset($_POST['save_general_settings'])) {
                 </div>
                 <p class="settings-field-description">
                     <?php esc_html_e('Minimum capability required to create, update, or delete ratings via the REST API. Defaults to Administrator. Useful for multi-author sites that need editors or authors to manage ratings programmatically.', 'shuriken-reviews'); ?>
-                    <br>
-                    <em><?php esc_html_e('Note: this setting can be overridden by code via the shuriken_rest_manage_capability filter.', 'shuriken-reviews'); ?></em>
                 </p>
             </div>
         </div>

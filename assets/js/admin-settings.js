@@ -16,6 +16,7 @@
     function init() {
         initCollapsibleSections();
         initToggleControls();
+        initDismissWarning();
     }
 
     /**
@@ -54,6 +55,21 @@
                     $target.removeClass('is-expanded');
                 }
             }
+        });
+    }
+
+    /**
+     * Initialize dismissible warning banner
+     */
+    function initDismissWarning() {
+        $(document).on('click', '.shuriken-dismiss-warning', function() {
+            var $banner = $(this).closest('.shuriken-rate-limit-warning');
+            $banner.fadeOut(200, function() { $banner.remove(); });
+
+            $.post(ajaxurl, {
+                action: 'shuriken_dismiss_rate_limit_warning',
+                _wpnonce: shurikenSettings.dismissNonce
+            });
         });
     }
 

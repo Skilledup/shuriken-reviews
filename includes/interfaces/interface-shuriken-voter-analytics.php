@@ -45,12 +45,15 @@ interface Shuriken_Voter_Analytics_Interface {
     public function get_voter_stats(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): object;
 
     /**
-     * Get rating distribution for a specific voter
+     * Get deviation-from-average distribution for a specific voter
+     *
+     * For each non-binary vote, computes (voter_value − item_average) and bins
+     * into buckets: ≤−2, −1, 0, +1, ≥+2.
      *
      * @param int         $user_id    User ID (0 for guests).
      * @param string|null $user_ip    IP address for guest identification.
      * @param string|int|array $date_range Date range filter.
-     * @return array Distribution array.
+     * @return array Associative array with bucket labels as keys and counts as values.
      */
     public function get_voter_rating_distribution(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): array;
 

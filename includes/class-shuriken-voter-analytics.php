@@ -210,12 +210,16 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
     }
 
     /**
-     * Get rating distribution for a specific voter
+     * Get deviation-from-average distribution for a specific voter
+     *
+     * For each non-binary vote the voter cast, computes (voter_value − item_average)
+     * and bins the result into buckets: ≤−2, −1, 0, +1, ≥+2 (rounded to nearest integer).
+     * This reveals whether the voter rates higher or lower than the community consensus.
      *
      * @param int $user_id User ID (0 for guests)
      * @param string|null $user_ip IP address for guest identification
-     * @param string|array $date_range Date range filter
-     * @return array Distribution array with keys 1-5
+     * @param string|int|array $date_range Date range filter
+     * @return array Associative array with bucket labels as keys and counts as values
      */
     public function get_voter_rating_distribution(int $user_id, ?string $user_ip = null, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
@@ -227,24 +231,37 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
             $voter_condition = $this->wpdb->prepare("v.user_id = 0 AND v.user_ip = %s", $user_ip);
         }
 
-        // Exclude binary types from the star distribution — they use 0/1 values
+        // For each non-binary vote, compute the deviation from the item's average rating.
+        // Both voter value and item average are on the normalized 1-5 internal scale.
         $results = $this->wpdb->get_results(
-            "SELECT v.rating_value, COUNT(*) as count 
+            "SELECT ROUND(v.rating_value - (r.total_rating / NULLIF(r.total_votes, 0))) as deviation
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
              WHERE {$voter_condition} {$date_condition}
                AND r.rating_type NOT IN ('like_dislike', 'approval')
-             GROUP BY v.rating_value 
-             ORDER BY v.rating_value"
+               AND r.total_votes > 0"
         );
 
-        // Votes are stored normalized to the internal 1-5 scale,
-        // so distribution buckets must use RATING_SCALE_DEFAULT, not the display scale.
-        $distribution = array_fill(1, Shuriken_Database::RATING_SCALE_DEFAULT, 0);
+        // Bin into five buckets: ≤-2, -1, 0, +1, ≥+2
+        $distribution = array(
+            '≤-2' => 0,
+            '-1'  => 0,
+            '0'   => 0,
+            '+1'  => 0,
+            '≥+2' => 0,
+        );
         foreach ($results as $row) {
-            $key = intval($row->rating_value);
-            if (array_key_exists($key, $distribution)) {
-                $distribution[$key] = intval($row->count);
+            $dev = intval($row->deviation);
+            if ($dev <= -2) {
+                $distribution['≤-2']++;
+            } elseif ($dev === -1) {
+                $distribution['-1']++;
+            } elseif ($dev === 0) {
+                $distribution['0']++;
+            } elseif ($dev === 1) {
+                $distribution['+1']++;
+            } else {
+                $distribution['≥+2']++;
             }
         }
         
