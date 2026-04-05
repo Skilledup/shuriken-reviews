@@ -53,10 +53,13 @@
         getScaleRange,
         getRatingType,
         buildColorSettings,
-        areTypesCompatible
+        areTypesCompatible,
+        iconShare2,
+        iconTriangleAlert
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/grouped-rating', {
+        icon: iconShare2(24),
         edit: function (props) {
             const { attributes, setAttributes } = props;
             const {
@@ -1652,7 +1655,7 @@
                             ? wp.element.createElement(
                                 'div',
                                 { className: 'shuriken-grouped-rating-placeholder' },
-                                wp.element.createElement('span', { className: 'dashicons dashicons-networking' }),
+                                iconShare2(40),
                                 wp.element.createElement('p', null, __('Select a parent rating to display the group.', 'shuriken-reviews'))
                             )
                             : selectedRating
@@ -1702,7 +1705,7 @@
                                 : wp.element.createElement(
                                     'div',
                                     { className: 'shuriken-grouped-rating-placeholder' },
-                                    wp.element.createElement('span', { className: 'dashicons dashicons-warning' }),
+                                    iconTriangleAlert(40),
                                     wp.element.createElement('p', null, __('Rating not found. It may have been deleted.', 'shuriken-reviews'))
                                 )
                 )

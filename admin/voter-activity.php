@@ -79,7 +79,7 @@ $tendency_labels = array(
 );
 $tendency_icons = array(
     'generous' => 'thumbs-up',
-    'balanced' => 'editor-aligncenter',
+    'balanced' => 'align-center',
     'critical' => 'thumbs-down',
     'none' => 'minus',
 );
@@ -88,7 +88,7 @@ $tendency_icons = array(
 <div class="wrap shuriken-analytics shuriken-voter-activity">
     <h1>
         <a href="<?php echo esc_url($back_url); ?>" class="page-title-action shuriken-back-btn">
-            <span class="dashicons dashicons-arrow-left-alt"></span>
+            <?php Shuriken_Icons::render('arrow-left', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Back to Analytics', 'shuriken-reviews'); ?>
         </a>
         <?php esc_html_e('Voter Activity', 'shuriken-reviews'); ?>
@@ -104,7 +104,7 @@ $tendency_icons = array(
                 <h2><?php echo esc_html($user_info->display_name); ?></h2>
                 <p class="voter-meta">
                     <span class="voter-type-badge member">
-                        <span class="dashicons dashicons-admin-users"></span>
+                        <?php Shuriken_Icons::render('user', array('width' => 14, 'height' => 14)); ?>
                         <?php esc_html_e('Registered Member', 'shuriken-reviews'); ?>
                     </span>
                     <span class="voter-email"><?php echo esc_html($user_info->user_email); ?></span>
@@ -116,20 +116,20 @@ $tendency_icons = array(
                 </p>
                 <p class="voter-actions">
                     <a href="<?php echo esc_url(admin_url('user-edit.php?user_id=' . $user_id)); ?>" class="button button-secondary">
-                        <span class="dashicons dashicons-admin-users"></span>
+                        <?php Shuriken_Icons::render('user', array('width' => 14, 'height' => 14)); ?>
                         <?php esc_html_e('View User Profile', 'shuriken-reviews'); ?>
                     </a>
                 </p>
             </div>
         <?php elseif ($is_member && !$user_info) : ?>
             <div class="voter-avatar deleted">
-                <span class="dashicons dashicons-admin-users"></span>
+                <?php Shuriken_Icons::render('user', array('width' => 36, 'height' => 36)); ?>
             </div>
             <div class="voter-details">
                 <h2><?php esc_html_e('Deleted User', 'shuriken-reviews'); ?></h2>
                 <p class="voter-meta">
                     <span class="voter-type-badge member">
-                        <span class="dashicons dashicons-admin-users"></span>
+                        <?php Shuriken_Icons::render('user', array('width' => 14, 'height' => 14)); ?>
                         <?php esc_html_e('Former Member', 'shuriken-reviews'); ?>
                     </span>
                     <span><?php printf(esc_html__('User ID: %d', 'shuriken-reviews'), $user_id); ?></span>
@@ -137,13 +137,13 @@ $tendency_icons = array(
             </div>
         <?php else : ?>
             <div class="voter-avatar guest">
-                <span class="dashicons dashicons-businessperson"></span>
+                <?php Shuriken_Icons::render('briefcase', array('width' => 36, 'height' => 36)); ?>
             </div>
             <div class="voter-details">
                 <h2><?php esc_html_e('Guest Voter', 'shuriken-reviews'); ?></h2>
                 <p class="voter-meta">
                     <span class="voter-type-badge guest">
-                        <span class="dashicons dashicons-businessperson"></span>
+                        <?php Shuriken_Icons::render('briefcase', array('width' => 14, 'height' => 14)); ?>
                         <?php esc_html_e('Guest', 'shuriken-reviews'); ?>
                     </span>
                     <span class="voter-ip">
@@ -190,7 +190,7 @@ $tendency_icons = array(
             
             <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
             <div class="current-range-label">
-                <span class="dashicons dashicons-calendar-alt"></span>
+                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
                 <?php echo esc_html($date_range_label); ?>
                 <a href="<?php echo esc_url($base_filter_url); ?>" class="clear-filter">
                     <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
@@ -203,7 +203,7 @@ $tendency_icons = array(
     <!-- Overview Stats Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-chart-bar"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('bar-chart-2', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($stats->total_votes ?: 0); ?></h3>
                 <p><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></p>
@@ -211,7 +211,7 @@ $tendency_icons = array(
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-star-filled"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('star', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <?php
                 $has_binary_only = ((int) $stats->non_binary_votes === 0 && (int) $stats->binary_votes > 0);
@@ -254,7 +254,7 @@ $tendency_icons = array(
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-format-gallery"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('layout-grid', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($stats->unique_items_rated ?: 0); ?></h3>
                 <p><?php esc_html_e('Items Rated', 'shuriken-reviews'); ?></p>
@@ -262,7 +262,7 @@ $tendency_icons = array(
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-<?php echo esc_attr($tendency_icons[$stats->voting_tendency]); ?>"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render(esc_attr($tendency_icons[$stats->voting_tendency]), array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3 class="tendency-<?php echo esc_attr($stats->voting_tendency); ?>">
                     <?php echo esc_html($tendency_labels[$stats->voting_tendency]); ?>
@@ -328,7 +328,7 @@ $tendency_icons = array(
     <!-- Votes Table -->
     <div class="shuriken-table-card full-width">
         <h2>
-            <span class="dashicons dashicons-list-view"></span>
+            <?php Shuriken_Icons::render('list', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Vote History', 'shuriken-reviews'); ?>
         </h2>
         <div class="table-toolbar">
@@ -376,7 +376,7 @@ $tendency_icons = array(
                                 </a>
                                 <?php if ($vote->parent_id) : ?>
                                     <span class="sub-rating-indicator" title="<?php esc_attr_e('Sub-rating', 'shuriken-reviews'); ?>">
-                                        <span class="dashicons dashicons-arrow-right-alt"></span>
+                                        <?php Shuriken_Icons::render('arrow-right', array('width' => 14, 'height' => 14)); ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -464,7 +464,7 @@ $tendency_icons = array(
                 <input type="hidden" name="user_ip" value="<?php echo esc_attr($user_ip); ?>">
             <?php endif; ?>
             <button type="submit" class="button button-secondary">
-                <span class="dashicons dashicons-download"></span>
+                <?php Shuriken_Icons::render('download', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Export Votes to CSV', 'shuriken-reviews'); ?>
             </button>
         </form>

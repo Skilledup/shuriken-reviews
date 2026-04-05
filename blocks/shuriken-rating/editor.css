@@ -12,8 +12,7 @@
     text-align: center;
 }
 
-.shuriken-rating-placeholder .dashicons {
-    font-size: 40px;
+.shuriken-rating-placeholder .shuriken-icon {
     width: 40px;
     height: 40px;
     margin-bottom: 20px;

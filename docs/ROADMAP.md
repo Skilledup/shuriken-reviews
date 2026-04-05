@@ -110,6 +110,10 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - [ ] Statistics caching — TTL-based cache service in container; invalidate on vote change; optional Redis support
 - [ ] Rate limit performance caching — cache vote counts in transients per user/IP with TTL; invalidate on new vote
 
+### Known bugs
+
+- [ ] FSE blocks Preview only shows the state of block where no Rating is selected
+
 ---
 
 ## Later

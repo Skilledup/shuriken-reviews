@@ -36,10 +36,13 @@
         getScaleRange,
         getRatingType,
         buildColorSettings,
-        areTypesCompatible
+        areTypesCompatible,
+        iconStar,
+        iconTriangleAlert
     } = window.ShurikenBlockHelpers;
 
     registerBlockType('shuriken-reviews/rating', {
+        icon: iconStar(24),
         edit: function (props) {
             const { attributes, setAttributes } = props;
             const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext } = attributes;
@@ -655,7 +658,7 @@
                             ? wp.element.createElement(
                                 'div',
                                 { className: 'shuriken-rating-placeholder' },
-                                wp.element.createElement('span', { className: 'dashicons dashicons-star-filled' }),
+                                iconStar(40),
                                 wp.element.createElement('p', null, __('Select a rating from the sidebar or create a new one.', 'shuriken-reviews'))
                             )
                             : selectedRating
@@ -669,7 +672,7 @@
                                 : wp.element.createElement(
                                     'div',
                                     { className: 'shuriken-rating-placeholder' },
-                                    wp.element.createElement('span', { className: 'dashicons dashicons-warning' }),
+                                    iconTriangleAlert(40),
                                     wp.element.createElement('p', null, __('Rating not found.', 'shuriken-reviews'))
                                 )
                 )

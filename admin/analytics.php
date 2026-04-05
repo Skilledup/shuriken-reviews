@@ -80,7 +80,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
             
             <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
             <div class="current-range-label">
-                <span class="dashicons dashicons-calendar-alt"></span>
+                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
                 <?php echo esc_html($date_range_label); ?>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews-analytics')); ?>" class="clear-filter">
                     <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
@@ -93,7 +93,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-chart-bar"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('bar-chart-2', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
                     <?php echo esc_html($current_period_votes ?: 0); ?>
@@ -108,7 +108,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-groups"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('users', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($unique_voters ?: 0); ?></h3>
                 <p><?php esc_html_e('Unique Voters', 'shuriken-reviews'); ?></p>
@@ -116,7 +116,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-visibility"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('eye', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($participation->active_items); ?> / <?php echo esc_html($participation->total_items); ?></h3>
                 <p><?php esc_html_e('Items With Votes', 'shuriken-reviews'); ?></p>
@@ -124,7 +124,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-admin-users"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('user', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
                     <?php 
@@ -139,7 +139,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         
         <?php if ($contextual_posts > 0) : ?>
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-location"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('map-pin', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($contextual_posts); ?></h3>
                 <p><?php esc_html_e('Posts with Per-Post Votes', 'shuriken-reviews'); ?></p>
@@ -196,7 +196,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
     <!-- Participation Bar -->
     <div class="shuriken-participation-bar">
         <div class="participation-label">
-            <span class="dashicons dashicons-chart-area"></span>
+            <?php Shuriken_Icons::render('area-chart', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Participation', 'shuriken-reviews'); ?>
             <strong><?php echo esc_html($participation->rate); ?>%</strong>
         </div>
@@ -235,7 +235,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
     <!-- Momentum Section -->
     <div class="shuriken-momentum-section">
         <h2>
-            <span class="dashicons dashicons-trending-up"></span>
+            <?php Shuriken_Icons::render('trending-up', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Momentum', 'shuriken-reviews'); ?>
         </h2>
         <div class="momentum-grid">
@@ -277,7 +277,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         <!-- Top Rated -->
         <div class="shuriken-table-card">
             <h2>
-                <span class="dashicons dashicons-awards"></span>
+                <?php Shuriken_Icons::render('award', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Top Rated', 'shuriken-reviews'); ?>
             </h2>
             <table class="wp-list-table widefat fixed striped">
@@ -321,7 +321,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         <!-- Most Voted -->
         <div class="shuriken-table-card">
             <h2>
-                <span class="dashicons dashicons-megaphone"></span>
+                <?php Shuriken_Icons::render('megaphone', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Most Popular', 'shuriken-reviews'); ?>
             </h2>
             <table class="wp-list-table widefat fixed striped">
@@ -368,7 +368,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         <!-- Low Performers -->
         <div class="shuriken-table-card">
             <h2>
-                <span class="dashicons dashicons-warning"></span>
+                <?php Shuriken_Icons::render('triangle-alert', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Low Performers', 'shuriken-reviews'); ?>
             </h2>
             <table class="wp-list-table widefat fixed striped">
@@ -400,7 +400,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
         <!-- Recent Activity -->
         <div class="shuriken-table-card">
             <h2>
-                <span class="dashicons dashicons-clock"></span>
+                <?php Shuriken_Icons::render('clock', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Recent Activity', 'shuriken-reviews'); ?>
             </h2>
             <table class="wp-list-table widefat fixed striped">
@@ -470,7 +470,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
             <?php wp_nonce_field('shuriken_export_data', 'shuriken_export_nonce'); ?>
             <input type="hidden" name="action" value="shuriken_export_ratings">
             <button type="submit" class="button button-secondary">
-                <span class="dashicons dashicons-download"></span>
+                <?php Shuriken_Icons::render('download', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Export to CSV', 'shuriken-reviews'); ?>
             </button>
         </form>

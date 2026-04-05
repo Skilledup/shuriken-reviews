@@ -653,8 +653,7 @@
     margin-bottom: 10px;
 }
 
-.about-hero-eyebrow .dashicons {
-    font-size: 13px;
+.about-hero-eyebrow .shuriken-icon {
     width: 13px;
     height: 13px;
     color: #fbbf24;
@@ -715,8 +714,7 @@
     color: #fff;
 }
 
-.about-hero-links .dashicons {
-    font-size: 15px;
+.about-hero-links .shuriken-icon {
     width: 15px;
     height: 15px;
 }
@@ -980,9 +978,8 @@
     justify-content: center;
 }
 
-.about-resource-icon .dashicons {
+.about-resource-icon .shuriken-icon {
     color: #fff;
-    font-size: 20px;
     width: 20px;
     height: 20px;
 }

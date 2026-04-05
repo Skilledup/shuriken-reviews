@@ -63,6 +63,24 @@
         return svgIcon(size || 14, h('path', { d: 'm18 15-6-6-6 6' }));
     }
 
+    function iconTriangleAlert(size) {
+        return svgIcon(size || 24, [
+            h('path', { key: 'p', d: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3' }),
+            h('line', { key: 'l1', x1: '12', x2: '12', y1: '9', y2: '13' }),
+            h('line', { key: 'l2', x1: '12', x2: '12.01', y1: '17', y2: '17' })
+        ]);
+    }
+
+    function iconShare2(size) {
+        return svgIcon(size || 24, [
+            h('circle', { key: 'c1', cx: '18', cy: '5', r: '3' }),
+            h('circle', { key: 'c2', cx: '6', cy: '12', r: '3' }),
+            h('circle', { key: 'c3', cx: '18', cy: '19', r: '3' }),
+            h('line', { key: 'l1', x1: '8.59', x2: '15.42', y1: '13.51', y2: '17.49' }),
+            h('line', { key: 'l2', x1: '15.41', x2: '8.59', y1: '6.51', y2: '10.49' })
+        ]);
+    }
+
     /**
      * Translate an API error object into a human-readable string.
      *
@@ -489,6 +507,9 @@
         getWidgetColorLabel:    getWidgetColorLabel,
         buildColorSettings:     buildColorSettings,
         getTypeClass:           getTypeClass,
-        areTypesCompatible:     areTypesCompatible
+        areTypesCompatible:     areTypesCompatible,
+        iconStar:               iconStar,
+        iconTriangleAlert:      iconTriangleAlert,
+        iconShare2:             iconShare2
     };
 })(window.wp);

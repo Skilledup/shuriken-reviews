@@ -145,11 +145,9 @@
     opacity: 0.88;
 }
 
-.shuriken-ratings-toolbar .search-submit-btn .dashicons {
-    font-size: 15px;
+.shuriken-ratings-toolbar .search-submit-btn .shuriken-icon {
     width: 15px;
     height: 15px;
-    line-height: 1;
 }
 
 /* Clear âœ• icon */
@@ -169,11 +167,9 @@
     color: #ef4444;
 }
 
-.shuriken-ratings-toolbar .clear-search-btn .dashicons {
-    font-size: 15px;
+.shuriken-ratings-toolbar .clear-search-btn .shuriken-icon {
     width: 15px;
     height: 15px;
-    line-height: 1;
 }
 
 /* Remove old float rules â€” toolbar is now flex, no clear needed */
@@ -638,8 +634,7 @@ tr.mirror-rating .column-name {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.shuriken-ratings-empty-state .dashicons {
-    font-size: 100px;
+.shuriken-ratings-empty-state .shuriken-icon {
     width: 100px;
     height: 100px;
     opacity: 0.25;
@@ -1279,8 +1274,7 @@ html[dir=rtl] .shuriken-copy-notification {
         margin-top: 20px;
     }
     
-    .shuriken-ratings-empty-state .dashicons {
-        font-size: 60px;
+    .shuriken-ratings-empty-state .shuriken-icon {
         width: 60px;
         height: 60px;
         margin-bottom: 16px;
@@ -1326,11 +1320,9 @@ html[dir=rtl] .shuriken-copy-notification {
     margin-top: 4px;
 }
 
-.shuriken-type-warning .dashicons {
-    font-size: 14px;
+.shuriken-type-warning .shuriken-icon {
     width: 14px;
     height: 14px;
-    line-height: 14px;
     color: #d97706;
 }
 

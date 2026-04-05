@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 <div class="about-hero-strip" style="background-image: url('<?php echo esc_url(plugins_url('assets/images/mascot.avif', SHURIKEN_REVIEWS_PLUGIN_FILE)); ?>')">
     <div class="about-hero-content">
         <span class="about-hero-eyebrow">
-            <span class="dashicons dashicons-star-filled"></span>
+            <?php Shuriken_Icons::render('star', array('width' => 13, 'height' => 13)); ?>
             <?php esc_html_e('WordPress Rating Plugin', 'shuriken-reviews'); ?>
         </span>
         <h2><?php esc_html_e('Shuriken Reviews', 'shuriken-reviews'); ?></h2>
@@ -32,7 +32,7 @@ if (!defined('ABSPATH')) {
         </span>
         <div class="about-hero-links">
             <a href="https://github.com/Skilledup/shuriken-reviews" target="_blank" rel="noopener noreferrer">
-                <span class="dashicons dashicons-github"></span>
+                <?php Shuriken_Icons::render('github', array('width' => 15, 'height' => 15)); ?>
                 <?php esc_html_e('GitHub', 'shuriken-reviews'); ?>
             </a>
             <a href="https://github.com/Skilledup/shuriken-reviews/blob/main/docs/CHANGELOG.md" target="_blank" rel="noopener noreferrer">
@@ -187,7 +187,7 @@ if (!defined('ABSPATH')) {
         <div class="about-dev-grid">
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-admin-plugins"></span>
+                    <?php Shuriken_Icons::render('package', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('Hooks & Filters', 'shuriken-reviews'); ?></h4>
@@ -200,7 +200,7 @@ if (!defined('ABSPATH')) {
 
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-saved"></span>
+                    <?php Shuriken_Icons::render('check-circle', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('Interfaces & Testing', 'shuriken-reviews'); ?></h4>
@@ -213,7 +213,7 @@ if (!defined('ABSPATH')) {
 
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-admin-tools"></span>
+                    <?php Shuriken_Icons::render('wrench', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('Dependency Injection', 'shuriken-reviews'); ?></h4>
@@ -226,7 +226,7 @@ if (!defined('ABSPATH')) {
 
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-warning"></span>
+                    <?php Shuriken_Icons::render('triangle-alert', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('Exception System', 'shuriken-reviews'); ?></h4>
@@ -239,7 +239,7 @@ if (!defined('ABSPATH')) {
 
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-rest-api"></span>
+                    <?php Shuriken_Icons::render('plug', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('REST API', 'shuriken-reviews'); ?></h4>
@@ -256,7 +256,7 @@ if (!defined('ABSPATH')) {
 
             <div class="about-resource-card">
                 <div class="about-resource-icon">
-                    <span class="dashicons dashicons-database"></span>
+                    <?php Shuriken_Icons::render('database', array('width' => 20, 'height' => 20)); ?>
                 </div>
                 <div class="about-resource-content">
                     <h4><?php esc_html_e('Helper Functions', 'shuriken-reviews'); ?></h4>

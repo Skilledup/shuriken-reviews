@@ -139,7 +139,7 @@ if ($rating_type === 'like_dislike') {
 <div class="wrap shuriken-analytics shuriken-item-stats">
     <h1>
         <a href="<?php echo esc_url($back_url); ?>" class="page-title-action shuriken-back-btn">
-            <span class="dashicons dashicons-arrow-left-alt"></span>
+            <?php Shuriken_Icons::render('arrow-left', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Back to Analytics', 'shuriken-reviews'); ?>
         </a>
         <?php echo esc_html($rating->name); ?>
@@ -191,7 +191,7 @@ if ($rating_type === 'like_dislike') {
             
             <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
             <div class="current-range-label">
-                <span class="dashicons dashicons-calendar-alt"></span>
+                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
                 <?php echo esc_html($date_range_label); ?>
                 <a href="<?php echo esc_url($base_filter_url); ?>" class="clear-filter">
                     <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
@@ -206,7 +206,7 @@ if ($rating_type === 'like_dislike') {
     <div class="shuriken-hierarchy-info">
         <?php if ($is_mirror && $source_rating) : ?>
             <span class="hierarchy-badge mirror">
-                <span class="dashicons dashicons-admin-links"></span>
+                <?php Shuriken_Icons::render('link', array('width' => 18, 'height' => 18)); ?>
                 <?php printf(
                     esc_html__('Mirror of: %s', 'shuriken-reviews'),
                     '<a href="' . esc_url(admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $source_rating->id)) . '">' . esc_html($source_rating->name) . '</a>'
@@ -216,7 +216,7 @@ if ($rating_type === 'like_dislike') {
         
         <?php if ($is_parent) : ?>
             <span class="hierarchy-badge parent">
-                <span class="dashicons dashicons-networking"></span>
+                <?php Shuriken_Icons::render('share-2', array('width' => 18, 'height' => 18)); ?>
                 <?php printf(
                     esc_html__('Parent Rating with %d sub-ratings', 'shuriken-reviews'),
                     count($sub_ratings)
@@ -226,7 +226,7 @@ if ($rating_type === 'like_dislike') {
         
         <?php if ($is_sub && $parent_rating) : ?>
             <span class="hierarchy-badge sub <?php echo esc_attr($rating->effect_type); ?>">
-                <span class="dashicons dashicons-arrow-<?php echo $rating->effect_type === 'positive' ? 'up' : 'down'; ?>-alt"></span>
+                <?php Shuriken_Icons::render($rating->effect_type === 'positive' ? 'arrow-up' : 'arrow-down', array('width' => 18, 'height' => 18)); ?>
                 <?php printf(
                     esc_html__('Sub-rating of: %s (%s effect)', 'shuriken-reviews'),
                     '<a href="' . esc_url(admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $parent_rating->id)) . '">' . esc_html($parent_rating->name) . '</a>',
@@ -237,7 +237,7 @@ if ($rating_type === 'like_dislike') {
         
         <?php if (!empty($rating->display_only)) : ?>
             <span class="hierarchy-badge display-only">
-                <span class="dashicons dashicons-hidden"></span>
+                <?php Shuriken_Icons::render('eye-off', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Display Only (calculated from sub-ratings)', 'shuriken-reviews'); ?>
             </span>
         <?php endif; ?>
@@ -286,7 +286,7 @@ if ($rating_type === 'like_dislike') {
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-star-filled"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('star', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
                     <?php
@@ -341,7 +341,7 @@ if ($rating_type === 'like_dislike') {
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-chart-bar"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('bar-chart-2', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
                     <?php echo esc_html($display_total_votes); ?>
@@ -354,7 +354,7 @@ if ($rating_type === 'like_dislike') {
                 <p><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></p>
                 <?php if ($vote_velocity !== null) : ?>
                     <small class="velocity-badge <?php echo $vote_velocity >= 0 ? 'positive' : 'negative'; ?>">
-                        <span class="dashicons dashicons-arrow-<?php echo $vote_velocity >= 0 ? 'up' : 'down'; ?>-alt"></span>
+                        <?php Shuriken_Icons::render($vote_velocity >= 0 ? 'arrow-up' : 'arrow-down', array('width' => 12, 'height' => 12)); ?>
                         <?php echo esc_html(($vote_velocity >= 0 ? '+' : '') . $vote_velocity . '%'); ?>
                         <?php esc_html_e('vs prev period', 'shuriken-reviews'); ?>
                     </small>
@@ -363,7 +363,7 @@ if ($rating_type === 'like_dislike') {
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-groups"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('users', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($unique_voters ?: 0); ?></h3>
                 <p><?php esc_html_e('Unique Voters', 'shuriken-reviews'); ?></p>
@@ -371,7 +371,7 @@ if ($rating_type === 'like_dislike') {
         </div>
         
         <div class="shuriken-stat-card">
-            <span class="stat-icon dashicons dashicons-admin-users"></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('user', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
                     <?php 
@@ -447,7 +447,7 @@ if ($rating_type === 'like_dislike') {
     <!-- Sub-Ratings Breakdown -->
     <div class="shuriken-table-card full-width sub-ratings-breakdown">
         <h2>
-            <span class="dashicons dashicons-networking"></span>
+            <?php Shuriken_Icons::render('share-2', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Sub-Ratings Contribution', 'shuriken-reviews'); ?>
         </h2>
         <p class="table-description">
@@ -509,7 +509,7 @@ if ($rating_type === 'like_dislike') {
     <!-- Votes Table -->
     <div class="shuriken-table-card full-width">
         <h2>
-            <span class="dashicons dashicons-list-view"></span>
+            <?php Shuriken_Icons::render('list', array('width' => 18, 'height' => 18)); ?>
             <?php esc_html_e('Vote History', 'shuriken-reviews'); ?>
         </h2>
         <p class="table-description">
@@ -554,12 +554,12 @@ if ($rating_type === 'like_dislike') {
                             <td class="column-source">
                                 <?php if ($vote->rating_id == $rating_id) : ?>
                                     <span class="source-badge direct" title="<?php esc_attr_e('Direct vote on parent', 'shuriken-reviews'); ?>">
-                                        <span class="dashicons dashicons-star-filled"></span>
+                                        <?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?>
                                         <?php esc_html_e('Direct', 'shuriken-reviews'); ?>
                                     </span>
                                 <?php else : ?>
                                     <span class="source-badge sub" title="<?php echo esc_attr($vote->rating_name); ?>">
-                                        <span class="dashicons dashicons-arrow-right-alt"></span>
+                                        <?php Shuriken_Icons::render('arrow-right', array('width' => 14, 'height' => 14)); ?>
                                         <?php echo esc_html($vote->rating_name); ?>
                                     </span>
                                 <?php endif; ?>
@@ -573,7 +573,7 @@ if ($rating_type === 'like_dislike') {
                                 ?>
                                 <?php if ($vote->user_id > 0) : ?>
                                     <span class="voter-type member" title="<?php esc_attr_e('Registered Member', 'shuriken-reviews'); ?>">
-                                        <span class="dashicons dashicons-admin-users"></span>
+                                        <?php Shuriken_Icons::render('user', array('width' => 14, 'height' => 14)); ?>
                                     </span>
                                     <?php if ($vote->display_name) : ?>
                                         <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
@@ -588,7 +588,7 @@ if ($rating_type === 'like_dislike') {
                                     <?php endif; ?>
                                 <?php else : ?>
                                     <span class="voter-type guest" title="<?php esc_attr_e('Guest', 'shuriken-reviews'); ?>">
-                                        <span class="dashicons dashicons-businessperson"></span>
+                                        <?php Shuriken_Icons::render('briefcase', array('width' => 14, 'height' => 14)); ?>
                                     </span>
                                     <?php if ($voter_activity_url) : ?>
                                         <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
@@ -654,7 +654,7 @@ if ($rating_type === 'like_dislike') {
             <input type="hidden" name="action" value="shuriken_export_item_votes">
             <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating_id); ?>">
             <button type="submit" class="button button-secondary">
-                <span class="dashicons dashicons-download"></span>
+                <?php Shuriken_Icons::render('download', array('width' => 18, 'height' => 18)); ?>
                 <?php esc_html_e('Export Votes to CSV', 'shuriken-reviews'); ?>
             </button>
         </form>

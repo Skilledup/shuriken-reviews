@@ -163,7 +163,7 @@
 
         var rawData = shurikenAnalyticsData.heatmap || [];
         if (!rawData.length) {
-            container.innerHTML = '<div class="chart-empty-state"><span class="dashicons dashicons-clock"></span><p>No voting data yet</p></div>';
+            container.innerHTML = '<div class="chart-empty-state"><svg class="shuriken-icon shuriken-icon-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No voting data yet</p></div>';
             return;
         }
 
@@ -229,7 +229,7 @@
         ctx.style.display = 'none';
         var div = document.createElement('div');
         div.className = 'chart-empty-state';
-        div.innerHTML = '<span class="dashicons dashicons-chart-pie"></span><p>' + message + '</p>';
+        div.innerHTML = '<svg class="shuriken-icon shuriken-icon-pie-chart" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><p>' + message + '</p>';
         div.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#646970;';
         parent.appendChild(div);
     }

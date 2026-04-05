@@ -119,13 +119,13 @@ $col_class = function($col) use ($hidden_columns) {
 
     <?php if (empty($ratings) && empty($search)): ?>
         <div class="shuriken-ratings-empty-state">
-            <span class="dashicons dashicons-star-filled"></span>
+            <?php Shuriken_Icons::render('star', array('width' => 100, 'height' => 100)); ?>
             <h3><?php esc_html_e('No ratings yet', 'shuriken-reviews'); ?></h3>
             <p><?php esc_html_e('Create your first rating to get started!', 'shuriken-reviews'); ?></p>
         </div>
     <?php elseif (empty($ratings) && !empty($search)): ?>
         <div class="shuriken-ratings-empty-state">
-            <span class="dashicons dashicons-search"></span>
+            <?php Shuriken_Icons::render('search', array('width' => 100, 'height' => 100)); ?>
             <h3><?php esc_html_e('No ratings found', 'shuriken-reviews'); ?></h3>
             <p><?php esc_html_e('Try adjusting your search criteria.', 'shuriken-reviews'); ?></p>
             <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="button"><?php esc_html_e('Clear Search', 'shuriken-reviews'); ?></a>
@@ -154,11 +154,11 @@ $col_class = function($col) use ($hidden_columns) {
                     <label class="screen-reader-text" for="rating-search-input"><?php esc_html_e('Search Ratings:', 'shuriken-reviews'); ?></label>
                     <input type="search" id="rating-search-input" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search ratings...', 'shuriken-reviews'); ?>">
                     <button type="submit" class="search-submit-btn" aria-label="<?php esc_attr_e('Search Ratings', 'shuriken-reviews'); ?>">
-                        <span class="dashicons dashicons-search" aria-hidden="true"></span>
+                        <?php Shuriken_Icons::render('search', array('width' => 15, 'height' => 15)); ?>
                     </button>
                     <?php if (!empty($search)): ?>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>" class="clear-search-btn" aria-label="<?php esc_attr_e('Clear search', 'shuriken-reviews'); ?>">
-                            <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                            <?php Shuriken_Icons::render('x', array('width' => 15, 'height' => 15)); ?>
                         </a>
                     <?php endif; ?>
                 </div>
@@ -276,9 +276,9 @@ $col_class = function($col) use ($hidden_columns) {
                         <td class="name column-name has-row-actions column-primary" data-colname="<?php esc_attr_e('Name', 'shuriken-reviews'); ?>">
                             <strong>
                                 <?php if (!empty($rating->mirror_of)): ?>
-                                    <span class="mirror-indicator dashicons dashicons-admin-links" title="<?php printf(esc_attr__('Mirror of: %s', 'shuriken-reviews'), esc_attr($mirror_original_name)); ?>"></span>
+                                    <span class="mirror-indicator" title="<?php printf(esc_attr__('Mirror of: %s', 'shuriken-reviews'), esc_attr($mirror_original_name)); ?>"><?php Shuriken_Icons::render('link', array('width' => 14, 'height' => 14)); ?></span>
                                 <?php elseif (!empty($rating->parent_id)): ?>
-                                    <span class="sub-indicator dashicons dashicons-arrow-right-alt2" title="<?php printf(esc_attr__('Sub-rating of: %s', 'shuriken-reviews'), esc_attr($parent_name)); ?>"></span>
+                                    <span class="sub-indicator" title="<?php printf(esc_attr__('Sub-rating of: %s', 'shuriken-reviews'), esc_attr($parent_name)); ?>"><?php Shuriken_Icons::render('chevron-right', array('width' => 14, 'height' => 14)); ?></span>
                                 <?php endif; ?>
                                 <a class="row-title" href="<?php echo esc_attr($edit_link); ?>" aria-label="<?php printf(esc_attr__('Edit "%s"', 'shuriken-reviews'), esc_attr($rating->name)); ?>">
                                     <?php echo esc_html($rating->name); ?>
@@ -328,7 +328,7 @@ $col_class = function($col) use ($hidden_columns) {
                                     if ($child_class !== $parent_class) :
                                 ?>
                                     <div class="shuriken-type-warning" title="<?php esc_attr_e('Mixing binary and continuous rating types may produce incorrect aggregated scores.', 'shuriken-reviews'); ?>">
-                                        <span class="dashicons dashicons-warning"></span>
+                                        <?php Shuriken_Icons::render('triangle-alert', array('width' => 16, 'height' => 16)); ?>
                                         <?php esc_html_e('Type mismatch', 'shuriken-reviews'); ?>
                                     </div>
                                 <?php endif; } ?>
@@ -560,7 +560,7 @@ $col_class = function($col) use ($hidden_columns) {
                                                     <?php endforeach; ?>
                                                 </select>
                                                 <div class="shuriken-inline-type-warning shuriken-type-warning" style="display:none; margin-top: 4px;">
-                                                    <span class="dashicons dashicons-warning"></span>
+                                                    <?php Shuriken_Icons::render('triangle-alert', array('width' => 16, 'height' => 16)); ?>
                                                     <?php esc_html_e('Type mismatch: Mixing binary and continuous types.', 'shuriken-reviews'); ?>
                                                 </div>
                                             </span>
@@ -790,7 +790,7 @@ $col_class = function($col) use ($hidden_columns) {
                                 <?php endforeach; ?>
                             </select>
                             <div id="add-new-type-warning" class="shuriken-type-warning" style="display:none; margin-top: 6px;">
-                                <span class="dashicons dashicons-warning"></span>
+                                <?php Shuriken_Icons::render('triangle-alert', array('width' => 16, 'height' => 16)); ?>
                                 <?php esc_html_e('Type mismatch: Mixing binary and continuous rating types may produce incorrect aggregated scores.', 'shuriken-reviews'); ?>
                             </div>
                             <p class="description">
