@@ -58,7 +58,7 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
     <!-- Enable Rate Limiting Card -->
     <div class="shuriken-settings-card shuriken-settings-card-highlight">
         <div class="settings-card-header">
-            <span class="settings-card-icon">🛡️</span>
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('shield'); ?></span>
             <h3><?php esc_html_e('Rate Limiting', 'shuriken-reviews'); ?></h3>
         </div>
         <div class="settings-card-body">
@@ -88,7 +88,7 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
         <!-- Vote Cooldown Card -->
         <div class="shuriken-settings-card">
             <div class="settings-card-header">
-                <span class="settings-card-icon">⏱️</span>
+                <span class="settings-card-icon"><?php Shuriken_Icons::render('clock'); ?></span>
                 <h3><?php esc_html_e('Vote Cooldown', 'shuriken-reviews'); ?></h3>
             </div>
             <div class="settings-card-body">
@@ -116,7 +116,7 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
         <!-- Member Limits Card -->
         <div class="shuriken-settings-card">
             <div class="settings-card-header">
-                <span class="settings-card-icon">👤</span>
+                <span class="settings-card-icon"><?php Shuriken_Icons::render('user'); ?></span>
                 <h3><?php esc_html_e('Member Limits', 'shuriken-reviews'); ?></h3>
             </div>
             <div class="settings-card-body">
@@ -161,7 +161,7 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
         <!-- Guest Limits Card -->
         <div class="shuriken-settings-card">
             <div class="settings-card-header">
-                <span class="settings-card-icon">👥</span>
+                <span class="settings-card-icon"><?php Shuriken_Icons::render('users'); ?></span>
                 <h3><?php esc_html_e('Guest Limits', 'shuriken-reviews'); ?></h3>
             </div>
             <div class="settings-card-body">

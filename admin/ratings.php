@@ -388,7 +388,7 @@ $col_class = function($col) use ($hidden_columns) {
                             ?>
                             <div class="context-usage-info">
                                 <span class="context-usage-badge" title="<?php esc_attr_e('Per-post voting is active on this many posts/pages', 'shuriken-reviews'); ?>">
-                                    📍 <?php printf(esc_html(_n('%d post', '%d posts', $ctx_count, 'shuriken-reviews')), $ctx_count); ?>
+                                    <?php Shuriken_Icons::render('map-pin', array('width' => 14, 'height' => 14)); ?> <?php printf(esc_html(_n('%d post', '%d posts', $ctx_count, 'shuriken-reviews')), $ctx_count); ?>
                                 </span>
                             </div>
                             <?php endif; ?>
@@ -406,8 +406,8 @@ $col_class = function($col) use ($hidden_columns) {
                             ?>
                             <div class="shuriken-rating-display">
                                 <span class="like-dislike-stats">
-                                    <span class="like-stat">👍 <?php echo number_format_i18n($likes); ?></span>
-                                    <span class="dislike-stat">👎 <?php echo number_format_i18n($dislikes); ?></span>
+                                    <span class="like-stat"><?php Shuriken_Icons::render('thumbs-up', array('width' => 14, 'height' => 14)); ?> <?php echo number_format_i18n($likes); ?></span>
+                                    <span class="dislike-stat"><?php Shuriken_Icons::render('thumbs-down', array('width' => 14, 'height' => 14)); ?> <?php echo number_format_i18n($dislikes); ?></span>
                                 </span>
                                 <span class="rating-text">
                                     <?php
@@ -422,7 +422,7 @@ $col_class = function($col) use ($hidden_columns) {
                             </div>
                             <?php elseif ($r_type === 'approval'): ?>
                             <div class="shuriken-rating-display">
-                                <span class="approval-stats">👍 <?php echo number_format_i18n($rating->total_votes); ?></span>
+                                <span class="approval-stats"><?php Shuriken_Icons::render('thumbs-up', array('width' => 14, 'height' => 14)); ?> <?php echo number_format_i18n($rating->total_votes); ?></span>
                                 <span class="rating-text">
                                     <?php printf(esc_html__('%s upvotes', 'shuriken-reviews'), number_format_i18n($rating->total_votes)); ?>
                                 </span>
@@ -443,13 +443,14 @@ $col_class = function($col) use ($hidden_columns) {
                             <div class="shuriken-rating-display">
                                 <span class="shuriken-rating-stars" title="<?php printf(esc_attr__('%1$s out of %2$d', 'shuriken-reviews'), $average, $r_scale); ?>">
                                     <?php
+                                    $star_icons = Shuriken_Icons::rating_symbols(16);
                                     for ($i = 1; $i <= $r_scale; $i++) {
                                         if ($i <= $stars_filled) {
-                                            echo '<span class="star filled">★</span>';
+                                            echo '<span class="star filled">' . $star_icons['star_filled'] . '</span>';
                                         } elseif ($i == $stars_filled + 1 && $half_star) {
-                                            echo '<span class="star half">★</span>';
+                                            echo '<span class="star half">' . $star_icons['star_filled'] . '</span>';
                                         } else {
-                                            echo '<span class="star empty">☆</span>';
+                                            echo '<span class="star empty">' . $star_icons['star_empty'] . '</span>';
                                         }
                                     }
                                     ?>

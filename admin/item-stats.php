@@ -347,7 +347,7 @@ if ($rating_type === 'like_dislike') {
                     <?php echo esc_html($display_total_votes); ?>
                     <?php if ($rating_type === 'like_dislike') : ?>
                         <small style="font-size: 14px; color: #64748b;">
-                            (👍 <?php echo esc_html($display_total_rating); ?> / 👎 <?php echo esc_html($display_total_votes - $display_total_rating); ?>)
+                            (<?php Shuriken_Icons::render('thumbs-up', array('width' => 14, 'height' => 14)); ?> <?php echo esc_html($display_total_rating); ?> / <?php Shuriken_Icons::render('thumbs-down', array('width' => 14, 'height' => 14)); ?> <?php echo esc_html($display_total_votes - $display_total_rating); ?>)
                         </small>
                     <?php endif; ?>
                 </h3>
@@ -482,7 +482,7 @@ if ($rating_type === 'like_dislike') {
                             </span>
                         </td>
                         <td>
-                            <?php if (!in_array($sub->rating_type ?: 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display">★</span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
+                            <?php if (!in_array($sub->rating_type ?: 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                         </td>
                         <td>
                             <span class="effective-score <?php echo $sub->effect_type === 'negative' ? 'inverted' : ''; ?>">

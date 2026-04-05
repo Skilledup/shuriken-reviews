@@ -66,7 +66,7 @@ if (isset($_POST['save_general_settings'])) {
     
     <div class="shuriken-settings-card">
         <div class="settings-card-header">
-            <span class="settings-card-icon">🗳️</span>
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('vote'); ?></span>
             <h3><?php esc_html_e('Voting Settings', 'shuriken-reviews'); ?></h3>
         </div>
         <div class="settings-card-body">
@@ -91,7 +91,7 @@ if (isset($_POST['save_general_settings'])) {
     
     <div class="shuriken-settings-card">
         <div class="settings-card-header">
-            <span class="settings-card-icon">📊</span>
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('bar-chart-2'); ?></span>
             <h3><?php esc_html_e('Archive Sorting', 'shuriken-reviews'); ?></h3>
         </div>
         <div class="settings-card-body">
@@ -147,7 +147,7 @@ if (isset($_POST['save_general_settings'])) {
     <!-- WordPress Comments System Card -->
     <div class="shuriken-settings-card shuriken-settings-card-highlight">
         <div class="settings-card-header">
-            <span class="settings-card-icon">💬</span>
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('message-square'); ?></span>
             <h3><?php esc_html_e('WordPress Comments System', 'shuriken-reviews'); ?></h3>
         </div>
         <div class="settings-card-body">
@@ -175,7 +175,7 @@ if (isset($_POST['save_general_settings'])) {
     <div id="comments-system-options" class="shuriken-settings-collapsible <?php echo get_option('shuriken_comments_system_enabled', '1') === '1' ? 'is-expanded' : ''; ?>">
         <div class="shuriken-settings-card">
             <div class="settings-card-header">
-                <span class="settings-card-icon">🔧</span>
+                <span class="settings-card-icon"><?php Shuriken_Icons::render('wrench'); ?></span>
                 <h3><?php esc_html_e('Latest Comments Block Filtering', 'shuriken-reviews'); ?></h3>
             </div>
             <div class="settings-card-body">
@@ -218,7 +218,7 @@ if (isset($_POST['save_general_settings'])) {
     <!-- REST API Access Card -->
     <div class="shuriken-settings-card">
         <div class="settings-card-header">
-            <span class="settings-card-icon">🔑</span>
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('key-round'); ?></span>
             <h3><?php esc_html_e('REST API Access', 'shuriken-reviews'); ?></h3>
         </div>
         <div class="settings-card-body">

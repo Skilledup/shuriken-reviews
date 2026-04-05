@@ -17,17 +17,17 @@ if (!defined('ABSPATH')) {
 $tabs = array(
     'general' => array(
         'label' => __('General', 'shuriken-reviews'),
-        'icon'  => '⚙️',
+        'icon'  => 'settings',
         'file'  => 'settings-general.php',
     ),
     'rate-limiting' => array(
         'label' => __('Rate Limiting', 'shuriken-reviews'),
-        'icon'  => '🛡️',
+        'icon'  => 'shield',
         'file'  => 'settings-rate-limiting.php',
     ),
     'about' => array(
         'label' => __('About', 'shuriken-reviews'),
-        'icon'  => 'ℹ️',
+        'icon'  => 'info',
         'file'  => 'settings-about.php',
     ),
 );
@@ -61,7 +61,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
             <a href="<?php echo esc_url(add_query_arg('tab', $tab_key, $base_url)); ?>" 
                class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>"
                <?php echo $current_tab === $tab_key ? 'aria-current="page"' : ''; ?>>
-                <span class="tab-icon"><?php echo esc_html($tab['icon']); ?></span>
+                <span class="tab-icon"><?php Shuriken_Icons::render($tab['icon'], array('width' => 16, 'height' => 16)); ?></span>
                 <?php echo esc_html($tab['label']); ?>
             </a>
         <?php endforeach; ?>
@@ -73,7 +73,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
     $rate_limit_dismissed = get_option('shuriken_rate_limit_warning_dismissed', '0');
     if ($rate_limit_enabled !== '1' && $rate_limit_dismissed !== '1') : ?>
     <div class="shuriken-rate-limit-warning" id="shuriken-rate-limit-warning">
-        <span class="warning-icon">⚠️</span>
+        <span class="warning-icon"><?php Shuriken_Icons::render('triangle-alert'); ?></span>
         <div class="warning-content">
             <strong><?php esc_html_e('Rate Limiting is disabled', 'shuriken-reviews'); ?></strong>
             <p><?php
@@ -111,7 +111,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
             <?php if ($current_tab === 'general') : ?>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">💡</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('lightbulb'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('Settings not applying?', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('Some themes or plugins may override these options through code. If a setting seems to have no effect, contact your theme author to check for overriding filters.', 'shuriken-reviews'); ?></p>
@@ -119,7 +119,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                 </div>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">👥</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('users'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('Guest Voting', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('Enabling guest voting increases engagement, but make sure rate limiting is turned on to prevent abuse from anonymous users.', 'shuriken-reviews'); ?></p>
@@ -127,7 +127,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                 </div>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">🔑</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('key-round'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('REST API Access', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('Lowering the required capability (e.g. to Author) lets more users manage ratings through the API. Only do this on trusted multi-author sites.', 'shuriken-reviews'); ?></p>
@@ -137,7 +137,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
             <?php elseif ($current_tab === 'rate-limiting') : ?>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">🛡️</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('shield'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('Why enable rate limiting?', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('Without rate limiting, a single user or bot can submit hundreds of votes in seconds, skewing your ratings and making them unreliable.', 'shuriken-reviews'); ?></p>
@@ -145,7 +145,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                 </div>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">⏱️</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('clock'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('Recommended defaults', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('A 60-second cooldown, 30 votes/hour for members, and 10 votes/hour for guests works well for most sites. Adjust based on your traffic.', 'shuriken-reviews'); ?></p>
@@ -153,7 +153,7 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                 </div>
 
                 <div class="sidebar-tip">
-                    <span class="tip-icon">💡</span>
+                    <span class="tip-icon"><?php Shuriken_Icons::render('lightbulb'); ?></span>
                     <div class="tip-content">
                         <strong><?php esc_html_e('Settings not applying?', 'shuriken-reviews'); ?></strong>
                         <p><?php esc_html_e('Some themes or plugins may override rate-limiting behaviour through code. If limits seem to have no effect, contact your theme author to check for overriding filters.', 'shuriken-reviews'); ?></p>

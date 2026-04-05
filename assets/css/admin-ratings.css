@@ -6,6 +6,18 @@
  * @since 1.2.0
  */
 
+/* Inline SVG Icons (Lucide) */
+.shuriken-icon {
+    display: inline-block;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
 /* Page Title */
 .wrap > h1 {
     font-size: 28px;

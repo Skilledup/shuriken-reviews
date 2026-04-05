@@ -262,10 +262,11 @@ class Shuriken_Shortcodes {
          * Only applies to the 'stars' rating type.
          *
          * @since 1.7.0
-         * @param string $star_symbol The star symbol. Default '★'.
+         * @param string $star_symbol The star symbol. Default SVG star icon.
          * @param object $rating      The rating object.
          */
-        $star_symbol = apply_filters('shuriken_rating_star_symbol', '★', $rating);
+        $icons = Shuriken_Icons::rating_symbols();
+        $star_symbol = apply_filters('shuriken_rating_star_symbol', $icons['star_filled'], $rating);
 
         // If contextual, overlay per-context stats onto the rating object
         $context_attrs = '';
@@ -307,10 +308,11 @@ class Shuriken_Shortcodes {
                      * Filter the like/dislike symbols.
                      *
                      * @since 1.14.0
-                     * @param array  $symbols Array with 'like' and 'dislike' keys. Default: ['like' => '👍', 'dislike' => '👎'].
+                     * @param array  $symbols Array with 'like' and 'dislike' keys. Default: SVG thumbs-up/thumbs-down icons.
                      * @param object $rating  The rating object.
                      */
-                    $ld_symbols = apply_filters('shuriken_like_dislike_symbols', array('like' => '&#128077;', 'dislike' => '&#128078;'), $rating);
+                    $ld_icons = Shuriken_Icons::rating_symbols();
+                    $ld_symbols = apply_filters('shuriken_like_dislike_symbols', array('like' => $ld_icons['thumbs_up'], 'dislike' => $ld_icons['thumbs_down']), $rating);
                 ?>
                 <div class="shuriken-like-dislike<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Like or Dislike', 'shuriken-reviews'); ?>">
                     <?php if (!$is_display_only): ?>
@@ -342,10 +344,11 @@ class Shuriken_Shortcodes {
                      * Filter the approval/upvote symbol.
                      *
                      * @since 1.14.0
-                     * @param string $symbol The upvote symbol. Default '▲' (&#9650;).
+                     * @param string $symbol The upvote symbol. Default SVG chevron-up icon.
                      * @param object $rating The rating object.
                      */
-                    $approval_symbol = apply_filters('shuriken_approval_symbol', '&#9650;', $rating);
+                    $approval_icons = Shuriken_Icons::rating_symbols();
+                    $approval_symbol = apply_filters('shuriken_approval_symbol', $approval_icons['chevron_up'], $rating);
                 ?>
                 <div class="shuriken-approval<?php echo $is_display_only ? ' display-only-stars' : ''; ?>" role="group" aria-label="<?php esc_attr_e('Upvote', 'shuriken-reviews'); ?>">
                     <?php if (!$is_display_only): ?>
@@ -420,7 +423,7 @@ class Shuriken_Shortcodes {
                               <?php else: ?>
                               aria-label="<?php printf(esc_attr__('%1$d out of %2$d', 'shuriken-reviews'), $i, $max_stars); ?>"
                               <?php endif; ?>>
-                            <?php echo esc_html($star_symbol); ?>
+                            <?php echo wp_kses($star_symbol, shuriken_svg_allowed_tags()); ?>
                         </span>
                     <?php endfor; ?>
                 </div>

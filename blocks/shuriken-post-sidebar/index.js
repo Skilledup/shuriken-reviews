@@ -36,10 +36,10 @@
         if ( item.rating_type === 'like_dislike' ) {
             var likes    = item.total;
             var dislikes = item.votes - likes;
-            return '\uD83D\uDC4D ' + likes + '  \uD83D\uDC4E ' + dislikes;
+            return '+' + likes + '  -' + dislikes;
         }
         if ( item.rating_type === 'approval' ) {
-            return '\uD83D\uDC4D ' + item.votes;
+            return item.votes + ' ' + __( 'votes', 'shuriken-reviews' );
         }
         return item.average + ' / ' + item.scale + '  (' + item.votes + ')';
     }

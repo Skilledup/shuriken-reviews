@@ -45,7 +45,7 @@ if (!defined('ABSPATH')) {
 <!-- What's New -->
 <div class="shuriken-settings-card shuriken-settings-card-highlight">
     <div class="settings-card-header">
-        <span class="settings-card-icon">🆕</span>
+        <span class="settings-card-icon"><?php Shuriken_Icons::render('sparkles'); ?></span>
         <h3><?php printf(esc_html__("What's New in %s", 'shuriken-reviews'), esc_html(SHURIKEN_REVIEWS_VERSION)); ?></h3>
     </div>
     <div class="settings-card-body">
@@ -83,7 +83,7 @@ if (!defined('ABSPATH')) {
 <!-- Quick Start Guide -->
 <div class="shuriken-settings-card">
     <div class="settings-card-header">
-        <span class="settings-card-icon">📖</span>
+        <span class="settings-card-icon"><?php Shuriken_Icons::render('book-open'); ?></span>
         <h3><?php esc_html_e('Quick Start Guide', 'shuriken-reviews'); ?></h3>
     </div>
     <div class="settings-card-body">
@@ -123,7 +123,7 @@ if (!defined('ABSPATH')) {
 <!-- Shortcode Reference -->
 <div class="shuriken-settings-card">
     <div class="settings-card-header">
-        <span class="settings-card-icon">💻</span>
+        <span class="settings-card-icon"><?php Shuriken_Icons::render('code'); ?></span>
         <h3><?php esc_html_e('Shortcode Reference', 'shuriken-reviews'); ?></h3>
     </div>
     <div class="settings-card-body">
@@ -180,7 +180,7 @@ if (!defined('ABSPATH')) {
 <!-- Developer Resources -->
 <div class="shuriken-settings-card">
     <div class="settings-card-header">
-        <span class="settings-card-icon">🛠️</span>
+        <span class="settings-card-icon"><?php Shuriken_Icons::render('hammer'); ?></span>
         <h3><?php esc_html_e('Developer Resources', 'shuriken-reviews'); ?></h3>
     </div>
     <div class="settings-card-body">
@@ -322,7 +322,7 @@ if (!defined('ABSPATH')) {
 <!-- System Information -->
 <div class="shuriken-settings-card">
     <div class="settings-card-header">
-        <span class="settings-card-icon">ℹ️</span>
+        <span class="settings-card-icon"><?php Shuriken_Icons::render('info'); ?></span>
         <h3><?php esc_html_e('System Information', 'shuriken-reviews'); ?></h3>
     </div>
     <div class="settings-card-body">

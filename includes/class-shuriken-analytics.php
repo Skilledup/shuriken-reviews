@@ -208,10 +208,10 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     /**
      * Render a vote value for display in tables, adapting to rating type
      *
-     * Stars: filled/empty star characters
+     * Stars: filled/empty star SVG icons
      * Numeric: X/N format
-     * Like/dislike: 👍 or 👎
-     * Approval: 👍
+     * Like/dislike: thumbs-up or thumbs-down SVG icon
+     * Approval: thumbs-up SVG icon
      *
      * @param int $rating_value The vote value
      * @param string $rating_type Rating type
@@ -219,18 +219,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string HTML display string
      */
     public function format_vote_display(float|int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
+        $symbols = Shuriken_Icons::rating_symbols(14);
         if ($rating_type === 'like_dislike') {
-            return intval($rating_value) === 1 ? '👍' : '👎';
+            return intval($rating_value) === 1 ? $symbols['thumbs_up'] : $symbols['thumbs_down'];
         }
         if ($rating_type === 'approval') {
-            return '👍';
+            return $symbols['thumbs_up'];
         }
         $s = (int) $scale;
         $display_value = (int) round(((float) $rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $s);
         if ($rating_type === 'numeric') {
             return $display_value . '/' . $s;
         }
-        return str_repeat('★', $display_value) . str_repeat('☆', max(0, $s - $display_value));
+        return str_repeat($symbols['star_filled'], $display_value) . str_repeat($symbols['star_empty'], max(0, $s - $display_value));
     }
 
     /**

@@ -155,12 +155,13 @@ $contextual_posts     = $analytics->get_contextual_post_count();
             <div class="type-summary-card type-<?php echo esc_attr($type_summary->rating_type); ?>">
                 <span class="type-summary-icon">
                     <?php
+                    $symbols = Shuriken_Icons::rating_symbols(18);
                     switch ($type_summary->rating_type) {
-                        case 'stars': echo '★'; break;
-                        case 'like_dislike': echo '👍👎'; break;
+                        case 'stars': echo $symbols['star_filled']; break;
+                        case 'like_dislike': echo $symbols['thumbs_up'] . $symbols['thumbs_down']; break;
                         case 'numeric': echo '#'; break;
-                        case 'approval': echo '👍'; break;
-                        default: echo '★';
+                        case 'approval': echo $symbols['thumbs_up']; break;
+                        default: echo $symbols['star_filled'];
                     }
                     ?>
                 </span>
@@ -385,7 +386,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                         ?>
                             <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
                                 <td><a href="<?php echo esc_url($stats_url); ?>" class="rating-item-link"><?php echo esc_html($item->name); ?></a></td>
-                                <td><?php if (!in_array($item->rating_type ?? 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display low">★</span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
+                                <td><?php if (!in_array($item->rating_type ?? 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display low"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -427,10 +428,10 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                                     ?>
                                         <?php if ($ctx_edit) : ?>
                                             <a href="<?php echo esc_url($ctx_edit); ?>" class="context-link" title="<?php echo esc_attr($vote->context_type); ?>">
-                                                📍 <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?>
+                                                <?php Shuriken_Icons::render('map-pin', array('width' => 14, 'height' => 14)); ?> <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?>
                                             </a>
                                         <?php else : ?>
-                                            <span class="context-label">📍 <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?></span>
+                                            <span class="context-label"><?php Shuriken_Icons::render('map-pin', array('width' => 14, 'height' => 14)); ?> <?php echo esc_html($ctx_title ?: '#' . $vote->context_id); ?></span>
                                         <?php endif; ?>
                                     <?php else : ?>
                                         <span class="context-global"><?php esc_html_e('Global', 'shuriken-reviews'); ?></span>

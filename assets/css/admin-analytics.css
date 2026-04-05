@@ -5,6 +5,18 @@
  * @since 1.3.0
  */
 
+/* Inline SVG Icons (Lucide) */
+.shuriken-analytics .shuriken-icon {
+    display: inline-block;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
 /* General Layout */
 .shuriken-analytics {
     max-width: 1600px;
@@ -496,8 +508,14 @@
 /* Star Display */
 .star-display {
     color: #f59e0b;
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
     margin-right: 5px;
+}
+
+.star-display .shuriken-icon {
+    width: 15px;
+    height: 15px;
 }
 
 .star-display.low {
@@ -506,8 +524,14 @@
 
 .star-rating-display {
     color: #f59e0b;
-    font-size: 13px;
-    letter-spacing: -1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.star-rating-display .shuriken-icon {
+    width: 13px;
+    height: 13px;
 }
 
 /* Clickable Row Styles */

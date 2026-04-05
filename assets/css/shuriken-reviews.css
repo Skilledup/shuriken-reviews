@@ -4,6 +4,23 @@
     transition: opacity 0.3s ease;
 }
 
+/* Inline SVG Icons (Lucide) */
+.shuriken-icon {
+    display: inline-block;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.shuriken-rating-symbol .shuriken-icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* Refreshing state - subtle visual feedback while loading fresh data */
 .shuriken-rating.shuriken-refreshing {
     opacity: 0.6;
@@ -33,7 +50,8 @@
 }
 
 .stars {
-    font-size: 24px;
+    display: flex;
+    gap: 2px;
     color: #ddd;
     cursor: pointer;
     flex: 0 0 auto;
@@ -41,6 +59,13 @@
 
 .stars .star {
     transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+}
+
+.stars .star .shuriken-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .stars .star:hover,
@@ -1082,8 +1107,14 @@ button.shuriken-btn:hover {
 }
 
 .shuriken-thumb {
-    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
     line-height: 1;
+}
+
+.shuriken-thumb .shuriken-icon {
+    width: 18px;
+    height: 18px;
 }
 
 .shuriken-count {
@@ -1135,8 +1166,9 @@ button.shuriken-upvote-btn:hover,
     color: #434190;
 }
 
-.shuriken-upvote-btn .shuriken-thumb {
-    font-size: 14px;
+.shuriken-upvote-btn .shuriken-thumb .shuriken-icon {
+    width: 14px;
+    height: 14px;
 }
 
 /* =====================================================

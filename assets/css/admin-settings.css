@@ -8,6 +8,39 @@
  */
 
 /* ==========================================================================
+   Inline SVG Icons (Lucide)
+   ========================================================================== */
+
+.shuriken-icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.settings-card-icon .shuriken-icon,
+.tip-icon .shuriken-icon,
+.warning-icon .shuriken-icon,
+.note-icon .shuriken-icon {
+    width: 20px;
+    height: 20px;
+    color: #667eea;
+}
+
+.tab-icon .shuriken-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.tip-icon .shuriken-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.warning-icon .shuriken-icon {
+    color: #f59e0b;
+}
+
+/* ==========================================================================
    Layout & Container
    ========================================================================== */
 
@@ -65,7 +98,8 @@
 }
 
 .shuriken-settings-tabs .nav-tab .tab-icon {
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* ==========================================================================
@@ -105,8 +139,9 @@
 }
 
 .settings-card-icon {
-    font-size: 20px;
     line-height: 1;
+    display: flex;
+    align-items: center;
 }
 
 .settings-card-header h3 {
@@ -290,9 +325,10 @@
 }
 
 .shuriken-settings-note .note-icon {
-    font-size: 20px;
     line-height: 1;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .shuriken-settings-note .note-content {
@@ -466,9 +502,10 @@
 }
 
 .sidebar-tip .tip-icon {
-    font-size: 18px;
     line-height: 1;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .sidebar-tip .tip-content {
@@ -507,9 +544,10 @@
 }
 
 .shuriken-rate-limit-warning .warning-icon {
-    font-size: 18px;
     flex-shrink: 0;
     line-height: 1;
+    display: flex;
+    align-items: center;
 }
 
 .shuriken-rate-limit-warning .warning-content {
