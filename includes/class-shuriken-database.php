@@ -694,11 +694,12 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                 $total_votes += $sub->total_votes;
                 
                 if ($sub->effect_type === 'negative') {
-                    // Scale-aware inversion:
-                    // Stars/numeric [1, scale]: inverted = (scale + 1) - value → aggregate = votes * (scale + 1) - total
+                    // Scale-aware inversion using the INTERNAL normalized scale (1–RATING_SCALE_DEFAULT)
+                    // since total_rating is stored normalized, not on the display scale.
                     // Binary [0, 1]: inverted = 1 - value → aggregate = votes * scale - total (scale = 1)
+                    // Stars/numeric [1, RATING_SCALE_DEFAULT]: inverted = (RATING_SCALE_DEFAULT + 1) - value
                     $is_binary = in_array($sub->rating_type, array('like_dislike', 'approval'), true);
-                    $inv_const = $is_binary ? (int) $sub->scale : ((int) $sub->scale + 1);
+                    $inv_const = $is_binary ? (int) $sub->scale : (self::RATING_SCALE_DEFAULT + 1);
                     $inverted_rating = ($sub->total_votes * $inv_const) - $sub->total_rating;
                     $total_rating += $inverted_rating;
                 } else {

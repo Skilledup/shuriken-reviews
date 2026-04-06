@@ -556,6 +556,25 @@
     color: #a0aec0;
 }
 
+/* Minimal: ghost accent button for numeric children */
+.shuriken-rating-group.is-style-minimal .child-rating .shuriken-slider-submit {
+    background: transparent;
+    color: var(--shuriken-star-color);
+    border: 1.5px solid var(--shuriken-star-color);
+    border-radius: 4px;
+    box-shadow: none;
+    font-size: 0.8em;
+    padding: 4px 12px;
+    filter: none;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .shuriken-slider-submit:hover {
+    background: var(--shuriken-star-color);
+    color: #1a1a1a;
+    filter: none;
+    transform: none;
+}
+
 /* =====================================================
    Preset: Boxed
    Flat solid-color card backgrounds, no gradients
@@ -705,6 +724,25 @@
     color: #a0aec0;
 }
 
+/* Dark: slider track + outlined button for numeric children */
+.shuriken-rating-group.is-style-dark .child-rating .shuriken-numeric .shuriken-slider {
+    background: #4a5568;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .shuriken-slider-submit {
+    background: transparent;
+    color: var(--shuriken-star-color);
+    border: 1.5px solid var(--shuriken-star-color);
+    box-shadow: none;
+    filter: none;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .shuriken-slider-submit:hover {
+    background: var(--shuriken-star-color);
+    color: #1a202c;
+    filter: none;
+}
+
 /* =====================================================
    Preset: Outlined
    Border-only containers, transparent backgrounds
@@ -769,6 +807,20 @@
 .shuriken-rating-group.is-style-outlined .child-rating .rating-stats {
     font-size: 13px;
     color: #718096;
+}
+
+/* Outlined: ghost button for numeric children */
+.shuriken-rating-group.is-style-outlined .child-rating .shuriken-slider-submit {
+    border: 2px solid var(--shuriken-star-color);
+    background: transparent;
+    color: var(--shuriken-star-color);
+    box-shadow: none;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .shuriken-slider-submit:hover {
+    background: var(--shuriken-star-color);
+    color: #fff;
+    filter: none;
 }
 
 /* =====================================================

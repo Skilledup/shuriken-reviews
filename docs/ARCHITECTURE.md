@@ -308,7 +308,7 @@ Registers and renders Gutenberg blocks.
 
 **Blocks:**
 - `shuriken-reviews/rating` - Single rating display (supports `postContext` for per-post voting)
-- `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` for per-post voting)
+- `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` for per-post voting; `gap` attribute controls `--shuriken-gap` vertical spacing)
 
 ### Shared Data Store (`blocks/shared/ratings-store.js`)
 
@@ -360,8 +360,8 @@ Reusable utilities shared between both block editors.
 - `getScaleRange(ratingType)` - Get valid {min, max} scale range for a rating type
 - `getRatingType(rating)` - Safe accessor for rating_type (defaults to 'stars')
 - `getRatingScale(rating)` - Safe accessor for scale (defaults to 5)
-- `calculateScaledAverage(rating)` - Convert normalized 1–5 average to the rating's custom scale
-- `renderRatingPreview(rating, createElement)` - Type-branched editor preview returning [widgetEl, statsEl]
+- `calculateScaledAverage(rating)` - Read `rating.display_average` (pre-computed by the data layer) and return it directly; no client-side math
+- `renderRatingPreview(rating, createElement)` - Type-branched editor preview returning `[widgetEl, statsEl]`. For display-only numeric ratings renders a `.shuriken-numeric-display` span (matching PHP output) instead of the full slider widget
 - `formatCompactStats(rating)` - One-line type-aware stats string for compact display
 
 ### AJAX Module (`class-shuriken-ajax.php`)
@@ -408,6 +408,7 @@ Database operations
 - Check if vote exists
 - Create or update vote
 - Recalculate rating average
+  (negative sub-ratings inverted using RATING_SCALE_DEFAULT+1 = 6, not display scale)
 - Update total votes
         │
         ▼

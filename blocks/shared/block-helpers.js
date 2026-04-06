@@ -336,7 +336,25 @@
 
         if (type === 'numeric') {
             var numAvg    = calculateScaledAverage(rating);
+            var isDisplayOnly = !!(rating.display_only || rating.is_display_only);
             var sliderVal = numAvg > 0 ? Math.round(numAvg) : Math.round(scale / 2);
+
+            // Display-only numeric: simplified readout matching PHP output
+            if (isDisplayOnly) {
+                var displayVal = numAvg > 0 ? (Math.round(numAvg * 10) / 10) : 0;
+                return [
+                    h('div', { className: 'shuriken-numeric display-only-stars' },
+                        h('span', { className: 'shuriken-numeric-display' },
+                            h('span', { className: 'shuriken-numeric-value' }, String(displayVal)),
+                            h('span', { className: 'shuriken-slider-max' }, '/ ' + scale)
+                        )
+                    ),
+                    h('div', { className: 'rating-stats' },
+                        __('Average:', 'shuriken-reviews') + ' ' + numAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+                    )
+                ];
+            }
+
             return [
                 h('div', { className: 'shuriken-numeric' },
                     h('input', {

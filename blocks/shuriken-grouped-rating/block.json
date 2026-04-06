@@ -82,6 +82,10 @@
         "postContext": {
             "type": "boolean",
             "default": false
+        },
+        "gap": {
+            "type": "string",
+            "default": ""
         }
     },
     "usesContext": ["postId", "postType"],

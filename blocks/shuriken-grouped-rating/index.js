@@ -71,7 +71,8 @@
                 childLayout,
                 mirrorId,
                 subRatings,
-                postContext
+                postContext,
+                gap
             } = attributes;
 
             // ---- Local UI state ----
@@ -130,6 +131,9 @@
             }
             if (starColor) {
                 cssVars['--shuriken-user-star-color'] = starColor;
+            }
+            if (gap) {
+                cssVars['--shuriken-gap'] = gap;
             }
 
             var layoutClass = childLayout === 'list' ? ' is-layout-list' : '';
@@ -902,6 +906,13 @@
                             ],
                             onChange: function (value) { setAttributes({ childLayout: value }); },
                             help: __('Grid shows children as cards in columns. List shows them as full-width rows.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(TextControl, {
+                            label: __('Gap', 'shuriken-reviews'),
+                            value: gap || '',
+                            placeholder: '24px',
+                            onChange: function (value) { setAttributes({ gap: value || '' }); },
+                            help: __('Space between parent and children. Accepts CSS values (e.g. 24px, 2rem).', 'shuriken-reviews')
                         })
                     ),
 

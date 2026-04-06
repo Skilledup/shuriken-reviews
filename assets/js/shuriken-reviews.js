@@ -168,7 +168,8 @@ jQuery(document).ready(function($) {
                                     .replace('%3$s', stats.total_votes);
                                 $statsEl.html(text);
                                 
-                                $rating.find('.shuriken-numeric-value, .shuriken-slider-value').text(Math.round(scaledAverage));
+                                $rating.find('.shuriken-numeric-value').text(Math.round(scaledAverage * 10) / 10);
+                                $rating.find('.shuriken-slider-value').text(Math.max(1, Math.round(scaledAverage)));
                             } else {
                                 const scaledAverage = parseFloat(stats.display_average) || 0;
                                 

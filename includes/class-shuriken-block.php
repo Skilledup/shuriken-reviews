@@ -372,7 +372,7 @@ class Shuriken_Block {
             $child_ratings = $this->db->get_sub_ratings($rating_id);
         }
 
-        // Build CSS variables from simplified attributes (accent + star color)
+        // Build CSS variables from simplified attributes (accent + star color + gap)
         $style_vars = array();
 
         if (!empty($attributes['accentColor'])) {
@@ -380,6 +380,9 @@ class Shuriken_Block {
         }
         if (!empty($attributes['starColor'])) {
             $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($attributes['starColor']);
+        }
+        if (!empty($attributes['gap'])) {
+            $style_vars[] = '--shuriken-gap: ' . esc_attr($attributes['gap']);
         }
 
         // Layout class

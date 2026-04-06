@@ -6,6 +6,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.14.9] — 2026-04-06
+
+### Added
+- **Gap setting for grouped rating block** — a new "Gap" text control in the Layout inspector panel sets the `--shuriken-gap` CSS variable (the vertical space between parent and child ratings). Accepts any CSS size value (e.g. `24px`, `2rem`). Previously the CSS variable existed in the stylesheet but had no block-level control; the only way to override the `24px` default was custom CSS. Files: `blocks/shuriken-grouped-rating/block.json`, `blocks/shuriken-grouped-rating/index.js`, `includes/class-shuriken-block.php`.
+
+### Fixed
+- **Parent rating totals inflated when negative sub-ratings use a non-default scale** — `recalculate_parent_rating()` in `Shuriken_Database` was computing the inversion constant as `$sub->scale + 1` (the display scale, e.g. 101 for a scale-100 sub), but votes are stored on the internal normalized 1–5 scale. The constant is now always `RATING_SCALE_DEFAULT + 1` (= 6) for stars/numeric types, matching `Shuriken_Analytics::get_inversion_constant()` and the mock implementation. Previous symptom: a scale-100 negative sub with 2 votes at 100/100 would add `2 × 101 − total` ≈ 200 to the parent's `total_rating` instead of `2 × 6 − total` ≈ 2. File: `includes/class-shuriken-database.php`.
+- **FSE editor shows full slider + Rate button for display-only numeric parent ratings** — `renderRatingPreview()` always rendered the interactive slider widget for numeric type regardless of the `display_only` flag, while the PHP frontend renders a simplified `.shuriken-numeric-display` span. The editor preview now matches the frontend markup. File: `blocks/shared/block-helpers.js`.
+- **Numeric "Rate" button appears all black in grouped rating children** — the grouped rating preset CSS (minimal, dark, outlined) had no `.shuriken-slider-submit` overrides for child ratings, so the button fell through to raw browser defaults instead of the preset's ghost/outlined style. Per-preset button rules added to mirror the single-rating preset equivalents. File: `assets/css/shuriken-reviews.css`.
+- **Numeric display-only value lost decimal precision after page-load stats refresh** — `applyStats()` in the frontend JS applied `Math.round()` to both `.shuriken-numeric-value` (display-only readout, should keep 1 decimal) and `.shuriken-slider-value` (interactive slider, should be integer ≥ 1). The two elements are now updated independently: display value uses `Math.round(x * 10) / 10` and slider value uses `Math.max(1, Math.round(x))`, matching PHP's rendering. File: `assets/js/shuriken-reviews.js`.
+
+---
+
 ## [1.14.8] — 2026-04-05
 
 ### Added
