@@ -571,8 +571,8 @@ jQuery(document).ready(function($) {
             showFeedback(msg, 4000);
         }
 
-        // Show spinner while AJAX is in-flight
-        $feedback.smoothHtml('<span class="shuriken-spinner" aria-hidden="true"></span>');
+        // Pulse the widget while AJAX is in-flight
+        $rating.addClass('shuriken-loading');
 
         var postData = {
             action: 'submit_rating',
@@ -664,6 +664,7 @@ jQuery(document).ready(function($) {
                 showError(null, xhr);
             },
             complete: function() {
+                $rating.removeClass('shuriken-loading');
                 $rating.find('.shuriken-btn').css('pointer-events', 'auto');
             }
         });
