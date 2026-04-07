@@ -347,6 +347,23 @@
     gap: 10px;
 }
 
+/* Grid (card) child: wrapper fills the card so numeric slider can stretch */
+.shuriken-rating-group:not(.is-layout-list) .child-rating .shuriken-rating-wrapper {
+    width: 100%;
+}
+
+/* Grid (card) child: numeric widget fills wrapper width,
+   slider takes its own full row, value + button wrap below */
+.shuriken-rating-group:not(.is-layout-list) .child-rating .shuriken-numeric {
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.shuriken-rating-group:not(.is-layout-list) .child-rating .shuriken-numeric .shuriken-slider {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
 /* Child ratings grid layout (default) */
 .shuriken-rating-group .shuriken-child-ratings {
     display: grid;
