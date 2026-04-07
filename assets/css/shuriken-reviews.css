@@ -330,6 +330,11 @@
     gap: var(--shuriken-gap, 24px);
 }
 
+/* Reset individual rating margins inside grouped layout — gap handles spacing */
+.shuriken-rating-group .shuriken-rating {
+    margin: 0;
+}
+
 .shuriken-rating-group .parent-rating .shuriken-rating-wrapper {
     flex-direction: column;
     align-items: center;
@@ -559,8 +564,8 @@
 /* Minimal: ghost accent button for numeric children */
 .shuriken-rating-group.is-style-minimal .child-rating .shuriken-slider-submit {
     background: transparent;
-    color: var(--shuriken-star-color);
-    border: 1.5px solid var(--shuriken-star-color);
+    color: var(--shuriken-button-color, var(--shuriken-star-color));
+    border: 1.5px solid var(--shuriken-button-color, var(--shuriken-star-color));
     border-radius: 4px;
     box-shadow: none;
     font-size: 0.8em;
@@ -569,7 +574,7 @@
 }
 
 .shuriken-rating-group.is-style-minimal .child-rating .shuriken-slider-submit:hover {
-    background: var(--shuriken-star-color);
+    background: var(--shuriken-button-color, var(--shuriken-star-color));
     color: #1a1a1a;
     filter: none;
     transform: none;
@@ -731,14 +736,14 @@
 
 .shuriken-rating-group.is-style-dark .child-rating .shuriken-slider-submit {
     background: transparent;
-    color: var(--shuriken-star-color);
-    border: 1.5px solid var(--shuriken-star-color);
+    color: var(--shuriken-button-color, var(--shuriken-star-color));
+    border: 1.5px solid var(--shuriken-button-color, var(--shuriken-star-color));
     box-shadow: none;
     filter: none;
 }
 
 .shuriken-rating-group.is-style-dark .child-rating .shuriken-slider-submit:hover {
-    background: var(--shuriken-star-color);
+    background: var(--shuriken-button-color, var(--shuriken-star-color));
     color: #1a202c;
     filter: none;
 }
@@ -811,14 +816,14 @@
 
 /* Outlined: ghost button for numeric children */
 .shuriken-rating-group.is-style-outlined .child-rating .shuriken-slider-submit {
-    border: 2px solid var(--shuriken-star-color);
+    border: 2px solid var(--shuriken-button-color, var(--shuriken-star-color));
     background: transparent;
-    color: var(--shuriken-star-color);
+    color: var(--shuriken-button-color, var(--shuriken-star-color));
     box-shadow: none;
 }
 
 .shuriken-rating-group.is-style-outlined .child-rating .shuriken-slider-submit:hover {
-    background: var(--shuriken-star-color);
+    background: var(--shuriken-button-color, var(--shuriken-star-color));
     color: #fff;
     filter: none;
 }
@@ -970,7 +975,7 @@
     padding: 6px 16px;
     border: none;
     border-radius: 6px;
-    background: var(--shuriken-star-color);
+    background: var(--shuriken-button-color, var(--shuriken-star-color));
     color: #1a1a1a;
     font-size: 0.85em;
     font-weight: 700;

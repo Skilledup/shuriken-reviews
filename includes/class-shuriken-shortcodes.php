@@ -631,6 +631,9 @@ class Shuriken_Shortcodes {
         if (!empty($atts['star_color']) && sanitize_hex_color($atts['star_color'])) {
             $vars[] = '--shuriken-user-star-color: ' . sanitize_hex_color($atts['star_color']);
         }
+        if (!empty($atts['button_color']) && sanitize_hex_color($atts['button_color'])) {
+            $vars[] = '--shuriken-button-color: ' . sanitize_hex_color($atts['button_color']);
+        }
 
         return $vars ? implode('; ', $vars) . ';' : '';
     }

@@ -336,7 +336,7 @@
 
         if (type === 'numeric') {
             var numAvg    = calculateScaledAverage(rating);
-            var isDisplayOnly = !!(rating.display_only || rating.is_display_only);
+            var isDisplayOnly = rating.display_only == 1 || rating.is_display_only == 1;
             var sliderVal = numAvg > 0 ? Math.round(numAvg) : Math.round(scale / 2);
 
             // Display-only numeric: simplified readout matching PHP output
@@ -500,6 +500,14 @@
                 value: opts.starColor,
                 onChange: opts.setStar,
                 label: getWidgetColorLabel(opts.ratingType)
+            });
+        }
+
+        if (opts.setButton && opts.ratingType === 'numeric') {
+            settings.push({
+                value: opts.buttonColor,
+                onChange: opts.setButton,
+                label: __('Button Color', 'shuriken-reviews')
             });
         }
 

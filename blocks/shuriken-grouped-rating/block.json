@@ -86,6 +86,10 @@
         "gap": {
             "type": "string",
             "default": ""
+        },
+        "buttonColor": {
+            "type": "string",
+            "default": ""
         }
     },
     "usesContext": ["postId", "postType"],

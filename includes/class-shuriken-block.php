@@ -384,6 +384,9 @@ class Shuriken_Block {
         if (!empty($attributes['gap'])) {
             $style_vars[] = '--shuriken-gap: ' . esc_attr($attributes['gap']);
         }
+        if (!empty($attributes['buttonColor'])) {
+            $style_vars[] = '--shuriken-button-color: ' . esc_attr($attributes['buttonColor']);
+        }
 
         // Layout class
         $layout_class = ($child_layout === 'list') ? ' is-layout-list' : '';

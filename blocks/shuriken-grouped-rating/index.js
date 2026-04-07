@@ -72,7 +72,8 @@
                 mirrorId,
                 subRatings,
                 postContext,
-                gap
+                gap,
+                buttonColor
             } = attributes;
 
             // ---- Local UI state ----
@@ -134,6 +135,9 @@
             }
             if (gap) {
                 cssVars['--shuriken-gap'] = gap;
+            }
+            if (buttonColor) {
+                cssVars['--shuriken-button-color'] = buttonColor;
             }
 
             var layoutClass = childLayout === 'list' ? ' is-layout-list' : '';
@@ -789,6 +793,13 @@
                                         : null
                                 }),
 
+                                isSearching && wp.element.createElement(
+                                    'div',
+                                    { style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' } },
+                                    wp.element.createElement(Spinner, { style: { margin: 0 } }),
+                                    wp.element.createElement('span', null, __('Searching...', 'shuriken-reviews'))
+                                ),
+
                                 wp.element.createElement(
                                     'div',
                                     { style: { display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '16px', flexWrap: 'wrap' } },
@@ -916,19 +927,26 @@
                         })
                     ),
 
-                    // Panel 4 — Colors (type-aware: accent + star/slider)
+                    // Panel 4 — Colors (type-aware: accent + star/slider + button for numeric)
                     wp.element.createElement(
                         PanelColorSettings,
                         {
                             title: __('Colors', 'shuriken-reviews'),
                             initialOpen: false,
-                            colorSettings: buildColorSettings({
-                                ratingType: selectedRating ? getRatingType(selectedRating) : 'stars',
-                                accentColor: accentColor || undefined,
-                                starColor: starColor || undefined,
-                                setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
-                                setStar: function (value) { setAttributes({ starColor: value || '' }); }
-                            })
+                            colorSettings: (function () {
+                                var parentType = selectedRating ? getRatingType(selectedRating) : 'stars';
+                                var hasNumeric = parentType === 'numeric' ||
+                                    orderedVisibleChildren.some(function (c) { return getRatingType(c) === 'numeric'; });
+                                return buildColorSettings({
+                                    ratingType: hasNumeric ? 'numeric' : parentType,
+                                    accentColor: accentColor || undefined,
+                                    starColor: starColor || undefined,
+                                    buttonColor: buttonColor || undefined,
+                                    setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
+                                    setStar: function (value) { setAttributes({ starColor: value || '' }); },
+                                    setButton: hasNumeric ? function (value) { setAttributes({ buttonColor: value || '' }); } : undefined
+                                });
+                            })()
                         }
                     )
                 ),
