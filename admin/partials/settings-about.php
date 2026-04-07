@@ -50,29 +50,54 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
+            <p class="about-new-intro"><?php esc_html_e('This is the first public release since 1.11.4. Here are the major highlights from everything added since then.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Comments Settings', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('A dedicated settings page for comment filtering with conditional hook registration — exclude author and reply comments from the Latest Comments block without touching theme code.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Contextual (Per-Post) Voting', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('A single rating placed in a post template now records independent vote tallies per post — no duplicate configurations needed. Enable the Per-post voting toggle in either block and archive pages can be sorted by rating score.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Participation Feedback', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Voters now see real-time feedback messages and a loading indicator while their vote is being submitted, giving a clear signal that the action registered.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Multiple Rating Types & Configurable Scales', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Three rating types are now supported: Star (1–N stars), Numeric (slider with a configurable 0–100 scale), and Thumbs (Like/Dislike or Approval). All types render correctly in the FSE editor preview, shortcodes, and the ratings list.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Analytics: Multi-ID Rolling Averages', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Rolling average calculations now process multiple rating IDs simultaneously, reducing query overhead on dashboards that track many ratings at once.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Inline Mirror Management in the Block Editor', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Create, rename, and delete mirrors for any rating directly from the block editor — without leaving the page. The Grouped Rating block also exposes mirror management for each sub-rating.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('About Tab in Settings', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The standalone About page has been consolidated into the Settings screen. Documentation, shortcode reference, developer resources, and system info are now a single click away from anywhere in the plugin.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Block Editor Sidebar Panel', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('A new Document Settings panel in the block editor fetches live per-post contextual vote stats while editing any post that has received contextual votes, keeping authors informed without leaving the editor.', 'shuriken-reviews'); ?></span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong><?php esc_html_e('REST API Access Control', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The minimum WordPress capability for REST API write operations (POST, PUT, DELETE) is now configurable from Settings → General. Override it further with the new shuriken_rest_manage_capability filter — useful for multi-author sites that need Editors or Authors to manage ratings.', 'shuriken-reviews'); ?></span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong><?php esc_html_e('Enhanced Analytics Dashboard', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The analytics dashboard gains vote-change percentages, benchmark comparisons, member vs. guest voter-type breakdown, a Contextual Posts stat card, and a per-post context column in the Recent Activity table.', 'shuriken-reviews'); ?></span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong><?php esc_html_e('Lucide SVG Icon System', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('All emoji and glyph characters throughout the admin, analytics, ratings list, settings, and block editor previews have been replaced with inline Lucide SVG icons for consistent rendering and full CSS styling control.', 'shuriken-reviews'); ?></span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong><?php esc_html_e('Numeric Display Precision & Bug Fixes', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Numerous accuracy fixes: parent rating totals no longer inflate when negative sub-ratings use non-default scales; numeric display-only values retain one decimal place after stats refresh; analytics SQL precision raised to 4 decimal places to eliminate rounding artefacts.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
             </ul>

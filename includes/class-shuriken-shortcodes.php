@@ -112,6 +112,7 @@ class Shuriken_Shortcodes {
             'style'        => '',
             'accent_color' => '',
             'star_color'   => '',
+            'button_color' => '',
             'context_id'   => 0,
             'context_type' => '',
         ), $atts, 'shuriken_rating');
@@ -505,6 +506,7 @@ class Shuriken_Shortcodes {
             'style'        => '',
             'accent_color' => '',
             'star_color'   => '',
+            'button_color' => '',
             'layout'       => 'grid',
             'context_id'   => 0,
             'context_type' => '',

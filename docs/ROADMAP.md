@@ -9,8 +9,12 @@ What's planned and why. For deep details, see:
 
 ## In Progress
 
-### 1.13.x — Code Quality
 - [ ] **PHPUnit test suite** — proper test configuration and unit tests
+
+- [ ] **Shortcode / block feature parity** — close the remaining gaps between the FSE blocks and shortcodes:
+  - `[shuriken_rating]` and `[shuriken_grouped_rating]`: add `gap` attribute to `[shuriken_grouped_rating]` (maps to `--shuriken-gap`); `button_color` is already wired in `build_style_vars` and now declared in `shortcode_atts` (fixed in 1.14.10).
+  - Single rating block (`shuriken-rating/index.js`): add `buttonColor` attribute and a Button Color swatch in the Colors panel (parallel to the grouped block, only visible when type is `numeric`); emit `--shuriken-button-color` in the PHP render callback.
+  - Document all shortcode colour attributes (`button_color`, `gap`) in the README shortcode reference tables and the Settings → About shortcode reference.
 
 ---
 

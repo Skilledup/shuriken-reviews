@@ -1,267 +1,378 @@
 # Shuriken Reviews
 
-Shuriken Reviews is a powerful and flexible WordPress plugin that enhances your website with a comprehensive rating system and improved comment functionality.
+A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.11.4-blue)
+![Version](https://img.shields.io/badge/version-1.14.10-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
 
-## Features
+---
 
+## Table of Contents
 
-### Rating System
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Rating Types & Scales](#rating-types--scales)
+- [Rating Structure](#rating-structure)
+- [Block Editor Integration](#block-editor-integration)
+- [Shortcodes](#shortcodes)
+- [Contextual (Per-Post) Voting](#contextual-per-post-voting)
+- [Rate Limiting](#rate-limiting)
+- [Analytics Dashboard](#analytics-dashboard)
+- [REST API](#rest-api)
+- [Cache Compatibility](#cache-compatibility)
+- [Settings Reference](#settings-reference)
+- [Developer API](#developer-api)
+- [Architecture](#architecture)
+- [License](#license)
 
-- **Unlimited Ratings**: Create as many ratings as you need for any content
-- **Parent-Child Relationships**: Organize ratings hierarchically with parent and sub-ratings
-- **Mirror Ratings**: Link ratings together so votes are synchronized, with full CRUD and inline rename in the block editor
-- **Effect Types**: Configure positive or negative effect on parent ratings
-- **Display-Only Ratings**: Create aggregate ratings calculated from sub-ratings
-- **Guest Voting**: Optional support for non-logged-in users to submit ratings
-- **Cache-Proof Voting**: Always displays up-to-date ratings and allows voting even with full-page caching (see below)
+---
 
-### Rate Limiting (New in 1.10)
+## Overview
 
-- **Cooldown Period**: Configurable delay between votes on the same rating (default: 60 seconds)
-- **Hourly Limits**: Maximum votes per hour for members (30) and guests (10)
-- **Daily Limits**: Maximum votes per day for members (100) and guests (30)
-- **Admin Bypass**: Administrators automatically bypass rate limits for testing
-- **Developer Hooks**: 5 dedicated hooks for customizing rate limiting behavior
-- **Disabled by Default**: Enable in Settings → Rate Limiting tab when needed
+Shuriken Reviews is designed around three core principles:
 
+**Cache-proof by default.** Every page load fetches fresh vote statistics and a valid security nonce from the REST API. If a cached nonce is rejected during a vote submission, the plugin automatically retrieves a new one and retries — transparently, with no user-facing error. No cache exclusion rules or special CDN configuration are required.
 
-### Integration Options
+**Type-aware and scale-aware.** Ratings can be Stars (1–N), Numeric sliders (configurable range), or Thumbs (Like/Dislike, Approval). All votes are normalised to an internal 1–5 scale for consistent cross-rating analytics, while each rating's own display scale is always preserved for presentation.
 
-- **FSE Blocks (v2)**: Two Full Site Editor blocks — **Shuriken Rating** and **Shuriken Grouped Rating** — with style presets, colour picker, and live editor preview
-- **Block Style Presets**: Five built-in visual presets per block (Classic, Card, Minimal, Dark, Outlined / Gradient, Minimal, Boxed, Dark, Outlined) selectable from the block styles panel
-- **Custom Colours**: Per-block accent colour and star colour override via the block colour panel
-- **Unified Rating Search**: Single searchable dropdown for selecting parent ratings or mirrors across both blocks
-- **Inline Mirror Management**: Create, rename, and delete mirrors directly from the block editor modals
-- **Shortcodes**: Display ratings anywhere with `[shuriken_rating]` and `[shuriken_grouped_rating]`, including preset styles and custom colors
-- **AJAX Submissions**: Smooth rating submissions without page reloads
-- **REST API Endpoints**: Fetches fresh rating data and nonces to bypass cache issues
-### Caching & Nonce Handling
+**Developer-first architecture.** Services are resolved through a dependency injection container and backed by interfaces, making them fully swappable for unit testing or custom implementations. Thirty-plus WordPress hooks cover every significant operation. Nine typed exception classes map directly to HTTP status codes.
 
-**Shuriken Reviews is fully compatible with aggressive page caching and CDNs.**
-
-- On every page load, the plugin's JavaScript fetches fresh rating statistics and a valid security nonce via the WordPress REST API, ensuring users always see the latest data and can vote successfully.
-- If a user votes and the nonce is expired (due to caching), the plugin automatically fetches a new nonce and retries the vote.
-- REST endpoints:
-   - `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` — Returns up-to-date stats for one or more ratings
-   - `GET /wp-json/shuriken-reviews/v1/nonce` — Returns a fresh nonce for secure voting
-
-**No special cache configuration is required.**
-
-### Analytics Dashboard
-
-- **Comprehensive Statistics**: Track total ratings, votes, and averages
-- **Date Range Filtering**: View stats for custom time periods
-- **Charts & Visualizations**: Visual representation of rating trends
-- **Export to CSV**: Download your ratings data for external analysis
-- **Top Performers**: Identify highest-rated and most-voted items
-- **Recent Activity**: Monitor the latest voting activity
-- **Voter Activity Page**: Click any voter to see their complete voting history, stats, and charts (supports both members and guests)
-
-### Comments Enhancement
-
-- **Customizable Latest Comments Block**: Filter out author and/or reply comments
-- **Flexible Configuration**: Easy settings to control comment display
-
-### Developer Features
-
-- **25+ WordPress Hooks**: Extend and customize with filters and actions
-- **Interfaces for Testing**: Mock implementations for unit testing
-- **Dependency Injection**: Flexible service container for better testability
-- **Exception System**: Comprehensive error handling with specific exception types
-- **REST API**: Full REST API endpoints for programmatic access
-- **Modular Architecture**: Clean, maintainable code structure
-
-### User Experience
-
-- **Responsive Design**: Looks great on all devices
-- **Accessibility**: Full keyboard navigation and screen reader support
-- **RTL Support**: Right-to-left language support
-- **Translation Ready**: Fully internationalized with .pot file included
-
-## Developer Resources
-
-Shuriken Reviews is built with developers in mind. The plugin provides extensive customization options and follows WordPress coding standards.
-
-📚 **[Complete Developer Documentation](docs/INDEX.md)** - Start here for all guides and API references
-
-### Quick Links
-
-- **[Hooks Reference](docs/guides/hooks-reference.md)** - All 20 hooks with examples
-- **[Dependency Injection](docs/guides/dependency-injection.md)** - DI container guide
-- **[Exception System](docs/guides/exception-handling.md)** - Error handling
-- **[Testing Guide](docs/guides/testing.md)** - Unit testing with mocks
-- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design
-- **[Development Roadmap](docs/ROADMAP.md)** - Planned features
-
-### Key Features for Developers
-
-- **25+ WordPress Hooks** (15 filters + 10 actions) for complete customization
-- **Interface-Based Testing** with `Shuriken_Database_Interface`, `Shuriken_Analytics_Interface`, and `Shuriken_Rate_Limiter_Interface`
-- **Dependency Injection** container for flexible service management
-- **Exception System** with 9 specific exception types
-- **Mock Implementations** for unit testing without database
-- **Modular Architecture** with single-responsibility modules
-
-### REST API Endpoints
-
-- `GET /wp-json/shuriken-reviews/v1/ratings` - List all ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/{id}` - Get single rating
-- `POST /wp-json/shuriken-reviews/v1/ratings` - Create rating
-- `PUT /wp-json/shuriken-reviews/v1/ratings/{id}` - Update rating
-- `DELETE /wp-json/shuriken-reviews/v1/ratings/{id}` - Delete rating
-- `GET /wp-json/shuriken-reviews/v1/ratings/search` - Search ratings by name
-- `GET /wp-json/shuriken-reviews/v1/ratings/parents` - List parent ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/mirrorable` - List mirrorable ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/children` - List child ratings
-- `GET /wp-json/shuriken-reviews/v1/ratings/{id}/mirrors` - List mirrors of a rating
-- `GET /wp-json/shuriken-reviews/v1/ratings/batch?ids=1,2,3` - Batch-fetch ratings by ID
-- `GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3` - Get fresh stats
-- `GET /wp-json/shuriken-reviews/v1/nonce` - Get fresh nonce
-
-## Installation
-
-1. Upload the `shuriken-reviews` folder to `/wp-content/plugins/`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to 'Shuriken Reviews' in the admin menu to get started
-
-## Usage
-
-### Admin Menu
-
-The plugin adds a **Shuriken Reviews** menu to your WordPress admin with the following pages:
-
-- **Ratings**: Create and manage all your ratings
-- **Comments Settings**: Configure comment display options
-- **Analytics**: View statistics and insights
-- **Settings**: Configure plugin options like guest voting
-- **About**: Plugin information, quick start guide, and documentation
-
-### Creating Ratings
-
-1. Navigate to **Shuriken Reviews > Ratings** in WordPress admin
-2. Fill in the rating details:
-   - **Name**: The display name for your rating
-   - **Parent Rating**: Optional parent for hierarchical structure
-   - **Effect Type**: Positive or negative effect on parent
-   - **Mirror Of**: Link to another rating to share votes
-   - **Display Only**: Check to make it a calculated aggregate
-3. Click **Create Rating**
-
-### FSE Blocks (Recommended)
-
-#### Shuriken Rating block
-
-Displays a single interactive rating for collecting user votes.
-
-1. Add a new block and search for **"Shuriken Rating"**
-2. Select an existing rating from the searchable dropdown, or create one without leaving the editor
-3. Pick a **visual preset** from the block styles panel in the sidebar (Classic, Card, Minimal, Dark, Outlined)
-4. Configure options in the block sidebar:
-   - **Settings panel**: Select rating, Title Tag (h1-h6, div, p, span), Anchor ID
-   - **Colors panel**: Override Accent Color and Star Color for the selected preset
-
-#### Shuriken Grouped Rating block
-
-Displays a parent rating together with all its child sub-ratings in a unified section.
-
-1. Add a new block and search for **"Shuriken Grouped Rating"**
-2. Select a parent rating from the searchable dropdown
-3. Pick a **visual preset** from the block styles panel (Gradient, Minimal, Boxed, Dark, Outlined)
-4. Configure options in the block sidebar:
-   - **Grouped Rating Settings panel**: Select parent rating or mirror from a unified searchable dropdown, Title Tag, Anchor ID, and manage child sub-ratings inline
-   - **Mirror Management**: Create, rename, and delete mirrors for the parent and each sub-rating directly from the Edit and Manage Sub-Ratings modals
-   - **Layout panel**: Switch between Grid (cards) and List (stacked rows) layouts for child ratings
-   - **Colors panel**: Override Accent Color and Star Color
-
-### Shortcodes
-
-#### Single Rating
-
-Use `[shuriken_rating]` to display ratings anywhere:
-
-| Parameter | Description | Default | Options |
-|-----------|-------------|---------|---------|
-| `id` | Rating ID (required) | - | Any valid rating ID |
-| `tag` | HTML tag for title | `h2` | h1, h2, h3, h4, h5, h6, div, p, span |
-| `anchor_tag` | Anchor ID for linking | - | Any valid HTML ID |
-| `style` | Preset style | - | classic, card, minimal, dark, outlined |
-| `accent_color` | Accent hex color | - | Any hex color (e.g. `#e74c3c`) |
-| `star_color` | Star hex color | - | Any hex color (e.g. `#f39c12`) |
-
-**Examples:**
-
-```shortcode
-[shuriken_rating id="1"]
-[shuriken_rating id="1" tag="h3"]
-[shuriken_rating id="1" tag="h4" anchor_tag="product-rating"]
-[shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
-```
-
-#### Grouped Rating
-
-Use `[shuriken_grouped_rating]` to display a parent rating with its sub-ratings:
-
-| Parameter | Description | Default | Options |
-|-----------|-------------|---------|---------|
-| `id` | Parent rating ID (required) | - | Any valid parent rating ID |
-| `tag` | HTML tag for parent title | `h2` | h1, h2, h3, h4, h5, h6, div, p, span |
-| `anchor_tag` | Anchor ID for linking | - | Any valid HTML ID |
-| `style` | Preset style | - | gradient, minimal, boxed, dark, outlined |
-| `accent_color` | Accent hex color | - | Any hex color (e.g. `#667eea`) |
-| `star_color` | Star hex color | - | Any hex color (e.g. `#ffd700`) |
-| `layout` | Child ratings layout | `grid` | grid, list |
-
-**Examples:**
-
-```shortcode
-[shuriken_grouped_rating id="1"]
-[shuriken_grouped_rating id="1" style="dark" layout="list"]
-[shuriken_grouped_rating id="1" style="boxed" accent_color="#e74c3c" star_color="#f39c12"]
-```
-
-### Analytics
-
-Access detailed statistics at **Shuriken Reviews > Analytics**:
-
-- **Overview Cards**: Total ratings, votes, averages, and unique voters
-- **Time Period Filter**: Last 7/30/90/365 days, all time, or custom range
-- **Top Rated Items**: See your best-performing ratings
-- **Most Voted**: Identify the most popular items
-- **Vote Distribution**: Visual breakdown of rating values
-- **Votes Over Time**: Trend chart of voting activity
-- **Export**: Download all data as CSV
-
-### Settings
-
-Configure plugin behavior at **Shuriken Reviews > Settings**:
-
-#### General Tab
-- **Guest Voting**: Allow non-logged-in users to vote (tracked by IP)
-
-#### Rate Limiting Tab
-- **Enable Rate Limiting**: Toggle vote rate limiting on/off (disabled by default)
-- **Cooldown Period**: Seconds between votes on the same rating (default: 60)
-- **Hourly Limits**: Maximum votes per hour for members (30) and guests (10)
-- **Daily Limits**: Maximum votes per day for members (100) and guests (30)
+---
 
 ## Requirements
 
-- WordPress 6.2 or higher
-- PHP 8.1 or higher
+| Dependency | Minimum Version |
+|---|---|
+| WordPress | 6.2 |
+| PHP | 8.1 |
+
+---
+
+## Installation
+
+1. Upload the `shuriken-reviews` directory to `/wp-content/plugins/`.
+2. Activate through **Plugins → Installed Plugins**.
+3. Navigate to **Shuriken Reviews → Ratings** to create your first rating.
+
+The plugin creates its database tables on activation. No manual database setup is needed.
+
+---
+
+## Rating Types & Scales
+
+| Type | Interaction | Configurable Scale |
+|---|---|---|
+| **Star** | Click or keyboard-select 1–N stars | Yes (default: 5) |
+| **Numeric** | Drag a slider to any value in range | Yes (default: 10) |
+| **Thumbs** | Single binary vote — Like/Dislike or Approval | No |
+
+Votes are stored on an internal normalised 1–5 scale regardless of display scale, enabling consistent analytics and comparisons across ratings of different scales. The denormalised `display_average` (on the rating's own scale) is pre-computed by the database layer and available on every rating and stats object.
+
+---
+
+## Rating Structure
+
+Ratings support hierarchical and linked relationships:
+
+| Concept | Description |
+|---|---|
+| **Parent rating** | Aggregates values from sub-ratings; can be display-only (no direct votes) |
+| **Sub-rating** | Contributes to a parent with a positive or negative effect |
+| **Mirror rating** | Shares vote tallies with another rating; kept in sync automatically |
+| **Display-only** | Calculated aggregate — accepts no direct votes |
+
+Type compatibility is enforced: the block editor warns when incompatible types are linked as mirrors or parent/child pairs.
+
+---
+
+## Block Editor Integration
+
+Two Full Site Editor blocks are included.
+
+### Shuriken Rating
+
+Displays a single interactive rating for user voting.
+
+**Block sidebar options:**
+- Searchable rating selector — pick an existing rating or create one without leaving the editor
+- Title tag (h1–h6, div, p, span) and Anchor ID
+- **Per-post voting** toggle for contextual mode
+- Visual preset (Classic, Card, Minimal, Dark, Outlined)
+- Per-block accent colour and star colour override
+
+### Shuriken Grouped Rating
+
+Displays a parent rating with all its child sub-ratings in a unified section.
+
+**Block sidebar options:**
+- Unified searchable dropdown for parent ratings and mirrors
+- Title tag and Anchor ID
+- **Per-post voting** toggle
+- Visual preset (Gradient, Minimal, Boxed, Dark, Outlined)
+- Grid or List layout for child ratings
+- Gap control (`--shuriken-gap`) — accepts any CSS size value (e.g. `24px`, `2rem`)
+- Per-block colour overrides
+- **Inline mirror management** — create, rename, and delete mirrors for the parent and each sub-rating directly from the block editor
+
+Both blocks render a live editor preview that matches the frontend output.
+
+---
+
+## Shortcodes
+
+### `[shuriken_rating]`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `id` | int | required | Rating ID |
+| `tag` | string | `h2` | Title HTML tag: h1–h6, div, p, span |
+| `anchor_tag` | string | — | Anchor ID for deep-linking |
+| `style` | string | — | Preset: `classic`, `card`, `minimal`, `dark`, `outlined` |
+| `accent_color` | string | — | Hex colour override (e.g. `#e74c3c`) |
+| `star_color` | string | — | Hex colour override |
+| `context_id` | int | — | Post ID for contextual voting |
+| `context_type` | string | — | Post type for contextual voting |
+
+```
+[shuriken_rating id="1"]
+[shuriken_rating id="1" tag="h3" anchor_tag="product-rating"]
+[shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
+[shuriken_rating id="1" context_id="42" context_type="post"]
+```
+
+### `[shuriken_grouped_rating]`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `id` | int | required | Parent rating ID |
+| `tag` | string | `h2` | Title HTML tag |
+| `anchor_tag` | string | — | Anchor ID |
+| `style` | string | — | Preset: `gradient`, `minimal`, `boxed`, `dark`, `outlined` |
+| `accent_color` | string | — | Hex colour override |
+| `star_color` | string | — | Hex colour override |
+| `layout` | string | `grid` | Child layout: `grid` or `list` |
+| `context_id` | int | — | Post ID for contextual voting |
+| `context_type` | string | — | Post type for contextual voting |
+
+```
+[shuriken_grouped_rating id="1"]
+[shuriken_grouped_rating id="1" style="dark" layout="list"]
+[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" layout="list"]
+```
+
+---
+
+## Contextual (Per-Post) Voting
+
+A rating placed in a post template collects **independent vote tallies per post** without requiring separate rating configurations for each post.
+
+**How to enable:**
+- Block: toggle **Per-post voting** in the block inspector.
+- Shortcode: pass `context_id` and `context_type` attributes.
+
+**Additional integration:**
+- **Block editor sidebar panel** — while editing a post, a Document Settings panel displays live contextual vote stats for that post.
+- **Archive sorting** — configure **Settings → General → Archive Sorting** to order archive pages by contextual rating average or total votes using a `pre_get_posts` hook.
+- **Analytics** — the Recent Activity table links contextual votes to the originating post; an overview card counts posts with contextual votes.
+- **REST endpoint** — `GET /context-stats` (requires `edit_posts`) returns per-post stats programmatically.
+
+Accepted post types default to `post`, `page`, and `product`. Extend with the `shuriken_allowed_context_types` filter.
+
+---
+
+## Rate Limiting
+
+Disabled by default. Enable under **Settings → Rate Limiting**.
+
+| Setting | Default | Description |
+|---|---|---|
+| Cooldown period | 60 s | Minimum delay between votes on the same rating per user |
+| Hourly limit — members | 30 | Maximum votes per hour for logged-in users |
+| Hourly limit — guests | 10 | Maximum votes per hour for guest users |
+| Daily limit — members | 100 | Maximum votes per day for logged-in users |
+| Daily limit — guests | 30 | Maximum votes per day for guest users |
+
+Administrators automatically bypass all limits. Five dedicated hooks allow custom rate-limit logic to be injected.
+
+---
+
+## Analytics Dashboard
+
+Available at **Shuriken Reviews → Analytics**.
+
+| Section | Description |
+|---|---|
+| Overview cards | Total ratings, votes, averages, unique voters, posts with contextual votes |
+| Date range filter | Last 7 / 30 / 90 / 365 days, all time, or a custom range |
+| Top rated / most voted | Sortable leaderboards with vote-change percentages and benchmark comparisons |
+| Vote distribution | Visual breakdown per rating-value bucket |
+| Votes over time | Trend chart with rolling average |
+| Voter breakdown | Member vs. guest voter-type split |
+| Voter Activity page | Full voting history, per-rating stats, and charts for any individual voter (members and guests) |
+| Export | Download all data as CSV |
+
+---
+
+## REST API
+
+All endpoints are prefixed with `/wp-json/shuriken-reviews/v1/`.
+
+### Ratings
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/ratings` | Public | List all ratings |
+| GET | `/ratings/{id}` | Public | Get a single rating |
+| POST | `/ratings` | Write cap | Create a rating |
+| PUT | `/ratings/{id}` | Write cap | Update a rating |
+| DELETE | `/ratings/{id}` | Write cap | Delete a rating |
+| GET | `/ratings/search` | Public | Search ratings by name |
+| GET | `/ratings/parents` | Public | List parent ratings |
+| GET | `/ratings/mirrorable` | Public | List mirrorable ratings |
+| GET | `/ratings/{id}/children` | Public | List child ratings |
+| GET | `/ratings/{id}/mirrors` | Public | List mirrors of a rating |
+| GET | `/ratings/batch?ids=1,2,3` | Public | Batch-fetch ratings by ID |
+
+### Voting & Stats
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/ratings/stats?ids=1,2,3` | Public | Fresh vote statistics; supports `context_id` and `context_type` |
+| GET | `/nonce` | Public | Fresh AJAX nonce (CDN-safe) |
+| GET | `/context-stats` | `edit_posts` | Per-post contextual vote statistics |
+
+### Write Capability
+
+The minimum WordPress capability for POST / PUT / DELETE defaults to `manage_options` (Administrators). Configure it in **Settings → General → REST API Access**, or override it at runtime:
+
+```php
+add_filter( 'shuriken_rest_manage_capability', function( $cap ) {
+    return 'edit_posts'; // Allow Editors and Authors
+} );
+```
+
+---
+
+## Cache Compatibility
+
+Shuriken Reviews is fully compatible with full-page caching and CDNs without any cache-rule configuration:
+
+1. On every page load, the plugin's JavaScript fetches fresh vote statistics and a valid nonce from the REST API.
+2. If a vote is submitted with a stale nonce (e.g. from a cached page), the plugin automatically fetches a fresh nonce and retries the request — the user sees no error.
+3. The `/nonce` endpoint can itself be served cached; the retry mechanism handles any edge cases.
+
+---
+
+## Settings Reference
+
+### General Tab
+
+| Setting | Description |
+|---|---|
+| Guest Voting | Allow non-logged-in users to vote; votes are tracked by IP address |
+| REST API Access | Minimum capability for write operations: Administrator, Editor, Author, or Custom |
+| Archive Sorting | Order archive pages by contextual rating — choose a rating, sort by average or total votes |
+
+### Rate Limiting Tab
+
+Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-limiting).
+
+### Comments Tab
+
+| Setting | Description |
+|---|---|
+| Exclude Author Comments | Remove the post author's own comments from the Latest Comments block |
+| Exclude Reply Comments | Remove comment replies from the Latest Comments block |
+
+---
+
+## Developer API
+
+### WordPress Hooks
+
+30+ hooks (19 filters + 11 actions). Key hooks:
+
+| Hook | Type | Description |
+|---|---|---|
+| `shuriken_rating_html` | Filter | Modify the full rendered rating HTML |
+| `shuriken_can_submit_vote` | Filter | Control vote eligibility per user/rating |
+| `shuriken_rating_star_symbol` | Filter | Override the rating symbol (★, ❤, etc.) |
+| `shuriken_rest_manage_capability` | Filter | Override write capability for REST write operations |
+| `shuriken_allowed_context_types` | Filter | Control which post types accept contextual votes |
+| `shuriken_rate_limit_exceeded` | Filter | Customise the rate-limit error response |
+| `shuriken_vote_created` | Action | Fires after a new vote is successfully recorded |
+| `shuriken_after_rating_stats` | Action | Append content below the rating stats block |
+| `shuriken_settings_tabs` | Filter | Add or modify Settings page tabs |
+
+→ [Full Hooks Reference](docs/guides/hooks-reference.md)
+
+### Helper Functions
+
+```php
+shuriken_db()         // Returns Shuriken_Database_Interface
+shuriken_analytics()  // Returns Shuriken_Analytics_Interface
+shuriken_container()  // Returns Shuriken_Container (DI service container)
+```
+
+### Service Interfaces
+
+| Interface | Covers |
+|---|---|
+| `Shuriken_Database_Interface` | All read/write rating and vote operations |
+| `Shuriken_Analytics_Interface` | Aggregate statistics, trends, and breakdowns |
+| `Shuriken_Voter_Analytics_Interface` | Per-voter history and distribution |
+| `Shuriken_Rate_Limiter_Interface` | Pluggable rate-limit implementation |
+
+Mock implementations are provided in `tests/` for all major interfaces, enabling unit testing with no database dependency.
+
+→ [Testing Guide](docs/guides/testing.md) · [Dependency Injection](docs/guides/dependency-injection.md)
+
+### Exception System
+
+Nine typed exception classes each map to an HTTP status code and implement a shared `Shuriken_Exception_Interface`:
+
+| Class | HTTP | Use |
+|---|---|---|
+| `Shuriken_Database_Exception` | 500 | Database query failures |
+| `Shuriken_Validation_Exception` | 422 | Input validation errors |
+| `Shuriken_Not_Found_Exception` | 404 | Resource not found |
+| `Shuriken_Permission_Exception` | 403 | Capability or auth failures |
+| `Shuriken_Rate_Limit_Exception` | 429 | Rate limit exceeded |
+| `Shuriken_Logic_Exception` | 422 | Domain-rule violations |
+| `Shuriken_Configuration_Exception` | 500 | Misconfiguration |
+| `Shuriken_Integration_Exception` | 502 | Third-party integration errors |
+
+All exceptions are caught and logged by `Shuriken_Exception_Handler`.
+
+→ [Exception System Guide](docs/guides/exception-handling.md)
+
+---
+
+## Architecture
+
+All services are resolved through `Shuriken_Container`. Any service can be replaced with an alternative implementation (including mocks) by binding a new factory before the container resolves it.
+
+Internal votes are stored on a normalised 1–5 scale (`RATING_SCALE_DEFAULT`). Denormalisation to each rating's display scale is performed exclusively inside `Shuriken_Database::attach_averages()` and exposed as `display_average` on all returned objects — no consumer performs inline scale conversion.
+
+→ [Architecture Overview](docs/ARCHITECTURE.md)
+
+---
 
 ## License
 
-This plugin is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
+Licensed under [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
 
-## Author
+Developed by [Skilledup](https://skilledup.ir).
 
-Developed with ❤️ by [Skilledup](https://skilledup.ir).
+---
 
 ## Support
 
-For support and feature requests, please visit our [GitHub repository](https://github.com/Skilledup/shuriken-reviews/discussions).
+- [GitHub Discussions](https://github.com/Skilledup/shuriken-reviews/discussions) — bug reports and feature requests
+- [Changelog](docs/CHANGELOG.md) — full version history
+- [Developer Documentation](docs/INDEX.md) — all guides and API references
+
+

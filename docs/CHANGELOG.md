@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.14.10] — 2026-04-07
+
+### Added
+- **Button color for grouped rating block** — new `buttonColor` block attribute exposes a dedicated "Button Color" swatch in the Colors inspector panel; only shown when the parent or any child rating is of type `numeric`. The value is emitted as `--shuriken-button-color`, which all three presets (minimal, dark, outlined) now use for `.shuriken-slider-submit` fill, border, and hover background, falling back to `--shuriken-star-color` when unset. Applied to PHP server-side render (`class-shuriken-block.php`) and the shortcode layer (`class-shuriken-shortcodes.php`). Files: `blocks/shuriken-grouped-rating/block.json`, `blocks/shuriken-grouped-rating/index.js`, `blocks/shared/block-helpers.js`, `includes/class-shuriken-block.php`, `includes/class-shuriken-shortcodes.php`, `assets/css/shuriken-reviews.css`.
+- **`button_color` shortcode attribute** — `[shuriken_rating]` and `[shuriken_grouped_rating]` now accept `button_color` (hex), emitting `--shuriken-button-color` via `build_style_vars()`. Note: the attribute was registered in `build_style_vars()` in this release and is now correctly declared in `shortcode_atts` for both shortcodes. File: `includes/class-shuriken-shortcodes.php`.
+
+### Changed
+- **Searching spinner in grouped rating block** — the rating-search modal now shows a spinner and "Searching..." label while results are loading, replacing the silent wait. File: `blocks/shuriken-grouped-rating/index.js`.
+- **Grid child layout fills card width** — in grid (card) layout, child rating wrappers (`shuriken-rating-wrapper`) and numeric widgets (`shuriken-numeric`) now expand to 100% of the card. The slider takes its own full row (`flex: 1 1 100%`) and the value/button pair wraps beneath it, preventing content overflow on narrow cards. File: `assets/css/shuriken-reviews.css`.
+- **README and About tab updated** — README rewritten as a professional enterprise reference covering all changes since 1.11.4; the Settings → About "What's New" section updated to match. Files: `README.md`, `admin/partials/settings-about.php`.
+
+### Fixed
+- **Margin reset in grouped layout** — `.shuriken-rating-group .shuriken-rating` had no margin reset, so individual rating margins accumulated alongside the `--shuriken-gap` spacing and doubled the gap in certain themes. Added `margin: 0` rule so gap alone controls spacing. File: `assets/css/shuriken-reviews.css`.
+- **`display_only` flag evaluated as strict integer** — `renderRatingPreview()` in `block-helpers.js` used `!!` coercion to test `rating.display_only` / `rating.is_display_only`, which evaluated strings like `"0"` as truthy. Changed to `== 1` comparison, matching the PHP layer's behaviour. File: `blocks/shared/block-helpers.js`.
+
+---
+
 ## [1.14.9] — 2026-04-06
 
 ### Added
