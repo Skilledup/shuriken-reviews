@@ -168,6 +168,16 @@ class Shuriken_Admin {
             array($this, 'render_voter_activity_page')
         );
 
+        // Add hidden Context Stats page (no menu item, accessed via Per-Post view link)
+        add_submenu_page(
+            null, // Hidden - no parent menu
+            __('Context Statistics', 'shuriken-reviews'),
+            __('Context Stats', 'shuriken-reviews'),
+            'manage_options',
+            'shuriken-reviews-context-stats',
+            array($this, 'render_context_stats_page')
+        );
+
     }
 
     /**
@@ -358,7 +368,8 @@ class Shuriken_Admin {
         $allowed_pages = array(
             'shuriken-reviews-analytics',
             'shuriken-reviews-item-stats',
-            'shuriken-reviews-voter-activity'
+            'shuriken-reviews-voter-activity',
+            'shuriken-reviews-context-stats'
         );
         
         if (!$this->is_plugin_page($allowed_pages)) {
@@ -501,6 +512,16 @@ class Shuriken_Admin {
      */
     public function render_voter_activity_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/voter-activity.php';
+    }
+
+    /**
+     * Render the Context Statistics page
+     *
+     * @return void
+     * @since 1.15.0
+     */
+    public function render_context_stats_page(): void {
+        include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/context-stats.php';
     }
 
     // =========================================================================

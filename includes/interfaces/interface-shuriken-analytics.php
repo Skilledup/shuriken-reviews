@@ -157,7 +157,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $view   For parent ratings: 'direct', 'subs', or 'total'.
      * @return array Array with 'votes', 'total', and 'total_pages' keys.
      */
-    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct'): object;
+    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc'): object;
 
     /**
      * Get chart data for visualization
@@ -333,5 +333,209 @@ interface Shuriken_Analytics_Interface {
      * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg.
      */
     public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array;
+
+    // =========================================================================
+    // Contextual / Per-Post Analytics Methods (v1.15.0)
+    // =========================================================================
+
+    /**
+     * Build SQL condition for vote scope filtering
+     *
+     * @param string|null $scope  'global', 'contextual', or null.
+     * @param string      $prefix Column prefix.
+     * @return string SQL condition.
+     */
+    public function build_scope_condition(?string $scope, string $prefix = ''): string;
+
+    /**
+     * Check if a rating has any contextual (per-post) votes
+     *
+     * @param int $rating_id Rating ID.
+     * @return bool
+     */
+    public function has_contextual_votes(int $rating_id): bool;
+
+    /**
+     * Get scope-filtered stats for a rating
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @param string|null      $scope      'global', 'contextual', or null.
+     * @return object|null
+     */
+    public function get_rating_stats_scoped(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object;
+
+    /**
+     * Get scope-filtered rating distribution
+     *
+     * @param string|int|array $date_range Date range filter.
+     * @param int|null         $rating_id  Rating ID.
+     * @param string|null      $scope      Scope filter.
+     * @return array
+     */
+    public function get_rating_distribution_scoped(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array;
+
+    /**
+     * Get scope-filtered votes over time
+     *
+     * @param string|int|array $date_range Date range filter.
+     * @param int|null         $rating_id  Rating ID.
+     * @param string|null      $scope      Scope filter.
+     * @return array
+     */
+    public function get_votes_over_time_scoped(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array;
+
+    /**
+     * Get scope-filtered paginated votes
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param int              $page       Page number.
+     * @param int              $per_page   Items per page.
+     * @param string|int|array $date_range Date range filter.
+     * @param string           $view       Parent view.
+     * @param string|null      $scope      Scope filter.
+     * @return object
+     */
+    public function get_rating_votes_paginated_scoped(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', ?string $scope = null, string $sort_by = 'date', string $sort_order = 'desc'): object;
+
+    /**
+     * Get scope-filtered dual-axis chart data
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @param int              $scale      Display scale.
+     * @param string|null      $scope      Scope filter.
+     * @return array
+     */
+    public function get_votes_with_rolling_avg_scoped(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array;
+
+    /**
+     * Get scope-filtered approval trend
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @param string|null      $scope      Scope filter.
+     * @return array
+     */
+    public function get_approval_trend_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array;
+
+    /**
+     * Get scope-filtered cumulative approvals
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @param string|null      $scope      Scope filter.
+     * @return array
+     */
+    public function get_cumulative_approvals_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array;
+
+    /**
+     * Get contextual overview summary for a rating
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return object
+     */
+    public function get_rating_context_summary(int $rating_id, string|int|array $date_range = 'all'): object;
+
+    /**
+     * Get paginated list of contexts for a rating
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param int              $page       Page number.
+     * @param int              $per_page   Items per page.
+     * @param string|int|array $date_range Date range filter.
+     * @param string           $sort_by    Sort column.
+     * @param string           $sort_order Sort direction.
+     * @return object
+     */
+    public function get_rating_contexts_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'votes', string $sort_order = 'desc'): object;
+
+    /**
+     * Get top contexts by vote count
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param int              $limit      Max results.
+     * @param string|int|array $date_range Date range filter.
+     * @return array
+     */
+    public function get_top_contexts_by_votes(int $rating_id, int $limit = 10, string|int|array $date_range = 'all'): array;
+
+    /**
+     * Get distribution of average ratings across contexts
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @return array
+     */
+    public function get_context_avg_distribution(int $rating_id, string|int|array $date_range = 'all'): array;
+
+    /**
+     * Get trending contexts with rising vote momentum
+     *
+     * @param int              $rating_id  Rating ID.
+     * @param string|int|array $date_range Date range filter.
+     * @param int              $limit      Max results.
+     * @return array
+     */
+    public function get_trending_contexts(int $rating_id, string|int|array $date_range = 30, int $limit = 5, string $sort_by = 'velocity', string $sort_order = 'desc'): array;
+
+    /**
+     * Get detailed stats for a rating scoped to a single context
+     *
+     * @param int              $rating_id    Rating ID.
+     * @param int              $context_id   Post ID.
+     * @param string           $context_type Context type.
+     * @param string|int|array $date_range   Date range filter.
+     * @return object|null
+     */
+    public function get_context_rating_stats(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 'all'): ?object;
+
+    /**
+     * Get paginated votes for a rating scoped to a single context
+     *
+     * @param int              $rating_id    Rating ID.
+     * @param int              $context_id   Post ID.
+     * @param string           $context_type Context type.
+     * @param int              $page         Page number.
+     * @param int              $per_page     Items per page.
+     * @param string|int|array $date_range   Date range filter.
+     * @return object
+     */
+    public function get_context_votes_paginated(int $rating_id, int $context_id, string $context_type, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'date', string $sort_order = 'desc'): object;
+
+    /**
+     * Get dual-axis chart data for a rating scoped to a single context
+     *
+     * @param int              $rating_id    Rating ID.
+     * @param int              $context_id   Post ID.
+     * @param string           $context_type Context type.
+     * @param string|int|array $date_range   Date range filter.
+     * @param int              $scale        Display scale.
+     * @return array
+     */
+    public function get_context_votes_with_rolling_avg(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array;
+
+    /**
+     * Get approval trend for a rating scoped to a single context
+     *
+     * @param int              $rating_id    Rating ID.
+     * @param int              $context_id   Post ID.
+     * @param string           $context_type Context type.
+     * @param string|int|array $date_range   Date range filter.
+     * @return array
+     */
+    public function get_context_approval_trend(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array;
+
+    /**
+     * Get cumulative approvals for a rating scoped to a single context
+     *
+     * @param int              $rating_id    Rating ID.
+     * @param int              $context_id   Post ID.
+     * @param string           $context_type Context type.
+     * @param string|int|array $date_range   Date range filter.
+     * @return array
+     */
+    public function get_context_cumulative_approvals(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array;
 }
 

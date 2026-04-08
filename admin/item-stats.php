@@ -40,19 +40,55 @@ $preset_value = is_array($date_range) ? '30' : $date_range;
 $start_date = is_array($date_range) && !empty($date_range['start']) ? $date_range['start'] : '';
 $end_date = is_array($date_range) && !empty($date_range['end']) ? $date_range['end'] : '';
 
-// Get detailed stats for this item with date range
-$stats = $analytics->get_rating_stats($rating_id, $date_range);
+// Detect scope: does this rating have both global and contextual votes?
+$has_contextual = $analytics->has_contextual_votes($rating_id);
+$current_scope = null;
+if ($has_contextual) {
+    $current_scope = isset($_GET['scope']) && in_array($_GET['scope'], array('global', 'contextual'), true)
+        ? $_GET['scope']
+        : 'contextual'; // Default to contextual/per-post view
+}
 
-// Get hierarchy-related data
-$is_parent = $analytics->has_sub_ratings($rating_id);
-$is_sub = !empty($rating->parent_id);
-$is_mirror = !empty($rating->mirror_of);
-$sub_ratings = $is_parent ? $analytics->get_sub_ratings_contribution($rating_id) : array();
-$parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
-$source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
+// When viewing contextual scope, fetch contextual-specific data
+if ($current_scope === 'contextual') {
+    $context_summary = $analytics->get_rating_context_summary($rating_id, $date_range);
+    $top_contexts = $analytics->get_top_contexts_by_votes($rating_id, 10, $date_range);
+    $context_avg_dist = $analytics->get_context_avg_distribution($rating_id, $date_range);
 
-// For parent ratings, get breakdown data (direct, subs, total) with date range support
-$stats_breakdown = $is_parent ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range) : null;
+    // Sort params for trending table
+    $trend_sort_by = isset($_GET['trend_sort_by']) && in_array($_GET['trend_sort_by'], array('recent_votes', 'velocity', 'ctx_avg'), true) ? $_GET['trend_sort_by'] : 'velocity';
+    $trend_sort_order = isset($_GET['trend_sort_order']) && in_array($_GET['trend_sort_order'], array('asc', 'desc'), true) ? $_GET['trend_sort_order'] : 'desc';
+    $trending_contexts = is_numeric($date_range) ? $analytics->get_trending_contexts($rating_id, $date_range, 5, $trend_sort_by, $trend_sort_order) : array();
+
+    // Contextual votes over time
+    $contextual_votes_timeline = $analytics->get_votes_over_time_scoped($date_range, $rating_id, 'contextual');
+
+    // Paginated contexts table
+    $ctx_per_page = 20;
+    $ctx_page = isset($_GET['ctx_paged']) ? max(1, intval($_GET['ctx_paged'])) : 1;
+    $ctx_sort_by = isset($_GET['sort_by']) && in_array($_GET['sort_by'], array('votes', 'average', 'last_vote')) ? $_GET['sort_by'] : 'votes';
+    $ctx_sort_order = isset($_GET['sort_order']) && in_array($_GET['sort_order'], array('asc', 'desc')) ? $_GET['sort_order'] : 'desc';
+    $contexts_result = $analytics->get_rating_contexts_paginated($rating_id, $ctx_page, $ctx_per_page, $date_range, $ctx_sort_by, $ctx_sort_order);
+}
+
+// When viewing global scope (or no scope toggle), fetch standard data
+if ($current_scope !== 'contextual') {
+    // Get detailed stats for this item with date range and scope filter
+    $stats = $current_scope === 'global'
+        ? $analytics->get_rating_stats_scoped($rating_id, $date_range, 'global')
+        : $analytics->get_rating_stats($rating_id, $date_range);
+
+    // Get hierarchy-related data
+    $is_parent = $analytics->has_sub_ratings($rating_id);
+    $is_sub = !empty($rating->parent_id);
+    $is_mirror = !empty($rating->mirror_of);
+    $sub_ratings = $is_parent ? $analytics->get_sub_ratings_contribution($rating_id) : array();
+    $parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
+    $source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
+
+    // For parent ratings, get breakdown data (direct, subs, total) with date range support
+    $stats_breakdown = $is_parent ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range) : null;
+
 $current_view = isset($_GET['view']) && in_array($_GET['view'], array('direct', 'subs', 'total')) ? $_GET['view'] : 'total';
 
 // Extract values for template (use breakdown if parent rating, otherwise use date-filtered stats)
@@ -89,13 +125,22 @@ if ($is_parent && $stats_breakdown) {
 $per_page = 20;
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 
-// Get paginated votes (with view filter for parent ratings)
+// Sort params for vote history table
+$votes_sort_by = isset($_GET['votes_sort_by']) && in_array($_GET['votes_sort_by'], array('date', 'rating'), true) ? $_GET['votes_sort_by'] : 'date';
+$votes_sort_order = isset($_GET['votes_sort_order']) && in_array($_GET['votes_sort_order'], array('asc', 'desc'), true) ? $_GET['votes_sort_order'] : 'desc';
+
+// Get paginated votes (with view filter for parent ratings and scope)
 $vote_view = $is_parent ? $current_view : 'direct';
-$votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page, $date_range, $vote_view);
+if ($current_scope === 'global') {
+    $votes_result = $analytics->get_rating_votes_paginated_scoped($rating_id, $current_page, $per_page, $date_range, $vote_view, 'global', $votes_sort_by, $votes_sort_order);
+} else {
+    $votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page, $date_range, $vote_view, $votes_sort_by, $votes_sort_order);
+}
 $votes = $votes_result->votes;
 $total_votes_count = $votes_result->total_count;
 $total_pages = $votes_result->total_pages;
 $offset = ($current_page - 1) * $per_page;
+} // end: if ($current_scope !== 'contextual')
 
 // Back URL
 $back_url = admin_url('admin.php?page=shuriken-reviews-analytics');
@@ -105,17 +150,29 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
 $rating_type = $rating->rating_type ?: 'stars';
 $is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
 
-// Comparison and velocity data
-$type_benchmark = $analytics->get_type_benchmark($rating_type, $date_range);
-$vote_velocity = $analytics->get_rating_vote_change_percent($rating_id, $date_range);
-
-// Base URL for filters (preserves rating_id)
+// Base URL for filters (preserves rating_id and scope)
 $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
+if ($current_scope) {
+    $base_filter_url = add_query_arg('scope', $current_scope, $base_filter_url);
+}
+
+if ($current_scope !== 'contextual') {
+    // Comparison and velocity data (global view only)
+    $type_benchmark = $analytics->get_type_benchmark($rating_type, $date_range);
+    $vote_velocity = $analytics->get_rating_vote_change_percent($rating_id, $date_range);
 
 if ($rating_type === 'like_dislike') {
-    $approval_trend = $analytics->get_approval_trend($rating_id, $date_range);
+    if ($current_scope === 'global') {
+        $approval_trend = $analytics->get_approval_trend_scoped($rating_id, $date_range, 'global');
+    } else {
+        $approval_trend = $analytics->get_approval_trend($rating_id, $date_range);
+    }
 } elseif ($rating_type === 'approval') {
-    $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range);
+    if ($current_scope === 'global') {
+        $cumulative_approvals = $analytics->get_cumulative_approvals_scoped($rating_id, $date_range, 'global');
+    } else {
+        $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range);
+    }
 } else {
     // stars/numeric: dual-axis chart data
     // For parent ratings, include votes from sub-ratings based on the current view
@@ -131,7 +188,25 @@ if ($rating_type === 'like_dislike') {
         }
         $dual_axis_data = $analytics->get_votes_with_rolling_avg_for_ids($chart_ids, $date_range, $item_scale);
     } else {
-        $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range, $item_scale);
+        if ($current_scope === 'global') {
+            $dual_axis_data = $analytics->get_votes_with_rolling_avg_scoped($rating_id, $date_range, $item_scale, 'global');
+        } else {
+            $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range, $item_scale);
+        }
+    }
+}
+} // end: if ($current_scope !== 'contextual') — chart data
+
+// Sort link helper — available in both contextual and global views
+if (!function_exists('shuriken_sort_link')) {
+    function shuriken_sort_link(string $col, string $current_sort, string $current_order, string $base_url, string $label, string $param_name = 'sort_by', string $order_param = 'sort_order'): string {
+        $new_order = ($current_sort === $col && $current_order === 'desc') ? 'asc' : 'desc';
+        $url = add_query_arg(array($param_name => $col, $order_param => $new_order), $base_url);
+        $arrow = '';
+        if ($current_sort === $col) {
+            $arrow = $current_order === 'desc' ? ' ▼' : ' ▲';
+        }
+        return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
     }
 }
 ?>
@@ -163,7 +238,10 @@ if ($rating_type === 'like_dislike') {
             <input type="hidden" name="page" value="shuriken-reviews-item-stats">
             <input type="hidden" name="rating_id" value="<?php echo esc_attr($rating_id); ?>">
             <input type="hidden" name="range_type" id="item_range_type" value="<?php echo esc_attr($range_type); ?>">
-            <?php if ($is_parent) : ?>
+            <?php if ($current_scope) : ?>
+            <input type="hidden" name="scope" value="<?php echo esc_attr($current_scope); ?>">
+            <?php endif; ?>
+            <?php if ($current_scope !== 'contextual' && isset($is_parent) && $is_parent) : ?>
             <input type="hidden" name="view" value="<?php echo esc_attr($current_view); ?>">
             <?php endif; ?>
             
@@ -201,7 +279,300 @@ if ($rating_type === 'like_dislike') {
         </form>
     </div>
     
-    <?php if ($is_mirror || $is_parent || $is_sub || !empty($rating->display_only)) : ?>
+    <?php if ($has_contextual) : ?>
+    <!-- Scope Toggle: Global vs Per-Post Votes -->
+    <div class="shuriken-scope-toggle">
+        <?php
+        $scope_base_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
+        // Preserve date range params
+        if ($range_type === 'custom') {
+            $scope_base_url = add_query_arg(array('range_type' => 'custom', 'start_date' => $start_date, 'end_date' => $end_date), $scope_base_url);
+        } elseif ($preset_value !== '30') {
+            $scope_base_url = add_query_arg('date_range', $preset_value, $scope_base_url);
+        }
+        ?>
+        <a href="<?php echo esc_url(add_query_arg('scope', 'contextual', $scope_base_url)); ?>"
+           class="scope-btn <?php echo $current_scope === 'contextual' ? 'active' : ''; ?>">
+            <?php Shuriken_Icons::render('list', array('width' => 16, 'height' => 16)); ?>
+            <?php esc_html_e('Per-Post Votes', 'shuriken-reviews'); ?>
+        </a>
+        <a href="<?php echo esc_url(add_query_arg('scope', 'global', $scope_base_url)); ?>"
+           class="scope-btn <?php echo $current_scope === 'global' ? 'active' : ''; ?>">
+            <?php Shuriken_Icons::render('pie-chart', array('width' => 16, 'height' => 16)); ?>
+            <?php esc_html_e('Global Votes', 'shuriken-reviews'); ?>
+        </a>
+    </div>
+    <?php endif; ?>
+    
+    <?php if ($current_scope === 'contextual') : ?>
+    <!-- ============================================ -->
+    <!-- CONTEXTUAL / PER-POST VIEW                   -->
+    <!-- ============================================ -->
+    
+    <!-- Overview Cards -->
+    <div class="shuriken-stats-grid">
+        <div class="shuriken-stat-card">
+            <span class="stat-icon"><?php Shuriken_Icons::render('layout-grid', array('width' => 28, 'height' => 28)); ?></span>
+            <div class="stat-content">
+                <h3><?php echo esc_html($context_summary->total_contexts); ?></h3>
+                <p><?php esc_html_e('Posts/Pages Used In', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        
+        <div class="shuriken-stat-card">
+            <span class="stat-icon"><?php Shuriken_Icons::render('bar-chart-2', array('width' => 28, 'height' => 28)); ?></span>
+            <div class="stat-content">
+                <h3><?php echo esc_html($context_summary->total_votes); ?></h3>
+                <p><?php esc_html_e('Total Contextual Votes', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+        
+        <div class="shuriken-stat-card">
+            <span class="stat-icon"><?php Shuriken_Icons::render('star', array('width' => 28, 'height' => 28)); ?></span>
+            <div class="stat-content">
+                <h3>
+                    <?php
+                    if ($rating_type === 'like_dislike') {
+                        $ctx_approval = $context_summary->total_votes > 0 ? round(($context_summary->total_rating / $context_summary->total_votes) * 100) : 0;
+                        echo esc_html($ctx_approval) . '%';
+                    } elseif ($rating_type === 'approval') {
+                        echo esc_html($context_summary->total_rating);
+                    } else {
+                        echo esc_html($analytics->format_average_display($context_summary->average, $rating_type, $rating->scale ?: 5, $context_summary->total_votes, $context_summary->total_rating));
+                    }
+                    ?>
+                </h3>
+                <p>
+                    <?php
+                    if ($rating_type === 'like_dislike') {
+                        esc_html_e('Avg Approval Rate', 'shuriken-reviews');
+                    } elseif ($rating_type === 'approval') {
+                        esc_html_e('Total Approvals', 'shuriken-reviews');
+                    } else {
+                        esc_html_e('Avg Rating Across Posts', 'shuriken-reviews');
+                    }
+                    ?>
+                </p>
+            </div>
+        </div>
+        
+        <div class="shuriken-stat-card">
+            <span class="stat-icon"><?php Shuriken_Icons::render('users', array('width' => 28, 'height' => 28)); ?></span>
+            <div class="stat-content">
+                <h3><?php echo esc_html($context_summary->unique_voters); ?></h3>
+                <p><?php esc_html_e('Unique Voters', 'shuriken-reviews'); ?></p>
+            </div>
+        </div>
+    </div>
+    
+    <?php if ($context_summary->best_context_id) : ?>
+    <div class="shuriken-stats-grid secondary">
+        <div class="shuriken-stat-card small">
+            <div class="stat-content">
+                <h4>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews-context-stats&rating_id=' . $rating_id . '&context_id=' . $context_summary->best_context_id . '&context_type=' . urlencode($context_summary->best_context_type))); ?>">
+                        <?php echo esc_html($context_summary->best_context_title); ?>
+                    </a>
+                </h4>
+                <p>
+                    <?php printf(
+                        esc_html__('Best Performing (%s avg, %d votes)', 'shuriken-reviews'),
+                        esc_html($context_summary->best_context_avg),
+                        $context_summary->best_context_votes
+                    ); ?>
+                </p>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Charts Row -->
+    <div class="shuriken-charts-row">
+        <!-- Top Contexts by Votes -->
+        <div class="shuriken-chart-card">
+            <h2><?php esc_html_e('Top Posts by Votes', 'shuriken-reviews'); ?></h2>
+            <div class="chart-container">
+                <canvas id="ctxTopPostsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Context Average Distribution -->
+        <div class="shuriken-chart-card">
+            <h2>
+                <?php
+                if ($is_binary) {
+                    esc_html_e('Approval Rate Distribution', 'shuriken-reviews');
+                } else {
+                    esc_html_e('Rating Distribution Across Posts', 'shuriken-reviews');
+                }
+                ?>
+            </h2>
+            <div class="chart-container">
+                <canvas id="ctxAvgDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contextual Voting Activity -->
+    <div class="shuriken-charts-row">
+        <div class="shuriken-chart-card" style="grid-column: 1 / -1;">
+            <h2><?php esc_html_e('Contextual Voting Activity', 'shuriken-reviews'); ?></h2>
+            <div class="chart-container">
+                <canvas id="ctxVotingActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <?php if (!empty($trending_contexts)) : ?>
+    <!-- Trending Contexts -->
+    <div class="shuriken-table-card full-width">
+        <h2>
+            <?php Shuriken_Icons::render('trending-up', array('width' => 18, 'height' => 18)); ?>
+            <?php esc_html_e('Trending Posts', 'shuriken-reviews'); ?>
+        </h2>
+        <p class="table-description"><?php esc_html_e('Posts with rising vote activity in the current period', 'shuriken-reviews'); ?></p>
+        
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Post', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <?php
+                    $trend_sort_url = add_query_arg(array('scope' => 'contextual'), $base_filter_url);
+                    ?>
+                    <th><?php echo shuriken_sort_link('recent_votes', $trend_sort_by, $trend_sort_order, $trend_sort_url, __('Recent Votes', 'shuriken-reviews'), 'trend_sort_by', 'trend_sort_order'); ?></th>
+                    <th><?php esc_html_e('Previous', 'shuriken-reviews'); ?></th>
+                    <th><?php echo shuriken_sort_link('velocity', $trend_sort_by, $trend_sort_order, $trend_sort_url, __('Change', 'shuriken-reviews'), 'trend_sort_by', 'trend_sort_order'); ?></th>
+                    <th><?php echo shuriken_sort_link('ctx_avg', $trend_sort_by, $trend_sort_order, $trend_sort_url, ($rating_type === 'like_dislike' ? __('Approval', 'shuriken-reviews') : ($rating_type === 'approval' ? __('Approvals', 'shuriken-reviews') : __('Average', 'shuriken-reviews'))), 'trend_sort_by', 'trend_sort_order'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($trending_contexts as $trend) :
+                    $trend_ctx_url = admin_url('admin.php?page=shuriken-reviews-context-stats&rating_id=' . $rating_id . '&context_id=' . $trend->context_id . '&context_type=' . urlencode($trend->context_type));
+                ?>
+                <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($trend_ctx_url); ?>">
+                    <td>
+                        <a href="<?php echo esc_url($trend_ctx_url); ?>" class="rating-item-link">
+                            <?php echo esc_html($trend->title); ?>
+                        </a>
+                    </td>
+                    <td><span class="context-type-badge"><?php echo esc_html(ucfirst($trend->context_type)); ?></span></td>
+                    <td><strong><?php echo esc_html($trend->recent_votes); ?></strong></td>
+                    <td><?php echo esc_html($trend->prev_votes); ?></td>
+                    <td>
+                        <span class="velocity-badge <?php echo $trend->velocity >= 0 ? 'positive' : 'negative'; ?>">
+                            <?php Shuriken_Icons::render($trend->velocity >= 0 ? 'arrow-up' : 'arrow-down', array('width' => 12, 'height' => 12)); ?>
+                            <?php echo esc_html(($trend->velocity >= 0 ? '+' : '') . $trend->velocity . '%'); ?>
+                        </span>
+                    </td>
+                    <td><?php echo esc_html($analytics->format_average_display((float) $trend->ctx_avg, $rating_type, $rating->scale ?: 5, $trend->recent_votes, 0)); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+    
+    <!-- All Contexts Table -->
+    <div class="shuriken-table-card full-width">
+        <h2>
+            <?php Shuriken_Icons::render('list', array('width' => 18, 'height' => 18)); ?>
+            <?php esc_html_e('All Posts & Pages', 'shuriken-reviews'); ?>
+        </h2>
+        <p class="table-description">
+            <?php printf(
+                esc_html__('Showing %1$d-%2$d of %3$d contexts', 'shuriken-reviews'),
+                min(($ctx_page - 1) * $ctx_per_page + 1, $contexts_result->total_count),
+                min($ctx_page * $ctx_per_page, $contexts_result->total_count),
+                $contexts_result->total_count
+            ); ?>
+        </p>
+        
+        <?php
+        // Sort header helper
+        $sort_url_base = add_query_arg(array('scope' => 'contextual'), $base_filter_url);
+        ?>
+        
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Post / Page', 'shuriken-reviews'); ?></th>
+                    <th><?php esc_html_e('Type', 'shuriken-reviews'); ?></th>
+                    <th><?php echo shuriken_sort_link('votes', $ctx_sort_by, $ctx_sort_order, $sort_url_base, __('Votes', 'shuriken-reviews')); ?></th>
+                    <th><?php echo shuriken_sort_link('average', $ctx_sort_by, $ctx_sort_order, $sort_url_base, __('Average', 'shuriken-reviews')); ?></th>
+                    <th><?php esc_html_e('Unique Voters', 'shuriken-reviews'); ?></th>
+                    <th><?php echo shuriken_sort_link('last_vote', $ctx_sort_by, $ctx_sort_order, $sort_url_base, __('Last Vote', 'shuriken-reviews')); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($contexts_result->contexts)) : ?>
+                    <?php foreach ($contexts_result->contexts as $ctx) :
+                        $ctx_stats_url = admin_url('admin.php?page=shuriken-reviews-context-stats&rating_id=' . $rating_id . '&context_id=' . $ctx->context_id . '&context_type=' . urlencode($ctx->context_type));
+                    ?>
+                    <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($ctx_stats_url); ?>">
+                        <td>
+                            <a href="<?php echo esc_url($ctx_stats_url); ?>" class="rating-item-link">
+                                <?php echo esc_html($ctx->title); ?>
+                            </a>
+                            <div class="row-actions">
+                                <span><a href="<?php echo esc_url($ctx_stats_url); ?>"><?php esc_html_e('Stats', 'shuriken-reviews'); ?></a></span>
+                                <?php if ($ctx->view_url) : ?>
+                                | <span><a href="<?php echo esc_url($ctx->view_url); ?>" target="_blank"><?php esc_html_e('View', 'shuriken-reviews'); ?></a></span>
+                                <?php endif; ?>
+                                <?php if ($ctx->edit_url) : ?>
+                                | <span><a href="<?php echo esc_url($ctx->edit_url); ?>"><?php esc_html_e('Edit', 'shuriken-reviews'); ?></a></span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td><span class="context-type-badge"><?php echo esc_html(ucfirst($ctx->context_type)); ?></span></td>
+                        <td><strong><?php echo esc_html($ctx->ctx_votes); ?></strong></td>
+                        <td>
+                            <?php if (!$is_binary) : ?>
+                                <span class="star-display"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span>
+                            <?php endif; ?>
+                            <?php echo esc_html($analytics->format_average_display((float) $ctx->ctx_avg, $rating_type, $rating->scale ?: 5, $ctx->ctx_votes, $ctx->ctx_total)); ?>
+                        </td>
+                        <td><?php echo esc_html($ctx->unique_voters); ?></td>
+                        <td>
+                            <?php echo esc_html($analytics->format_date($ctx->last_vote_date)); ?>
+                            <br><small class="timeago"><?php echo esc_html($analytics->format_time_ago($ctx->last_vote_date)); ?></small>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="6"><?php esc_html_e('No contextual votes found', 'shuriken-reviews'); ?></td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        
+        <?php if ($contexts_result->total_pages > 1) : ?>
+        <div class="tablenav bottom">
+            <div class="tablenav-pages">
+                <span class="displaying-num">
+                    <?php printf(esc_html(_n('%s context', '%s contexts', $contexts_result->total_count, 'shuriken-reviews')), number_format_i18n($contexts_result->total_count)); ?>
+                </span>
+                <span class="pagination-links">
+                    <?php
+                    echo paginate_links(array(
+                        'base'      => add_query_arg('ctx_paged', '%#%'),
+                        'format'    => '',
+                        'prev_text' => '&laquo;',
+                        'next_text' => '&raquo;',
+                        'total'     => $contexts_result->total_pages,
+                        'current'   => $ctx_page,
+                    ));
+                    ?>
+                </span>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <?php else : // Global view (existing content) ?>
+    
+    <?php if (isset($is_mirror) && ($is_mirror || $is_parent || $is_sub || !empty($rating->display_only))) : ?>
     <!-- Hierarchy Info -->
     <div class="shuriken-hierarchy-info">
         <?php if ($is_mirror && $source_rating) : ?>
@@ -522,17 +893,21 @@ if ($rating_type === 'like_dislike') {
         </p>
         
         <?php $show_source_column = $is_parent && in_array($current_view, array('subs', 'total')); ?>
+        <?php
+        $votes_sort_url = $base_filter_url;
+        // Preserve paged param removed when sort changes
+        ?>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
                     <th class="column-id"><?php esc_html_e('ID', 'shuriken-reviews'); ?></th>
-                    <th class="column-rating"><?php esc_html_e('Rating', 'shuriken-reviews'); ?></th>
+                    <th class="column-rating"><?php echo shuriken_sort_link('rating', $votes_sort_by, $votes_sort_order, $votes_sort_url, __('Rating', 'shuriken-reviews'), 'votes_sort_by', 'votes_sort_order'); ?></th>
                     <?php if ($show_source_column) : ?>
                     <th class="column-source"><?php esc_html_e('Source', 'shuriken-reviews'); ?></th>
                     <?php endif; ?>
                     <th class="column-voter"><?php esc_html_e('Voter', 'shuriken-reviews'); ?></th>
                     <th class="column-ip"><?php esc_html_e('IP Address', 'shuriken-reviews'); ?></th>
-                    <th class="column-date"><?php esc_html_e('Date & Time', 'shuriken-reviews'); ?></th>
+                    <th class="column-date"><?php echo shuriken_sort_link('date', $votes_sort_by, $votes_sort_order, $votes_sort_url, __('Date & Time', 'shuriken-reviews'), 'votes_sort_by', 'votes_sort_order'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -659,7 +1034,142 @@ if ($rating_type === 'like_dislike') {
             </button>
         </form>
     </div>
+    
+    <?php endif; // end: global/contextual view conditional ?>
 </div>
+
+<?php if ($current_scope === 'contextual') : ?>
+<!-- Contextual View Charts Script -->
+<script>
+var shurikenContextData = {
+    topContexts: <?php echo wp_json_encode($top_contexts); ?>,
+    avgDistribution: <?php echo wp_json_encode($context_avg_dist); ?>,
+    votingActivity: <?php echo wp_json_encode($contextual_votes_timeline); ?>,
+    ratingType: <?php echo wp_json_encode($rating_type); ?>,
+    i18n: {
+        votes: <?php echo wp_json_encode(__('Votes', 'shuriken-reviews')); ?>,
+        posts: <?php echo wp_json_encode(__('Posts', 'shuriken-reviews')); ?>,
+        average: <?php echo wp_json_encode(__('Average', 'shuriken-reviews')); ?>
+    }
+};
+
+jQuery(document).ready(function($) {
+    if (typeof Chart === 'undefined') return;
+    
+    var d = shurikenContextData;
+    var gridColor = '#f0f0f1';
+    var tickColor = '#646970';
+    
+    function formatDate(dateStr) {
+        var date = new Date(dateStr);
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    
+    // Top Posts by Votes (horizontal bar)
+    var topCtx = document.getElementById('ctxTopPostsChart');
+    if (topCtx && d.topContexts && d.topContexts.length) {
+        new Chart(topCtx, {
+            type: 'bar',
+            data: {
+                labels: d.topContexts.map(function(c) {
+                    var t = c.title || '#' + c.context_id;
+                    return t.length > 30 ? t.substring(0, 27) + '...' : t;
+                }),
+                datasets: [{
+                    label: d.i18n.votes,
+                    data: d.topContexts.map(function(c) { return c.ctx_votes; }),
+                    backgroundColor: 'rgba(34, 113, 177, 0.6)',
+                    borderColor: '#2271b1',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } },
+                    y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } }
+                }
+            }
+        });
+    }
+    
+    // Average Rating Distribution Across Posts
+    var distCtx = document.getElementById('ctxAvgDistChart');
+    if (distCtx && d.avgDistribution) {
+        var labels = Object.keys(d.avgDistribution);
+        var data = Object.values(d.avgDistribution);
+        var allColors = ['#dc3232', '#f56e28', '#ffb900', '#7ad03a', '#00a32a'];
+        var barColors = data.length <= allColors.length
+            ? allColors.slice(allColors.length - data.length)
+            : data.map(function(_, i) { return allColors[i % allColors.length]; });
+        
+        new Chart(distCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: d.i18n.posts,
+                    data: data,
+                    backgroundColor: barColors,
+                    borderColor: barColors,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } }
+                }
+            }
+        });
+    }
+    
+    // Contextual Voting Activity (line chart)
+    var actCtx = document.getElementById('ctxVotingActivityChart');
+    if (actCtx && d.votingActivity && d.votingActivity.length) {
+        new Chart(actCtx, {
+            type: 'line',
+            data: {
+                labels: d.votingActivity.map(function(r) { return formatDate(r.vote_date); }),
+                datasets: [{
+                    label: d.i18n.votes,
+                    data: d.votingActivity.map(function(r) { return parseInt(r.vote_count, 10); }),
+                    borderColor: '#2271b1',
+                    backgroundColor: 'rgba(34, 113, 177, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: tickColor } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0, color: tickColor } }
+                }
+            }
+        });
+    }
+    
+    // Clickable rows
+    $(document).on('click', '.shuriken-clickable-row', function(e) {
+        if ($(e.target).is('a, button, input') || $(e.target).closest('a, button').length) return;
+        window.location = $(this).data('href');
+    });
+});
+</script>
+<?php else : ?>
 
 <script>
 var shurikenItemStatsData = {
@@ -920,3 +1430,4 @@ jQuery(document).ready(function($) {
     }
 });
 </script>
+<?php endif; // end: contextual/global script conditional ?>
