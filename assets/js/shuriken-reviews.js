@@ -605,6 +605,49 @@ jQuery(document).ready(function($) {
                         $rating.find('.shuriken-upvote-count').text(response.data.new_total_votes);
                     }
 
+                    // Update parent rating if applicable (display-only parents)
+                    if (response.data.parent_id) {
+                        const $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
+                        if ($parentRating.length) {
+                            const parentType = $parentRating.data('rating-type');
+                            if (parentType === 'like_dislike') {
+                                // For binary: parent_average = total_rating / total_votes (0-1 range)
+                                const pParentPct = response.data.parent_total_votes > 0
+                                    ? Math.round(response.data.parent_average * 100)
+                                    : 0;
+                                const $approvalPct = $parentRating.find('.shuriken-approval-pct');
+                                if ($approvalPct.length) {
+                                    // Display-only parents show approval percentage summary
+                                    $approvalPct.text(pParentPct + '%');
+                                } else {
+                                    // Non-display-only parents: update like/dislike counts
+                                    const pTotalVotes = response.data.parent_total_votes;
+                                    const pLikeCount = Math.round(pTotalVotes * pParentPct / 100);
+                                    const pDislikeCount = pTotalVotes - pLikeCount;
+                                    $parentRating.find('.shuriken-like-count').text(pLikeCount);
+                                    $parentRating.find('.shuriken-dislike-count').text(pDislikeCount);
+                                }
+                                // Update vote summary text
+                                const $voteSummary = $parentRating.find('.shuriken-vote-summary');
+                                if ($voteSummary.length) {
+                                    $voteSummary.text('(' + response.data.parent_total_votes + ' ' + shurikenReviews.i18n.votes + ')');
+                                }
+                            } else if (parentType === 'approval') {
+                                $parentRating.find('.shuriken-upvote-count').text(response.data.parent_total_votes);
+                            } else {
+                                // Stars/numeric parent — update stars display
+                                updateStars($parentRating, response.data.parent_average);
+                                const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
+                                const parentMaxStars = response.data.parent_max_stars || 5;
+                                const parentText = shurikenReviews.i18n.averageRating
+                                    .replace('%1$s', parentDisplayAverage)
+                                    .replace('%2$s', parentMaxStars)
+                                    .replace('%3$s', response.data.parent_total_votes);
+                                $parentRating.find('.rating-stats').smoothHtml(parentText);
+                            }
+                        }
+                    }
+
                     // Brief visual feedback on the button
                     $rating.find('.shuriken-btn').addClass('shuriken-voted');
                     setTimeout(function() {

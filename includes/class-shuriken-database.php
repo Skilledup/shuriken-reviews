@@ -950,6 +950,28 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /**
+     * Check which ratings have global (non-contextual) votes
+     *
+     * @return array<int, int> [rating_id => global_vote_count]
+     * @since 1.15.0
+     */
+    public function get_global_vote_counts(): array {
+        $rows = $this->wpdb->get_results(
+            "SELECT rating_id, COUNT(*) as vote_count
+             FROM {$this->votes_table}
+             WHERE context_id IS NULL
+             GROUP BY rating_id"
+        );
+
+        $result = array();
+        foreach ($rows as $row) {
+            $result[(int) $row->rating_id] = (int) $row->vote_count;
+        }
+
+        return $result;
+    }
+
+    /**
      * Get all ratings that have contextual votes for a specific context
      *
      * Returns rating objects enriched with per-context stats.

@@ -400,6 +400,19 @@ tr.mirror-rating .column-name {
     letter-spacing: 0.2px;
 }
 
+.scope-mixed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    color: #3730a3;
+    letter-spacing: 0.2px;
+}
+
 /* Rating Display */
 .shuriken-rating-display {
     display: flex;

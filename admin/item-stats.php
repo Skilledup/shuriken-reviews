@@ -86,8 +86,9 @@ if ($current_scope !== 'contextual') {
     $parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
     $source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
 
-    // For parent ratings, get breakdown data (direct, subs, total) with date range support
-    $stats_breakdown = $is_parent ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range) : null;
+    // For parent ratings (not in global scope), get breakdown data (direct, subs, total) with date range support
+    // In global scope, breakdown is unscoped so we skip it and use the scoped $stats instead
+    $stats_breakdown = ($is_parent && $current_scope !== 'global') ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range) : null;
 
 $current_view = isset($_GET['view']) && in_array($_GET['view'], array('direct', 'subs', 'total')) ? $_GET['view'] : 'total';
 
@@ -860,7 +861,7 @@ if (!function_exists('shuriken_sort_link')) {
                                 <?php echo esc_html($analytics->format_average_display($sub->effective_average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                             </span>
                             <?php if ($sub->effect_type === 'negative') : ?>
-                                <small class="inverted-note"><?php esc_html_e('(inverted)', 'shuriken-reviews'); ?></small>
+                                <small class="inverted-note"><?php esc_html_e('(reduces parent)', 'shuriken-reviews'); ?></small>
                             <?php endif; ?>
                         </td>
                         <td><?php echo esc_html($sub->total_votes); ?></td>
@@ -920,10 +921,13 @@ if (!function_exists('shuriken_sort_link')) {
                                     <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? $rating->rating_type ?? 'stars', $vote->scale ?? $rating->scale ?? 5); ?>
                                 </span>
                                 <?php
-                                $vote_scale = $vote->scale ?? $rating->scale ?? 5;
-                                $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
+                                $vote_type = $vote->rating_type ?? $rating->rating_type ?? 'stars';
+                                if (!in_array($vote_type, array('like_dislike', 'approval'), true)) :
+                                    $vote_scale = $vote->scale ?? $rating->scale ?? 5;
+                                    $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
                                 ?>
                                 <span class="rating-number">(<?php echo esc_html($denorm_vote); ?>)</span>
+                                <?php endif; ?>
                             </td>
                             <?php if ($show_source_column) : ?>
                             <td class="column-source">

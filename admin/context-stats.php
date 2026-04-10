@@ -346,10 +346,13 @@ if ($rating_type === 'like_dislike') {
                                     <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? $rating->rating_type ?? 'stars', $vote->scale ?? $rating->scale ?? 5); ?>
                                 </span>
                                 <?php
-                                $vote_scale = $vote->scale ?? $rating->scale ?? 5;
-                                $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
+                                $vote_type = $vote->rating_type ?? $rating->rating_type ?? 'stars';
+                                if (!in_array($vote_type, array('like_dislike', 'approval'), true)) :
+                                    $vote_scale = $vote->scale ?? $rating->scale ?? 5;
+                                    $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
                                 ?>
                                 <span class="rating-number">(<?php echo esc_html($denorm_vote); ?>)</span>
+                                <?php endif; ?>
                             </td>
                             <td class="column-voter">
                                 <?php 

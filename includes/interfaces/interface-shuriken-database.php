@@ -269,6 +269,13 @@ interface Shuriken_Database_Interface {
     public function get_context_usage_counts(): array;
 
     /**
+     * Check which ratings have global (non-contextual) votes
+     *
+     * @return array<int, int> [rating_id => global_vote_count]
+     */
+    public function get_global_vote_counts(): array;
+
+    /**
      * Get all ratings with contextual votes for a specific context
      *
      * @param int    $context_id   Post/entity ID.

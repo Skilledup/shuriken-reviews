@@ -326,13 +326,15 @@ class Shuriken_Shortcodes {
                         <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
                     </button>
                     <?php else: ?>
-                    <span class="shuriken-btn shuriken-like-btn" aria-label="<?php esc_attr_e('Likes', 'shuriken-reviews'); ?>">
+                    <?php
+                    $ld_approval_pct = $rating->total_votes > 0 ? round(($rating->total_rating / $rating->total_votes) * 100) : 0;
+                    ?>
+                    <span class="shuriken-btn shuriken-like-btn" aria-label="<?php esc_attr_e('Approval rate', 'shuriken-reviews'); ?>">
                         <span class="shuriken-thumb"><?php echo $ld_symbols['like']; ?></span>
-                        <span class="shuriken-count shuriken-like-count"><?php echo esc_html($rating->total_rating); ?></span>
+                        <span class="shuriken-count shuriken-approval-pct"><?php echo esc_html($ld_approval_pct . '%'); ?></span>
                     </span>
-                    <span class="shuriken-btn shuriken-dislike-btn" aria-label="<?php esc_attr_e('Dislikes', 'shuriken-reviews'); ?>">
-                        <span class="shuriken-thumb"><?php echo $ld_symbols['dislike']; ?></span>
-                        <span class="shuriken-count shuriken-dislike-count"><?php echo esc_html($rating->total_votes - $rating->total_rating); ?></span>
+                    <span class="shuriken-vote-summary">
+                        <?php printf(esc_html__('(%s votes)', 'shuriken-reviews'), esc_html($rating->total_votes)); ?>
                     </span>
                     <?php endif; ?>
                 </div>

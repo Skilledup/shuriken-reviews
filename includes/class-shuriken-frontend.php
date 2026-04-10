@@ -196,6 +196,7 @@ class Shuriken_Frontend {
             /* translators: %s: Error message */
             'error' => __('Error: %s', 'shuriken-reviews'),
             'genericError' => __('Error submitting rating. Please try again.', 'shuriken-reviews'),
+            'votes' => __('votes', 'shuriken-reviews'),
         );
 
         /**

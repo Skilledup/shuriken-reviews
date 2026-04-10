@@ -95,6 +95,7 @@ $total_pages = $ratings_result->total_pages;
 
 // Get context usage counts (how many distinct posts/entities per rating)
 $context_counts = $db->get_context_usage_counts();
+$global_vote_counts = $db->get_global_vote_counts();
 
 // Hidden columns for Screen Options
 $hidden_columns = get_hidden_columns(get_current_screen());
@@ -384,12 +385,20 @@ $col_class = function($col) use ($hidden_columns) {
                             <?php
                             // Show contextual usage badge
                             $ctx_count = isset($context_counts[(int) $rating->id]) ? $context_counts[(int) $rating->id] : 0;
+                            $global_count = isset($global_vote_counts[(int) $rating->id]) ? $global_vote_counts[(int) $rating->id] : 0;
                             if ($ctx_count > 0) :
                             ?>
                             <div class="context-usage-info">
+                                <?php if ($global_count > 0) : ?>
+                                <span class="scope-mixed-badge" title="<?php esc_attr_e('Stats include both global and per-post votes', 'shuriken-reviews'); ?>">
+                                    <?php Shuriken_Icons::render('globe', array('width' => 14, 'height' => 14)); ?>
+                                    <?php printf(esc_html__('Global + %s', 'shuriken-reviews'), sprintf(esc_html(_n('%d post', '%d posts', $ctx_count, 'shuriken-reviews')), $ctx_count)); ?>
+                                </span>
+                                <?php else : ?>
                                 <span class="context-usage-badge" title="<?php esc_attr_e('Per-post voting is active on this many posts/pages', 'shuriken-reviews'); ?>">
                                     <?php Shuriken_Icons::render('map-pin', array('width' => 14, 'height' => 14)); ?> <?php printf(esc_html(_n('%d post', '%d posts', $ctx_count, 'shuriken-reviews')), $ctx_count); ?>
                                 </span>
+                                <?php endif; ?>
                             </div>
                             <?php endif; ?>
                         </td>
