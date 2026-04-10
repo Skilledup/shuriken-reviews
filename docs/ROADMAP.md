@@ -114,9 +114,11 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - [ ] Statistics caching — TTL-based cache service in container; invalidate on vote change; optional Redis support
 - [ ] Rate limit performance caching — cache vote counts in transients per user/IP with TTL; invalidate on new vote
 
-### Known bugs
+### Known bugs and Gaps
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
+- [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
+- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes)
 
 ---
 
@@ -129,7 +131,6 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - [ ] Rating notes/comments — notes table + CRUD; frontend UI; admin moderation; REST endpoints
 - [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users
 - [ ] Emoji reactions — separate system from rating types
-- [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
 - [ ] **HTML embed code** — `GET /ratings/{id}/embed` REST endpoint returns a self-contained `<iframe>` snippet (similar to Google Maps embed); block editor and admin ratings page surface a "Get embed code" button with a copy-to-clipboard UI
 - [x] **Shortcode contextual support** — extend `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcodes with `context_id` and `context_type` attributes so contextual voting works outside the block editor
 
