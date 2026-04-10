@@ -50,54 +50,48 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('This is the first public release since 1.11.4. Here are the major highlights from everything added since then.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Yozora is the 1.15.4 release. It focuses on deeper contextual analytics, safer frontend re-initialization on modern block-theme navigation, and clearer mixed-scope reporting throughout the admin.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Contextual (Per-Post) Voting', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('A single rating placed in a post template now records independent vote tallies per post — no duplicate configurations needed. Enable the Per-post voting toggle in either block and archive pages can be sorted by rating score.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Per-Post Analytics Workspace', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Ratings with contextual votes now open into a dedicated Per-Post view with top-post charts, average distribution across posts, trending contexts, and sortable context tables.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Multiple Rating Types & Configurable Scales', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Three rating types are now supported: Star (1–N stars), Numeric (slider with a configurable 0–100 scale), and Thumbs (Like/Dislike or Approval). All types render correctly in the FSE editor preview, shortcodes, and the ratings list.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Global vs. Per-Post Scope Toggle', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('When a rating has both classic global votes and contextual votes, Item Stats now exposes separate Global Votes and Per-Post Votes views so totals, charts, and tables are never mixed accidentally.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Inline Mirror Management in the Block Editor', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Create, rename, and delete mirrors for any rating directly from the block editor — without leaving the page. The Grouped Rating block also exposes mirror management for each sub-rating.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Context Drill-Down Screens', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Every post, page, or product in the Per-Post view now links to its own detail screen with context-specific summary cards, charts, and a paginated vote history table.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Block Editor Sidebar Panel', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('A new Document Settings panel in the block editor fetches live per-post contextual vote stats while editing any post that has received contextual votes, keeping authors informed without leaving the editor.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Client-Side Navigation Support', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Both rating blocks now opt into WordPress client navigation, and the frontend ratings script re-initialises automatically after Interactivity Router navigations so widgets stay interactive on block-theme transitions.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('REST API Access Control', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The minimum WordPress capability for REST API write operations (POST, PUT, DELETE) is now configurable from Settings → General. Override it further with the new shuriken_rest_manage_capability filter — useful for multi-author sites that need Editors or Authors to manage ratings.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Mixed-Scope Rating Badges', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The Ratings list now distinguishes ratings that have both global and contextual activity, showing a mixed badge like “Global + 6 posts” instead of implying that all votes come from one source.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Enhanced Analytics Dashboard', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The analytics dashboard gains vote-change percentages, benchmark comparisons, member vs. guest voter-type breakdown, a Contextual Posts stat card, and a per-post context column in the Recent Activity table.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Unified, Responsive Filter Bar', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The Item Stats filter controls were reorganised into a cleaner responsive bar that preserves date range, scope, and parent-view selections more reliably while switching modes.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Lucide SVG Icon System', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('All emoji and glyph characters throughout the admin, analytics, ratings list, settings, and block editor previews have been replaced with inline Lucide SVG icons for consistent rendering and full CSS styling control.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Numeric Display Precision & Bug Fixes', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Numerous accuracy fixes: parent rating totals no longer inflate when negative sub-ratings use non-default scales; numeric display-only values retain one decimal place after stats refresh; analytics SQL precision raised to 4 decimal places to eliminate rounding artefacts.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Chart and Display Accuracy', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Parent breakdown charts now respect the active scope and date range, while star and binary displays across analytics and the ratings list received icon and formatting polish for clearer at-a-glance stats.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
             </ul>
@@ -175,8 +169,8 @@ if (!defined('ABSPATH')) {
 
             <div class="about-shortcode-box">
                 <h4><?php esc_html_e('Preset Style + Colors', 'shuriken-reviews'); ?></h4>
-                <code>[shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]</code>
-                <p class="about-shortcode-desc"><?php esc_html_e('Presets: classic, card, minimal, dark, outlined', 'shuriken-reviews'); ?></p>
+                <code>[shuriken_rating id="8" style="minimal" accent_color="#0f766e" star_color="#14b8a6" button_color="#155e75"]</code>
+                <p class="about-shortcode-desc"><?php esc_html_e('Presets: classic, card, minimal, dark, outlined. Use button_color for numeric submit buttons.', 'shuriken-reviews'); ?></p>
             </div>
 
             <p class="about-shortcode-group-title"><?php esc_html_e('Grouped Rating — [shuriken_grouped_rating]', 'shuriken-reviews'); ?></p>
@@ -195,8 +189,8 @@ if (!defined('ABSPATH')) {
 
             <div class="about-shortcode-box">
                 <h4><?php esc_html_e('Full Example', 'shuriken-reviews'); ?></h4>
-                <code>[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" layout="list"]</code>
-                <p class="about-shortcode-desc"><?php esc_html_e('Complete grouped shortcode with all parameters', 'shuriken-reviews'); ?></p>
+                <code>[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" button_color="#1d4ed8" layout="list"]</code>
+                <p class="about-shortcode-desc"><?php esc_html_e('Complete grouped shortcode with style, layout, and numeric button colour override', 'shuriken-reviews'); ?></p>
             </div>
         </div>
     </div>

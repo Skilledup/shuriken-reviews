@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.15.4] — 2026-04-10
+
+### Added
+- **Yozora release** — the next public release after 1.14.10, focused on contextual analytics depth, mixed-scope clarity, and modern block-theme navigation support.
+- **Scope-aware Item Stats views** — ratings with contextual votes now expose separate **Per-Post Votes** and **Global Votes** views, preventing mixed reporting when a rating receives both contextual and non-contextual votes. The Per-Post view adds overview cards, top-post charts, contextual average distribution, trending contexts, and a sortable paginated table of posts/pages/products.
+- **Context detail screen** — new admin page at `admin/context-stats.php` provides a drill-down for a single rating on a single post/context, including summary cards, type-aware charts, and paginated vote history.
+- **Client-side navigation support for blocks** — both block definitions now opt into `supports.interactivity.clientNavigation`, and the frontend script re-initialises ratings after `wp-js-interactivity:navigated` events so widgets keep working after router-based page transitions.
+- **Mixed-scope badges in Ratings admin** — ratings list rows now detect global vote counts in addition to contextual usage, showing badges such as `Global + 6 posts` for ratings that span both scopes.
+
+### Changed
+- **Item Stats filter UX** — the date filter, scope toggle, and parent-view selector were refactored into a unified, more responsive filter bar that preserves state more reliably while switching modes.
+- **Parent breakdown analytics** — parent rating stats breakdown, vote history, distributions, rolling averages, and type-specific charts now respect the active scope and date range instead of always aggregating everything together.
+- **Ratings/admin display polish** — star, binary, and mixed-scope displays in analytics and the ratings list were refined for clearer icon usage and more readable at-a-glance stats.
+
+### Fixed
+- **Frontend re-initialisation after client navigation** — ratings no longer become stale or non-interactive after block-theme client-side navigation events.
+- **Global-only reporting on mixed ratings** — global scope now uses properly filtered totals, vote history, approval trends, cumulative approvals, and rolling-average chart data.
+- **Version consistency** — plugin header and version constants were aligned to `1.15.4` for release packaging.
+
 ## [1.14.10] — 2026-04-07
 
 ### Added

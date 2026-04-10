@@ -255,9 +255,7 @@ GET /wp-json/shuriken-reviews/v1/ratings/search?q=quality&limit=10&type=parents_
 
 ---
 
-### Public Endpoints
-
-These endpoints do not require authentication and are designed to bypass page caching.
+### Batch Endpoint
 
 #### GET `/ratings/batch`
 
@@ -295,10 +293,13 @@ Get fresh rating statistics for specified rating IDs.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `ids` | string | Yes | Comma-separated list of rating IDs |
+| `context_id` | integer | No | Post/entity ID for contextual stats |
+| `context_type` | string | No | Context type such as `post`, `page`, or `product` |
 
 **Example:**
 ```
 GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3
+GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1&context_id=42&context_type=post
 ```
 
 **Response:**
@@ -318,6 +319,42 @@ GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3
 ```
 
 **Note:** This endpoint uses batch queries for efficiency and bypasses caching.
+
+---
+
+#### GET `/context-stats`
+
+Get all ratings that have contextual votes for a specific post or entity.
+
+**Permission:** `edit_posts`
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `context_id` | integer | Yes | Post/entity ID to inspect |
+| `context_type` | string | Yes | Context type such as `post`, `page`, or `product` |
+
+**Example:**
+```
+GET /wp-json/shuriken-reviews/v1/context-stats?context_id=42&context_type=post
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Overall Rating",
+    "rating_type": "stars",
+    "scale": 10,
+    "votes": 12,
+    "total": 49,
+    "average": 4.1,
+    "display_average": 8.2
+  }
+]
+```
 
 ---
 
@@ -429,6 +466,9 @@ curl -X GET "https://example.com/wp-json/shuriken-reviews/v1/nonce"
 
 # Get rating stats
 curl -X GET "https://example.com/wp-json/shuriken-reviews/v1/ratings/stats?ids=1,2,3"
+
+# Get contextual stats for one post
+curl -X GET "https://example.com/wp-json/shuriken-reviews/v1/context-stats?context_id=42&context_type=post"
 ```
 
 ---

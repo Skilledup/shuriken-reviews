@@ -55,7 +55,7 @@
     justify-content: center;
     gap: 6px;
     padding: 14px 20px;
-    border-right: 1px solid #f1f5f9;
+    border: none;
 }
 
 .shuriken-filter-bar .filter-group:last-child,

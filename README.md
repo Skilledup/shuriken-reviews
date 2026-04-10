@@ -2,7 +2,7 @@
 
 A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.14.10-blue)
+![Version](https://img.shields.io/badge/version-1.15.4-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
@@ -114,10 +114,10 @@ Displays a parent rating with all its child sub-ratings in a unified section.
 - Visual preset (Gradient, Minimal, Boxed, Dark, Outlined)
 - Grid or List layout for child ratings
 - Gap control (`--shuriken-gap`) — accepts any CSS size value (e.g. `24px`, `2rem`)
-- Per-block colour overrides
+- Per-block colour overrides, including a dedicated button colour for numeric grouped ratings
 - **Inline mirror management** — create, rename, and delete mirrors for the parent and each sub-rating directly from the block editor
 
-Both blocks render a live editor preview that matches the frontend output.
+Both blocks render a live editor preview that matches the frontend output. They also opt into WordPress client-side navigation support, and the frontend ratings script re-initialises after Interactivity Router navigations so voting widgets stay live on modern block-theme page transitions.
 
 ---
 
@@ -133,6 +133,7 @@ Both blocks render a live editor preview that matches the frontend output.
 | `style` | string | — | Preset: `classic`, `card`, `minimal`, `dark`, `outlined` |
 | `accent_color` | string | — | Hex colour override (e.g. `#e74c3c`) |
 | `star_color` | string | — | Hex colour override |
+| `button_color` | string | — | Hex colour override for numeric submit buttons |
 | `context_id` | int | — | Post ID for contextual voting |
 | `context_type` | string | — | Post type for contextual voting |
 
@@ -140,6 +141,7 @@ Both blocks render a live editor preview that matches the frontend output.
 [shuriken_rating id="1"]
 [shuriken_rating id="1" tag="h3" anchor_tag="product-rating"]
 [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
+[shuriken_rating id="8" style="minimal" star_color="#0f766e" button_color="#155e75"]
 [shuriken_rating id="1" context_id="42" context_type="post"]
 ```
 
@@ -153,6 +155,7 @@ Both blocks render a live editor preview that matches the frontend output.
 | `style` | string | — | Preset: `gradient`, `minimal`, `boxed`, `dark`, `outlined` |
 | `accent_color` | string | — | Hex colour override |
 | `star_color` | string | — | Hex colour override |
+| `button_color` | string | — | Hex colour override for numeric submit buttons |
 | `layout` | string | `grid` | Child layout: `grid` or `list` |
 | `context_id` | int | — | Post ID for contextual voting |
 | `context_type` | string | — | Post type for contextual voting |
@@ -160,7 +163,7 @@ Both blocks render a live editor preview that matches the frontend output.
 ```
 [shuriken_grouped_rating id="1"]
 [shuriken_grouped_rating id="1" style="dark" layout="list"]
-[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" layout="list"]
+[shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" button_color="#1d4ed8" layout="list"]
 ```
 
 ---
@@ -177,6 +180,7 @@ A rating placed in a post template collects **independent vote tallies per post*
 - **Block editor sidebar panel** — while editing a post, a Document Settings panel displays live contextual vote stats for that post.
 - **Archive sorting** — configure **Settings → General → Archive Sorting** to order archive pages by contextual rating average or total votes using a `pre_get_posts` hook.
 - **Analytics** — the Recent Activity table links contextual votes to the originating post; an overview card counts posts with contextual votes.
+- **Item Stats scope views** — ratings with contextual votes gain a **Per-Post Votes** view, a **Global Votes** comparison view, top-post and trending tables, and dedicated drill-down pages for each post context.
 - **REST endpoint** — `GET /context-stats` (requires `edit_posts`) returns per-post stats programmatically.
 
 Accepted post types default to `post`, `page`, and `product`. Extend with the `shuriken_allowed_context_types` filter.
@@ -210,6 +214,7 @@ Available at **Shuriken Reviews → Analytics**.
 | Top rated / most voted | Sortable leaderboards with vote-change percentages and benchmark comparisons |
 | Vote distribution | Visual breakdown per rating-value bucket |
 | Votes over time | Trend chart with rolling average |
+| Item Stats | Scope-aware detail screens with Global vs. Per-Post toggles, contextual leaderboards, and per-post drilldowns |
 | Voter breakdown | Member vs. guest voter-type split |
 | Voter Activity page | Full voting history, per-rating stats, and charts for any individual voter (members and guests) |
 | Export | Download all data as CSV |

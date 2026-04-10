@@ -785,7 +785,7 @@ Database updated, redirect with message
 The Shuriken Reviews architecture emphasizes:
 
 - **Modularity** - Each component has a clear, focused responsibility
-- **Extensibility** - 20+ hooks for customization without core modifications
+- **Extensibility** - 30+ hooks for customization without core modifications
 - **Testability** - Interfaces and dependency injection enable unit testing
 - **Robustness** - Comprehensive exception handling and validation
 - **Maintainability** - Clear structure makes code easy to understand and modify

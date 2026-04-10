@@ -118,7 +118,7 @@ The plugin uses a **modular architecture** with clear separation of concerns. Se
 - **Single Responsibility Principle** - Each class has one clear purpose
 - **Loose Coupling** - Depend on interfaces, not concrete classes
 - **High Cohesion** - Related functionality grouped together
-- **Extensibility** - 20+ hooks for customization without modifying core
+- **Extensibility** - 30+ hooks for customization without modifying core
 - **Testability** - Interfaces and dependency injection for unit testing
 
 ---
@@ -154,7 +154,7 @@ The plugin uses a **modular architecture** with clear separation of concerns. Se
 ## Key Concepts
 
 ### Hooks System
-The plugin exposes 20 WordPress hooks (filters and actions) for complete customization:
+The plugin exposes 30+ WordPress hooks (filters and actions) for complete customization:
 - **Filters** modify data before processing or display
 - **Actions** run custom code at specific points in execution
 
