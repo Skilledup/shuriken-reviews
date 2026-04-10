@@ -39,13 +39,13 @@
 .stars {
     display: flex;
     gap: 2px;
-    color: #ddd;
+    color: #d1d5db;
     cursor: pointer;
     flex: 0 0 auto;
 }
 
 .stars .star {
-    transition: color 0.2s;
+    transition: color 0.15s ease;
     display: inline-flex;
     align-items: center;
 }
@@ -53,6 +53,8 @@
 .stars .star .shuriken-icon {
     width: 24px;
     height: 24px;
+    /* star-solid polygon uses fill="currentColor" — color drives both fill and stroke */
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.08));
 }
 
 .stars .star:hover,
@@ -70,7 +72,7 @@
 }
 
 .shuriken-rating.display-only .stars .star:hover {
-    color: #ddd;
+    color: #d1d5db;
 }
 
 .shuriken-rating.display-only .stars .star.active:hover {

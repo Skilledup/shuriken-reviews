@@ -440,8 +440,11 @@ tr.mirror-rating .column-name {
 .shuriken-rating-stars {
     color: #f59e0b;
     font-size: 15px;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
 }
 
 .shuriken-rating-stars .star.filled {
@@ -449,12 +452,15 @@ tr.mirror-rating .column-name {
 }
 
 .shuriken-rating-stars .star.half {
+    /* star-solid at half opacity — clearly partial */
     color: #f59e0b;
-    opacity: 0.6;
+    opacity: 0.45;
 }
 
 .shuriken-rating-stars .star.empty {
+    /* star (outline) in muted grey */
     color: #cbd5e1;
+    opacity: 0.7;
 }
 
 .rating-text {

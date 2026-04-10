@@ -293,12 +293,12 @@ if (!function_exists('shuriken_sort_link')) {
         ?>
         <a href="<?php echo esc_url(add_query_arg('scope', 'contextual', $scope_base_url)); ?>"
            class="scope-btn <?php echo $current_scope === 'contextual' ? 'active' : ''; ?>">
-            <?php Shuriken_Icons::render('list', array('width' => 16, 'height' => 16)); ?>
+            <?php Shuriken_Icons::render('file-text', array('width' => 16, 'height' => 16)); ?>
             <?php esc_html_e('Per-Post Votes', 'shuriken-reviews'); ?>
         </a>
         <a href="<?php echo esc_url(add_query_arg('scope', 'global', $scope_base_url)); ?>"
            class="scope-btn <?php echo $current_scope === 'global' ? 'active' : ''; ?>">
-            <?php Shuriken_Icons::render('pie-chart', array('width' => 16, 'height' => 16)); ?>
+            <?php Shuriken_Icons::render('globe', array('width' => 16, 'height' => 16)); ?>
             <?php esc_html_e('Global Votes', 'shuriken-reviews'); ?>
         </a>
     </div>
@@ -312,7 +312,7 @@ if (!function_exists('shuriken_sort_link')) {
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
-            <span class="stat-icon"><?php Shuriken_Icons::render('layout-grid', array('width' => 28, 'height' => 28)); ?></span>
+            <span class="stat-icon"><?php Shuriken_Icons::render('file-text', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3><?php echo esc_html($context_summary->total_contexts); ?></h3>
                 <p><?php esc_html_e('Posts/Pages Used In', 'shuriken-reviews'); ?></p>

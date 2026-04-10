@@ -44,7 +44,10 @@ class Shuriken_Icons {
      */
     private static array $icons = array(
         // --- Rating symbols ---
+        // star: stroke-only outline (used for empty state)
         'star'           => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        // star-solid: same shape but with fill="currentColor" — override parent SVG fill:none so it renders solid
+        'star-solid'     => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="currentColor"/>',
         'star-off'       => '<path d="M8.34 8.34 2 9.27l5 4.87L5.82 21 12 17.77 18.18 21l-.59-3.43"/><path d="M18.42 12.76 22 9.27l-6.91-1L12 2l-1.44 2.91"/><line x1="2" x2="22" y1="2" y2="22"/>',
         'thumbs-up'      => '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>',
         'thumbs-down'    => '<path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>',
@@ -77,6 +80,8 @@ class Shuriken_Icons {
         'arrow-up'       => '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
         'arrow-down'     => '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
         'chevron-right'  => '<path d="m9 18 6-6-6-6"/>',
+        'file-text'      => '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+        'globe'          => '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
 
         // --- Data & analytics ---
         'calendar'       => '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
@@ -182,8 +187,8 @@ class Shuriken_Icons {
     public static function rating_symbols(int $size = 16): array {
         $small = array('width' => $size, 'height' => $size, 'stroke-width' => 2, 'class' => 'shuriken-rating-symbol');
         return array(
-            'star_filled'  => self::render('star', $small, false),
-            'star_empty'   => self::render('star-off', $small, false),
+            'star_filled'  => self::render('star-solid', $small, false),
+            'star_empty'   => self::render('star', $small, false),
             'thumbs_up'    => self::render('thumbs-up', $small, false),
             'thumbs_down'  => self::render('thumbs-down', $small, false),
             'chevron_up'   => self::render('chevron-up', $small, false),

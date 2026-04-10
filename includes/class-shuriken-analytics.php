@@ -231,7 +231,15 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if ($rating_type === 'numeric') {
             return $display_value . '/' . $s;
         }
-        return str_repeat($symbols['star_filled'], $display_value) . str_repeat($symbols['star_empty'], max(0, $s - $display_value));
+        $out = '';
+        for ($i = 1; $i <= $s; $i++) {
+            if ($i <= $display_value) {
+                $out .= '<span class="svg-star filled">' . $symbols['star_filled'] . '</span>';
+            } else {
+                $out .= '<span class="svg-star empty">' . $symbols['star_empty'] . '</span>';
+            }
+        }
+        return $out;
     }
 
     /**
