@@ -1318,26 +1318,34 @@
     text-decoration: none;
 }
 
-/* View Selector for Parent Ratings */
-.shuriken-view-selector {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 18px 24px;
-    margin-bottom: 25px;
+/* Unified Filter Controls Row (scope toggle + view selector inside filter bar) */
+.filter-controls-row {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 18px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    gap: 24px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
 }
 
-.shuriken-view-selector label {
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-group > label {
     font-weight: 600;
     color: #1e293b;
-    margin-right: 8px;
+    white-space: nowrap;
 }
 
+/* Scope toggle inside filter bar — compact variant */
+.filter-controls-row .shuriken-scope-toggle {
+    margin-bottom: 0;
+}
+
+/* View Selector for Parent Ratings */
 .view-selector-buttons {
     display: flex;
     gap: 10px;
@@ -1357,14 +1365,6 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     box-shadow: none;
-}
-
-.shuriken-view-selector .view-description {
-    flex-basis: 100%;
-    margin: 8px 0 0 0;
-    color: #64748b;
-    font-size: 14px;
-    font-style: italic;
 }
 
 /* Sub-Ratings Breakdown Table */
@@ -1806,11 +1806,20 @@ body.rtl .shuriken-view-selector {
     flex-direction: row-reverse;
 }
 
+body.rtl .filter-controls-row {
+    flex-direction: row-reverse;
+}
+
+body.rtl .filter-group {
+    flex-direction: row-reverse;
+}
+
 body.rtl .view-selector-buttons {
     flex-direction: row-reverse;
 }
 
-body.rtl .shuriken-view-selector label {
+body.rtl .shuriken-view-selector label,
+body.rtl .filter-group > label {
     margin-right: 0;
     margin-left: 8px;
 }
