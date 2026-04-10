@@ -229,39 +229,51 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Fetch fresh data on page load (bypasses cache)
-    fetchFreshData();
+    // Run on initial page load and after WP Interactivity Router client-side navigation.
+    // Uses data-shuriken-init to skip already-initialized elements so re-runs are safe.
+    function shurikenInit() {
+        fetchFreshData();
 
-    // Initialize stars based on average rating (only for stars type)
-    $('.shuriken-rating').each(function() {
-        const $rating = $(this);
-        const ratingType = $rating.data('rating-type') || 'stars';
-        
-        // Skip non-star types for star initialization
-        if (ratingType === 'like_dislike' || ratingType === 'approval' || ratingType === 'numeric') {
-            return;
-        }
-        
-        const $stats = $rating.find('.rating-stats');
-        const maxStars = parseInt($rating.data('max-stars')) || 5;
-        
-        // Use scaled-average if available, otherwise calculate from normalized average
-        let scaledAverage = parseFloat($stats.data('scaled-average'));
-        if (isNaN(scaledAverage)) {
-            const normalizedAverage = parseFloat($stats.data('average')) || 0;
-            scaledAverage = (normalizedAverage / 5) * maxStars;
-        }
-        
-        updateStars($rating, scaledAverage);
+        // Initialize stars (guard prevents duplicate setInterval on re-runs)
+        $('.shuriken-rating:not([data-shuriken-init])').each(function() {
+            const $rating = $(this);
+            $rating.attr('data-shuriken-init', '1');
 
-        // Update stars periodically; store interval ID for cleanup
-        const intervalId = setInterval(function() {
-            if (!$rating.data('hovering')) {
-                resetStars($rating);
+            const ratingType = $rating.data('rating-type') || 'stars';
+            // Skip non-star types for star initialization
+            if (ratingType === 'like_dislike' || ratingType === 'approval' || ratingType === 'numeric') {
+                return;
             }
-        }, 4000);
-        $rating.data('shuriken-interval', intervalId);
-    });
+
+            const $stats = $rating.find('.rating-stats');
+            const maxStars = parseInt($rating.data('max-stars')) || 5;
+
+            // Use scaled-average if available, otherwise calculate from normalized average
+            let scaledAverage = parseFloat($stats.data('scaled-average'));
+            if (isNaN(scaledAverage)) {
+                const normalizedAverage = parseFloat($stats.data('average')) || 0;
+                scaledAverage = (normalizedAverage / 5) * maxStars;
+            }
+
+            updateStars($rating, scaledAverage);
+
+            // Update stars periodically; store interval ID for cleanup
+            const intervalId = setInterval(function() {
+                if (!$rating.data('hovering')) {
+                    resetStars($rating);
+                }
+            }, 4000);
+            $rating.data('shuriken-interval', intervalId);
+        });
+
+        // Paint the filled track for any new sliders (guard prevents redundant repaints)
+        $('.shuriken-slider:not([data-shuriken-fill-init])').each(function() {
+            $(this).attr('data-shuriken-fill-init', '1');
+            updateSliderFill($(this));
+        });
+    }
+
+    shurikenInit();
 
     // Clean up setInterval when rating elements are removed from the DOM
     if (typeof MutationObserver !== 'undefined') {
@@ -281,25 +293,23 @@ jQuery(document).ready(function($) {
     }
 
     // Only add hover effects to votable ratings (not display-only)
-    $('.shuriken-rating:not(.display-only) .star').hover(
-        function() {
-            const $rating = $(this).closest('.shuriken-rating');
-            $rating.data('hovering', true);
-            const value = $(this).data('value');
-            $(this).parent().find('.star').each(function() {
-                if ($(this).data('value') <= value) {
-                    $(this).addClass('active');
-                } else {
-                    $(this).removeClass('active');
-                }
-            });
-        },
-        function() {
-            const $rating = $(this).closest('.shuriken-rating');
-            $rating.data('hovering', false);
-            resetStars($rating);
-        }
-    );
+    $(document).on('mouseenter', '.shuriken-rating:not(.display-only) .star', function() {
+        const $rating = $(this).closest('.shuriken-rating');
+        $rating.data('hovering', true);
+        const value = $(this).data('value');
+        $(this).parent().find('.star').each(function() {
+            if ($(this).data('value') <= value) {
+                $(this).addClass('active');
+            } else {
+                $(this).removeClass('active');
+            }
+        });
+    });
+    $(document).on('mouseleave', '.shuriken-rating:not(.display-only) .star', function() {
+        const $rating = $(this).closest('.shuriken-rating');
+        $rating.data('hovering', false);
+        resetStars($rating);
+    });
 
     /**
      * Submit a rating vote
@@ -490,7 +500,7 @@ jQuery(document).ready(function($) {
     }
 
     // Only allow clicking on votable ratings (not display-only)
-    $('.shuriken-rating:not(.display-only) .star').on('click', function(e) {
+    $(document).on('click', '.shuriken-rating:not(.display-only) .star', function(e) {
         e.preventDefault();
         const $rating = $(this).closest('.shuriken-rating');
         const $stars = $rating.find('.stars');
@@ -535,7 +545,7 @@ jQuery(document).ready(function($) {
     });
 
     // Only allow keyboard navigation on votable ratings (not display-only)
-    $('.shuriken-rating:not(.display-only) .star').on('keydown', function(e) {
+    $(document).on('keydown', '.shuriken-rating:not(.display-only) .star', function(e) {
         // Handle Enter (13) or Space (32) key press
         if (e.which === 13 || e.which === 32) {
             e.preventDefault();
@@ -715,7 +725,7 @@ jQuery(document).ready(function($) {
     }
 
     // Like/Dislike button click handler
-    $('.shuriken-rating:not(.display-only) .shuriken-like-btn, .shuriken-rating:not(.display-only) .shuriken-dislike-btn').on('click', function(e) {
+    $(document).on('click', '.shuriken-rating:not(.display-only) .shuriken-like-btn, .shuriken-rating:not(.display-only) .shuriken-dislike-btn', function(e) {
         e.preventDefault();
         const $rating = $(this).closest('.shuriken-rating');
         const value = parseInt($(this).data('value'));
@@ -757,19 +767,14 @@ jQuery(document).ready(function($) {
     }
 
     // Numeric slider: live value update on input + fill track
-    $('.shuriken-rating:not(.display-only) .shuriken-slider').on('input', function() {
+    $(document).on('input', '.shuriken-rating:not(.display-only) .shuriken-slider', function() {
         var $s = $(this);
         $s.closest('.shuriken-numeric').find('.shuriken-slider-value').text($s.val());
         updateSliderFill($s);
     });
 
-    // Paint the filled track on page load for every slider
-    $('.shuriken-slider').each(function() {
-        updateSliderFill($(this));
-    });
-
     // Numeric slider: submit button click handler
-    $('.shuriken-rating:not(.display-only) .shuriken-slider-submit').on('click', function(e) {
+    $(document).on('click', '.shuriken-rating:not(.display-only) .shuriken-slider-submit', function(e) {
         e.preventDefault();
         const $rating = $(this).closest('.shuriken-rating');
         const $slider = $rating.find('.shuriken-slider');
@@ -807,7 +812,7 @@ jQuery(document).ready(function($) {
     });
 
     // Approval (upvote) button click handler
-    $('.shuriken-rating:not(.display-only) .shuriken-upvote-btn').on('click', function(e) {
+    $(document).on('click', '.shuriken-rating:not(.display-only) .shuriken-upvote-btn', function(e) {
         e.preventDefault();
         const $rating = $(this).closest('.shuriken-rating');
 
@@ -833,4 +838,7 @@ jQuery(document).ready(function($) {
         
         submitBinaryRating($rating, 1, 0);
     });
+
+    // Re-initialize after WP Interactivity Router client-side navigation
+    document.addEventListener('wp-js-interactivity:navigated', shurikenInit);
 });

@@ -10,6 +10,9 @@
     "keywords": ["rating", "review", "stars", "vote", "like", "dislike", "numeric", "slider", "approval", "upvote"],
     "supports": {
         "html": false,
+        "interactivity": {
+            "clientNavigation": true
+        },
         "align": ["wide", "full"],
         "spacing": {
             "padding": true,
