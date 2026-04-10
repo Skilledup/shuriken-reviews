@@ -53,7 +53,9 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 
 ### 1.15.x — Modern PHP & Architecture
 
-#### `RatingType` Backed Enum
+Items are ordered by dependency and impact. The enum is the load-bearing foundation for everything — decomposing without it means string guards get duplicated into each new file. Callables and CPP are quick sweeps done while the class shapes are still stable. The two decompositions follow in dependency order (DB before REST). Platform extensibility is easiest to do surgically once the classes are small. Performance caps the series with a stable service layer to hang caches on.
+
+#### Step 1 — `RatingType` Backed Enum
 
 Replace the raw `string` rating type (`'stars'`, `'like_dislike'`, `'numeric'`, `'approval'`) with a PHP 8.1 backed enum.
 
@@ -64,15 +66,9 @@ Replace the raw `string` rating type (`'stars'`, `'like_dislike'`, `'numeric'`, 
 - DB-compatible: serialises to/from the existing `VARCHAR(20)` column via `->value` / `RatingType::from()`
 - All `$allowed_types = array(...)` validation guards replaced by `RatingType::tryFrom()`
 
-#### `readonly` Properties + Constructor Property Promotion
+> **Why first:** If the Database or REST class is decomposed before this lands, the raw-string guards get copy-pasted into multiple new files and must be cleaned up redundantly. Landing the enum first means every subsequent class — including the new repository and controller classes — uses it from day one.
 
-All injected dependencies and immutable table/config values are set once and never mutated. Apply PHP 8.1 language features throughout.
-
-- `readonly` on: `$ratings_table`, `$votes_table`, `$wpdb` in `Shuriken_Database`; all `$db` / `$analytics` / `$rate_limiter` injection fields in every class
-- Constructor property promotion on classes that accept injected dependencies: `Shuriken_REST_API`, `Shuriken_Admin`, `Shuriken_Shortcodes`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Frontend`, `Shuriken_Analytics`
-- Removes roughly 2–4 redundant lines per class (explicit property declaration + manual `$this->x = $x` assignment)
-
-#### First-Class Callables for Hooks
+#### Step 2 — First-Class Callables for Hooks
 
 Replace all `array($this, 'method_name')` callback syntax in `add_action` / `add_filter` calls.
 
@@ -80,9 +76,21 @@ Replace all `array($this, 'method_name')` callback syntax in `add_action` / `add
 - Applies across `Shuriken_Admin`, `Shuriken_REST_API`, `Shuriken_Frontend`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Rate_Limiter`
 - Statically analysable — IDEs and PHPStan can follow the callable to the method without string resolution
 
-#### `Shuriken_Database` Repository Decomposition
+> **Why second:** Pure syntax sweep with zero logic changes. Doing it before the structural decompositions means every method — whether it stays or moves — already uses modern callable syntax. The only overlap: `Shuriken_REST_API`'s constructor hooks will be touched again during the controller split (Step 5), but that is two lines and negligible.
 
-The ~1,250-line class covers four distinct responsibilities. Split into focused classes while keeping the existing interface contract.
+#### Step 3 — `readonly` Properties + Constructor Property Promotion
+
+All injected dependencies and immutable table/config values are set once and never mutated. Apply PHP 8.1 language features throughout.
+
+- Apply CPP + `readonly` now to the six classes that are **not** being decomposed: `Shuriken_Admin`, `Shuriken_Shortcodes`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Frontend`, `Shuriken_Analytics`
+- **Defer `Shuriken_Database` and `Shuriken_REST_API`** — their constructors change during Steps 4 and 5; apply CPP + `readonly` to the new split classes inline during those steps
+- Removes roughly 2–4 redundant lines per class (explicit property declaration + manual `$this->x = $x` assignment)
+
+> **Why third:** Applying CPP to `Shuriken_Database` before splitting it means rewriting the constructor twice. Doing it on the other six classes now establishes the pattern so the new decomposed classes follow it naturally.
+
+#### Step 4 — `Shuriken_Database` Repository Decomposition
+
+The ~1,694-line class covers four distinct responsibilities. Split into focused classes while keeping the existing interface contract. Apply CPP + `readonly` to new class constructors inline during this step.
 
 | New class | Responsibility |
 |---|---|
@@ -94,9 +102,11 @@ The ~1,250-line class covers four distinct responsibilities. Split into focused 
 - `Shuriken_Database_Interface` splits into `Shuriken_Rating_Repository_Interface` + `Shuriken_Vote_Repository_Interface`, or the façade keeps implementing the current interface for backward compatibility
 - No public API or hook changes — callers use `shuriken_db()` as before
 
-#### `Shuriken_REST_API` Controller Split
+> **Why fourth:** The `RatingType` enum (Step 1) means new repository methods use type-safe signatures from the start. The class is the biggest single file and unblocks the REST split that depends on it.
 
-The ~900-line class mixes route registration, arg schemas, permission callbacks, and 15+ handler methods. Refactor following the WordPress `WP_REST_Controller` pattern.
+#### Step 5 — `Shuriken_REST_API` Controller Split
+
+The ~1,064-line class mixes route registration, arg schemas, permission callbacks, and 15+ handler methods. Refactor following the WordPress `WP_REST_Controller` pattern. Apply CPP + `readonly` to new controller constructors inline.
 
 | New class | Responsibility |
 |---|---|
@@ -108,9 +118,13 @@ The ~900-line class mixes route registration, arg schemas, permission callbacks,
 - Arg definition arrays (`get_rating_id_args()`, `get_rating_create_args()`, etc.) move to the controller they belong to
 - `Shuriken_REST_API` becomes a thin bootstrap that instantiates the three controllers
 
-#### Platform & Add-on Extensibility
+> **Why fifth:** Depends on the repository interfaces from Step 4 (`Shuriken_Rating_Repository_Interface`, `Shuriken_Vote_Repository_Interface`). Controllers get focused type hints rather than the full monolithic `Shuriken_Database_Interface`.
+
+#### Step 6 — Platform & Add-on Extensibility
 
 A gap audit was done using the "engagement factor (views vs votes)" feature as a test case to measure how close the plugin is to a WooCommerce-style platform where completely decoupled add-ons can be shipped. The findings below are the concrete openings that need to be closed. Each item describes: what is missing, why it matters, and what minimal change fixes it.
+
+> **Why sixth:** Adding hook slots to focused ~300-line controllers (from Step 5) is surgical. Doing this work on the pre-split 1,064-line monolith would require re-touching the same lines during the controller split anyway.
 
 **Admin UI**
 
@@ -146,11 +160,13 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 - [ ] **Container is not externally observable** — `shuriken_container()` is public (good) and `set()` / `bind()` / `singleton()` are all accessible. But there is no event fired after the container is fully built. An add-on that loads after `plugins_loaded` priority 10 must call `shuriken_container()->set(...)` defensively without knowing whether the container has already resolved the service it wants to replace. Fix: fire `do_action('shuriken_container_ready', $container)` at the end of `init_modules()` in the main plugin class.
 
-#### Performance
+#### Step 7 — Performance
 
 - [ ] Server-side render pre-fetch — batch query on frontend page load to avoid per-block queries
 - [ ] Statistics caching — TTL-based cache service in container; invalidate on vote change; optional Redis support
 - [ ] Rate limit performance caching — cache vote counts in transients per user/IP with TTL; invalidate on new vote
+
+> **Why seventh:** Stable service boundaries from Steps 4–5 make a cache service cleanly injectable into the container without coupling it to the monolith.
 
 ### Known bugs and Gaps
 
