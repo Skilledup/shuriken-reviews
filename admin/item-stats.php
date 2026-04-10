@@ -86,9 +86,8 @@ if ($current_scope !== 'contextual') {
     $parent_rating = $is_sub ? $analytics->get_rating($rating->parent_id) : null;
     $source_rating = $is_mirror ? $analytics->get_rating($rating->mirror_of) : null;
 
-    // For parent ratings (not in global scope), get breakdown data (direct, subs, total) with date range support
-    // In global scope, breakdown is unscoped so we skip it and use the scoped $stats instead
-    $stats_breakdown = ($is_parent && $current_scope !== 'global') ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range) : null;
+    // For parent ratings, get breakdown data (direct, subs, total) with date range and scope support
+    $stats_breakdown = $is_parent ? $analytics->get_parent_rating_stats_breakdown($rating_id, $date_range, $current_scope) : null;
 
 $current_view = isset($_GET['view']) && in_array($_GET['view'], array('direct', 'subs', 'total')) ? $_GET['view'] : 'total';
 

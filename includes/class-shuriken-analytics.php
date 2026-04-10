@@ -998,7 +998,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $rating_id Parent rating ID
      * @return object|null Object with direct, subs, and total stats or null
      */
-    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all'): ?object {
+    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
         $rating = $this->get_rating($rating_id);
         if (!$rating) {
             return null;
@@ -1014,9 +1014,11 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             return null; // Not a parent rating
         }
         
-        // Build date condition
+        // Build date and scope conditions
         $date_condition = $this->build_date_condition($date_range, 'date_created');
         $date_condition_v = $this->build_date_condition($date_range, 'v.date_created');
+        $scope_condition = $this->build_scope_condition($scope);
+        $scope_condition_v = $this->build_scope_condition($scope, 'v.');
         
         $breakdown = new stdClass();
         
@@ -1025,7 +1027,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         $direct_totals = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
@@ -1038,33 +1040,33 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $breakdown->direct->display_average = Shuriken_Database::denormalize_average((float) $breakdown->direct->average, $scale);
         
         $breakdown->direct->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition}",
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $breakdown->direct->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition}",
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $breakdown->direct->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
             "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $breakdown->direct->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $breakdown->direct->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
-        $breakdown->direct->distribution = $this->get_rating_distribution($date_range, $rating_id);
-        $breakdown->direct->votes_over_time = $this->get_votes_over_time($date_range, $rating_id);
+        $breakdown->direct->distribution = $this->get_rating_distribution_scoped($date_range, $rating_id, $scope);
+        $breakdown->direct->votes_over_time = $scope ? $this->get_votes_over_time_scoped($date_range, $rating_id, $scope) : $this->get_votes_over_time($date_range, $rating_id);
         
         // === SUB-RATINGS AGGREGATED ===
         $breakdown->subs = new stdClass();
@@ -1077,13 +1079,13 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $rating_id
         ));
         
-        // Calculate effective totals from sub-ratings with date filter (applying effect_type inversion)
+        // Calculate effective totals from sub-ratings with date+scope filter (applying effect_type inversion)
         $subs_total_votes = 0;
         $subs_total_rating = 0;
         foreach ($sub_ratings_info as $sub) {
             $sub_totals = $this->wpdb->get_row($this->wpdb->prepare(
                 "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
                 $sub->id
             ));
             
@@ -1106,28 +1108,28 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             : 0;
         $breakdown->subs->display_average = Shuriken_Database::denormalize_average((float) $breakdown->subs->average, $scale);
         
-        // Aggregate vote counts from sub-ratings with date filter
+        // Aggregate vote counts from sub-ratings with date+scope filter
         $breakdown->subs->member_votes = (int) $this->wpdb->get_var(
             "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id > 0 {$date_condition}"
+             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id > 0 {$date_condition} {$scope_condition}"
         );
         
         $breakdown->subs->guest_votes = (int) $this->wpdb->get_var(
             "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id = 0 {$date_condition}"
+             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id = 0 {$date_condition} {$scope_condition}"
         );
         
         $breakdown->subs->unique_voters = (int) $this->wpdb->get_var(
             "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition}"
+             FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
         );
         
         $breakdown->subs->first_vote = $this->wpdb->get_var(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition}"
+            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
         );
         
         $breakdown->subs->last_vote = $this->wpdb->get_var(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition}"
+            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
         );
         
         // Distribution from sub-ratings (with effect_type conversion) and date filter
@@ -1145,7 +1147,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                 COUNT(*) as count 
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE v.rating_id IN ({$sub_ids_placeholder}) {$date_condition_v}
+             WHERE v.rating_id IN ({$sub_ids_placeholder}) {$date_condition_v} {$scope_condition_v}
              GROUP BY effective_value 
              ORDER BY effective_value"
         );
@@ -1162,8 +1164,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             }
         }
         
-        // Votes over time from sub-ratings with date filter
-        $breakdown->subs->votes_over_time = $this->get_votes_over_time_for_ids($sub_rating_ids, $date_range);
+        // Votes over time from sub-ratings with date+scope filter
+        $breakdown->subs->votes_over_time = $this->get_votes_over_time_for_ids($sub_rating_ids, $date_range, $scope);
         
         // === TOTAL (Combined) ===
         $breakdown->total = new stdClass();
@@ -1184,7 +1186,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         $breakdown->total->unique_voters = (int) $this->wpdb->get_var(
             "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id IN ({$all_ids_placeholder}) {$date_condition}"
+             FROM {$this->votes_table} WHERE rating_id IN ({$all_ids_placeholder}) {$date_condition} {$scope_condition}"
         );
         
         // First and last vote across all
@@ -1209,7 +1211,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         unset($val);
         
         // Combined votes over time
-        $breakdown->total->votes_over_time = $this->get_votes_over_time_for_ids($all_rating_ids, $date_range);
+        $breakdown->total->votes_over_time = $this->get_votes_over_time_for_ids($all_rating_ids, $date_range, $scope);
         
         return $breakdown;
     }
@@ -1221,18 +1223,19 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param mixed $date_range Date range (days, 'all', or array with 'start'/'end')
      * @return array Array of vote date/count objects
      */
-    private function get_votes_over_time_for_ids(array $rating_ids, string|int|array $date_range = 30): array {
+    private function get_votes_over_time_for_ids(array $rating_ids, string|int|array $date_range = 30, ?string $scope = null): array {
         if (empty($rating_ids)) {
             return array();
         }
         
         $ids_placeholder = implode(',', array_map('intval', $rating_ids));
         $date_condition = $this->build_date_condition($date_range, 'date_created');
+        $scope_condition = $this->build_scope_condition($scope);
         
         return $this->wpdb->get_results(
             "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
              FROM {$this->votes_table} 
-             WHERE rating_id IN ({$ids_placeholder}) {$date_condition}
+             WHERE rating_id IN ({$ids_placeholder}) {$date_condition} {$scope_condition}
              GROUP BY DATE(date_created) 
              ORDER BY vote_date"
         );

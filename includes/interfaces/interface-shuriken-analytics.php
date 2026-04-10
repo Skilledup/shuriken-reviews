@@ -253,9 +253,10 @@ interface Shuriken_Analytics_Interface {
      *
      * @param int              $rating_id  Rating ID.
      * @param string|int|array $date_range Date range filter.
+     * @param string|null      $scope      'global', 'contextual', or null (no filter).
      * @return object|null Stats breakdown or null.
      */
-    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all'): ?object;
+    public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object;
 
     /**
      * Get voting heatmap data — day-of-week × hour activity
