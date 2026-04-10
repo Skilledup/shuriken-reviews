@@ -34,16 +34,62 @@
 /* Filter Bar */
 .shuriken-filter-bar {
     background: #fff;
-    padding: 20px 25px;
+    padding: 0;
     margin-bottom: 25px;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
 }
 
+/* Each group (form + scope + view) is a flex cell */
+.shuriken-filter-bar form,
+.shuriken-filter-bar .filter-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 20px;
+    border-right: 1px solid #f1f5f9;
+}
+
+.shuriken-filter-bar .filter-group:last-child,
+.shuriken-filter-bar form:last-child {
+    border-right: none;
+}
+
+/* Small muted label above each control */
+.filter-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+.shuriken-filter-bar select {
+    min-width: 150px;
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.shuriken-filter-bar select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    outline: none;
+}
+
+/* Keep old .filter-row class working for analytics page */
 .shuriken-filter-bar .filter-row {
     display: flex;
     align-items: center;
@@ -56,19 +102,51 @@
     color: #1e293b;
 }
 
-.shuriken-filter-bar select {
-    min-width: 160px;
-    padding: 8px 12px;
+/* Segmented control — connected pill tabs */
+.filter-segmented {
+    display: inline-flex;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
+    overflow: hidden;
     background: #f8fafc;
-    transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
-.shuriken-filter-bar select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-    outline: none;
+.filter-seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 13px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    background: transparent;
+    border-right: 1px solid #e2e8f0;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+    line-height: 1.4;
+}
+
+.filter-seg-btn:last-child {
+    border-right: none;
+}
+
+.filter-seg-btn:hover:not(.active) {
+    background: #eef2f7;
+    color: #1e293b;
+}
+
+.filter-seg-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    pointer-events: none;
+}
+
+.filter-seg-btn .shuriken-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
 }
 
 /* Custom Date Range Inputs */
@@ -148,6 +226,13 @@
 .current-range-label .clear-filter:hover {
     color: #b91c1c;
     text-decoration: underline;
+}
+
+/* Current range label when inside the filter bar cell — compact variant */
+.shuriken-filter-bar .current-range-label {
+    margin-top: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
 }
 
 /* Stats Grid */
@@ -1318,54 +1403,7 @@
     text-decoration: none;
 }
 
-/* Unified Filter Controls Row (scope toggle + view selector inside filter bar) */
-.filter-controls-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    padding-top: 14px;
-    border-top: 1px solid #f1f5f9;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.filter-group > label {
-    font-weight: 600;
-    color: #1e293b;
-    white-space: nowrap;
-}
-
-/* Scope toggle inside filter bar — compact variant */
-.filter-controls-row .shuriken-scope-toggle {
-    margin-bottom: 0;
-}
-
-/* View Selector for Parent Ratings */
-.view-selector-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.view-selector-buttons .button {
-    margin: 0;
-    border-radius: 8px;
-    padding: 8px 16px;
-    transition: opacity 0.2s ease;
-    box-shadow: none;
-}
-
-.view-selector-buttons .button-primary {
-    pointer-events: none;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    box-shadow: none;
-}
+/* Sub-Ratings Breakdown Table (formerly after view-selector-buttons) */
 
 /* Sub-Ratings Breakdown Table */
 .sub-ratings-breakdown {
@@ -1806,20 +1844,29 @@ body.rtl .shuriken-view-selector {
     flex-direction: row-reverse;
 }
 
-body.rtl .filter-controls-row {
-    flex-direction: row-reverse;
+/* RTL — filter bar cells: use border-left separator instead of border-right */
+body.rtl .shuriken-filter-bar form,
+body.rtl .shuriken-filter-bar .filter-group {
+    border-right: none;
+    border-left: 1px solid #f1f5f9;
 }
 
-body.rtl .filter-group {
-    flex-direction: row-reverse;
+body.rtl .shuriken-filter-bar .filter-group:last-child,
+body.rtl .shuriken-filter-bar form:last-child {
+    border-left: none;
 }
 
-body.rtl .view-selector-buttons {
-    flex-direction: row-reverse;
+/* RTL — segmented controls: swap inner segment dividers */
+body.rtl .filter-seg-btn {
+    border-right: none;
+    border-left: 1px solid #e2e8f0;
 }
 
-body.rtl .shuriken-view-selector label,
-body.rtl .filter-group > label {
+body.rtl .filter-seg-btn:last-child {
+    border-left: none;
+}
+
+body.rtl .shuriken-view-selector label {
     margin-right: 0;
     margin-left: 8px;
 }

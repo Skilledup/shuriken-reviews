@@ -245,8 +245,8 @@ if (!function_exists('shuriken_sort_link')) {
             <input type="hidden" name="view" value="<?php echo esc_attr($current_view); ?>">
             <?php endif; ?>
             
-            <div class="filter-row">
-                <label for="item_date_range"><?php esc_html_e('Time Period:', 'shuriken-reviews'); ?></label>
+            <div class="filter-group">
+                <span class="filter-group-label"><?php esc_html_e('Time Period', 'shuriken-reviews'); ?></span>
                 <select name="date_range" id="item_date_range" class="preset-select">
                     <option value="7" <?php selected($preset_value, '7'); ?>><?php esc_html_e('Last 7 Days', 'shuriken-reviews'); ?></option>
                     <option value="30" <?php selected($preset_value, '30'); ?>><?php esc_html_e('Last 30 Days', 'shuriken-reviews'); ?></option>
@@ -259,76 +259,66 @@ if (!function_exists('shuriken_sort_link')) {
                 <div class="custom-date-range" style="<?php echo $range_type === 'custom' ? '' : 'display: none;'; ?>">
                     <label for="item_start_date"><?php esc_html_e('From:', 'shuriken-reviews'); ?></label>
                     <input type="date" name="start_date" id="item_start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
                     <label for="item_end_date"><?php esc_html_e('To:', 'shuriken-reviews'); ?></label>
                     <input type="date" name="end_date" id="item_end_date" value="<?php echo esc_attr($end_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
                     <button type="submit" class="button button-primary"><?php esc_html_e('Apply', 'shuriken-reviews'); ?></button>
                 </div>
+                
+                <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
+                <span class="current-range-label">
+                    <?php Shuriken_Icons::render('calendar', array('width' => 14, 'height' => 14)); ?>
+                    <?php echo esc_html($date_range_label); ?>
+                    <a href="<?php echo esc_url($base_filter_url); ?>" class="clear-filter" title="<?php esc_attr_e('Clear', 'shuriken-reviews'); ?>">×</a>
+                </span>
+                <?php endif; ?>
             </div>
-            
-            <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
-            <div class="current-range-label">
-                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
-                <?php echo esc_html($date_range_label); ?>
-                <a href="<?php echo esc_url($base_filter_url); ?>" class="clear-filter">
-                    <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
-                </a>
-            </div>
-            <?php endif; ?>
         </form>
         
-        <?php if ($has_contextual || ($current_scope !== 'contextual' && isset($is_parent) && $is_parent && $stats_breakdown)) : ?>
-        <div class="filter-controls-row">
-            <?php if ($has_contextual) : ?>
-            <div class="filter-group">
-                <label><?php esc_html_e('Vote Scope:', 'shuriken-reviews'); ?></label>
-                <div class="shuriken-scope-toggle">
-                    <?php
-                    $scope_base_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
-                    // Preserve date range params
-                    if ($range_type === 'custom') {
-                        $scope_base_url = add_query_arg(array('range_type' => 'custom', 'start_date' => $start_date, 'end_date' => $end_date), $scope_base_url);
-                    } elseif ($preset_value !== '30') {
-                        $scope_base_url = add_query_arg('date_range', $preset_value, $scope_base_url);
-                    }
-                    ?>
-                    <a href="<?php echo esc_url(add_query_arg('scope', 'contextual', $scope_base_url)); ?>"
-                       class="scope-btn <?php echo $current_scope === 'contextual' ? 'active' : ''; ?>">
-                        <?php Shuriken_Icons::render('file-text', array('width' => 16, 'height' => 16)); ?>
-                        <?php esc_html_e('Per-Post Votes', 'shuriken-reviews'); ?>
-                    </a>
-                    <a href="<?php echo esc_url(add_query_arg('scope', 'global', $scope_base_url)); ?>"
-                       class="scope-btn <?php echo $current_scope === 'global' ? 'active' : ''; ?>">
-                        <?php Shuriken_Icons::render('globe', array('width' => 16, 'height' => 16)); ?>
-                        <?php esc_html_e('Global Votes', 'shuriken-reviews'); ?>
-                    </a>
-                </div>
+        <?php if ($has_contextual) : ?>
+        <div class="filter-group">
+            <span class="filter-group-label"><?php esc_html_e('Vote Scope', 'shuriken-reviews'); ?></span>
+            <div class="filter-segmented">
+                <?php
+                $scope_base_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
+                if ($range_type === 'custom') {
+                    $scope_base_url = add_query_arg(array('range_type' => 'custom', 'start_date' => $start_date, 'end_date' => $end_date), $scope_base_url);
+                } elseif ($preset_value !== '30') {
+                    $scope_base_url = add_query_arg('date_range', $preset_value, $scope_base_url);
+                }
+                ?>
+                <a href="<?php echo esc_url(add_query_arg('scope', 'contextual', $scope_base_url)); ?>"
+                   class="filter-seg-btn <?php echo $current_scope === 'contextual' ? 'active' : ''; ?>">
+                    <?php Shuriken_Icons::render('file-text', array('width' => 14, 'height' => 14)); ?>
+                    <?php esc_html_e('Per-Post', 'shuriken-reviews'); ?>
+                </a>
+                <a href="<?php echo esc_url(add_query_arg('scope', 'global', $scope_base_url)); ?>"
+                   class="filter-seg-btn <?php echo $current_scope === 'global' ? 'active' : ''; ?>">
+                    <?php Shuriken_Icons::render('globe', array('width' => 14, 'height' => 14)); ?>
+                    <?php esc_html_e('Global', 'shuriken-reviews'); ?>
+                </a>
             </div>
-            <?php endif; ?>
-            
-            <?php if ($current_scope !== 'contextual' && isset($is_parent) && $is_parent && $stats_breakdown) : ?>
-            <div class="filter-group">
-                <label><?php esc_html_e('Display data from:', 'shuriken-reviews'); ?></label>
-                <div class="view-selector-buttons">
-                    <?php 
-                    $views = array(
-                        'total' => __('Total (Combined)', 'shuriken-reviews'),
-                        'direct' => __('Direct Votes Only', 'shuriken-reviews'),
-                        'subs' => __('From Sub-ratings Only', 'shuriken-reviews'),
-                    );
-                    foreach ($views as $view_key => $view_label) :
-                        $is_active = ($current_view === $view_key);
-                        $view_url = add_query_arg('view', $view_key, $base_filter_url);
-                    ?>
-                        <a href="<?php echo esc_url($view_url); ?>" 
-                           class="button <?php echo $is_active ? 'button-primary' : 'button-secondary'; ?>">
-                            <?php echo esc_html($view_label); ?>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($current_scope !== 'contextual' && isset($is_parent) && $is_parent && $stats_breakdown) : ?>
+        <div class="filter-group">
+            <span class="filter-group-label"><?php esc_html_e('Display data from', 'shuriken-reviews'); ?></span>
+            <div class="filter-segmented">
+                <?php 
+                $views = array(
+                    'total'  => __('Total', 'shuriken-reviews'),
+                    'direct' => __('Direct Only', 'shuriken-reviews'),
+                    'subs'   => __('Sub-ratings Only', 'shuriken-reviews'),
+                );
+                foreach ($views as $view_key => $view_label) :
+                    $view_url = add_query_arg('view', $view_key, $base_filter_url);
+                ?>
+                    <a href="<?php echo esc_url($view_url); ?>"
+                       class="filter-seg-btn <?php echo $current_view === $view_key ? 'active' : ''; ?>">
+                        <?php echo esc_html($view_label); ?>
+                    </a>
+                <?php endforeach; ?>
             </div>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
