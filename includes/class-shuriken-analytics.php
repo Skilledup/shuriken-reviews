@@ -66,7 +66,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return bool
      */
     private function is_binary_type(string $rating_type): bool {
-        return in_array($rating_type, array('like_dislike', 'approval'), true);
+        return (Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
     }
 
     /**
@@ -193,11 +193,13 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string Formatted display string
      */
     public function format_average_display(float $average, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, int $total_votes = 0, int $total_rating = 0): string {
-        if ($rating_type === 'like_dislike') {
+        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+
+        if ($type_enum === Shuriken_Rating_Type::LikeDislike) {
             $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
             return $pct . '% ' . __('positive', 'shuriken-reviews');
         }
-        if ($rating_type === 'approval') {
+        if ($type_enum === Shuriken_Rating_Type::Approval) {
             $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
             return $pct . '% ' . __('approved', 'shuriken-reviews');
         }
@@ -220,15 +222,17 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     public function format_vote_display(float|int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
         $symbols = Shuriken_Icons::rating_symbols(14);
-        if ($rating_type === 'like_dislike') {
+        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+
+        if ($type_enum === Shuriken_Rating_Type::LikeDislike) {
             return intval($rating_value) === 1 ? $symbols['thumbs_up'] : $symbols['thumbs_down'];
         }
-        if ($rating_type === 'approval') {
+        if ($type_enum === Shuriken_Rating_Type::Approval) {
             return $symbols['thumbs_up'];
         }
         $s = (int) $scale;
         $display_value = (int) round(((float) $rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $s);
-        if ($rating_type === 'numeric') {
+        if ($type_enum === Shuriken_Rating_Type::Numeric) {
             return $display_value . '/' . $s;
         }
         $out = '';
@@ -512,7 +516,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     public function get_type_benchmark(string $rating_type, string|int|array $date_range = 'all'): object {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+        $is_binary = (Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
 
         $result = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT 
@@ -1472,7 +1476,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
         // Calculate display metrics per type
         foreach ($summaries as &$s) {
-            if (in_array($s->rating_type, array('like_dislike', 'approval'), true)) {
+            if ((Shuriken_Rating_Type::tryFrom($s->rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary()) {
                 $s->approval_rate = $s->total_votes > 0
                     ? round(($s->total_rating / $s->total_votes) * 100)
                     : 0;

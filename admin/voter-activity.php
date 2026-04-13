@@ -386,7 +386,8 @@ $tendency_icons = array(
                                 </span>
                                 <?php
                                 $vote_type = $vote->rating_type ?? 'stars';
-                                if (!in_array($vote_type, array('like_dislike', 'approval'), true)) :
+                                $vote_type_enum = Shuriken_Rating_Type::tryFrom($vote_type) ?? Shuriken_Rating_Type::Stars;
+                                if (!$vote_type_enum->isBinary()) :
                                     $vote_scale = $vote->scale ?? 5;
                                     $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
                                 ?>

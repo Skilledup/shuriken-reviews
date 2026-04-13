@@ -148,7 +148,8 @@ $edit_url = admin_url('admin.php?page=shuriken-reviews&s=' . urlencode($rating->
 
 // Type-specific chart data
 $rating_type = $rating->rating_type ?: 'stars';
-$is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+$rating_type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+$is_binary = $rating_type_enum->isBinary();
 
 // Base URL for filters (preserves rating_id and scope)
 $base_filter_url = admin_url('admin.php?page=shuriken-reviews-item-stats&rating_id=' . $rating_id);
@@ -833,7 +834,7 @@ if (!function_exists('shuriken_sort_link')) {
                             </span>
                         </td>
                         <td>
-                            <?php if (!in_array($sub->rating_type ?: 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
+                            <?php if (!(Shuriken_Rating_Type::tryFrom($sub->rating_type ?: 'stars') ?? Shuriken_Rating_Type::Stars)->isBinary()) : ?><span class="star-display"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($sub->average ?: 0, $sub->rating_type ?: 'stars', $sub->scale ?: 5, $sub->total_votes, $sub->total_rating)); ?>
                         </td>
                         <td>
                             <span class="effective-score <?php echo $sub->effect_type === 'negative' ? 'inverted' : ''; ?>">
@@ -901,7 +902,8 @@ if (!function_exists('shuriken_sort_link')) {
                                 </span>
                                 <?php
                                 $vote_type = $vote->rating_type ?? $rating->rating_type ?? 'stars';
-                                if (!in_array($vote_type, array('like_dislike', 'approval'), true)) :
+                                $vote_type_enum = Shuriken_Rating_Type::tryFrom($vote_type) ?? Shuriken_Rating_Type::Stars;
+                                if (!$vote_type_enum->isBinary()) :
                                     $vote_scale = $vote->scale ?? $rating->scale ?? 5;
                                     $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
                                 ?>

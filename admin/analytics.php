@@ -156,19 +156,19 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                 <span class="type-summary-icon">
                     <?php
                     $symbols = Shuriken_Icons::rating_symbols(18);
-                    switch ($type_summary->rating_type) {
-                        case 'stars': echo $symbols['star_filled']; break;
-                        case 'like_dislike': echo $symbols['thumbs_up'] . $symbols['thumbs_down']; break;
-                        case 'numeric': echo '#'; break;
-                        case 'approval': echo $symbols['thumbs_up']; break;
-                        default: echo $symbols['star_filled'];
+                    $type_enum = Shuriken_Rating_Type::tryFrom($type_summary->rating_type) ?? Shuriken_Rating_Type::Stars;
+                    switch ($type_enum) {
+                        case Shuriken_Rating_Type::Stars: echo $symbols['star_filled']; break;
+                        case Shuriken_Rating_Type::LikeDislike: echo $symbols['thumbs_up'] . $symbols['thumbs_down']; break;
+                        case Shuriken_Rating_Type::Numeric: echo '#'; break;
+                        case Shuriken_Rating_Type::Approval: echo $symbols['thumbs_up']; break;
                     }
                     ?>
                 </span>
                 <div class="type-summary-content">
                     <strong>
                         <?php
-                        if (in_array($type_summary->rating_type, array('like_dislike', 'approval'), true)) {
+                        if ($type_enum->isBinary()) {
                             echo esc_html($type_summary->approval_rate) . '%';
                         } else {
                             echo esc_html($type_summary->weighted_average) . '/' . esc_html($type_summary->scale);
@@ -386,7 +386,7 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                         ?>
                             <tr class="shuriken-clickable-row" data-href="<?php echo esc_url($stats_url); ?>">
                                 <td><a href="<?php echo esc_url($stats_url); ?>" class="rating-item-link"><?php echo esc_html($item->name); ?></a></td>
-                                <td><?php if (!in_array($item->rating_type ?? 'stars', array('like_dislike', 'approval'), true)) : ?><span class="star-display low"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
+                                <td><?php if (!(Shuriken_Rating_Type::tryFrom($item->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars)->isBinary()) : ?><span class="star-display low"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php endif; ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
                         <?php endforeach; ?>

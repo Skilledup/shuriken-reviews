@@ -107,6 +107,9 @@ final class Shuriken_Reviews {
         // Traits
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/traits/trait-shuriken-analytics-helpers.php';
         
+        // Enums
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/enum-shuriken-rating-type.php';
+
         // Core classes
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-icons.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-database.php';

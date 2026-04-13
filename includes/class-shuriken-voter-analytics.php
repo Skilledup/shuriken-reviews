@@ -362,7 +362,7 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
             $row->avg_value = (float) $row->avg_value;
             $row->avg_scale = (float) $row->avg_scale;
             $row->positive_count = (int) $row->positive_count;
-            $row->is_binary = in_array($row->rating_type, array('like_dislike', 'approval'), true);
+            $row->is_binary = (Shuriken_Rating_Type::tryFrom($row->rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
             if ($row->is_binary) {
                 $row->approval_rate = $row->vote_count > 0
                     ? round(($row->positive_count / $row->vote_count) * 100)

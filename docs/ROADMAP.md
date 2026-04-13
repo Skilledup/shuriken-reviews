@@ -11,13 +11,15 @@ What's planned and why. For deep details, see:
 
 - [ ] **PHPUnit test suite** — proper test configuration and unit tests
 
-- [ ] **Shortcode / block feature parity** — close the remaining gaps between the FSE blocks and shortcodes:
-  - `[shuriken_rating]` and `[shuriken_grouped_rating]`: add `gap` attribute to `[shuriken_grouped_rating]` (maps to `--shuriken-gap`); `button_color` is already wired, declared in `shortcode_atts`, and documented in the public docs.
-  - Single rating block (`shuriken-rating/index.js`): add `buttonColor` attribute and a Button Color swatch in the Colors panel (parallel to the grouped block, only visible when type is `numeric`); emit `--shuriken-button-color` in the PHP render callback.
-
 ---
 
 ## Shipped
+
+### Shortcode / Block Feature Parity
+
+- `[shuriken_grouped_rating]`: `gap` attribute (maps to `--shuriken-gap`) + `button_color` (maps to `--shuriken-button-color`)
+- `[shuriken_rating]`: `button_color` attribute (maps to `--shuriken-button-color`)
+- Single rating block (`shuriken-rating`): `buttonColor` attribute with Button Color swatch in Colors panel (only visible when type is `numeric`); emitted as `--shuriken-button-color` in PHP render callback
 
 ### Contextual Voting (DB v1.6.0)
 
@@ -54,18 +56,9 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 
 Items are ordered by dependency and impact. The enum is the load-bearing foundation for everything — decomposing without it means string guards get duplicated into each new file. Callables and CPP are quick sweeps done while the class shapes are still stable. The two decompositions follow in dependency order (DB before REST). Platform extensibility is easiest to do surgically once the classes are small. Performance caps the series with a stable service layer to hang caches on.
 
-#### Step 1 — `RatingType` Backed Enum
+#### ~~Step 1 — `RatingType` Backed Enum~~ ✅
 
-Replace the raw `string` rating type (`'stars'`, `'like_dislike'`, `'numeric'`, `'approval'`) with a PHP 8.1 backed enum.
-
-- `enum RatingType: string` with cases `Stars`, `LikeDislike`, `Numeric`, `Approval`
-- `isBinary(): bool` method absorbs the repeated `if ($type === 'like_dislike' || $type === 'approval')` guards in `Shuriken_Database` and `Shuriken_REST_API`
-- `maxScale(): int` absorbs scale-constraint logic in `create_rating()` / `update_rating()`
-- `get_type_class()` in `Shuriken_REST_API` is deleted — replaced by `RatingType::from($type)->isBinary()`
-- DB-compatible: serialises to/from the existing `VARCHAR(20)` column via `->value` / `RatingType::from()`
-- All `$allowed_types = array(...)` validation guards replaced by `RatingType::tryFrom()`
-
-> **Why first:** If the Database or REST class is decomposed before this lands, the raw-string guards get copy-pasted into multiple new files and must be cleaned up redundantly. Landing the enum first means every subsequent class — including the new repository and controller classes — uses it from day one.
+`Shuriken_Rating_Type` backed enum shipped in `includes/enum-shuriken-rating-type.php`. Cases: `Stars`, `LikeDislike`, `Numeric`, `Approval`. Methods: `isBinary()`, `maxScale()`, `constrainScale()`, `typeClass()`, `values()`. Adopted across 13 files — `get_type_class()` deleted from REST API, all `$allowed_types` arrays and binary guards replaced.
 
 #### Step 2 — First-Class Callables for Hooks
 

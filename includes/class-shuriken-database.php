@@ -96,7 +96,12 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @throws Shuriken_Validation_Exception If the value is out of range for the type.
      */
     public static function normalize_vote_value(float $rating_value, string $rating_type, int $scale): float {
-        if ($rating_type === 'like_dislike') {
+        $type = Shuriken_Rating_Type::tryFrom($rating_type);
+        if ($type === null) {
+            throw Shuriken_Validation_Exception::invalid_value('rating_type', $rating_type, implode(', ', Shuriken_Rating_Type::values()));
+        }
+
+        if ($type === Shuriken_Rating_Type::LikeDislike) {
             $int_value = intval($rating_value);
             if ($int_value !== 0 && $int_value !== 1) {
                 throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
@@ -104,7 +109,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             return (float) $int_value;
         }
 
-        if ($rating_type === 'approval') {
+        if ($type === Shuriken_Rating_Type::Approval) {
             $int_value = intval($rating_value);
             if ($int_value !== 1) {
                 throw Shuriken_Validation_Exception::invalid_rating_value($rating_value, 1);
@@ -371,26 +376,21 @@ class Shuriken_Database implements Shuriken_Database_Interface {
             throw Shuriken_Validation_Exception::required_field('name');
         }
 
-        $allowed_types = array('stars', 'like_dislike', 'numeric', 'approval');
-        $rating_type = in_array($rating_type, $allowed_types, true) ? $rating_type : 'stars';
+        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+        $rating_type = $type_enum->value;
 
         // Mirror inherits type and scale from source rating
         if ($mirror_of !== null && $mirror_of > 0) {
             $source = $this->get_rating(intval($mirror_of));
             if ($source) {
                 $rating_type = isset($source->rating_type) ? $source->rating_type : 'stars';
+                $type_enum = Shuriken_Rating_Type::from($rating_type);
                 $scale = isset($source->scale) ? intval($source->scale) : self::RATING_SCALE_DEFAULT;
             }
         }
 
         // Force scale per type constraints
-        if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
-            $scale = 1; // Binary types always use scale 1
-        } elseif ($rating_type === 'numeric') {
-            $scale = max(self::SCALE_MIN, min(self::NUMERIC_SCALE_MAX, intval($scale))); // Numeric: 2-100 (slider UI)
-        } else {
-            $scale = max(self::SCALE_MIN, min(self::STARS_SCALE_MAX, intval($scale))); // Stars: 2-10
-        }
+        $scale = $type_enum->constrainScale(intval($scale));
         
         $insert_data = array(
             'name' => $sanitized_name,
@@ -486,8 +486,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     $update_data[$key] = in_array($value, array('positive', 'negative'), true) ? $value : 'positive';
                     $format[] = '%s';
                 } elseif ($key === 'rating_type') {
-                    $allowed_types = array('stars', 'like_dislike', 'numeric', 'approval');
-                    $update_data[$key] = in_array($value, $allowed_types, true) ? $value : 'stars';
+                    $type_enum = Shuriken_Rating_Type::tryFrom($value);
+                    $update_data[$key] = $type_enum ? $type_enum->value : Shuriken_Rating_Type::Stars->value;
                     $format[] = '%s';
                 } elseif ($key === 'scale') {
                     $update_data[$key] = max(1, min(self::NUMERIC_SCALE_MAX, intval($value)));
@@ -698,7 +698,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
                     // since total_rating is stored normalized, not on the display scale.
                     // Binary [0, 1]: inverted = 1 - value → aggregate = votes * scale - total (scale = 1)
                     // Stars/numeric [1, RATING_SCALE_DEFAULT]: inverted = (RATING_SCALE_DEFAULT + 1) - value
-                    $is_binary = in_array($sub->rating_type, array('like_dislike', 'approval'), true);
+                    $is_binary = (Shuriken_Rating_Type::tryFrom($sub->rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
                     $inv_const = $is_binary ? (int) $sub->scale : (self::RATING_SCALE_DEFAULT + 1);
                     $inverted_rating = ($sub->total_votes * $inv_const) - $sub->total_rating;
                     $total_rating += $inverted_rating;

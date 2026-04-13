@@ -11,7 +11,7 @@ $db = shuriken_db();
  * Get the type class for a rating type: 'continuous' or 'binary'
  */
 function shuriken_get_type_class(string $type): string {
-    return in_array($type, array('like_dislike', 'approval'), true) ? 'binary' : 'continuous';
+    return (Shuriken_Rating_Type::tryFrom($type) ?? Shuriken_Rating_Type::Stars)->typeClass();
 }
 
 $user_id = get_current_user_id();

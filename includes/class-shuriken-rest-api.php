@@ -344,24 +344,6 @@ class Shuriken_REST_API {
         return current_user_can($capability);
     }
 
-    /**
-     * Get the type class for a rating type.
-     *
-     * "continuous" types (stars, numeric) normalize votes to 1–5.
-     * "binary" types (like_dislike, approval) store 0 or 1 per vote.
-     * Mixing across classes produces incorrect aggregated scores.
-     *
-     * @param string $rating_type
-     * @return string 'continuous' or 'binary'
-     * @since 1.14.0
-     */
-    private function get_type_class(string $rating_type): string {
-        if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
-            return 'binary';
-        }
-        return 'continuous';
-    }
-
     // =========================================================================
     // Argument Definitions
     // =========================================================================
@@ -418,7 +400,7 @@ class Shuriken_REST_API {
                 'required'          => false,
                 'type'              => 'string',
                 'default'           => 'stars',
-                'enum'              => array('stars', 'like_dislike', 'numeric', 'approval'),
+                'enum'              => Shuriken_Rating_Type::values(),
             ),
             'scale' => array(
                 'required'          => false,
@@ -468,7 +450,7 @@ class Shuriken_REST_API {
             'rating_type' => array(
                 'required'          => false,
                 'type'              => 'string',
-                'enum'              => array('stars', 'like_dislike', 'numeric', 'approval'),
+                'enum'              => Shuriken_Rating_Type::values(),
             ),
             'scale' => array(
                 'required'          => false,
@@ -543,9 +525,9 @@ class Shuriken_REST_API {
             if ($parent_id) {
                 $parent = $this->db->get_rating($parent_id);
                 if ($parent) {
-                    $parent_type_class = $this->get_type_class($parent->rating_type ?? 'stars');
-                    $child_type_class  = $this->get_type_class($rating_type);
-                    if ($parent_type_class !== $child_type_class) {
+                    $parent_type_enum = Shuriken_Rating_Type::tryFrom($parent->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars;
+                    $child_type_enum  = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+                    if ($parent_type_enum->typeClass() !== $child_type_enum->typeClass()) {
                         $response_data['type_warning'] = __('This sub-rating type is incompatible with the parent\'s type. Aggregated scores may be incorrect.', 'shuriken-reviews');
                     }
                 }
@@ -655,9 +637,9 @@ class Shuriken_REST_API {
             if ($effective_parent_id) {
                 $parent = $this->db->get_rating($effective_parent_id);
                 if ($parent) {
-                    $parent_type_class = $this->get_type_class($parent->rating_type ?? 'stars');
-                    $child_type_class  = $this->get_type_class($effective_type);
-                    if ($parent_type_class !== $child_type_class) {
+                    $parent_type_enum = Shuriken_Rating_Type::tryFrom($parent->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars;
+                    $child_type_enum  = Shuriken_Rating_Type::tryFrom($effective_type) ?? Shuriken_Rating_Type::Stars;
+                    if ($parent_type_enum->typeClass() !== $child_type_enum->typeClass()) {
                         $response_data['type_warning'] = __('This sub-rating type is incompatible with the parent\'s type. Aggregated scores may be incorrect.', 'shuriken-reviews');
                     }
                 }

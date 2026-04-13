@@ -164,8 +164,10 @@ class Shuriken_AJAX {
             /** @since 1.14.0 */
             $rating_type = apply_filters('shuriken_rating_type', $rating_type, $rating);
 
+            $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+
             // Binary types have a fixed scale — skip scale filtering
-            if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
+            if ($type_enum->isBinary()) {
                 $max_stars = 1;
             } else {
                 $max_stars_filtered = apply_filters('shuriken_rating_max_stars', intval($rating->scale), $rating);
@@ -315,12 +317,12 @@ class Shuriken_AJAX {
         }
 
         // Calculate scaled average for the response (type-aware)
-        if ($rating_type === 'like_dislike') {
+        if ($type_enum === Shuriken_Rating_Type::LikeDislike) {
             // For like/dislike: total_rating = like count, average = approval rate
             $scaled_average = $ctx_total_votes > 0 
                 ? round(($ctx_total_rating / $ctx_total_votes) * 100) 
                 : 0;
-        } elseif ($rating_type === 'approval') {
+        } elseif ($type_enum === Shuriken_Rating_Type::Approval) {
             $scaled_average = $ctx_total_votes;
         } else {
             $scaled_average = $ctx_display_average;
@@ -343,7 +345,8 @@ class Shuriken_AJAX {
                 $parent_type = apply_filters('shuriken_rating_type', $parent_type, $parent_rating);
 
                 // Binary types have a fixed scale
-                if ($parent_type === 'like_dislike' || $parent_type === 'approval') {
+                $parent_type_enum = Shuriken_Rating_Type::tryFrom($parent_type) ?? Shuriken_Rating_Type::Stars;
+                if ($parent_type_enum->isBinary()) {
                     $parent_max_stars = 1;
                 } else {
                     $parent_max_stars = apply_filters('shuriken_rating_max_stars', intval($parent_rating->scale), $parent_rating);

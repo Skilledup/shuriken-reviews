@@ -231,8 +231,10 @@ class Shuriken_Shortcodes {
          */
         $rating_type = apply_filters('shuriken_rating_type', $rating_type, $rating);
 
+        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+
         // Binary types have a fixed scale — skip scale filtering
-        if ($rating_type === 'like_dislike' || $rating_type === 'approval') {
+        if ($type_enum->isBinary()) {
             $max_stars = 1;
         } else {
             // Legacy filter (stars-specific, kept for backward compatibility)

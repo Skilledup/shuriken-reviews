@@ -90,7 +90,8 @@ $base_filter_url = admin_url('admin.php?page=shuriken-reviews-context-stats&rati
 
 // Type-specific chart data
 $rating_type = $rating->rating_type ?: 'stars';
-$is_binary = in_array($rating_type, array('like_dislike', 'approval'), true);
+$rating_type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+$is_binary = $rating_type_enum->isBinary();
 $item_scale = (int) ($rating->scale ?: 5);
 
 if ($rating_type === 'like_dislike') {
@@ -347,7 +348,8 @@ if ($rating_type === 'like_dislike') {
                                 </span>
                                 <?php
                                 $vote_type = $vote->rating_type ?? $rating->rating_type ?? 'stars';
-                                if (!in_array($vote_type, array('like_dislike', 'approval'), true)) :
+                                $vote_type_enum = Shuriken_Rating_Type::tryFrom($vote_type) ?? Shuriken_Rating_Type::Stars;
+                                if (!$vote_type_enum->isBinary()) :
                                     $vote_scale = $vote->scale ?? $rating->scale ?? 5;
                                     $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
                                 ?>
