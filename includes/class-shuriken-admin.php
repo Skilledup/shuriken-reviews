@@ -462,7 +462,7 @@ class Shuriken_Admin {
      * @since 1.1.5
      */
     public function render_ratings_page(): void {
-        include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/ratings.php';
+        include_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/ratings.php';
     }
 
     /**
