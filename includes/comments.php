@@ -125,7 +125,7 @@ function enqueue_swiper_for_comments() {
         ');
     }
 }
-if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+if (get_option('shuriken_comments_system_enabled', '1') === '1' && get_option('shuriken_swiper_slider_enabled', '1') === '1') {
     add_action('wp_enqueue_scripts', 'enqueue_swiper_for_comments');
 }
 
@@ -259,6 +259,6 @@ function customize_latest_comments_block($block_content, $block) {
 
     return $modified_content;
 }
-if (get_option('shuriken_comments_system_enabled', '1') === '1') {
+if (get_option('shuriken_comments_system_enabled', '1') === '1' && get_option('shuriken_swiper_slider_enabled', '1') === '1') {
     add_filter('render_block', 'customize_latest_comments_block', 10, 2);
 }

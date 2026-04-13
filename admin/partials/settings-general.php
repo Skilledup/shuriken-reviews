@@ -29,6 +29,7 @@ if (isset($_POST['save_general_settings'])) {
     $comments_system_enabled  = isset($_POST['shuriken_comments_system_enabled']) ? '1' : '0';
     $exclude_author_comments  = isset($_POST['shuriken_exclude_author_comments']) ? '1' : '0';
     $exclude_reply_comments   = isset($_POST['shuriken_exclude_reply_comments']) ? '1' : '0';
+    $swiper_slider_enabled    = isset($_POST['shuriken_swiper_slider_enabled']) ? '1' : '0';
 
     $allowed_capabilities = array('manage_options', 'edit_others_posts', 'edit_posts', 'custom');
     $rest_write_cap = isset($_POST['shuriken_rest_write_capability'])
@@ -56,6 +57,7 @@ if (isset($_POST['save_general_settings'])) {
     update_option('shuriken_comments_system_enabled', $comments_system_enabled);
     update_option('shuriken_exclude_author_comments', $exclude_author_comments);
     update_option('shuriken_exclude_reply_comments', $exclude_reply_comments);
+    update_option('shuriken_swiper_slider_enabled', $swiper_slider_enabled);
     update_option('shuriken_rest_write_capability', $rest_write_cap);
     update_option('shuriken_rest_write_capability_custom', $rest_write_cap_custom);
     
@@ -221,6 +223,22 @@ if (isset($_POST['save_general_settings'])) {
                     </div>
                     <p class="settings-field-description">
                         <?php esc_html_e('When enabled, only top-level comments are shown in the Latest Comments block — replies are hidden.', 'shuriken-reviews'); ?>
+                    </p>
+                </div>
+                <div class="settings-field">
+                    <div class="settings-field-header">
+                        <label for="shuriken_swiper_slider_enabled"><?php esc_html_e('Enable Swiper Slider', 'shuriken-reviews'); ?></label>
+                        <label class="shuriken-toggle">
+                            <input type="checkbox"
+                                   name="shuriken_swiper_slider_enabled"
+                                   id="shuriken_swiper_slider_enabled"
+                                   value="1"
+                                   <?php checked('1', get_option('shuriken_swiper_slider_enabled', '1')); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="settings-field-description">
+                        <?php esc_html_e('When enabled, the Latest Comments block is transformed into a Swiper carousel. Disable to keep the default list layout while still applying comment filters.', 'shuriken-reviews'); ?>
                     </p>
                 </div>
             </div>
