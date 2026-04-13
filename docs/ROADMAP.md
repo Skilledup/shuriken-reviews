@@ -60,15 +60,9 @@ Items are ordered by dependency and impact. The enum is the load-bearing foundat
 
 `Shuriken_Rating_Type` backed enum shipped in `includes/enum-shuriken-rating-type.php`. Cases: `Stars`, `LikeDislike`, `Numeric`, `Approval`. Methods: `isBinary()`, `maxScale()`, `constrainScale()`, `typeClass()`, `values()`. Adopted across 13 files — `get_type_class()` deleted from REST API, all `$allowed_types` arrays and binary guards replaced.
 
-#### Step 2 — First-Class Callables for Hooks
+#### ~~Step 2 — First-Class Callables for Hooks~~ ✅
 
-Replace all `array($this, 'method_name')` callback syntax in `add_action` / `add_filter` calls.
-
-- `add_action('rest_api_init', array($this, 'register_routes'))` → `add_action('rest_api_init', $this->register_routes(...))`
-- Applies across `Shuriken_Admin`, `Shuriken_REST_API`, `Shuriken_Frontend`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Rate_Limiter`
-- Statically analysable — IDEs and PHPStan can follow the callable to the method without string resolution
-
-> **Why second:** Pure syntax sweep with zero logic changes. Doing it before the structural decompositions means every method — whether it stays or moves — already uses modern callable syntax. The only overlap: `Shuriken_REST_API`'s constructor hooks will be touched again during the controller split (Step 5), but that is two lines and negligible.
+Replaced all `array($this, 'method_name')` callback syntax with `$this->method(...)` first-class callables across 6 classes: `Shuriken_Admin` (19), `Shuriken_REST_API` (30), `Shuriken_Block` (5), `Shuriken_AJAX` (2), `Shuriken_Shortcodes` (2), `Shuriken_Frontend` (2). `Shuriken_Rate_Limiter` had none. Zero logic changes — pure syntax sweep.
 
 #### Step 3 — `readonly` Properties + Constructor Property Promotion
 

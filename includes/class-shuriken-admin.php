@@ -47,16 +47,16 @@ class Shuriken_Admin {
         $this->db = $db ?: shuriken_db();
         $this->analytics = $analytics ?: shuriken_analytics();
         
-        add_action('admin_menu', array($this, 'register_menu'));
-        add_action('admin_init', array($this, 'handle_rating_forms'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_ratings_scripts'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_analytics_scripts'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_settings_scripts'));
-        add_action('admin_post_shuriken_export_ratings', array($this, 'export_ratings'));
-        add_action('admin_post_shuriken_export_item_votes', array($this, 'export_item_votes'));
-        add_action('admin_post_shuriken_export_voter_votes', array($this, 'export_voter_votes'));
-        add_action('wp_ajax_shuriken_dismiss_rate_limit_warning', array($this, 'dismiss_rate_limit_warning'));
-        add_filter('set-screen-option', array($this, 'save_screen_options'), 10, 3);
+        add_action('admin_menu', $this->register_menu(...));
+        add_action('admin_init', $this->handle_rating_forms(...));
+        add_action('admin_enqueue_scripts', $this->enqueue_ratings_scripts(...));
+        add_action('admin_enqueue_scripts', $this->enqueue_analytics_scripts(...));
+        add_action('admin_enqueue_scripts', $this->enqueue_settings_scripts(...));
+        add_action('admin_post_shuriken_export_ratings', $this->export_ratings(...));
+        add_action('admin_post_shuriken_export_item_votes', $this->export_item_votes(...));
+        add_action('admin_post_shuriken_export_voter_votes', $this->export_voter_votes(...));
+        add_action('wp_ajax_shuriken_dismiss_rate_limit_warning', $this->dismiss_rate_limit_warning(...));
+        add_filter('set-screen-option', $this->save_screen_options(...), 10, 3);
     }
 
     /**
@@ -110,7 +110,7 @@ class Shuriken_Admin {
             __('Shuriken Reviews', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews',
-            array($this, 'render_ratings_page'),
+            $this->render_ratings_page(...),
             'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'),
             26
         );
@@ -122,11 +122,11 @@ class Shuriken_Admin {
             __('Ratings', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews',
-            array($this, 'render_ratings_page')
+            $this->render_ratings_page(...)
         );
 
         // Register screen options for the ratings page
-        add_action("load-{$ratings_hook}", array($this, 'ratings_screen_options'));
+        add_action("load-{$ratings_hook}", $this->ratings_screen_options(...));
 
         // Add Analytics submenu
         add_submenu_page(
@@ -135,7 +135,7 @@ class Shuriken_Admin {
             __('Analytics', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews-analytics',
-            array($this, 'render_analytics_page')
+            $this->render_analytics_page(...)
         );
 
         // Add Settings submenu
@@ -145,7 +145,7 @@ class Shuriken_Admin {
             __('Settings', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews-settings',
-            array($this, 'render_settings_page')
+            $this->render_settings_page(...)
         );
 
         // Add hidden Item Stats page (no menu item, accessed via link)
@@ -155,7 +155,7 @@ class Shuriken_Admin {
             __('Item Stats', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews-item-stats',
-            array($this, 'render_item_stats_page')
+            $this->render_item_stats_page(...)
         );
 
         // Add hidden Voter Activity page (no menu item, accessed via link)
@@ -165,7 +165,7 @@ class Shuriken_Admin {
             __('Voter Activity', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews-voter-activity',
-            array($this, 'render_voter_activity_page')
+            $this->render_voter_activity_page(...)
         );
 
         // Add hidden Context Stats page (no menu item, accessed via Per-Post view link)
@@ -175,7 +175,7 @@ class Shuriken_Admin {
             __('Context Stats', 'shuriken-reviews'),
             'manage_options',
             'shuriken-reviews-context-stats',
-            array($this, 'render_context_stats_page')
+            $this->render_context_stats_page(...)
         );
 
     }
@@ -188,7 +188,7 @@ class Shuriken_Admin {
      */
     public function ratings_screen_options(): void {
         $screen = get_current_screen();
-        add_filter("manage_{$screen->id}_columns", array($this, 'get_ratings_columns'));
+        add_filter("manage_{$screen->id}_columns", $this->get_ratings_columns(...));
 
         add_screen_option('per_page', array(
             'label'   => __('Ratings', 'shuriken-reviews'),

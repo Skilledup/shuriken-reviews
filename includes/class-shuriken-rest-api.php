@@ -45,16 +45,16 @@ class Shuriken_REST_API {
     public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
-        add_action('rest_api_init', array($this, 'register_routes'));
+        add_action('rest_api_init', $this->register_routes(...));
         
         // Skip nonce verification for public endpoints BEFORE authentication runs
-        add_filter('rest_authentication_errors', array($this, 'rest_authentication_errors'), 5, 1);
+        add_filter('rest_authentication_errors', $this->rest_authentication_errors(...), 5, 1);
         
         // Clean stray PHP output before JSON is sent (prevents invalid_json errors)
-        add_filter('rest_pre_serve_request', array($this, 'clean_rest_buffer'), 1, 4);
+        add_filter('rest_pre_serve_request', $this->clean_rest_buffer(...), 1, 4);
         
         // Add CDN-friendly no-cache headers to prevent Cloudflare from caching/transforming responses
-        add_filter('rest_post_dispatch', array($this, 'set_rest_cache_headers'), 10, 3);
+        add_filter('rest_post_dispatch', $this->set_rest_cache_headers(...), 10, 3);
     }
     
     /**
@@ -131,13 +131,13 @@ class Shuriken_REST_API {
         register_rest_route(self::NAMESPACE, '/ratings', array(
             array(
                 'methods'             => 'GET',
-                'callback'            => array($this, 'get_ratings'),
-                'permission_callback' => array($this, 'can_edit_posts'),
+                'callback'            => $this->get_ratings(...),
+                'permission_callback' => $this->can_edit_posts(...),
             ),
             array(
                 'methods'             => 'POST',
-                'callback'            => array($this, 'create_rating'),
-                'permission_callback' => array($this, 'can_manage_options'),
+                'callback'            => $this->create_rating(...),
+                'permission_callback' => $this->can_manage_options(...),
                 'args'                => $this->get_rating_create_args(),
             ),
         ));
@@ -146,20 +146,20 @@ class Shuriken_REST_API {
         register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)', array(
             array(
                 'methods'             => 'GET',
-                'callback'            => array($this, 'get_single_rating'),
-                'permission_callback' => array($this, 'can_edit_posts'),
+                'callback'            => $this->get_single_rating(...),
+                'permission_callback' => $this->can_edit_posts(...),
                 'args'                => $this->get_rating_id_args(),
             ),
             array(
                 'methods'             => 'PUT',
-                'callback'            => array($this, 'update_rating'),
-                'permission_callback' => array($this, 'can_manage_options'),
+                'callback'            => $this->update_rating(...),
+                'permission_callback' => $this->can_manage_options(...),
                 'args'                => $this->get_rating_update_args(),
             ),
             array(
                 'methods'             => 'DELETE',
-                'callback'            => array($this, 'delete_rating'),
-                'permission_callback' => array($this, 'can_manage_options'),
+                'callback'            => $this->delete_rating(...),
+                'permission_callback' => $this->can_manage_options(...),
                 'args'                => $this->get_rating_id_args(),
             ),
         ));
@@ -167,22 +167,22 @@ class Shuriken_REST_API {
         // Parent ratings endpoint
         register_rest_route(self::NAMESPACE, '/ratings/parents', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_parent_ratings'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_parent_ratings(...),
+            'permission_callback' => $this->can_edit_posts(...),
         ));
 
         // Mirrorable ratings endpoint
         register_rest_route(self::NAMESPACE, '/ratings/mirrorable', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_mirrorable_ratings'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_mirrorable_ratings(...),
+            'permission_callback' => $this->can_edit_posts(...),
         ));
 
         // Search ratings endpoint (for AJAX autocomplete)
         register_rest_route(self::NAMESPACE, '/ratings/search', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'search_ratings'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->search_ratings(...),
+            'permission_callback' => $this->can_edit_posts(...),
             'args'                => array(
                 'q' => array(
                     'required'          => false,
@@ -211,8 +211,8 @@ class Shuriken_REST_API {
         // Get child ratings of a parent
         register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/children', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_child_ratings'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_child_ratings(...),
+            'permission_callback' => $this->can_edit_posts(...),
             'args'                => array(
                 'id' => array(
                     'required'          => true,
@@ -226,8 +226,8 @@ class Shuriken_REST_API {
         // Get mirrors of a rating
         register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/mirrors', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_rating_mirrors'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_rating_mirrors(...),
+            'permission_callback' => $this->can_edit_posts(...),
             'args'                => array(
                 'id' => array(
                     'required'          => true,
@@ -241,8 +241,8 @@ class Shuriken_REST_API {
         // Batch ratings endpoint (fetch multiple by IDs, editor only)
         register_rest_route(self::NAMESPACE, '/ratings/batch', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_ratings_batch'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_ratings_batch(...),
+            'permission_callback' => $this->can_edit_posts(...),
             'args'                => array(
                 'ids' => array(
                     'required'          => true,
@@ -256,7 +256,7 @@ class Shuriken_REST_API {
         // Public stats endpoint (bypasses cache)
         register_rest_route(self::NAMESPACE, '/ratings/stats', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_rating_stats'),
+            'callback'            => $this->get_rating_stats(...),
             'permission_callback' => '__return_true',
             'args'                => array(
                 'ids' => array(
@@ -283,15 +283,15 @@ class Shuriken_REST_API {
         // Public nonce endpoint (bypasses cache)
         register_rest_route(self::NAMESPACE, '/nonce', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_fresh_nonce'),
+            'callback'            => $this->get_fresh_nonce(...),
             'permission_callback' => '__return_true',
         ));
 
         // Context stats endpoint (editor only — returns ratings with per-context votes)
         register_rest_route(self::NAMESPACE, '/context-stats', array(
             'methods'             => 'GET',
-            'callback'            => array($this, 'get_context_stats'),
-            'permission_callback' => array($this, 'can_edit_posts'),
+            'callback'            => $this->get_context_stats(...),
+            'permission_callback' => $this->can_edit_posts(...),
             'args'                => array(
                 'context_id' => array(
                     'required'          => true,

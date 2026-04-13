@@ -45,8 +45,8 @@ class Shuriken_Block {
     public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
-        add_filter('block_categories_all', array($this, 'register_block_category'), 10, 2);
-        add_action('init', array($this, 'register_block'));
+        add_filter('block_categories_all', $this->register_block_category(...), 10, 2);
+        add_action('init', $this->register_block(...));
     }
 
     /**
@@ -165,7 +165,7 @@ class Shuriken_Block {
         // Register the block with explicit render callback
         // (style/editorStyle/editorScript are declared in block.json)
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-rating', array(
-            'render_callback' => array($this, 'render_block'),
+            'render_callback' => $this->render_block(...),
         ));
 
         // Register the grouped rating editor script
@@ -198,7 +198,7 @@ class Shuriken_Block {
         // Register the grouped rating block
         // (style/editorStyle/editorScript are declared in block.json)
         register_block_type(SHURIKEN_REVIEWS_PLUGIN_DIR . 'blocks/shuriken-grouped-rating', array(
-            'render_callback' => array($this, 'render_grouped_block'),
+            'render_callback' => $this->render_grouped_block(...),
         ));
 
         // Register the post sidebar plugin (shows per-post rating stats)
@@ -219,7 +219,7 @@ class Shuriken_Block {
             true
         );
 
-        add_action('enqueue_block_editor_assets', array($this, 'enqueue_sidebar_script'));
+        add_action('enqueue_block_editor_assets', $this->enqueue_sidebar_script(...));
     }
 
     /**

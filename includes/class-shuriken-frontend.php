@@ -31,11 +31,11 @@ class Shuriken_Frontend {
      * Constructor
      */
     private function __construct() {
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'), 10);
+        add_action('wp_enqueue_scripts', $this->enqueue_scripts(...), 10);
 
         // Archive sorting by rating
         if (get_option('shuriken_archive_sort_enabled', '0') === '1') {
-            add_action('pre_get_posts', array($this, 'sort_archives_by_rating'));
+            add_action('pre_get_posts', $this->sort_archives_by_rating(...));
         }
     }
 

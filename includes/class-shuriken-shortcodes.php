@@ -45,8 +45,8 @@ class Shuriken_Shortcodes {
     public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
         
-        add_shortcode('shuriken_rating', array($this, 'render_rating'));
-        add_shortcode('shuriken_grouped_rating', array($this, 'render_grouped_rating'));
+        add_shortcode('shuriken_rating', $this->render_rating(...));
+        add_shortcode('shuriken_grouped_rating', $this->render_grouped_rating(...));
     }
 
     /**

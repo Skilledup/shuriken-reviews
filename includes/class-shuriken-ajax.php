@@ -41,8 +41,8 @@ class Shuriken_AJAX {
         $this->db = $db ?: shuriken_db();
         
         // Rating submission
-        add_action('wp_ajax_submit_rating', array($this, 'handle_submit_rating'));
-        add_action('wp_ajax_nopriv_submit_rating', array($this, 'handle_submit_rating'));
+        add_action('wp_ajax_submit_rating', $this->handle_submit_rating(...));
+        add_action('wp_ajax_nopriv_submit_rating', $this->handle_submit_rating(...));
     }
 
     /**
