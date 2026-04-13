@@ -73,6 +73,10 @@
         "postContext": {
             "type": "boolean",
             "default": false
+        },
+        "buttonColor": {
+            "type": "string",
+            "default": ""
         }
     },
     "usesContext": ["postId", "postType"],

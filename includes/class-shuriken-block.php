@@ -277,6 +277,9 @@ class Shuriken_Block {
         if (!empty($attributes['starColor'])) {
             $style_vars[] = '--shuriken-user-star-color: ' . esc_attr($attributes['starColor']);
         }
+        if (!empty($attributes['buttonColor'])) {
+            $style_vars[] = '--shuriken-button-color: ' . esc_attr($attributes['buttonColor']);
+        }
 
         // Determine context for contextual voting
         $context_id = null;

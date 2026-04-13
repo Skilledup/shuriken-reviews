@@ -45,7 +45,7 @@
         icon: iconStar(24),
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext } = attributes;
+            const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext, buttonColor } = attributes;
 
             // Local UI state
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,6 +79,9 @@
             }
             if (starColor) {
                 cssVars['--shuriken-user-star-color'] = starColor;
+            }
+            if (buttonColor) {
+                cssVars['--shuriken-button-color'] = buttonColor;
             }
 
             // ---- Store helpers (MUST be declared BEFORE blockProps) ----
@@ -382,13 +385,19 @@
                     wp.element.createElement(PanelColorSettings, {
                         title: __('Colors', 'shuriken-reviews'),
                         initialOpen: false,
-                        colorSettings: buildColorSettings({
-                            ratingType: selectedRating ? getRatingType(selectedRating) : 'stars',
-                            accentColor: accentColor,
-                            starColor: starColor,
-                            setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
-                            setStar: function (value) { setAttributes({ starColor: value || '' }); }
-                        })
+                        colorSettings: (function () {
+                                var ratingType = selectedRating ? getRatingType(selectedRating) : 'stars';
+                                var isNumeric = ratingType === 'numeric';
+                                return buildColorSettings({
+                                    ratingType: ratingType,
+                                    accentColor: accentColor,
+                                    starColor: starColor,
+                                    buttonColor: buttonColor || undefined,
+                                    setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
+                                    setStar: function (value) { setAttributes({ starColor: value || '' }); },
+                                    setButton: isNumeric ? function (value) { setAttributes({ buttonColor: value || '' }); } : undefined
+                                });
+                            })()
                     })
                 ),
                 // Create Rating Modal

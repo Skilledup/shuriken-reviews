@@ -509,6 +509,7 @@ class Shuriken_Shortcodes {
             'accent_color' => '',
             'star_color'   => '',
             'button_color' => '',
+            'gap'          => '',
             'layout'       => 'grid',
             'context_id'   => 0,
             'context_type' => '',
@@ -637,6 +638,9 @@ class Shuriken_Shortcodes {
         }
         if (!empty($atts['button_color']) && sanitize_hex_color($atts['button_color'])) {
             $vars[] = '--shuriken-button-color: ' . sanitize_hex_color($atts['button_color']);
+        }
+        if (!empty($atts['gap'])) {
+            $vars[] = '--shuriken-gap: ' . esc_attr($atts['gap']);
         }
 
         return $vars ? implode('; ', $vars) . ';' : '';
