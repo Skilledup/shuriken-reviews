@@ -68,21 +68,16 @@ Replaced all `array($this, 'method_name')` callback syntax with `$this->method(.
 
 Applied CPP + `readonly` to 5 classes: `Shuriken_Admin` (2 promoted props), `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Shortcodes` (1 each), `Shuriken_Analytics` (1 promoted + 3 readonly derived). `Shuriken_Frontend` has no injected deps — skipped. Constructor params made non-nullable (singletons always pass resolved instances). Also fixed all `@since 1.15.0` → `1.15.5` (33 occurrences).
 
-#### Step 4 — `Shuriken_Database` Repository Decomposition
+#### ~~Step 4 — `Shuriken_Database` Repository Decomposition~~ ✅
 
-The ~1,694-line class covers four distinct responsibilities. Split into focused classes while keeping the existing interface contract. Apply CPP + `readonly` to new class constructors inline during this step.
+Decomposed the ~1,694-line monolithic `Shuriken_Database` class into three focused repository classes + a slim delegation façade. All classes use CPP + `readonly` constructors. `Shuriken_Database_Interface` kept intact — façade implements it for full backward compatibility. Zero public API changes; callers use `shuriken_db()` as before.
 
-| New class | Responsibility |
-|---|---|
-| `Shuriken_Rating_Repository` | Rating CRUD, search, pagination, mirror resolution |
-| `Shuriken_Vote_Repository` | Vote insert/update, rate-limit timestamp queries |
-| `Shuriken_Schema_Manager` | `create_tables()`, column migrations |
-| `Shuriken_Database` (façade) | DI wiring, shared table name resolution, delegates to repositories |
-
-- `Shuriken_Database_Interface` splits into `Shuriken_Rating_Repository_Interface` + `Shuriken_Vote_Repository_Interface`, or the façade keeps implementing the current interface for backward compatibility
-- No public API or hook changes — callers use `shuriken_db()` as before
-
-> **Why fourth:** The `RatingType` enum (Step 1) means new repository methods use type-safe signatures from the start. The class is the biggest single file and unblocks the REST split that depends on it.
+| New class | Lines | Responsibility |
+|---|---|---|
+| `Shuriken_Rating_Repository` | ~1,041 | Rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, export |
+| `Shuriken_Vote_Repository` | ~326 | Vote CRUD, rate-limit timestamp queries, transactional vote+total updates |
+| `Shuriken_Schema_Manager` | ~204 | `create_tables()`, `tables_exist()`, column migrations |
+| `Shuriken_Database` (façade) | ~401 | Singleton, constants, static helpers, delegates all 28 interface methods to repos |
 
 #### Step 5 — `Shuriken_REST_API` Controller Split
 
@@ -152,7 +147,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
 - [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
-- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes), this also helps with Query loops
+- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes), this also helps with Query loop where we want to show ratings without title/description for each item.
 
 ---
 

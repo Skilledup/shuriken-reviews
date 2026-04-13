@@ -112,6 +112,9 @@ final class Shuriken_Reviews {
 
         // Core classes
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-icons.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rating-repository.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-vote-repository.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-schema-manager.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-database.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-voter-analytics.php';
