@@ -40,9 +40,13 @@ class Shuriken_Block {
     public function __construct(
         private readonly Shuriken_Database_Interface $db,
     ) {
-        
         add_filter('block_categories_all', $this->register_block_category(...), 10, 2);
         add_action('init', $this->register_block(...));
+
+        // FSE / Query Loop block sort support (per-block, always registered).
+        add_filter('query_loop_block_query_vars', $this->apply_query_loop_sort(...), 10, 2);
+        add_filter('posts_join',    $this->filter_block_posts_join(...),    10, 2);
+        add_filter('posts_orderby', $this->filter_block_posts_orderby(...), 10, 2);
     }
 
     /**
@@ -197,6 +201,24 @@ class Shuriken_Block {
             'render_callback' => $this->render_grouped_block(...),
         ));
 
+        // Register the Query Loop sort extension (FSE block theme support)
+        wp_register_script(
+            'shuriken-query-sort',
+            plugins_url('blocks/shuriken-query-sort/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array(
+                'wp-hooks',
+                'wp-compose',
+                'wp-block-editor',
+                'wp-components',
+                'wp-element',
+                'wp-i18n',
+                'wp-data',
+                'shuriken-ratings-store',
+            ),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
+
         // Register the post sidebar plugin (shows per-post rating stats)
         wp_register_script(
             'shuriken-post-sidebar',
@@ -226,6 +248,7 @@ class Shuriken_Block {
      */
     public function enqueue_sidebar_script(): void {
         wp_enqueue_script('shuriken-post-sidebar');
+        wp_enqueue_script('shuriken-query-sort');
     }
 
     /**
@@ -444,6 +467,107 @@ class Shuriken_Block {
         );
 
         return $html;
+    }
+
+    /**
+     * Wrap rating HTML with Gutenberg block wrapper attributes
+     *
+     * @param string $html       The rating HTML from shared render method.
+     * @param object $rating     The rating object.
+     * @param string $anchor_tag Optional anchor ID.
+     * @param array  $style_vars Optional CSS variable declarations (e.g. '--shuriken-user-accent: #ff0000').
+     * @return string HTML wrapped with block attributes.
+     */
+    /**
+     * Inject Shuriken sort vars into a Query Loop block's WP_Query arguments.
+     *
+     * Reads `shurikenRatingId` and `shurikenOrderBy` from the block attributes
+     * and, when both are present, adds `_shuriken_block_sort`, `_shuriken_block_rating_id`,
+     * and `_shuriken_block_orderby` to the query vars array so the persistent
+     * `posts_join` / `posts_orderby` filters can act on them.
+     *
+     * @param array    $query_vars The query vars for the Query Loop block.
+     * @param WP_Block $block      The Query Loop block.
+     * @return array Modified query vars.
+     * @since 1.16.0
+     */
+    public function apply_query_loop_sort(array $query_vars, \WP_Block $block): array {
+        $attrs     = $block->parsed_block['attrs'] ?? array();
+        $rating_id = absint($attrs['shurikenRatingId'] ?? 0);
+        $orderby   = sanitize_key($attrs['shurikenOrderBy'] ?? '');
+
+        if (!$rating_id || !in_array($orderby, array('average', 'votes'), true)) {
+            return $query_vars;
+        }
+
+        $query_vars['_shuriken_block_sort']      = '1';
+        $query_vars['_shuriken_block_rating_id'] = $rating_id;
+        $query_vars['_shuriken_block_orderby']   = $orderby;
+
+        return $query_vars;
+    }
+
+    /**
+     * Add a LEFT JOIN to the votes table for Query Loop blocks with Shuriken sort.
+     *
+     * @param string   $join  The current JOIN clause.
+     * @param WP_Query $query The current query.
+     * @return string Modified JOIN clause.
+     * @since 1.16.0
+     */
+    public function filter_block_posts_join(string $join, \WP_Query $query): string {
+        if (!$query->get('_shuriken_block_sort')) {
+            return $join;
+        }
+
+        $rating_id = absint($query->get('_shuriken_block_rating_id'));
+        if (!$rating_id) {
+            return $join;
+        }
+
+        global $wpdb;
+        $votes_table = $wpdb->prefix . 'shuriken_votes';
+        $post_type   = $query->get('post_type') ?: 'post';
+
+        $join .= $wpdb->prepare(
+            " LEFT JOIN (
+                SELECT context_id,
+                       COUNT(*) AS shuriken_block_votes,
+                       COALESCE(SUM(rating_value), 0) AS shuriken_block_total
+                FROM {$votes_table}
+                WHERE rating_id = %d AND context_type = %s AND context_id IS NOT NULL
+                GROUP BY context_id
+            ) shuriken_block_scores ON {$wpdb->posts}.ID = shuriken_block_scores.context_id ",
+            $rating_id,
+            $post_type
+        );
+
+        return $join;
+    }
+
+    /**
+     * Prepend Shuriken rating score to the ORDER BY clause for Query Loop blocks.
+     *
+     * @param string   $orderby_clause The current ORDER BY clause.
+     * @param WP_Query $query          The current query.
+     * @return string Modified ORDER BY clause.
+     * @since 1.16.0
+     */
+    public function filter_block_posts_orderby(string $orderby_clause, \WP_Query $query): string {
+        if (!$query->get('_shuriken_block_sort')) {
+            return $orderby_clause;
+        }
+
+        $orderby = $query->get('_shuriken_block_orderby');
+
+        if ($orderby === 'votes') {
+            return 'COALESCE(shuriken_block_scores.shuriken_block_votes, 0) DESC, ' . $orderby_clause;
+        }
+
+        // Default: sort by average rating, unrated posts last.
+        return 'CASE WHEN COALESCE(shuriken_block_scores.shuriken_block_votes, 0) = 0 THEN 0
+                     ELSE (shuriken_block_scores.shuriken_block_total / shuriken_block_scores.shuriken_block_votes)
+               END DESC, ' . $orderby_clause;
     }
 
     /**

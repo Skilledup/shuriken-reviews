@@ -109,6 +109,9 @@ if (isset($_POST['save_general_settings'])) {
                 </div>
                 <p class="settings-field-description">
                     <?php esc_html_e('When enabled, archive pages will be sorted by per-post rating scores using contextual votes.', 'shuriken-reviews'); ?>
+                    <br>
+                    <strong><?php esc_html_e('Classic themes only.', 'shuriken-reviews'); ?></strong>
+                    <?php esc_html_e('This setting works by filtering the main PHP query and has no effect in block themes (Full Site Editing). If you are using a block theme, select the Query Loop block and use the "Sort by Rating" panel in its inspector controls instead.', 'shuriken-reviews'); ?>
                 </p>
             </div>
             <div class="settings-field">
