@@ -470,15 +470,6 @@ class Shuriken_Block {
     }
 
     /**
-     * Wrap rating HTML with Gutenberg block wrapper attributes
-     *
-     * @param string $html       The rating HTML from shared render method.
-     * @param object $rating     The rating object.
-     * @param string $anchor_tag Optional anchor ID.
-     * @param array  $style_vars Optional CSS variable declarations (e.g. '--shuriken-user-accent: #ff0000').
-     * @return string HTML wrapped with block attributes.
-     */
-    /**
      * Inject Shuriken sort vars into a Query Loop block's WP_Query arguments.
      *
      * Reads `shurikenRatingId` and `shurikenOrderBy` from the block attributes

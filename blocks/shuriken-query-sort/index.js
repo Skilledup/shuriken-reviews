@@ -56,8 +56,6 @@
             var shurikenOrder    = query.shurikenOrder     || 'DESC';
 
             // Helper: merge into the existing query attribute object.
-            // Changing the query attribute causes Gutenberg to re-render the
-            // Query Loop's server-side preview automatically (live preview).
             function updateQuery(patch) {
                 setAttributes({ query: Object.assign({}, query, patch) });
             }
@@ -160,6 +158,20 @@
                                     updateQuery({ shurikenOrder: val });
                                 },
                             })
+                            : null,
+                        !isInherited && shurikenRatingId
+                            ? createElement(
+                                'p',
+                                {
+                                    style: {
+                                        fontStyle: 'italic',
+                                        color: '#757575',
+                                        fontSize: '12px',
+                                        marginTop: '8px',
+                                    },
+                                },
+                                __('Note: the editor preview may not reflect rating sort order. Save and preview the page to see the correct order.', 'shuriken-reviews')
+                            )
                             : null
                     )
                 )
