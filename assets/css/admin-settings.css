@@ -616,7 +616,13 @@
     overflow: hidden;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 600px) and (max-width: 1200px) {
+    .about-hero-strip {
+        background-position: right center;
+    }
+}
+
+@media (min-width: 1200px) {
     .about-hero-strip {
         background-position: right -95px;
     }
@@ -834,7 +840,7 @@
     gap: 16px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1250px) {
     .about-steps {
         grid-template-columns: 1fr;
     }
