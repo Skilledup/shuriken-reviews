@@ -143,15 +143,20 @@ function customize_latest_comments_block($block_content, $block) {
         return $block_content;
     }
 
-    // Some environments do not have ext-dom/ext-mbstring enabled.
+    // Some environments do not have ext-dom enabled.
     // Fall back to the unmodified block output instead of fatalling.
-    if (!class_exists('DOMDocument') || !function_exists('mb_convert_encoding')) {
+    if (!class_exists('DOMDocument')) {
         return $block_content;
     }
 
     // Load the HTML into a DOMDocument
     $dom = new DOMDocument();
-    @$dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'));
+    if (function_exists('mb_convert_encoding')) {
+        @$dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'));
+    } else {
+        // Fallback for environments without ext-mbstring.
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $block_content);
+    }
     
     // Get the comments list
     $comments_list = $dom->getElementsByTagName('ol')->item(0);
