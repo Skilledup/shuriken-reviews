@@ -159,7 +159,7 @@ if (isset($_POST['save_general_settings'])) {
                                name="shuriken_comments_system_enabled"
                                id="shuriken_comments_system_enabled"
                                value="1"
-                               <?php checked('1', get_option('shuriken_comments_system_enabled', '1')); ?>
+                               <?php checked('1', get_option('shuriken_comments_system_enabled', '')); ?>
                                data-controls="comments-system-options">
                         <span class="toggle-slider"></span>
                     </label>
@@ -172,7 +172,7 @@ if (isset($_POST['save_general_settings'])) {
     </div>
 
     <!-- Comments System Options (collapsible) -->
-    <div id="comments-system-options" class="shuriken-settings-collapsible <?php echo get_option('shuriken_comments_system_enabled', '1') === '1' ? 'is-expanded' : ''; ?>">
+    <div id="comments-system-options" class="shuriken-settings-collapsible <?php echo get_option('shuriken_comments_system_enabled', '') === '1' ? 'is-expanded' : ''; ?>">
         <div class="shuriken-settings-card">
             <div class="settings-card-header">
                 <span class="settings-card-icon"><?php Shuriken_Icons::render('wrench'); ?></span>

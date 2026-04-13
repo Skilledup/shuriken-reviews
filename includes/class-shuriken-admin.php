@@ -376,10 +376,10 @@ class Shuriken_Admin {
             return;
         }
 
-        // Enqueue Chart.js from CDN
+        // Enqueue Chart.js from local assets (bundled with plugin for offline access)
         wp_enqueue_script(
             'chartjs',
-            'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+            plugins_url('assets/js/chart.js@4.4.1.min.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             '4.4.1',
             true

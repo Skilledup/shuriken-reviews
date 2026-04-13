@@ -92,9 +92,9 @@ function enqueue_swiper_for_comments() {
         return;
     }
     
-    // Enqueue Swiper CSS and JS
-    wp_enqueue_style('swiper-style', 'https://unpkg.com/swiper/swiper-bundle.min.css');
-    wp_enqueue_script('swiper-script', 'https://unpkg.com/swiper/swiper-bundle.min.js', array('jquery'), null, true);
+    // Enqueue Swiper CSS and JS from local assets (bundled with plugin for offline access)
+    wp_enqueue_style('swiper-style', plugins_url('assets/css/swiper-bundle.min.css', SHURIKEN_REVIEWS_PLUGIN_FILE));
+    wp_enqueue_script('swiper-script', plugins_url('assets/js/swiper-bundle.min.js', SHURIKEN_REVIEWS_PLUGIN_FILE), array('jquery'), null, true);
     
     // Add custom initialization script
     if (function_exists('wp_add_inline_script')) {
