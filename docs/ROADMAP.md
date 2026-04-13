@@ -91,8 +91,6 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 | `Shuriken_REST_Votes_Controller` | ~268 | 3 endpoints: stats (public), context-stats (editor), nonce (public) |
 | `Shuriken_REST_API` (bootstrap) | ~210 | Singleton, controller wiring, `register_routes()` delegation, REST filters |
 
-> **Cleanup applied:** `can_edit_posts()` and `can_manage_options()` were duplicated verbatim in both controllers. Extracted to `trait Shuriken_REST_Permissions` (`includes/traits/trait-shuriken-rest-permissions.php`); both controllers now use it.
-
 #### Step 6 — Platform & Add-on Extensibility
 
 A gap audit was done using the "engagement factor (views vs votes)" feature as a test case to measure how close the plugin is to a WooCommerce-style platform where completely decoupled add-ons can be shipped. The findings below are the concrete openings that need to be closed. Each item describes: what is missing, why it matters, and what minimal change fixes it.
@@ -144,6 +142,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 ### Known bugs and Gaps
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
+- [ ] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
 - [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
 - [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes), this also helps with Query loop where we want to show ratings without title/description for each item.
 
