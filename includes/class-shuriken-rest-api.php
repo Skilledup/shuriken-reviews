@@ -977,7 +977,7 @@ class Shuriken_REST_API {
      *
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response|WP_Error
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_stats(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
         try {

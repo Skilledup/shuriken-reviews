@@ -6,7 +6,7 @@
  * All icons are MIT-licensed SVG paths from https://lucide.dev
  *
  * @package Shuriken_Reviews
- * @since 1.15.0
+ * @since 1.15.5
  */
 
 // Exit if accessed directly
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
  * Centralized icon registry. Outputs inline SVGs that are fully
  * styleable with CSS (color, width, stroke-width).
  *
- * @since 1.15.0
+ * @since 1.15.5
  */
 class Shuriken_Icons {
 
@@ -202,7 +202,7 @@ class Shuriken_Icons {
  * Suitable for use with wp_kses() when outputting SVG symbols that may
  * have been overridden by a filter (could be plain text or SVG).
  *
- * @since 1.15.0
+ * @since 1.15.5
  * @return array
  */
 function shuriken_svg_allowed_tags(): array {

@@ -6,7 +6,7 @@
  * Accessed from the Per-Post view in the item-stats page.
  *
  * @package Shuriken_Reviews
- * @since 1.15.0
+ * @since 1.15.5
  */
 
 // Exit if accessed directly

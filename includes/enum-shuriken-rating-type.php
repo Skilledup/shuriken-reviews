@@ -6,7 +6,7 @@
  * Serialises to/from the existing VARCHAR(20) column via ->value / ::from().
  *
  * @package Shuriken_Reviews
- * @since 1.15.0
+ * @since 1.15.5
  */
 
 // Exit if accessed directly
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 /**
  * Rating type backed enum.
  *
- * @since 1.15.0
+ * @since 1.15.5
  */
 enum Shuriken_Rating_Type: string {
 

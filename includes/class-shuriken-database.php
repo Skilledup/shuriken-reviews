@@ -931,7 +931,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * rating that has at least one contextual vote.
      *
      * @return array<int, int> [rating_id => count_of_distinct_contexts]
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_usage_counts(): array {
         $rows = $this->wpdb->get_results(
@@ -953,7 +953,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * Check which ratings have global (non-contextual) votes
      *
      * @return array<int, int> [rating_id => global_vote_count]
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_global_vote_counts(): array {
         $rows = $this->wpdb->get_results(
@@ -979,7 +979,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
      * @param int    $context_id   Post/entity ID.
      * @param string $context_type Context type ('post', 'page', 'product', etc.).
      * @return array Array of objects with rating info + contextual stats.
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_ratings_for_context(int $context_id, string $context_type): array {
         $rows = $this->wpdb->get_results($this->wpdb->prepare(

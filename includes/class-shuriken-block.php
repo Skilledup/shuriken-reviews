@@ -28,11 +28,6 @@ class Shuriken_Block {
     private static ?self $instance = null;
 
     /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
-
-    /**
      * Allowed HTML tags for rating title
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
@@ -40,10 +35,11 @@ class Shuriken_Block {
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
+     * @param Shuriken_Database_Interface $db Database instance.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
+    public function __construct(
+        private readonly Shuriken_Database_Interface $db,
+    ) {
         
         add_filter('block_categories_all', $this->register_block_category(...), 10, 2);
         add_action('init', $this->register_block(...));
@@ -226,7 +222,7 @@ class Shuriken_Block {
      * Enqueue the post sidebar plugin script in the block editor
      *
      * @return void
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function enqueue_sidebar_script(): void {
         wp_enqueue_script('shuriken-post-sidebar');

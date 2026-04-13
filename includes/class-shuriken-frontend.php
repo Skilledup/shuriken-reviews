@@ -100,7 +100,7 @@ class Shuriken_Frontend {
      *
      * @param WP_Query $query The query object.
      * @return void
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function sort_archives_by_rating(\WP_Query $query): void {
         if (is_admin() || !$query->is_main_query() || !$query->is_archive()) {

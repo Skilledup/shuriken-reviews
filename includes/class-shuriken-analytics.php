@@ -29,31 +29,26 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     /**
      * @var \wpdb WordPress database instance
      */
-    private \wpdb $wpdb;
+    private readonly \wpdb $wpdb;
 
     /**
      * @var string Ratings table name
      */
-    private string $ratings_table;
+    private readonly string $ratings_table;
 
     /**
      * @var string Votes table name
      */
-    private string $votes_table;
-
-    /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
+    private readonly string $votes_table;
 
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Optional database instance (for dependency injection).
+     * @param Shuriken_Database_Interface $db Database instance.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        // Use provided database or get from container
-        $this->db = $db ?: shuriken_db();
+    public function __construct(
+        private readonly Shuriken_Database_Interface $db,
+    ) {
         $this->wpdb = $this->db->get_wpdb();
         $this->ratings_table = $this->db->get_ratings_table();
         $this->votes_table = $this->db->get_votes_table();
@@ -286,7 +281,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * Count distinct posts/entities that have at least one contextual vote
      *
      * @return int Number of unique contexts with votes.
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_contextual_post_count(): int {
         return (int) $this->wpdb->get_var(
@@ -1744,7 +1739,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      *
      * @param int $rating_id Rating ID
      * @return bool True if at least one contextual vote exists
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function has_contextual_votes(int $rating_id): bool {
         return (bool) $this->wpdb->get_var($this->wpdb->prepare(
@@ -1764,7 +1759,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @param string|null      $scope      'global', 'contextual', or null
      * @return object|null Stats object or null
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_rating_stats_scoped(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
         $rating = $this->get_rating($rating_id);
@@ -1829,7 +1824,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null         $rating_id  Rating ID
      * @param string|null      $scope      'global', 'contextual', or null
      * @return array Distribution array
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_rating_distribution_scoped(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
@@ -1887,7 +1882,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null         $rating_id  Rating ID
      * @param string|null      $scope      'global', 'contextual', or null
      * @return array Array of vote_date/vote_count objects
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_votes_over_time_scoped(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -1913,7 +1908,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string           $view       Parent view: 'direct', 'subs', 'total'
      * @param string|null      $scope      'global', 'contextual', or null
      * @return object Paginated result
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_rating_votes_paginated_scoped(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', ?string $scope = null, string $sort_by = 'date', string $sort_order = 'desc'): object {
         $offset = ($page - 1) * $per_page;
@@ -1974,7 +1969,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int              $scale      Display scale for denormalization
      * @param string|null      $scope      'global', 'contextual', or null
      * @return array Chart data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_votes_with_rolling_avg_scoped(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2006,7 +2001,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @param string|null      $scope      'global', 'contextual', or null
      * @return array Approval trend data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_approval_trend_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2032,7 +2027,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @param string|null      $scope      'global', 'contextual', or null
      * @return array Cumulative data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_cumulative_approvals_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2065,7 +2060,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int              $rating_id  Rating ID
      * @param string|int|array $date_range Date range filter
      * @return object Summary with total_contexts, total_votes, avg_across_contexts, best_context
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_rating_context_summary(int $rating_id, string|int|array $date_range = 'all'): object {
         $date_condition = $this->build_date_condition($date_range);
@@ -2139,7 +2134,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string           $sort_by    Column to sort by: 'votes', 'average', 'last_vote'
      * @param string           $sort_order Sort direction: 'asc' or 'desc'
      * @return object Paginated result with contexts, total_count, total_pages
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_rating_contexts_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'votes', string $sort_order = 'desc'): object {
         $offset = ($page - 1) * $per_page;
@@ -2206,7 +2201,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int              $limit      Max results
      * @param string|int|array $date_range Date range filter
      * @return array Array of context objects
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_top_contexts_by_votes(int $rating_id, int $limit = 10, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2248,7 +2243,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int              $rating_id  Rating ID
      * @param string|int|array $date_range Date range filter
      * @return array Array of bucket => count pairs
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_avg_distribution(int $rating_id, string|int|array $date_range = 'all'): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2304,7 +2299,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter (numeric days only)
      * @param int              $limit      Max results
      * @return array Array of trending context objects
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_trending_contexts(int $rating_id, string|int|array $date_range = 30, int $limit = 5, string $sort_by = 'velocity', string $sort_order = 'desc'): array {
         $days = intval($date_range);
@@ -2364,7 +2359,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string           $context_type Context type ('post', 'page', 'product')
      * @param string|int|array $date_range   Date range filter
      * @return object|null Stats object or null if no data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_rating_stats(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 'all'): ?object {
         $rating = $this->get_rating($rating_id);
@@ -2461,7 +2456,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int              $per_page     Items per page
      * @param string|int|array $date_range   Date range filter
      * @return object Paginated result
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_votes_paginated(int $rating_id, int $context_id, string $context_type, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'date', string $sort_order = 'desc'): object {
         $offset = ($page - 1) * $per_page;
@@ -2507,7 +2502,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range   Date range filter
      * @param int              $scale        Display scale
      * @return array Chart data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_votes_with_rolling_avg(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2539,7 +2534,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string           $context_type Context type
      * @param string|int|array $date_range   Date range filter
      * @return array Approval trend data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_approval_trend(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2565,7 +2560,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string           $context_type Context type
      * @param string|int|array $date_range   Date range filter
      * @return array Cumulative data
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function get_context_cumulative_approvals(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array {
         $date_condition = $this->build_date_condition($date_range);
@@ -2595,7 +2590,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int    $context_id   Post ID
      * @param string $context_type Context type
      * @return string Post title or fallback string
-     * @since 1.15.0
+     * @since 1.15.5
      */
     private function get_context_title(int $context_id, string $context_type): string {
         $title = get_the_title($context_id);

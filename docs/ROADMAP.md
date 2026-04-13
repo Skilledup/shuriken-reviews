@@ -64,15 +64,9 @@ Items are ordered by dependency and impact. The enum is the load-bearing foundat
 
 Replaced all `array($this, 'method_name')` callback syntax with `$this->method(...)` first-class callables across 6 classes: `Shuriken_Admin` (19), `Shuriken_REST_API` (30), `Shuriken_Block` (5), `Shuriken_AJAX` (2), `Shuriken_Shortcodes` (2), `Shuriken_Frontend` (2). `Shuriken_Rate_Limiter` had none. Zero logic changes — pure syntax sweep.
 
-#### Step 3 — `readonly` Properties + Constructor Property Promotion
+#### ~~Step 3 — `readonly` Properties + Constructor Property Promotion~~ ✅
 
-All injected dependencies and immutable table/config values are set once and never mutated. Apply PHP 8.1 language features throughout.
-
-- Apply CPP + `readonly` now to the six classes that are **not** being decomposed: `Shuriken_Admin`, `Shuriken_Shortcodes`, `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Frontend`, `Shuriken_Analytics`
-- **Defer `Shuriken_Database` and `Shuriken_REST_API`** — their constructors change during Steps 4 and 5; apply CPP + `readonly` to the new split classes inline during those steps
-- Removes roughly 2–4 redundant lines per class (explicit property declaration + manual `$this->x = $x` assignment)
-
-> **Why third:** Applying CPP to `Shuriken_Database` before splitting it means rewriting the constructor twice. Doing it on the other six classes now establishes the pattern so the new decomposed classes follow it naturally.
+Applied CPP + `readonly` to 5 classes: `Shuriken_Admin` (2 promoted props), `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Shortcodes` (1 each), `Shuriken_Analytics` (1 promoted + 3 readonly derived). `Shuriken_Frontend` has no injected deps — skipped. Constructor params made non-nullable (singletons always pass resolved instances). Also fixed all `@since 1.15.0` → `1.15.5` (33 occurrences).
 
 #### Step 4 — `Shuriken_Database` Repository Decomposition
 
@@ -158,7 +152,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
 - [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
-- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes)
+- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes), this also helps with Query loops
 
 ---
 

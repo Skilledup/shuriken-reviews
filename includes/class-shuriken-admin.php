@@ -28,24 +28,15 @@ class Shuriken_Admin {
     private static ?self $instance = null;
 
     /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
-
-    /**
-     * @var Shuriken_Analytics_Interface Analytics instance
-     */
-    private Shuriken_Analytics_Interface $analytics;
-
-    /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null  $db        Database instance (optional, for dependency injection).
-     * @param Shuriken_Analytics_Interface|null $analytics Analytics instance (optional, for dependency injection).
+     * @param Shuriken_Database_Interface  $db        Database instance.
+     * @param Shuriken_Analytics_Interface $analytics Analytics instance.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null, ?Shuriken_Analytics_Interface $analytics = null) {
-        $this->db = $db ?: shuriken_db();
-        $this->analytics = $analytics ?: shuriken_analytics();
+    public function __construct(
+        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Analytics_Interface $analytics,
+    ) {
         
         add_action('admin_menu', $this->register_menu(...));
         add_action('admin_init', $this->handle_rating_forms(...));
@@ -518,7 +509,7 @@ class Shuriken_Admin {
      * Render the Context Statistics page
      *
      * @return void
-     * @since 1.15.0
+     * @since 1.15.5
      */
     public function render_context_stats_page(): void {
         include SHURIKEN_REVIEWS_PLUGIN_DIR . 'admin/context-stats.php';

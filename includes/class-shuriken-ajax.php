@@ -28,17 +28,13 @@ class Shuriken_AJAX {
     private static ?self $instance = null;
 
     /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
-
-    /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
+     * @param Shuriken_Database_Interface $db Database instance.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
+    public function __construct(
+        private readonly Shuriken_Database_Interface $db,
+    ) {
         
         // Rating submission
         add_action('wp_ajax_submit_rating', $this->handle_submit_rating(...));

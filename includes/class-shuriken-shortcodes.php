@@ -28,11 +28,6 @@ class Shuriken_Shortcodes {
     private static ?self $instance = null;
 
     /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
-
-    /**
      * Allowed HTML tags for rating title
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
@@ -40,10 +35,11 @@ class Shuriken_Shortcodes {
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
+     * @param Shuriken_Database_Interface $db Database instance.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
+    public function __construct(
+        private readonly Shuriken_Database_Interface $db,
+    ) {
         
         add_shortcode('shuriken_rating', $this->render_rating(...));
         add_shortcode('shuriken_grouped_rating', $this->render_grouped_rating(...));
