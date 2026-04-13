@@ -1,8 +1,9 @@
 <?php
 /**
- * Shuriken Reviews REST API Class
+ * Shuriken Reviews REST API Bootstrap
  *
- * Handles all REST API endpoints for the plugin.
+ * Thin entry point that wires the two focused controllers and registers
+ * cross-cutting REST filters. All handler logic lives in the controllers.
  *
  * @package Shuriken_Reviews
  * @since 1.7.0
@@ -16,26 +17,34 @@ if (!defined('ABSPATH')) {
 /**
  * Class Shuriken_REST_API
  *
- * Registers and handles REST API endpoints.
- *
  * @since 1.7.0
  */
 class Shuriken_REST_API {
 
     /**
-     * @var Shuriken_REST_API Singleton instance
+     * @var Shuriken_REST_API|null Singleton instance
      */
     private static ?self $instance = null;
-
-    /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
 
     /**
      * REST API namespace
      */
     const NAMESPACE = 'shuriken-reviews/v1';
+
+    /**
+     * @var Shuriken_Database_Interface Database instance
+     */
+    private readonly Shuriken_Database_Interface $db;
+
+    /**
+     * @var Shuriken_REST_Ratings_Controller Rating endpoints
+     */
+    private readonly Shuriken_REST_Ratings_Controller $ratings_controller;
+
+    /**
+     * @var Shuriken_REST_Votes_Controller Stats/nonce endpoints
+     */
+    private readonly Shuriken_REST_Votes_Controller $votes_controller;
 
     /**
      * Constructor
@@ -44,51 +53,25 @@ class Shuriken_REST_API {
      */
     public function __construct(?Shuriken_Database_Interface $db = null) {
         $this->db = $db ?: shuriken_db();
-        
+
+        $this->ratings_controller = new Shuriken_REST_Ratings_Controller($this->db, self::NAMESPACE);
+        $this->votes_controller   = new Shuriken_REST_Votes_Controller($this->db, self::NAMESPACE);
+
         add_action('rest_api_init', $this->register_routes(...));
-        
+
         // Skip nonce verification for public endpoints BEFORE authentication runs
         add_filter('rest_authentication_errors', $this->rest_authentication_errors(...), 5, 1);
-        
+
         // Clean stray PHP output before JSON is sent (prevents invalid_json errors)
         add_filter('rest_pre_serve_request', $this->clean_rest_buffer(...), 1, 4);
-        
+
         // Add CDN-friendly no-cache headers to prevent Cloudflare from caching/transforming responses
         add_filter('rest_post_dispatch', $this->set_rest_cache_headers(...), 10, 3);
     }
-    
-    /**
-     * Handle REST API authentication errors
-     * 
-     * Bypasses nonce verification ONLY for Shuriken's public endpoints (/nonce and /ratings/stats)
-     * that need to work without authentication (e.g., for cached pages with stale nonces).
-     *
-     * All other endpoints (including editor endpoints) use WordPress's default
-     * cookie + nonce authentication, which the block editor handles automatically.
-     *
-     * @param WP_Error|null|bool $result Authentication result.
-     * @return WP_Error|null|bool
-     */
-    public function rest_authentication_errors(\WP_Error|null|bool $result): \WP_Error|null|bool {
-        // If there's already a result from a previous filter, respect it
-        if ($result !== null) {
-            return $result;
-        }
 
-        // Check if this is a request to our public endpoints
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
-        
-        // Allow ONLY Shuriken's public endpoints to bypass nonce verification.
-        // These endpoints use '__return_true' as permission_callback and must work
-        // even when a cached page sends a stale nonce.
-        if (strpos($request_uri, '/shuriken-reviews/v1/nonce') !== false ||
-            strpos($request_uri, '/shuriken-reviews/v1/ratings/stats') !== false) {
-            return true;
-        }
-        
-        // Let WordPress handle authentication for all other endpoints
-        return null;
-    }
+    // =========================================================================
+    // Singleton + Accessors
+    // =========================================================================
 
     /**
      * Get singleton instance
@@ -120,6 +103,10 @@ class Shuriken_REST_API {
         self::get_instance();
     }
 
+    // =========================================================================
+    // Route Registration (delegates to controllers)
+    // =========================================================================
+
     /**
      * Register REST API routes
      *
@@ -127,799 +114,46 @@ class Shuriken_REST_API {
      * @since 1.7.0
      */
     public function register_routes(): void {
-        // Ratings collection endpoint
-        register_rest_route(self::NAMESPACE, '/ratings', array(
-            array(
-                'methods'             => 'GET',
-                'callback'            => $this->get_ratings(...),
-                'permission_callback' => $this->can_edit_posts(...),
-            ),
-            array(
-                'methods'             => 'POST',
-                'callback'            => $this->create_rating(...),
-                'permission_callback' => $this->can_manage_options(...),
-                'args'                => $this->get_rating_create_args(),
-            ),
-        ));
-
-        // Single rating endpoint
-        register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)', array(
-            array(
-                'methods'             => 'GET',
-                'callback'            => $this->get_single_rating(...),
-                'permission_callback' => $this->can_edit_posts(...),
-                'args'                => $this->get_rating_id_args(),
-            ),
-            array(
-                'methods'             => 'PUT',
-                'callback'            => $this->update_rating(...),
-                'permission_callback' => $this->can_manage_options(...),
-                'args'                => $this->get_rating_update_args(),
-            ),
-            array(
-                'methods'             => 'DELETE',
-                'callback'            => $this->delete_rating(...),
-                'permission_callback' => $this->can_manage_options(...),
-                'args'                => $this->get_rating_id_args(),
-            ),
-        ));
-
-        // Parent ratings endpoint
-        register_rest_route(self::NAMESPACE, '/ratings/parents', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_parent_ratings(...),
-            'permission_callback' => $this->can_edit_posts(...),
-        ));
-
-        // Mirrorable ratings endpoint
-        register_rest_route(self::NAMESPACE, '/ratings/mirrorable', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_mirrorable_ratings(...),
-            'permission_callback' => $this->can_edit_posts(...),
-        ));
-
-        // Search ratings endpoint (for AJAX autocomplete)
-        register_rest_route(self::NAMESPACE, '/ratings/search', array(
-            'methods'             => 'GET',
-            'callback'            => $this->search_ratings(...),
-            'permission_callback' => $this->can_edit_posts(...),
-            'args'                => array(
-                'q' => array(
-                    'required'          => false,
-                    'type'              => 'string',
-                    'default'           => '',
-                    'sanitize_callback' => 'sanitize_text_field',
-                    'description'       => 'Search term to match against rating names',
-                ),
-                'limit' => array(
-                    'required'          => false,
-                    'type'              => 'integer',
-                    'default'           => 20,
-                    'sanitize_callback' => 'absint',
-                    'description'       => 'Maximum number of results to return',
-                ),
-                'type' => array(
-                    'required'          => false,
-                    'type'              => 'string',
-                    'default'           => 'all',
-                    'enum'              => array('all', 'parents', 'mirrorable', 'parents_and_mirrors'),
-                    'description'       => 'Filter by rating type',
-                ),
-            ),
-        ));
-
-        // Get child ratings of a parent
-        register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/children', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_child_ratings(...),
-            'permission_callback' => $this->can_edit_posts(...),
-            'args'                => array(
-                'id' => array(
-                    'required'          => true,
-                    'type'              => 'integer',
-                    'sanitize_callback' => 'absint',
-                    'description'       => 'Parent rating ID',
-                ),
-            ),
-        ));
-
-        // Get mirrors of a rating
-        register_rest_route(self::NAMESPACE, '/ratings/(?P<id>\d+)/mirrors', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_rating_mirrors(...),
-            'permission_callback' => $this->can_edit_posts(...),
-            'args'                => array(
-                'id' => array(
-                    'required'          => true,
-                    'type'              => 'integer',
-                    'sanitize_callback' => 'absint',
-                    'description'       => 'Rating ID to get mirrors for',
-                ),
-            ),
-        ));
-
-        // Batch ratings endpoint (fetch multiple by IDs, editor only)
-        register_rest_route(self::NAMESPACE, '/ratings/batch', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_ratings_batch(...),
-            'permission_callback' => $this->can_edit_posts(...),
-            'args'                => array(
-                'ids' => array(
-                    'required'          => true,
-                    'type'              => 'string',
-                    'sanitize_callback' => 'sanitize_text_field',
-                    'description'       => 'Comma-separated list of rating IDs (max 50)',
-                ),
-            ),
-        ));
-
-        // Public stats endpoint (bypasses cache)
-        register_rest_route(self::NAMESPACE, '/ratings/stats', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_rating_stats(...),
-            'permission_callback' => '__return_true',
-            'args'                => array(
-                'ids' => array(
-                    'required'          => true,
-                    'type'              => 'string',
-                    'sanitize_callback' => 'sanitize_text_field',
-                    'description'       => 'Comma-separated list of rating IDs',
-                ),
-                'context_id' => array(
-                    'required'          => false,
-                    'type'              => 'integer',
-                    'sanitize_callback' => 'absint',
-                    'description'       => 'Post/entity ID for contextual stats',
-                ),
-                'context_type' => array(
-                    'required'          => false,
-                    'type'              => 'string',
-                    'sanitize_callback' => 'sanitize_key',
-                    'description'       => 'Context type (post, page, product, etc.)',
-                ),
-            ),
-        ));
-
-        // Public nonce endpoint (bypasses cache)
-        register_rest_route(self::NAMESPACE, '/nonce', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_fresh_nonce(...),
-            'permission_callback' => '__return_true',
-        ));
-
-        // Context stats endpoint (editor only — returns ratings with per-context votes)
-        register_rest_route(self::NAMESPACE, '/context-stats', array(
-            'methods'             => 'GET',
-            'callback'            => $this->get_context_stats(...),
-            'permission_callback' => $this->can_edit_posts(...),
-            'args'                => array(
-                'context_id' => array(
-                    'required'          => true,
-                    'type'              => 'integer',
-                    'sanitize_callback' => 'absint',
-                    'description'       => 'Post/entity ID to get contextual ratings for',
-                ),
-                'context_type' => array(
-                    'required'          => true,
-                    'type'              => 'string',
-                    'sanitize_callback' => 'sanitize_key',
-                    'description'       => 'Context type (post, page, product, etc.)',
-                ),
-            ),
-        ));
+        $this->ratings_controller->register_routes();
+        $this->votes_controller->register_routes();
     }
 
     // =========================================================================
-    // Permission Callbacks
+    // Cross-Cutting REST Filters
     // =========================================================================
 
     /**
-     * Check if user can edit posts
+     * Handle REST API authentication errors
      *
-     * @param WP_REST_Request $request The request object (optional).
-     * @return bool
+     * Bypasses nonce verification ONLY for Shuriken's public endpoints (/nonce and /ratings/stats)
+     * that need to work without authentication (e.g., for cached pages with stale nonces).
+     *
+     * All other endpoints (including editor endpoints) use WordPress's default
+     * cookie + nonce authentication, which the block editor handles automatically.
+     *
+     * @param WP_Error|null|bool $result Authentication result.
+     * @return WP_Error|null|bool
      */
-    public function can_edit_posts(\WP_REST_Request $request = null): bool {
-        // WordPress REST API handles authentication automatically
-        // This will work with cookie auth, application passwords, etc.
-        return current_user_can('edit_posts');
-    }
-
-    /**
-     * Check if user can manage options (write operations)
-     *
-     * Filterable via `shuriken_rest_manage_capability` to allow editors/authors on multi-author sites.
-     * Default requires `manage_options` (administrator).
-     *
-     * @param WP_REST_Request $request The request object (optional).
-     * @return bool
-     */
-    public function can_manage_options(\WP_REST_Request $request = null): bool {
-        $stored = get_option('shuriken_rest_write_capability', 'manage_options');
-        // When "custom" is selected, use the custom slug; fall back to manage_options if empty.
-        if ($stored === 'custom') {
-            $stored = get_option('shuriken_rest_write_capability_custom', '') ?: 'manage_options';
+    public function rest_authentication_errors(\WP_Error|null|bool $result): \WP_Error|null|bool {
+        // If there's already a result from a previous filter, respect it
+        if ($result !== null) {
+            return $result;
         }
-        $capability = apply_filters('shuriken_rest_manage_capability', $stored);
-        return current_user_can($capability);
-    }
 
-    // =========================================================================
-    // Argument Definitions
-    // =========================================================================
+        // Check if this is a request to our public endpoints
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
 
-    /**
-     * Get rating ID argument definition
-     *
-     * @return array
-     */
-    private function get_rating_id_args(): array {
-        return array(
-            'id' => array(
-                'required'          => true,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-        );
-    }
-
-    /**
-     * Get rating creation argument definitions
-     *
-     * @return array
-     */
-    private function get_rating_create_args(): array {
-        return array(
-            'name' => array(
-                'required'          => true,
-                'type'              => 'string',
-                'sanitize_callback' => 'sanitize_text_field',
-            ),
-            'parent_id' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-            'mirror_of' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-            'effect_type' => array(
-                'required'          => false,
-                'type'              => 'string',
-                'default'           => 'positive',
-                'enum'              => array('positive', 'negative'),
-            ),
-            'display_only' => array(
-                'required'          => false,
-                'type'              => 'boolean',
-                'default'           => false,
-            ),
-            'rating_type' => array(
-                'required'          => false,
-                'type'              => 'string',
-                'default'           => 'stars',
-                'enum'              => Shuriken_Rating_Type::values(),
-            ),
-            'scale' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'default'           => 5,
-                'sanitize_callback' => 'absint',
-            ),
-        );
-    }
-
-    /**
-     * Get rating update argument definitions
-     *
-     * @return array
-     */
-    private function get_rating_update_args(): array {
-        return array(
-            'id' => array(
-                'required'          => true,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-            'name' => array(
-                'required'          => false,
-                'type'              => 'string',
-                'sanitize_callback' => 'sanitize_text_field',
-            ),
-            'parent_id' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-            'mirror_of' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-            'effect_type' => array(
-                'required'          => false,
-                'type'              => 'string',
-                'enum'              => array('positive', 'negative'),
-            ),
-            'display_only' => array(
-                'required'          => false,
-                'type'              => 'boolean',
-            ),
-            'rating_type' => array(
-                'required'          => false,
-                'type'              => 'string',
-                'enum'              => Shuriken_Rating_Type::values(),
-            ),
-            'scale' => array(
-                'required'          => false,
-                'type'              => 'integer',
-                'sanitize_callback' => 'absint',
-            ),
-        );
-    }
-
-    // =========================================================================
-    // REST API Callbacks
-    // =========================================================================
-
-    /**
-     * Get all ratings
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
-     */
-    public function get_ratings(\WP_REST_Request $request): \WP_REST_Response {
-        $ratings = $this->db->get_all_ratings();
-        return rest_ensure_response($ratings);
-    }
-
-    /**
-     * Create a new rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     */
-    public function create_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $name = $request->get_param('name');
-            $parent_id = $request->get_param('parent_id');
-            $mirror_of = $request->get_param('mirror_of');
-            $effect_type = $request->get_param('effect_type') ?: 'positive';
-            $display_only = $request->get_param('display_only') ?: false;
-            $rating_type = $request->get_param('rating_type') ?: 'stars';
-            $scale = $request->get_param('scale') ?: Shuriken_Database::RATING_SCALE_DEFAULT;
-            
-            // Convert 0 to null for parent_id and mirror_of
-            $parent_id = $parent_id ? intval($parent_id) : null;
-            $mirror_of = $mirror_of ? intval($mirror_of) : null;
-            
-            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
-            
-            if ($new_id === false) {
-                throw Shuriken_Database_Exception::insert_failed('ratings');
-            }
-            
-            $rating = $this->db->get_rating($new_id);
-            $response_data = (array) $rating;
-
-            // Warn if mirror inherited a different type/scale from its source
-            if ($mirror_of) {
-                $source = $this->db->get_rating($mirror_of);
-                if ($source) {
-                    $source_type = $source->rating_type ?? 'stars';
-                    $source_scale = (int) ($source->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT);
-                    if ($rating_type !== $source_type || (int) $scale !== $source_scale) {
-                        $response_data['mirror_notice'] = sprintf(
-                            /* translators: 1: source type, 2: source scale */
-                            __('Mirror inherited type "%1$s" (scale %2$d) from the source rating.', 'shuriken-reviews'),
-                            $source_type,
-                            $source_scale
-                        );
-                    }
-                }
-            }
-
-            // Warn if child type is incompatible with parent type
-            if ($parent_id) {
-                $parent = $this->db->get_rating($parent_id);
-                if ($parent) {
-                    $parent_type_enum = Shuriken_Rating_Type::tryFrom($parent->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars;
-                    $child_type_enum  = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
-                    if ($parent_type_enum->typeClass() !== $child_type_enum->typeClass()) {
-                        $response_data['type_warning'] = __('This sub-rating type is incompatible with the parent\'s type. Aggregated scores may be incorrect.', 'shuriken-reviews');
-                    }
-                }
-            }
-
-            return rest_ensure_response($response_data);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
+        // Allow ONLY Shuriken's public endpoints to bypass nonce verification.
+        // These endpoints use '__return_true' as permission_callback and must work
+        // even when a cached page sends a stale nonce.
+        if (strpos($request_uri, '/shuriken-reviews/v1/nonce') !== false ||
+            strpos($request_uri, '/shuriken-reviews/v1/ratings/stats') !== false) {
+            return true;
         }
+
+        // Let WordPress handle authentication for all other endpoints
+        return null;
     }
-
-    /**
-     * Get a single rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     */
-    public function get_single_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $id = $request->get_param('id');
-            $rating = $this->db->get_rating($id);
-            
-            if (!$rating) {
-                throw Shuriken_Not_Found_Exception::rating($id);
-            }
-            
-            return rest_ensure_response($rating);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Update a rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     */
-    public function update_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $id = $request->get_param('id');
-            
-            // Check if rating exists
-            $existing = $this->db->get_rating($id);
-            if (!$existing) {
-                throw Shuriken_Not_Found_Exception::rating($id);
-            }
-            
-            // Build update data array
-            $update_data = array();
-            
-            if ($request->has_param('name') && $request->get_param('name') !== '') {
-                $update_data['name'] = $request->get_param('name');
-            }
-            
-            if ($request->has_param('parent_id')) {
-                $parent_id = $request->get_param('parent_id');
-                $update_data['parent_id'] = $parent_id ? intval($parent_id) : null;
-            }
-            
-            if ($request->has_param('mirror_of')) {
-                $mirror_of = $request->get_param('mirror_of');
-                $update_data['mirror_of'] = $mirror_of ? intval($mirror_of) : null;
-            }
-            
-            if ($request->has_param('effect_type')) {
-                $update_data['effect_type'] = $request->get_param('effect_type');
-            }
-            
-            if ($request->has_param('display_only')) {
-                $update_data['display_only'] = $request->get_param('display_only');
-            }
-            
-            if ($request->has_param('rating_type')) {
-                $update_data['rating_type'] = $request->get_param('rating_type');
-            }
-            
-            if ($request->has_param('scale')) {
-                $update_data['scale'] = $request->get_param('scale');
-            }
-            
-            if (empty($update_data)) {
-                throw Shuriken_Validation_Exception::required_field('update_data');
-            }
-            
-            $result = $this->db->update_rating($id, $update_data);
-            
-            if ($result === false) {
-                throw Shuriken_Database_Exception::update_failed('ratings', $id);
-            }
-            
-            // Recalculate parent rating if this is a sub-rating
-            if (!empty($update_data['parent_id'])) {
-                $this->db->recalculate_parent_rating($update_data['parent_id']);
-            }
-            // Also recalculate old parent if parent changed
-            if (!empty($existing->parent_id) && (empty($update_data['parent_id']) || $existing->parent_id != $update_data['parent_id'])) {
-                $this->db->recalculate_parent_rating($existing->parent_id);
-            }
-            
-            $rating = $this->db->get_rating($id);
-            $response_data = (array) $rating;
-
-            // Warn if child type is incompatible with parent type
-            $effective_parent_id = isset($update_data['parent_id']) ? $update_data['parent_id'] : ($existing->parent_id ?? null);
-            $effective_type = isset($update_data['rating_type']) ? $update_data['rating_type'] : ($rating->rating_type ?? 'stars');
-            if ($effective_parent_id) {
-                $parent = $this->db->get_rating($effective_parent_id);
-                if ($parent) {
-                    $parent_type_enum = Shuriken_Rating_Type::tryFrom($parent->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars;
-                    $child_type_enum  = Shuriken_Rating_Type::tryFrom($effective_type) ?? Shuriken_Rating_Type::Stars;
-                    if ($parent_type_enum->typeClass() !== $child_type_enum->typeClass()) {
-                        $response_data['type_warning'] = __('This sub-rating type is incompatible with the parent\'s type. Aggregated scores may be incorrect.', 'shuriken-reviews');
-                    }
-                }
-            }
-
-            return rest_ensure_response($response_data);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Delete a rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     */
-    public function delete_rating(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $id = $request->get_param('id');
-            
-            // Check if rating exists
-            $existing = $this->db->get_rating($id);
-            if (!$existing) {
-                throw Shuriken_Not_Found_Exception::rating($id);
-            }
-
-            // Store parent_id before deletion for recalculation
-            $parent_id = $existing->parent_id;
-            
-            // Delete the rating
-            $result = $this->db->delete_rating($id);
-            
-            if ($result === false) {
-                throw Shuriken_Database_Exception::delete_failed('ratings', $id);
-            }
-
-            // Recalculate parent rating if this was a sub-rating
-            if (!empty($parent_id)) {
-                $this->db->recalculate_parent_rating($parent_id);
-            }
-            
-            return rest_ensure_response(array(
-                'deleted' => true,
-                'id' => $id
-            ));
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Get parent ratings
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
-     */
-    public function get_parent_ratings(\WP_REST_Request $request): \WP_REST_Response {
-        $ratings = $this->db->get_parent_ratings();
-        return rest_ensure_response($ratings);
-    }
-
-    /**
-     * Get mirrorable ratings
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
-     */
-    public function get_mirrorable_ratings(\WP_REST_Request $request): \WP_REST_Response {
-        $ratings = $this->db->get_mirrorable_ratings();
-        return rest_ensure_response($ratings);
-    }
-
-    /**
-     * Get child ratings of a parent rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     * @since 1.9.0
-     */
-    public function get_child_ratings(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $parent_id = $request->get_param('id');
-            
-            if (!$parent_id) {
-                throw Shuriken_Validation_Exception::required_field('id');
-            }
-            
-            // Verify parent exists
-            $parent = $this->db->get_rating($parent_id);
-            if (!$parent) {
-                throw Shuriken_Not_Found_Exception::parent_rating($parent_id);
-            }
-            
-            $ratings = $this->db->get_child_ratings($parent_id);
-            return rest_ensure_response($ratings);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Get mirrors of a rating
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     * @since 2.1.0
-     */
-    public function get_rating_mirrors(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $id = $request->get_param('id');
-
-            if (!$id) {
-                throw Shuriken_Validation_Exception::required_field('id');
-            }
-
-            // Verify rating exists
-            $rating = $this->db->get_rating($id);
-            if (!$rating) {
-                throw Shuriken_Not_Found_Exception::rating($id);
-            }
-
-            $mirrors = $this->db->get_mirrors($id);
-            return rest_ensure_response($mirrors);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Search ratings by name (for AJAX autocomplete)
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     * @since 1.9.0
-     */
-    public function search_ratings(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $search_term = $request->get_param('q');
-            $limit = $request->get_param('limit');
-            $type = $request->get_param('type');
-            
-            // Validate type parameter
-            $valid_types = array('all', 'parents', 'mirrorable', 'parents_and_mirrors');
-            if (!in_array($type, $valid_types, true)) {
-                throw Shuriken_Validation_Exception::invalid_value('type', $type, 'all, parents, mirrorable, or parents_and_mirrors');
-            }
-            
-            // Validate limit
-            if ($limit < 1 || $limit > Shuriken_Database::SEARCH_LIMIT_MAX) {
-                throw Shuriken_Validation_Exception::out_of_range('limit', $limit, 1, Shuriken_Database::SEARCH_LIMIT_MAX);
-            }
-            
-            $ratings = $this->db->search_ratings($search_term, $limit, $type);
-            return rest_ensure_response($ratings);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Batch-fetch multiple ratings by ID
-     *
-     * Returns full rating objects with mirror vote data resolved.
-     * Capped at 50 IDs per request to prevent abuse.
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     * @since 1.11.1
-     */
-    public function get_ratings_batch(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $ids_string = $request->get_param('ids');
-            $ids = array_map('intval', explode(',', $ids_string));
-            $ids = array_filter($ids);
-
-            if (empty($ids)) {
-                throw Shuriken_Validation_Exception::required_field('ids');
-            }
-
-            if (count($ids) > Shuriken_Database::BATCH_IDS_MAX) {
-                throw Shuriken_Validation_Exception::out_of_range('ids count', count($ids), 1, Shuriken_Database::BATCH_IDS_MAX);
-            }
-
-            $ratings = $this->db->get_ratings_by_ids($ids);
-            return rest_ensure_response(array_values($ratings));
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Get fresh rating statistics (bypasses cache)
-     * 
-     * Optimized to use batch query instead of individual queries.
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     */
-    public function get_rating_stats(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $ids_string = $request->get_param('ids');
-            $ids = array_map('intval', explode(',', $ids_string));
-            $ids = array_filter($ids); // Remove any invalid IDs
-            
-            if (empty($ids)) {
-                throw Shuriken_Validation_Exception::required_field('ids');
-            }
-
-            $context_id = $request->get_param('context_id');
-            $context_type = $request->get_param('context_type');
-            $has_context = $context_id && $context_type;
-
-            // Validate context_type against allowed values
-            if ($has_context) {
-                $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
-                if (!in_array($context_type, $allowed_types, true)) {
-                    $has_context = false;
-                }
-            }
-            
-            // Always fetch base rating data (for source_id / mirror resolution)
-            $ratings = $this->db->get_ratings_by_ids($ids);
-
-            // If contextual, overlay per-context stats
-            if ($has_context) {
-                // Collect source_ids for context query (mirrors use original's votes)
-                $source_ids = array();
-                $scales_map = array();
-                foreach ($ratings as $rating) {
-                    $sid = (int) $rating->source_id;
-                    $source_ids[] = $sid;
-                    $scales_map[$sid] = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
-                }
-                $source_ids = array_unique($source_ids);
-                $ctx_stats = $this->db->get_contextual_stats_batch($source_ids, (int) $context_id, $context_type, $scales_map);
-            }
-            
-            $stats = array();
-            foreach ($ratings as $id => $rating) {
-                $source_id = (int) $rating->source_id;
-
-                if ($has_context && isset($ctx_stats[$source_id])) {
-                    $ctx = $ctx_stats[$source_id];
-                    $stats[$id] = array(
-                        'average'         => $ctx->average,
-                        'display_average' => $ctx->display_average,
-                        'total_votes'     => $ctx->total_votes,
-                        'total_rating'    => $ctx->total_rating,
-                        'source_id'       => $source_id,
-                    );
-                } elseif ($has_context) {
-                    // Context requested but no votes yet for this context
-                    $stats[$id] = array(
-                        'average'         => 0,
-                        'display_average' => 0,
-                        'total_votes'     => 0,
-                        'total_rating'    => 0,
-                        'source_id'       => $source_id,
-                    );
-                } else {
-                    $stats[$id] = array(
-                        'average'         => $rating->average,
-                        'display_average' => $rating->display_average,
-                        'total_votes'     => $rating->total_votes,
-                        'total_rating'    => $rating->total_rating,
-                        'source_id'       => $rating->source_id,
-                    );
-                }
-            }
-            
-            return rest_ensure_response($stats);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    // =========================================================================
-    // REST Response Filters
-    // =========================================================================
 
     /**
      * Clean output buffer before serving Shuriken REST responses
@@ -964,75 +198,6 @@ class Shuriken_REST_API {
         }
         return $response;
     }
-
-    // =========================================================================
-    // Public Endpoint Callbacks
-    // =========================================================================
-
-    /**
-     * Get ratings with contextual votes for a specific post/entity
-     *
-     * Returns all ratings that have per-context votes for the given context,
-     * along with their per-context statistics.
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response|WP_Error
-     * @since 1.15.5
-     */
-    public function get_context_stats(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
-        try {
-            $context_id = (int) $request->get_param('context_id');
-            $context_type = $request->get_param('context_type');
-
-            if (!$context_id || !$context_type) {
-                throw Shuriken_Validation_Exception::required_field('context_id and context_type');
-            }
-
-            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
-            if (!in_array($context_type, $allowed_types, true)) {
-                throw Shuriken_Validation_Exception::out_of_range('context_type', $context_type, 0, 0);
-            }
-
-            $ratings = $this->db->get_ratings_for_context($context_id, $context_type);
-
-            $result = array();
-            foreach ($ratings as $rating) {
-                $result[] = array(
-                    'id'              => (int) $rating->id,
-                    'name'            => $rating->name,
-                    'rating_type'     => $rating->rating_type,
-                    'scale'           => (int) $rating->scale,
-                    'votes'           => $rating->ctx_votes,
-                    'total'           => $rating->ctx_total,
-                    'average'         => $rating->ctx_average,
-                    'display_average' => $rating->ctx_display_average,
-                );
-            }
-
-            return rest_ensure_response($result);
-        } catch (Shuriken_Exception_Interface $e) {
-            return Shuriken_Exception_Handler::handle_rest_exception($e);
-        }
-    }
-
-    /**
-     * Get a fresh nonce (bypasses cache)
-     *
-     * @param WP_REST_Request $request The request object.
-     * @return WP_REST_Response
-     */
-    public function get_fresh_nonce(\WP_REST_Request $request): \WP_REST_Response {
-        // Prevent caching of this endpoint
-        nocache_headers();
-        
-        $nonce = wp_create_nonce('shuriken-reviews-nonce');
-        
-        return rest_ensure_response(array(
-            'nonce' => $nonce,
-            'logged_in' => is_user_logged_in(),
-            'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
-        ));
-    }
 }
 
 /**
@@ -1043,4 +208,3 @@ class Shuriken_REST_API {
 function shuriken_rest_api(): Shuriken_REST_API {
     return Shuriken_REST_API::get_instance();
 }
-

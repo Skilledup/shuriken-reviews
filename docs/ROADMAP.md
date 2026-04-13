@@ -79,21 +79,15 @@ Decomposed the ~1,694-line monolithic `Shuriken_Database` class into three focus
 | `Shuriken_Schema_Manager` | ~204 | `create_tables()`, `tables_exist()`, column migrations |
 | `Shuriken_Database` (façade) | ~401 | Singleton, constants, static helpers, delegates all 28 interface methods to repos |
 
-#### Step 5 — `Shuriken_REST_API` Controller Split
+#### ~~Step 5 — `Shuriken_REST_API` Controller Split~~ ✅
 
-The ~1,064-line class mixes route registration, arg schemas, permission callbacks, and 15+ handler methods. Refactor following the WordPress `WP_REST_Controller` pattern. Apply CPP + `readonly` to new controller constructors inline.
+Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused controllers + a thin bootstrap. Both controllers use CPP + `readonly` constructors and own their route registration, arg schemas, and permission callbacks. Cross-cutting filters (auth bypass, output buffer cleaning, CDN cache headers) remain on the bootstrap. Zero public API or hook changes.
 
-| New class | Responsibility |
-|---|---|
-| `Shuriken_REST_Ratings_Controller` | Rating CRUD handlers (`get_ratings`, `create_rating`, `update_rating`, `delete_rating`, `get_single_rating`, `get_rating_mirrors`, `search_ratings`, `get_ratings_batch`) |
-| `Shuriken_REST_Votes_Controller` | Vote handler, stats handler, nonce endpoint |
-| `Shuriken_REST_Router` | Route registration, arg definitions, permission callbacks |
-
-- Each controller extends `WP_REST_Controller` or holds its own `register_routes()`
-- Arg definition arrays (`get_rating_id_args()`, `get_rating_create_args()`, etc.) move to the controller they belong to
-- `Shuriken_REST_API` becomes a thin bootstrap that instantiates the three controllers
-
-> **Why fifth:** Depends on the repository interfaces from Step 4 (`Shuriken_Rating_Repository_Interface`, `Shuriken_Vote_Repository_Interface`). Controllers get focused type hints rather than the full monolithic `Shuriken_Database_Interface`.
+| New class | Lines | Responsibility |
+|---|---|---|
+| `Shuriken_REST_Ratings_Controller` | ~689 | 11 rating endpoints: CRUD, hierarchy, mirrors, search, batch + arg schemas + permissions |
+| `Shuriken_REST_Votes_Controller` | ~268 | 3 endpoints: stats (public), context-stats (editor), nonce (public) |
+| `Shuriken_REST_API` (bootstrap) | ~210 | Singleton, controller wiring, `register_routes()` delegation, REST filters |
 
 #### Step 6 — Platform & Add-on Extensibility
 

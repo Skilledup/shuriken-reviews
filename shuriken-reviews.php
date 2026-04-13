@@ -124,6 +124,8 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-container.php';
         
         // Feature modules
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rest-ratings-controller.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rest-votes-controller.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rest-api.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-shortcodes.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-block.php';
