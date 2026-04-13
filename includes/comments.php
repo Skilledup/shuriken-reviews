@@ -139,7 +139,13 @@ if (get_option('shuriken_comments_system_enabled', '1') === '1' && get_option('s
  * @since 1.0.0
  */
 function customize_latest_comments_block($block_content, $block) {
-    if ($block['blockName'] !== 'core/latest-comments') {
+    if (!isset($block['blockName']) || $block['blockName'] !== 'core/latest-comments') {
+        return $block_content;
+    }
+
+    // Some environments do not have ext-dom/ext-mbstring enabled.
+    // Fall back to the unmodified block output instead of fatalling.
+    if (!class_exists('DOMDocument') || !function_exists('mb_convert_encoding')) {
         return $block_content;
     }
 
