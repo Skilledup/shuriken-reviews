@@ -134,6 +134,15 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                     </div>
                 </div>
 
+                <div class="sidebar-tip">
+                    <span class="tip-icon"><?php Shuriken_Icons::render('bar-chart-2'); ?></span>
+                    <div class="tip-content">
+                        <strong><?php esc_html_e('Archive Sorting', 'shuriken-reviews'); ?></strong>
+                        <p><?php esc_html_e('This modifies the main archive query. It works with classic themes and with block themes whose Query Loop has "Inherit query from template" enabled.', 'shuriken-reviews'); ?></p>
+                        <p><?php esc_html_e('For Query Loop blocks that use a custom query, select the block in the Site Editor and configure the "Shuriken Reviews" panel in its block settings instead.', 'shuriken-reviews'); ?></p>
+                    </div>
+                </div>
+
             <?php elseif ($current_tab === 'rate-limiting') : ?>
 
                 <div class="sidebar-tip">

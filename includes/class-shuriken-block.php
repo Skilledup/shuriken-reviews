@@ -489,12 +489,15 @@ class Shuriken_Block {
      * @param array    $query_vars The query vars for the Query Loop block.
      * @param WP_Block $block      The Query Loop block.
      * @return array Modified query vars.
-     * @since 1.16.0
+     * @since 1.15.5
      */
     public function apply_query_loop_sort(array $query_vars, \WP_Block $block): array {
-        $attrs     = $block->parsed_block['attrs'] ?? array();
-        $rating_id = absint($attrs['shurikenRatingId'] ?? 0);
-        $orderby   = sanitize_key($attrs['shurikenOrderBy'] ?? '');
+        // The filter fires on core/post-template, which receives the parent
+        // core/query block's `query` attribute via block context.
+        $query_ctx = $block->context['query'] ?? array();
+        $rating_id = absint($query_ctx['shurikenRatingId'] ?? 0);
+        $orderby   = sanitize_key($query_ctx['shurikenOrderBy'] ?? '');
+        $order     = ($query_ctx['shurikenOrder'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
         if (!$rating_id || !in_array($orderby, array('average', 'votes'), true)) {
             return $query_vars;
@@ -503,6 +506,7 @@ class Shuriken_Block {
         $query_vars['_shuriken_block_sort']      = '1';
         $query_vars['_shuriken_block_rating_id'] = $rating_id;
         $query_vars['_shuriken_block_orderby']   = $orderby;
+        $query_vars['_shuriken_block_order']     = $order;
 
         return $query_vars;
     }
@@ -513,7 +517,7 @@ class Shuriken_Block {
      * @param string   $join  The current JOIN clause.
      * @param WP_Query $query The current query.
      * @return string Modified JOIN clause.
-     * @since 1.16.0
+     * @since 1.15.5
      */
     public function filter_block_posts_join(string $join, \WP_Query $query): string {
         if (!$query->get('_shuriken_block_sort')) {
@@ -551,7 +555,7 @@ class Shuriken_Block {
      * @param string   $orderby_clause The current ORDER BY clause.
      * @param WP_Query $query          The current query.
      * @return string Modified ORDER BY clause.
-     * @since 1.16.0
+     * @since 1.15.5
      */
     public function filter_block_posts_orderby(string $orderby_clause, \WP_Query $query): string {
         if (!$query->get('_shuriken_block_sort')) {
@@ -559,15 +563,16 @@ class Shuriken_Block {
         }
 
         $orderby = $query->get('_shuriken_block_orderby');
+        $order   = $query->get('_shuriken_block_order') === 'ASC' ? 'ASC' : 'DESC';
 
         if ($orderby === 'votes') {
-            return 'COALESCE(shuriken_block_scores.shuriken_block_votes, 0) DESC, ' . $orderby_clause;
+            return 'COALESCE(shuriken_block_scores.shuriken_block_votes, 0) ' . $order . ', ' . $orderby_clause;
         }
 
         // Default: sort by average rating, unrated posts last.
         return 'CASE WHEN COALESCE(shuriken_block_scores.shuriken_block_votes, 0) = 0 THEN 0
                      ELSE (shuriken_block_scores.shuriken_block_total / shuriken_block_scores.shuriken_block_votes)
-               END DESC, ' . $orderby_clause;
+               END ' . $order . ', ' . $orderby_clause;
     }
 
     /**

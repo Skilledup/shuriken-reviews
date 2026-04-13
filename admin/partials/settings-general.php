@@ -23,6 +23,9 @@ if (isset($_POST['save_general_settings'])) {
     $archive_sort_orderby = isset($_POST['shuriken_archive_sort_orderby']) && in_array($_POST['shuriken_archive_sort_orderby'], array('average', 'votes'), true)
         ? sanitize_key($_POST['shuriken_archive_sort_orderby'])
         : 'average';
+    $archive_sort_order = isset($_POST['shuriken_archive_sort_order']) && in_array($_POST['shuriken_archive_sort_order'], array('DESC', 'ASC'), true)
+        ? $_POST['shuriken_archive_sort_order']
+        : 'DESC';
     $comments_system_enabled  = isset($_POST['shuriken_comments_system_enabled']) ? '1' : '0';
     $exclude_author_comments  = isset($_POST['shuriken_exclude_author_comments']) ? '1' : '0';
     $exclude_reply_comments   = isset($_POST['shuriken_exclude_reply_comments']) ? '1' : '0';
@@ -49,6 +52,7 @@ if (isset($_POST['save_general_settings'])) {
     update_option('shuriken_archive_sort_enabled', $archive_sort_enabled);
     update_option('shuriken_archive_sort_rating', $archive_sort_rating_id);
     update_option('shuriken_archive_sort_orderby', $archive_sort_orderby);
+    update_option('shuriken_archive_sort_order', $archive_sort_order);
     update_option('shuriken_comments_system_enabled', $comments_system_enabled);
     update_option('shuriken_exclude_author_comments', $exclude_author_comments);
     update_option('shuriken_exclude_reply_comments', $exclude_reply_comments);
@@ -108,10 +112,7 @@ if (isset($_POST['save_general_settings'])) {
                     </label>
                 </div>
                 <p class="settings-field-description">
-                    <?php esc_html_e('When enabled, archive pages will be sorted by per-post rating scores using contextual votes.', 'shuriken-reviews'); ?>
-                    <br>
-                    <strong><?php esc_html_e('Classic themes only.', 'shuriken-reviews'); ?></strong>
-                    <?php esc_html_e('This setting works by filtering the main PHP query and has no effect in block themes (Full Site Editing). If you are using a block theme, select the Query Loop block and use the "Sort by Rating" panel in its inspector controls instead.', 'shuriken-reviews'); ?>
+                    <?php esc_html_e('Sort archive pages by rating scores.', 'shuriken-reviews'); ?>
                 </p>
             </div>
             <div class="settings-field">
@@ -142,6 +143,14 @@ if (isset($_POST['save_general_settings'])) {
                     <?php $saved_orderby = get_option('shuriken_archive_sort_orderby', 'average'); ?>
                     <option value="average" <?php selected($saved_orderby, 'average'); ?>><?php esc_html_e('Average Rating', 'shuriken-reviews'); ?></option>
                     <option value="votes" <?php selected($saved_orderby, 'votes'); ?>><?php esc_html_e('Total Votes', 'shuriken-reviews'); ?></option>
+                </select>
+            </div>
+            <div class="settings-field">
+                <label for="shuriken_archive_sort_order"><?php esc_html_e('Direction', 'shuriken-reviews'); ?></label>
+                <select name="shuriken_archive_sort_order" id="shuriken_archive_sort_order">
+                    <?php $saved_order = get_option('shuriken_archive_sort_order', 'DESC'); ?>
+                    <option value="DESC" <?php selected($saved_order, 'DESC'); ?>><?php esc_html_e('Descending (highest first)', 'shuriken-reviews'); ?></option>
+                    <option value="ASC" <?php selected($saved_order, 'ASC'); ?>><?php esc_html_e('Ascending (lowest first)', 'shuriken-reviews'); ?></option>
                 </select>
             </div>
         </div>

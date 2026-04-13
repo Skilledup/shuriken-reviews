@@ -113,6 +113,7 @@ class Shuriken_Frontend {
         }
 
         $orderby = get_option('shuriken_archive_sort_orderby', 'average');
+        $order   = get_option('shuriken_archive_sort_order', 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
         // Tag the query so filter callbacks can identify it — including any Query Loop
         // block instances that inherit the main query vars on block themes.
@@ -143,15 +144,15 @@ class Shuriken_Frontend {
             return $join;
         }, 10, 2);
 
-        add_filter('posts_orderby', function (string $orderby_clause, \WP_Query $q) use ($orderby) {
+        add_filter('posts_orderby', function (string $orderby_clause, \WP_Query $q) use ($orderby, $order) {
             if (!$q->get('_shuriken_sort')) {
                 return $orderby_clause;
             }
             if ($orderby === 'votes') {
-                return 'COALESCE(shuriken_scores.shuriken_votes, 0) DESC, ' . $orderby_clause;
+                return 'COALESCE(shuriken_scores.shuriken_votes, 0) ' . $order . ', ' . $orderby_clause;
             }
             // Default: average
-            return 'CASE WHEN COALESCE(shuriken_scores.shuriken_votes, 0) = 0 THEN 0 ELSE (shuriken_scores.shuriken_total / shuriken_scores.shuriken_votes) END DESC, ' . $orderby_clause;
+            return 'CASE WHEN COALESCE(shuriken_scores.shuriken_votes, 0) = 0 THEN 0 ELSE (shuriken_scores.shuriken_total / shuriken_scores.shuriken_votes) END ' . $order . ', ' . $orderby_clause;
         }, 10, 2);
     }
 
