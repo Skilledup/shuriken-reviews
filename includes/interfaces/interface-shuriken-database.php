@@ -57,14 +57,15 @@ interface Shuriken_Database_Interface {
      *
      * @param string      $name         Rating name.
      * @param int|null    $parent_id    Parent rating ID.
-     * @param string      $effect_type  Effect type ('positive' or 'negative').
-     * @param bool        $display_only Whether rating is display-only.
-     * @param int|null    $mirror_of    ID of rating to mirror.
-     * @param string      $rating_type  Rating type ('stars', 'like_dislike', 'numeric', 'approval').
-     * @param int         $scale        Display scale (2-10 for stars, 2-100 for numeric, 1 for binary types).
+     * @param string      $effect_type       Effect type ('positive' or 'negative').
+     * @param bool        $display_only      Whether rating is display-only.
+     * @param int|null    $mirror_of         ID of rating to mirror.
+     * @param string      $rating_type       Rating type ('stars', 'like_dislike', 'numeric', 'approval').
+     * @param int         $scale             Display scale (2-10 for stars, 2-100 for numeric, 1 for binary types).
+     * @param string|null $label_description Optional description displayed beneath the rating title.
      * @return int|false New rating ID or false on failure.
      */
-    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = 5): int;
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = 5, ?string $label_description = null): int;
 
     /**
      * Update a rating

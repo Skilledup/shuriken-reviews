@@ -72,6 +72,7 @@
                 mirrorId,
                 subRatings,
                 postContext,
+                hideTitle,
                 gap,
                 buttonColor
             } = attributes;
@@ -835,6 +836,12 @@
                             checked: postContext,
                             onChange: function (value) { setAttributes({ postContext: value }); },
                             help: __('When enabled, votes are counted separately for each post/page this block appears on.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Hide title & description', 'shuriken-reviews'),
+                            checked: hideTitle,
+                            onChange: function (value) { setAttributes({ hideTitle: value }); },
+                            help: __('Hide rating titles and descriptions. Useful in Query Loop layouts.', 'shuriken-reviews')
                         })
                     ),
 
@@ -1699,11 +1706,12 @@
                                         wp.element.createElement(
                                             'div',
                                             { className: 'shuriken-rating-wrapper' },
-                                            wp.element.createElement(
+                                            !hideTitle && wp.element.createElement(
                                                 titleTag,
                                                 { className: 'rating-title' },
                                                 parentDisplayRating.name
                                             ),
+                                            !hideTitle && parentDisplayRating.label_description && wp.element.createElement('p', { className: 'rating-description' }, parentDisplayRating.label_description),
                                             renderRatingPreview(parentDisplayRating, wp.element.createElement)[0],
                                             renderRatingPreview(parentDisplayRating, wp.element.createElement)[1]
                                         )
@@ -1719,11 +1727,12 @@
                                                 wp.element.createElement(
                                                     'div',
                                                     { className: 'shuriken-rating-wrapper' },
-                                                    wp.element.createElement(
+                                                    !hideTitle && wp.element.createElement(
                                                         'h4',
                                                         { className: 'rating-title' },
                                                         child.name
                                                     ),
+                                                    !hideTitle && child.label_description && wp.element.createElement('p', { className: 'rating-description' }, child.label_description),
                                                     renderRatingPreview(child, wp.element.createElement)[0],
                                                     renderRatingPreview(child, wp.element.createElement)[1]
                                                 )

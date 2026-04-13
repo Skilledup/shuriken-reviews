@@ -109,6 +109,7 @@ class Shuriken_Shortcodes {
             'accent_color' => '',
             'star_color'   => '',
             'button_color' => '',
+            'hide_title'   => '',
             'context_id'   => 0,
             'context_type' => '',
         ), $atts, 'shuriken_rating');
@@ -146,12 +147,16 @@ class Shuriken_Shortcodes {
             return '';
         }
 
+        // Resolve hide_title flag
+        $hide_title = filter_var($atts['hide_title'], FILTER_VALIDATE_BOOLEAN);
+
         $html = $this->render_rating_html(
             $rating,
             $tag,
             $anchor_id,
             $context_id   ?: null,
-            $context_type ?: null
+            $context_type ?: null,
+            $hide_title
         );
 
         return $this->wrap_with_style_attributes($html, $atts);
@@ -165,9 +170,10 @@ class Shuriken_Shortcodes {
      * @param string      $anchor_id    Optional anchor ID.
      * @param int|null    $context_id   Optional post/entity ID for contextual stats.
      * @param string|null $context_type Optional context type ('post', 'product', etc.).
+     * @param bool        $hide_title   Whether to hide the title and description.
      * @return string Rendered HTML.
      */
-    public function render_rating_html(object $rating, string $tag = 'h2', string $anchor_id = '', ?int $context_id = null, ?string $context_type = null): string {
+    public function render_rating_html(object $rating, string $tag = 'h2', string $anchor_id = '', ?int $context_id = null, ?string $context_type = null, bool $hide_title = false): string {
         /**
          * Filter the rating data before rendering.
          *
@@ -298,9 +304,14 @@ class Shuriken_Shortcodes {
         ?>
         <div class="<?php echo esc_attr($css_classes); ?>" data-id="<?php echo esc_attr($rating->source_id); ?>" data-max-stars="<?php echo esc_attr($max_stars); ?>" data-rating-type="<?php echo esc_attr($rating_type); ?>"<?php echo $context_attrs; ?> <?php echo $anchor_id ? 'id="' . esc_attr($anchor_id) . '"' : ''; ?>>
             <div class="shuriken-rating-wrapper">
+                <?php if (!$hide_title): ?>
                 <<?php echo tag_escape($tag); ?> class="rating-title">
                     <?php echo esc_html($rating->name); ?>
                 </<?php echo tag_escape($tag); ?>>
+                <?php if (!empty($rating->label_description)): ?>
+                <p class="rating-description"><?php echo esc_html($rating->label_description); ?></p>
+                <?php endif; ?>
+                <?php endif; ?>
                 
                 <?php if ($rating_type === 'like_dislike'):
                     /**
@@ -509,6 +520,7 @@ class Shuriken_Shortcodes {
             'button_color' => '',
             'gap'          => '',
             'layout'       => 'grid',
+            'hide_title'   => '',
             'context_id'   => 0,
             'context_type' => '',
         ), $atts, 'shuriken_grouped_rating');
@@ -560,8 +572,11 @@ class Shuriken_Shortcodes {
               . ($anchor_id ? ' id="' . esc_attr($anchor_id) . '"' : '')
               . $style_attr . '>';
 
+        // Resolve hide_title flag
+        $hide_title = filter_var($atts['hide_title'], FILTER_VALIDATE_BOOLEAN);
+
         // Render parent
-        $parent_html = $this->render_rating_html($parent, $tag, '', $ctx_id, $ctx_type);
+        $parent_html = $this->render_rating_html($parent, $tag, '', $ctx_id, $ctx_type, $hide_title);
         $parent_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
         $html .= $parent_html;
 
@@ -569,7 +584,7 @@ class Shuriken_Shortcodes {
         if (!empty($child_ratings)) {
             $html .= '<div class="shuriken-child-ratings">';
             foreach ($child_ratings as $child) {
-                $child_html = $this->render_rating_html($child, 'h4', '', $ctx_id, $ctx_type);
+                $child_html = $this->render_rating_html($child, 'h4', '', $ctx_id, $ctx_type, $hide_title);
                 $child_html = preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
                 $html .= $child_html;
             }

@@ -86,6 +86,10 @@
             "type": "boolean",
             "default": false
         },
+        "hideTitle": {
+            "type": "boolean",
+            "default": false
+        },
         "gap": {
             "type": "string",
             "default": ""

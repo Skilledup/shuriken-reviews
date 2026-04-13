@@ -227,8 +227,8 @@ class Shuriken_Database implements Shuriken_Database_Interface {
     }
 
     /** @inheritDoc */
-    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = self::RATING_SCALE_DEFAULT): int {
-        return $this->ratings->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = self::RATING_SCALE_DEFAULT, ?string $label_description = null): int {
+        return $this->ratings->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale, $label_description);
     }
 
     /** @inheritDoc */

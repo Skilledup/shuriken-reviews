@@ -309,8 +309,11 @@ class Shuriken_Block {
             $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
         }
 
+        // Determine whether to hide the title and description
+        $hide_title = !empty($attributes['hideTitle']);
+
         // Use the shared render method from Shortcodes class
-        $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag, $context_id, $context_type);
+        $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag, $context_id, $context_type, $hide_title);
 
         // Wrap with block wrapper attributes for proper Gutenberg integration
         return $this->wrap_with_block_attributes($html, $rating, $anchor_tag, $style_vars);
@@ -422,17 +425,20 @@ class Shuriken_Block {
             $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
         }
 
+        // Determine whether to hide the title and description
+        $hide_title = !empty($attributes['hideTitle']);
+
         // Render parent rating
         $html = '<div class="shuriken-rating-group' . esc_attr($layout_class) . '">';
         // Add parent-rating class to the wrapper of the parent rating
-        $parent_html = shuriken_shortcodes()->render_rating_html($parent_display_rating, $title_tag, $anchor_tag, $context_id, $context_type);
+        $parent_html = shuriken_shortcodes()->render_rating_html($parent_display_rating, $title_tag, $anchor_tag, $context_id, $context_type, $hide_title);
         $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating parent-rating', $parent_html, 1);
 
         // Render child ratings
         if (!empty($child_ratings)) {
             $html .= '<div class="shuriken-child-ratings">';
             foreach ($child_ratings as $child) {
-                $child_html = shuriken_shortcodes()->render_rating_html($child, 'h4', '', $context_id, $context_type);
+                $child_html = shuriken_shortcodes()->render_rating_html($child, 'h4', '', $context_id, $context_type, $hide_title);
                 // Add child-rating class
                 $html .= preg_replace('/class="shuriken-rating/', 'class="shuriken-rating child-rating', $child_html, 1);
             }

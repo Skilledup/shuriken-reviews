@@ -45,7 +45,7 @@
         icon: iconStar(24),
         edit: function (props) {
             const { attributes, setAttributes } = props;
-            const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext, buttonColor } = attributes;
+            const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext, hideTitle, buttonColor } = attributes;
 
             // Local UI state
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -379,6 +379,14 @@
                                 setAttributes({ postContext: value });
                             },
                             help: __('When enabled, votes are counted separately for each post/page this block appears on.', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(CheckboxControl, {
+                            label: __('Hide title & description', 'shuriken-reviews'),
+                            checked: hideTitle,
+                            onChange: function (value) {
+                                setAttributes({ hideTitle: value });
+                            },
+                            help: __('Hide the rating title and description. Useful in Query Loop layouts.', 'shuriken-reviews')
                         })
                     ),
                     // Colors Panel (type-aware)
@@ -674,7 +682,8 @@
                                 ? wp.element.createElement(
                                     'div',
                                     { className: 'shuriken-rating-wrapper' },
-                                    wp.element.createElement(titleTag, { className: 'rating-title' }, selectedRating.name),
+                                    !hideTitle && wp.element.createElement(titleTag, { className: 'rating-title' }, selectedRating.name),
+                                    !hideTitle && selectedRating.label_description && wp.element.createElement('p', { className: 'rating-description' }, selectedRating.label_description),
                                     preview[0],
                                     preview[1]
                                 )

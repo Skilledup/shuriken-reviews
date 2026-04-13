@@ -271,7 +271,8 @@ class Shuriken_Admin {
             }
 
             if (!empty($name)) {
-                $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
+                $label_description = isset($_POST['label_description']) && $_POST['label_description'] !== '' ? sanitize_text_field($_POST['label_description']) : null;
+                $result = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale, $label_description);
                 if ($result) {
                     wp_redirect(admin_url('admin.php?page=shuriken-reviews&message=created'));
                     exit;

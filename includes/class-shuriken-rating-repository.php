@@ -25,7 +25,7 @@ class Shuriken_Rating_Repository {
     /**
      * @var string Standard rating fields for SELECT queries
      */
-    private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, rating_type, scale, date_created';
+    private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, rating_type, scale, label_description, date_created';
 
     /**
      * Constructor
@@ -207,15 +207,16 @@ class Shuriken_Rating_Repository {
      * @param string   $name         Rating name
      * @param int|null $parent_id    Parent rating ID (optional)
      * @param string   $effect_type  Effect type on parent: 'positive' or 'negative'
-     * @param bool     $display_only Whether the rating is display-only
-     * @param int|null $mirror_of    Original rating ID to mirror (optional)
-     * @param string   $rating_type  Rating type
-     * @param int      $scale        Display scale
+     * @param bool        $display_only      Whether the rating is display-only
+     * @param int|null    $mirror_of         Original rating ID to mirror (optional)
+     * @param string      $rating_type       Rating type
+     * @param int         $scale             Display scale
+     * @param string|null $label_description Optional description displayed beneath the rating title
      * @return int The new rating ID
      * @throws Shuriken_Database_Exception If insert fails
      * @throws Shuriken_Validation_Exception If name is empty
      */
-    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): int {
+    public function create_rating(string $name, ?int $parent_id = null, string $effect_type = 'positive', bool $display_only = false, ?int $mirror_of = null, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $label_description = null): int {
         $sanitized_name = sanitize_text_field($name);
 
         if (empty($sanitized_name)) {
@@ -246,6 +247,11 @@ class Shuriken_Rating_Repository {
             'scale' => $scale,
         );
         $format = array('%s', '%s', '%d', '%s', '%d');
+
+        if ($label_description !== null && $label_description !== '') {
+            $insert_data['label_description'] = sanitize_text_field($label_description);
+            $format[] = '%s';
+        }
 
         // Mirror takes precedence - if mirroring, ignore parent_id
         if ($mirror_of !== null && $mirror_of > 0) {
@@ -318,7 +324,7 @@ class Shuriken_Rating_Repository {
             }
         }
 
-        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of', 'rating_type', 'scale');
+        $allowed_fields = array('name', 'total_votes', 'total_rating', 'parent_id', 'effect_type', 'display_only', 'mirror_of', 'rating_type', 'scale', 'label_description');
         $update_data = array();
         $format = array();
 
@@ -343,6 +349,9 @@ class Shuriken_Rating_Repository {
                 } elseif ($key === 'display_only') {
                     $update_data[$key] = $value ? 1 : 0;
                     $format[] = '%d';
+                } elseif ($key === 'label_description') {
+                    $update_data[$key] = ($value === null || $value === '') ? null : sanitize_text_field($value);
+                    $format[] = $update_data[$key] === null ? null : '%s';
                 } else {
                     $update_data[$key] = intval($value);
                     $format[] = '%d';

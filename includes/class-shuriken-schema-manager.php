@@ -57,6 +57,7 @@ class Shuriken_Schema_Manager {
             mirror_of mediumint(9) DEFAULT NULL,
             rating_type varchar(20) NOT NULL DEFAULT 'stars',
             scale tinyint unsigned NOT NULL DEFAULT 5,
+            label_description varchar(500) DEFAULT NULL,
             date_created datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY parent_id (parent_id),
@@ -196,6 +197,17 @@ class Shuriken_Schema_Manager {
             if (!empty($rating_value_col) && stripos($rating_value_col[0]->Type, 'int') !== false) {
                 $this->wpdb->query("ALTER TABLE {$this->votes_table} MODIFY rating_value DECIMAL(5,2) NOT NULL");
                 $this->wpdb->query("ALTER TABLE {$this->ratings_table} MODIFY total_rating DECIMAL(10,2) DEFAULT 0");
+            }
+        }
+
+        // v1.8.0: Add label_description column to ratings table
+        if (version_compare($current_version, '1.8.0', '<')) {
+            $col_exists = $this->wpdb->get_results(
+                "SHOW COLUMNS FROM {$this->ratings_table} LIKE 'label_description'"
+            );
+
+            if (empty($col_exists)) {
+                $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN label_description varchar(500) DEFAULT NULL AFTER scale");
             }
         }
 

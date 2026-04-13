@@ -61,7 +61,8 @@ if (isset($_POST['inline_edit']) && check_admin_referer('shuriken_inline_edit', 
             'effect_type' => $effect_type,
             'display_only' => $display_only,
             'rating_type' => isset($_POST['rating_type']) ? sanitize_text_field($_POST['rating_type']) : 'stars',
-            'scale' => isset($_POST['scale']) ? intval($_POST['scale']) : 5
+            'scale' => isset($_POST['scale']) ? intval($_POST['scale']) : 5,
+            'label_description' => isset($_POST['label_description']) ? sanitize_text_field($_POST['label_description']) : null,
         );
         
         // If converting from mirror, clear the mirror_of field
@@ -592,6 +593,13 @@ $col_class = function($col) use ($hidden_columns) {
                                                 <span class="description"><?php esc_html_e('Visitors cannot vote directly (only via sub-ratings)', 'shuriken-reviews'); ?></span>
                                             </span>
                                         </label>
+                                        
+                                        <label>
+                                            <span class="title"><?php esc_html_e('Description', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <input type="text" name="label_description" value="<?php echo esc_attr($rating->label_description ?? ''); ?>" placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>" maxlength="500">
+                                            </span>
+                                        </label>
                                     </div>
                                 </fieldset>
                                 
@@ -832,6 +840,22 @@ $col_class = function($col) use ($hidden_columns) {
                             </label>
                             <p class="description">
                                 <?php esc_html_e('Enable this for parent ratings where visitors should only vote via sub-ratings.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="label_description"><?php esc_html_e('Description', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text"
+                                   name="label_description"
+                                   id="label_description"
+                                   class="regular-text"
+                                   maxlength="500"
+                                   placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>">
+                            <p class="description">
+                                <?php esc_html_e('Optional text displayed beneath the rating title.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>

@@ -234,6 +234,12 @@ class Shuriken_REST_Ratings_Controller {
                 'default'           => 5,
                 'sanitize_callback' => 'absint',
             ),
+            'label_description' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'default'           => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ),
         );
     }
 
@@ -283,6 +289,11 @@ class Shuriken_REST_Ratings_Controller {
                 'type'              => 'integer',
                 'sanitize_callback' => 'absint',
             ),
+            'label_description' => array(
+                'required'          => false,
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+            ),
         );
     }
 
@@ -316,12 +327,13 @@ class Shuriken_REST_Ratings_Controller {
             $display_only = $request->get_param('display_only') ?: false;
             $rating_type = $request->get_param('rating_type') ?: 'stars';
             $scale = $request->get_param('scale') ?: Shuriken_Database::RATING_SCALE_DEFAULT;
+            $label_description = $request->get_param('label_description') ?: null;
             
             // Convert 0 to null for parent_id and mirror_of
             $parent_id = $parent_id ? intval($parent_id) : null;
             $mirror_of = $mirror_of ? intval($mirror_of) : null;
             
-            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale);
+            $new_id = $this->db->create_rating($name, $parent_id, $effect_type, $display_only, $mirror_of, $rating_type, $scale, $label_description);
             
             if ($new_id === false) {
                 throw Shuriken_Database_Exception::insert_failed('ratings');
@@ -433,6 +445,11 @@ class Shuriken_REST_Ratings_Controller {
             
             if ($request->has_param('scale')) {
                 $update_data['scale'] = $request->get_param('scale');
+            }
+            
+            if ($request->has_param('label_description')) {
+                $desc = $request->get_param('label_description');
+                $update_data['label_description'] = ($desc === '' || $desc === null) ? null : $desc;
             }
             
             if (empty($update_data)) {

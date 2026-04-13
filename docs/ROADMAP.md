@@ -143,8 +143,9 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
 - [ ] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
-- [ ] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
-- [ ] We need to add the abiliy to hide Rating title (and description) (for FSE blocks and Shortcodes), this also helps with Query loop where we want to show ratings without title/description for each item.
+- [x] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
+- [x] **Hide title & description** — `hideTitle` block attribute and `hide_title` shortcode attribute suppress the rating title and description; particularly useful in Query Loop layouts where each item shouldn't repeat the rating name
+- [ ] **Star rating with multiple icons** — the current star rating type only supports a single icon for all stars. We want to support multiple icons (e.g. 1 star = 😡, 2 stars = 🙁, 3 stars = 😐, 4 stars = 🙂, 5 stars = 😍) with a mapping of icon per rating value. This is a separate system from Emoji reactions system.
 
 ---
 
@@ -152,6 +153,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 ### Engagement & Analytics
 - [ ] Mirror vote tracking — mirror vs. original vote breakdown, per-mirror stats, comparison view, CSV export
+- [ ] Engagement factor metric — new field on stats response; formula based on votes-to-views ratio; configurable thresholds for "high engagement" badges in analytics, and potential frontend display, a base for social-network algorithmic sorting features in the future
 
 ### Content Features
 - [ ] Rating notes/comments — notes table + CRUD; frontend UI; admin moderation; REST endpoints
@@ -162,6 +164,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 ### Internationalization
 - [ ] Alternative calendar display hook — `shuriken_display_date` filter; route all dates through helper (Jalali/Shamsi)
+- [ ] Native multilingual support — WPML/Polylang compatibility for rating titles/descriptions.
 
 ---
 
