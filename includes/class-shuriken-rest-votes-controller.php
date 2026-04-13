@@ -20,6 +20,8 @@ if (!defined('ABSPATH')) {
  */
 class Shuriken_REST_Votes_Controller {
 
+    use Shuriken_REST_Permissions;
+
     /**
      * Constructor
      *
@@ -95,20 +97,6 @@ class Shuriken_REST_Votes_Controller {
                 ),
             ),
         ));
-    }
-
-    // =========================================================================
-    // Permission Callbacks
-    // =========================================================================
-
-    /**
-     * Check if user can edit posts
-     *
-     * @param WP_REST_Request $request The request object (optional).
-     * @return bool
-     */
-    public function can_edit_posts(\WP_REST_Request $request = null): bool {
-        return current_user_can('edit_posts');
     }
 
     // =========================================================================
