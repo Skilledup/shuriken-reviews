@@ -96,6 +96,9 @@
             const [newChildType, setNewChildType] = useState('stars');
             const [newChildScale, setNewChildScale] = useState(5);
             const [newChildDisplayOnly, setNewChildDisplayOnly] = useState(false);
+            const [newParentDescription, setNewParentDescription] = useState('');
+            const [editParentDescription, setEditParentDescription] = useState('');
+            const [newChildDescription, setNewChildDescription] = useState('');
             const [creating, setCreating] = useState(false);
             const [updating, setUpdating] = useState(false);
             const [managingChildren, setManagingChildren] = useState(false);
@@ -206,8 +209,8 @@
                 // Wait for sub-rating mirror data
                 !subMirrorDataReady;
 
-            // Combined error state (local UI errors + store-level errors)
-            const combinedError = error || storeError;
+            // Combined error state (local UI errors only — scoped per block)
+            const combinedError = error;
 
             // ---- Error handling (shared) ----
             const handleApiError = makeErrorHandler(setError, setLastFailedAction);
@@ -424,7 +427,8 @@
                     name: newParentName,
                     display_only: newParentDisplayOnly,
                     rating_type: newParentType,
-                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newParentScale))
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newParentScale)),
+                    label_description: newParentDescription
                 })
                     .then(function (data) {
                         setAttributes({ ratingId: parseInt(data.id, 10), mirrorId: 0, subRatings: [] });
@@ -433,6 +437,7 @@
                         setNewParentDisplayOnly(true);
                         setNewParentType('stars');
                         setNewParentScale(5);
+                        setNewParentDescription('');
                         setIsCreateModalOpen(false);
                         setCreating(false);
                         setError(null);
@@ -450,6 +455,7 @@
                 setEditParentDisplayOnly(dv === true || dv === 'true' || parseInt(dv, 10) === 1);
                 setEditParentType(selectedRating.rating_type || 'stars');
                 setEditParentScale(parseInt(selectedRating.scale, 10) || 5);
+                setEditParentDescription(selectedRating.label_description || '');
                 setIsEditModalOpen(true);
             }
 
@@ -461,7 +467,8 @@
                     name: editParentName,
                     display_only: editParentDisplayOnly,
                     rating_type: editParentType,
-                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, editParentScale))
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, editParentScale)),
+                    label_description: editParentDescription
                 })
                     .then(function () {
                         fetchParentRatings();
@@ -492,7 +499,8 @@
                     effect_type: newChildEffectType,
                     display_only: newChildDisplayOnly,
                     rating_type: newChildType,
-                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newChildScale))
+                    scale: Math.max(scaleRange.min, Math.min(scaleRange.max, newChildScale)),
+                    label_description: newChildDescription
                 })
                     .then(function (data) {
                         setChildrenToManage(function (prev) { return [data].concat(prev); });
@@ -501,6 +509,7 @@
                         setNewChildType('stars');
                         setNewChildScale(5);
                         setNewChildDisplayOnly(false);
+                        setNewChildDescription('');
                         setManagingChildren(false);
                         setError(null);
                     })
@@ -971,6 +980,7 @@
                             setNewParentDisplayOnly(true);
                             setNewParentType('stars');
                             setNewParentScale(5);
+                            setNewParentDescription('');
                             setNewRatingIsMirror(false);
                             setNewMirrorSourceId(0);
                         },
@@ -1015,6 +1025,13 @@
                             help: newRatingIsMirror
                                 ? __('A display name for this mirror.', 'shuriken-reviews')
                                 : __('This will be the main rating that groups sub-ratings.', 'shuriken-reviews')
+                        }),
+                        !newRatingIsMirror && wp.element.createElement(TextControl, {
+                            label: __('Description', 'shuriken-reviews'),
+                            value: newParentDescription,
+                            onChange: setNewParentDescription,
+                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
                         }),
                         !newRatingIsMirror && wp.element.createElement(CheckboxControl, {
                             label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
@@ -1061,6 +1078,7 @@
                                     setNewParentDisplayOnly(true);
                                     setNewParentType('stars');
                                     setNewParentScale(5);
+                                    setNewParentDescription('');
                                     setNewRatingIsMirror(false);
                                     setNewMirrorSourceId(0);
                                 }
@@ -1100,6 +1118,13 @@
                             onChange: setEditParentName,
                             onKeyDown: handleEditKeyDown,
                             placeholder: __('Enter rating name...', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(TextControl, {
+                            label: __('Description', 'shuriken-reviews'),
+                            value: editParentDescription,
+                            onChange: setEditParentDescription,
+                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
                         }),
                         wp.element.createElement(CheckboxControl, {
                             label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
@@ -1292,6 +1317,7 @@
                             setNewChildType('stars');
                             setNewChildScale(5);
                             setNewChildDisplayOnly(false);
+                            setNewChildDescription('');
                             setChildrenLocalEdits({});
                             setNewChildMirrorNames({});
                             setEditingMirrorNames({});
@@ -1330,6 +1356,13 @@
                             onChange: setNewChildName,
                             onKeyDown: handleChildKeyDown,
                             placeholder: __('e.g., Build Quality, Features, Value for Money', 'shuriken-reviews')
+                        }),
+                        wp.element.createElement(TextControl, {
+                            label: __('Description', 'shuriken-reviews'),
+                            value: newChildDescription,
+                            onChange: setNewChildDescription,
+                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
                         }),
                         wp.element.createElement(SelectControl, {
                             label: __('Effect on Parent', 'shuriken-reviews'),

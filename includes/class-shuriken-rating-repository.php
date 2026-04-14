@@ -311,9 +311,14 @@ class Shuriken_Rating_Repository {
                 if (!empty($existing->mirror_of)) {
                     unset($data['rating_type'], $data['scale']);
                 } elseif ($existing->total_votes > 0) {
-                    $type_changed = isset($data['rating_type']) && $data['rating_type'] !== ($existing->rating_type ?? 'stars');
-                    $scale_changed = isset($data['scale']) && intval($data['scale']) !== intval($existing->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT);
-                    if ($type_changed || $scale_changed) {
+                    // Strip unchanged values to avoid false-positive validation errors
+                    if (isset($data['rating_type']) && $data['rating_type'] === ($existing->rating_type ?? 'stars')) {
+                        unset($data['rating_type']);
+                    }
+                    if (isset($data['scale']) && intval($data['scale']) === intval($existing->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT)) {
+                        unset($data['scale']);
+                    }
+                    if (isset($data['rating_type']) || isset($data['scale'])) {
                         throw Shuriken_Validation_Exception::invalid_value(
                             'rating_type',
                             $data['rating_type'] ?? '',

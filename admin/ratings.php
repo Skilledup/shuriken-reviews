@@ -503,6 +503,13 @@ $col_class = function($col) use ($hidden_columns) {
                                         </label>
                                         
                                         <label>
+                                            <span class="title"><?php esc_html_e('Description', 'shuriken-reviews'); ?></span>
+                                            <span class="input-text-wrap">
+                                                <input type="text" name="label_description" value="<?php echo esc_attr($rating->label_description ?? ''); ?>" placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>" maxlength="500">
+                                            </span>
+                                        </label>
+                                        
+                                        <label>
                                             <span class="title"><?php esc_html_e('Type', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
                                                 <?php if ($type_locked): ?>
@@ -591,13 +598,6 @@ $col_class = function($col) use ($hidden_columns) {
                                             <span class="input-text-wrap">
                                                 <input type="checkbox" name="display_only" value="1" <?php checked($rating->display_only, 1); ?>>
                                                 <span class="description"><?php esc_html_e('Visitors cannot vote directly (only via sub-ratings)', 'shuriken-reviews'); ?></span>
-                                            </span>
-                                        </label>
-                                        
-                                        <label>
-                                            <span class="title"><?php esc_html_e('Description', 'shuriken-reviews'); ?></span>
-                                            <span class="input-text-wrap">
-                                                <input type="text" name="label_description" value="<?php echo esc_attr($rating->label_description ?? ''); ?>" placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>" maxlength="500">
                                             </span>
                                         </label>
                                     </div>
@@ -739,6 +739,22 @@ $col_class = function($col) use ($hidden_columns) {
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="label_description"><?php esc_html_e('Description', 'shuriken-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text"
+                                   name="label_description"
+                                   id="label_description"
+                                   class="regular-text"
+                                   maxlength="500"
+                                   placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>">
+                            <p class="description">
+                                <?php esc_html_e('Optional text displayed beneath the rating title.', 'shuriken-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="rating_type"><?php esc_html_e('Rating Type', 'shuriken-reviews'); ?></label>
                         </th>
                         <td>
@@ -840,22 +856,6 @@ $col_class = function($col) use ($hidden_columns) {
                             </label>
                             <p class="description">
                                 <?php esc_html_e('Enable this for parent ratings where visitors should only vote via sub-ratings.', 'shuriken-reviews'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="label_description"><?php esc_html_e('Description', 'shuriken-reviews'); ?></label>
-                        </th>
-                        <td>
-                            <input type="text"
-                                   name="label_description"
-                                   id="label_description"
-                                   class="regular-text"
-                                   maxlength="500"
-                                   placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>">
-                            <p class="description">
-                                <?php esc_html_e('Optional text displayed beneath the rating title.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>

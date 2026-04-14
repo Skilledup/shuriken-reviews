@@ -68,6 +68,8 @@
             const [newRatingScale, setNewRatingScale] = useState(5);
             const [editRatingType, setEditRatingType] = useState('stars');
             const [editRatingScale, setEditRatingScale] = useState(5);
+            const [newRatingDescription, setNewRatingDescription] = useState('');
+            const [editRatingDescription, setEditRatingDescription] = useState('');
 
             // Search state
             const [searchTerm, setSearchTerm] = useState('');
@@ -129,7 +131,7 @@
             });
 
             // Combined error state
-            const error = localError || storeError;
+            const error = localError;
 
             // Error handling helpers (shared)
             const handleApiError = makeErrorHandler(setLocalError, setLastFailedAction);
@@ -186,6 +188,8 @@
                     requestData.display_only = newRatingDisplayOnly;
                 }
 
+                requestData.label_description = newRatingDescription;
+
                 storeCreateRating(requestData)
                     .then(function (data) {
                         setAttributes({ ratingId: parseInt(data.id, 10) });
@@ -196,6 +200,7 @@
                         setNewRatingDisplayOnly(false);
                         setNewRatingType('stars');
                         setNewRatingScale(5);
+                        setNewRatingDescription('');
                         setIsModalOpen(false);
                         setCreating(false);
                     })
@@ -219,6 +224,7 @@
                 setEditRatingDisplayOnly(isDisplayOnly);
                 setEditRatingType(selectedRating.rating_type || 'stars');
                 setEditRatingScale(parseInt(selectedRating.scale, 10) || 5);
+                setEditRatingDescription(selectedRating.label_description || '');
                 setIsEditModalOpen(true);
             }
 
@@ -251,6 +257,8 @@
                         requestData.display_only = editRatingDisplayOnly;
                     }
                 }
+
+                requestData.label_description = editRatingDescription;
 
                 storeUpdateRating(selectedRating.id, requestData)
                     .then(function () {
@@ -311,7 +319,7 @@
             var preview = selectedRating ? renderRatingPreview(selectedRating, wp.element.createElement) : [null, null];
 
             // Loading state
-            var loading = isLoadingRating || (ratingId && !selectedRating && !error);
+            var loading = isLoadingRating || (ratingId && !selectedRating && !localError && !storeError);
 
             // ---- Render ----
             return wp.element.createElement(
@@ -422,6 +430,7 @@
                             setNewRatingDisplayOnly(false);
                             setNewRatingType('stars');
                             setNewRatingScale(5);
+                            setNewRatingDescription('');
                         },
                         style: { width: '500px' }
                     },
@@ -432,6 +441,13 @@
                         onKeyDown: handleKeyDown,
                         placeholder: __('Enter rating name...', 'shuriken-reviews'),
                         help: __('Enter a descriptive name for this rating.', 'shuriken-reviews')
+                    }),
+                    wp.element.createElement(TextControl, {
+                        label: __('Description', 'shuriken-reviews'),
+                        value: newRatingDescription,
+                        onChange: setNewRatingDescription,
+                        placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
+                        help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),
@@ -545,6 +561,13 @@
                         value: editRatingName,
                         onChange: setEditRatingName,
                         onKeyDown: handleEditKeyDown
+                    }),
+                    wp.element.createElement(TextControl, {
+                        label: __('Description', 'shuriken-reviews'),
+                        value: editRatingDescription,
+                        onChange: setEditRatingDescription,
+                        placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
+                        help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),
