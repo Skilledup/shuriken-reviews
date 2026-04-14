@@ -91,11 +91,53 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 | `Shuriken_REST_Votes_Controller` | ~268 | 3 endpoints: stats (public), context-stats (editor), nonce (public) |
 | `Shuriken_REST_API` (bootstrap) | ~210 | Singleton, controller wiring, `register_routes()` delegation, REST filters |
 
-#### Step 6 — Platform & Add-on Extensibility
+#### Step 6 — Coding Standards & DRY Sweep
+
+Full codebase audit identified **~4,200+ lines** of redundancy, bloat, and maintainability debt across PHP, JS, and admin templates. Items ordered by impact and dependency — decompositions first (they unblock later DRY work), then template/JS cleanup.
+
+##### 6a — `Shuriken_Analytics` Decomposition (2,608 → ~1,300 lines)
+
+The largest file in the codebase. Single class responsible for formatting, ranking, contextual analytics, pagination, and chart data preparation.
+
+- [ ] **Extract `Shuriken_Analytics_Formatter`** (~200 lines) — `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()`. Currently mixed into an analytics class that shouldn't own display logic.
+- [ ] **Extract `Shuriken_Analytics_Ranking`** (~300 lines) — `get_top_rated()`, `get_most_voted()`, `get_low_performers()`. All three share 80% identical SQL (date conditions, effect-type inversion, JOIN structure) and only differ in ORDER BY direction and WHERE thresholds. Consolidate into single parametric `get_ranked_ratings()` with convenience wrappers.
+- [ ] **Merge scoped method duplicates** (~500 lines) — 6 method pairs where `_scoped()` variant is 85–95% identical to the base: `get_votes_over_time`, `get_rating_stats`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`. Merge each pair into single method accepting optional `?string $scope` parameter.
+- [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — single 250-line method computing direct/subs/total stats with 80% duplicated SQL across the three contexts. Extract `get_direct_stats()` and `get_subs_stats()` as private helpers.
+- [ ] **DRY effect-type inversion SQL** — the `CASE WHEN r.effect_type = 'negative' ...` SQL fragment appears **8 times** with slight variations. Extract to static `get_inversion_clause()` query builder method.
+
+##### 6b — Admin Template DRY (~1,500 lines of duplication across 4+ files)
+
+Admin templates (`item-stats.php`, `analytics.php`, `context-stats.php`, `voter-activity.php`, `ratings.php`) contain heavily duplicated HTML/PHP/JS patterns.
+
+- [ ] **Extract partial: `partials/date-filter-bar.php`** — identical date range filter form (preset select + custom range inputs + hidden fields) appears in 4 files (~200 lines total). Accept `$page`, `$range_type`, `$preset_value`, `$start_date`, `$end_date`, `$hidden_fields` as template vars.
+- [ ] **Extract partial: `partials/stats-grid.php`** — `.shuriken-stats-grid` with `.shuriken-stat-card` children repeated 15+ times across 4 files (~300 lines total). Accept `$cards` array of `['icon', 'value', 'label']`.
+- [ ] **Extract partial: `partials/votes-table.php`** — identical vote history table structure (thead + voter rendering + pagination) appears in 3 files (~300 lines). Extract voter display logic into `shuriken_render_voter_cell()` helper.
+- [ ] **Extract partial: `partials/pagination.php`** — identical `paginate_links()` block with `displaying-num` + `pagination-links` repeated 6+ times (~100 lines).
+- [ ] **Extract chart init to `assets/js/admin-charts.js`** — inline `<script>` blocks with Chart.js setup (~450 lines across 4 files) are nearly identical: distribution bar chart, dual-axis vote activity chart, approval ring chart, approval trend line chart, cumulative chart. Extract factory functions: `initDistributionChart()`, `initVoteActivityChart()`, `initApprovalChart()`, etc. Pages pass data via `wp_localize_script()` instead of inline JSON.
+- [ ] **Extract helper: `shuriken_format_stat_display()`** — rating-type-conditional display logic (`if like_dislike → %, if approval → count, else → denormalized avg`) repeated 20+ times. Single helper method in `class-shuriken-admin.php`.
+
+##### 6c — Block JS Decomposition (grouped-rating: 1,791 → ~600 lines)
+
+`blocks/shuriken-grouped-rating/index.js` is the largest JS file — a single `edit()` function with 40+ `useState` hooks, 30+ handlers, and 3 inline modals.
+
+- [ ] **Consolidate state into structured objects** — replace 40+ individual `useState` hooks with ~5 state objects: `modals`, `createForm`, `editForm`, `loadingState`, `selectedItems`. Reduces prop drilling and makes state flow tractable.
+- [ ] **Extract modal components** — `<CreateParentModal>`, `<EditParentModal>`, `<ManageChildrenModal>` as separate components. Each modal is 100–200 lines of inline JSX.
+- [ ] **Extract `<CreateRatingForm>` shared component** — rating type selection, scale validation, description field, display-only toggle repeated across `shuriken-rating/index.js` and `shuriken-grouped-rating/index.js` (~250 lines duplicated). Move to `block-helpers.js`.
+- [ ] **Extract `useApiErrorHandling()` hook** — identical error handler setup (`makeErrorHandler`, `makeErrorDismissers`, `retryLastAction`) duplicated in both block `edit()` functions (~60 lines). Centralize in `block-helpers.js`.
+
+##### 6d — Frontend JS & CSS Cleanup
+
+- [ ] **Define constants for selectors and timeouts** — `shuriken-reviews.js` has `.shuriken-rating` hardcoded 20+ times, `.rating-stats` 15+ times, and `4000` ms timeout repeated 4 times. Extract `SELECTORS` and `TIMEOUTS` objects at module scope.
+- [ ] **Fix `setInterval` memory leak** — `shuriken-reviews.js` sets up polling intervals cleaned only by `MutationObserver` on DOM removal, which doesn't fire on client-side page navigation. Add `wp-js-interactivity:navigated` cleanup handler.
+- [ ] **Remove `getTypeClass()` duplication** — identical function in `admin-ratings.js` and `block-helpers.js`. Admin file should reference the shared version.
+- [ ] **Remove unused `useRef` import** — `block-helpers.js` imports `wp.element.useRef` but never uses it.
+- [ ] **Audit unused CSS classes** — `.rating-text` and `.display-only-notice` defined in `shuriken-reviews.css` but not referenced in any template or JS. Remove or verify usage from dynamic output.
+
+#### Step 7 — Platform & Add-on Extensibility
 
 A gap audit was done using the "engagement factor (views vs votes)" feature as a test case to measure how close the plugin is to a WooCommerce-style platform where completely decoupled add-ons can be shipped. The findings below are the concrete openings that need to be closed. Each item describes: what is missing, why it matters, and what minimal change fixes it.
 
-> **Why sixth:** Adding hook slots to focused ~300-line controllers (from Step 5) is surgical. Doing this work on the pre-split 1,064-line monolith would require re-touching the same lines during the controller split anyway.
+> **Why seventh:** Adding hook slots to focused ~300-line controllers (from Step 5) is surgical. Step 6 DRY work reduces the surface area these hooks touch, so slots added here stay stable.
 
 **Admin UI**
 
@@ -131,13 +173,13 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 - [ ] **Container is not externally observable** — `shuriken_container()` is public (good) and `set()` / `bind()` / `singleton()` are all accessible. But there is no event fired after the container is fully built. An add-on that loads after `plugins_loaded` priority 10 must call `shuriken_container()->set(...)` defensively without knowing whether the container has already resolved the service it wants to replace. Fix: fire `do_action('shuriken_container_ready', $container)` at the end of `init_modules()` in the main plugin class.
 
-#### Step 7 — Performance
+#### Step 8 — Performance
 
 - [ ] Server-side render pre-fetch — batch query on frontend page load to avoid per-block queries
 - [ ] Statistics caching — TTL-based cache service in container; invalidate on vote change; optional Redis support
 - [ ] Rate limit performance caching — cache vote counts in transients per user/IP with TTL; invalidate on new vote
 
-> **Why seventh:** Stable service boundaries from Steps 4–5 make a cache service cleanly injectable into the container without coupling it to the monolith.
+> **Why eighth:** Stable service boundaries from Steps 4–5 and clean code from Step 6 make a cache service cleanly injectable without coupling it to bloated classes.
 
 ### Known bugs and Gaps
 
