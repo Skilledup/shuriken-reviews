@@ -393,6 +393,14 @@ class Shuriken_Admin {
             SHURIKEN_REVIEWS_VERSION,
             true
         );
+
+        // Shared i18n and config for all analytics pages
+        wp_localize_script('shuriken-admin-analytics', 'shurikenAnalyticsShared', array(
+            'i18n' => array(
+                'dateRangeEmpty' => __('Please select at least a start or end date.', 'shuriken-reviews'),
+                'dateRangeInvalid' => __('Start date must be before end date.', 'shuriken-reviews'),
+            ),
+        ));
     }
 
     /**
@@ -743,5 +751,28 @@ class Shuriken_Admin {
  */
 function shuriken_admin(): Shuriken_Admin {
     return Shuriken_Admin::get_instance();
+}
+
+/**
+ * Generate a sortable table column header link
+ *
+ * @param string $col Column key
+ * @param string $current_sort Currently active sort column
+ * @param string $current_order Current sort direction ('asc' or 'desc')
+ * @param string $base_url Base URL to append query args to
+ * @param string $label Display label for the column
+ * @param string $param_name Query parameter name for sort column
+ * @param string $order_param Query parameter name for sort direction
+ * @return string HTML anchor tag
+ * @since 1.15.5
+ */
+function shuriken_sort_link(string $col, string $current_sort, string $current_order, string $base_url, string $label, string $param_name = 'sort_by', string $order_param = 'sort_order'): string {
+    $new_order = ($current_sort === $col && $current_order === 'desc') ? 'asc' : 'desc';
+    $url = add_query_arg(array($param_name => $col, $order_param => $new_order), $base_url);
+    $arrow = '';
+    if ($current_sort === $col) {
+        $arrow = $current_order === 'desc' ? ' ▼' : ' ▲';
+    }
+    return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
 }
 

@@ -2,6 +2,8 @@
  * Shuriken Reviews Analytics Charts
  *
  * Handles Chart.js integration for the analytics dashboard.
+ * Also provides shared utilities (date filter, clickable rows, formatDate, colors)
+ * used by all analytics admin pages.
  *
  * @package Shuriken_Reviews
  * @since 1.3.0
@@ -10,7 +12,7 @@
 (function ($) {
     'use strict';
 
-    // Color palette
+    // Color palette — exposed globally for inline page scripts
     var colors = {
         blue: '#2271b1',
         blueLight: 'rgba(34, 113, 177, 0.15)',
@@ -34,6 +36,7 @@
     };
 
     $(document).ready(function () {
+        initDateRangeFilter();
         initClickableRows();
 
         if (typeof shurikenAnalyticsData === 'undefined') {
@@ -235,14 +238,72 @@
     }
 
     /**
-     * Initialize clickable table rows
+     * Initialize clickable table rows (event delegation for dynamically added rows)
      */
     function initClickableRows() {
-        $('.shuriken-clickable-row').on('click', function (e) {
-            if ($(e.target).is('a') || $(e.target).closest('a').length) return;
+        $(document).on('click', '.shuriken-clickable-row', function (e) {
+            if ($(e.target).is('a, button, input') || $(e.target).closest('a, button').length) return;
             var href = $(this).data('href');
             if (href) window.location.href = href;
         });
     }
+
+    /**
+     * Initialize date range filter — auto-detects the form on the current page
+     *
+     * Works with any analytics page that uses the standard filter bar markup:
+     * - A <form> containing a <select class="preset-select">
+     * - A hidden input with name="range_type"
+     * - A .custom-date-range container with start/end date inputs
+     */
+    function initDateRangeFilter() {
+        var $form = $('form:has(.preset-select)');
+        if (!$form.length) return;
+
+        var $select = $form.find('.preset-select');
+        var $customRange = $form.find('.custom-date-range');
+        var $rangeType = $form.find('input[name="range_type"]');
+        var $startDate = $form.find('input[name="start_date"]');
+        var $endDate = $form.find('input[name="end_date"]');
+
+        var shared = typeof shurikenAnalyticsShared !== 'undefined' ? shurikenAnalyticsShared : {};
+        var i18n = shared.i18n || {};
+
+        $select.on('change', function () {
+            if ($(this).val() === 'custom') {
+                $customRange.slideDown(200);
+                $rangeType.val('custom');
+            } else {
+                $customRange.slideUp(200);
+                $rangeType.val('preset');
+                $form.submit();
+            }
+        });
+
+        $form.on('submit', function (e) {
+            if ($rangeType.val() === 'custom') {
+                var startVal = $startDate.val();
+                var endVal = $endDate.val();
+
+                if (!startVal && !endVal) {
+                    alert(i18n.dateRangeEmpty || 'Please select at least a start or end date.');
+                    e.preventDefault();
+                    return false;
+                }
+                if (startVal && endVal && startVal > endVal) {
+                    alert(i18n.dateRangeInvalid || 'Start date must be before end date.');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+
+    // Expose shared utilities for inline page scripts
+    window.shurikenAnalyticsUtils = {
+        colors: colors,
+        formatDate: formatDate,
+        showEmptyState: showEmptyState
+    };
 
 })(jQuery);

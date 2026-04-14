@@ -496,41 +496,4 @@ var shurikenAnalyticsData = {
         sat: <?php echo wp_json_encode(__('Sat', 'shuriken-reviews')); ?>
     }
 };
-
-jQuery(document).ready(function($) {
-    var $dateSelect = $('#date_range');
-    var $customRange = $('.custom-date-range');
-    var $rangeType = $('#range_type');
-    var $form = $('#shuriken-date-filter-form');
-    
-    $dateSelect.on('change', function() {
-        if ($(this).val() === 'custom') {
-            $customRange.slideDown(200);
-            $rangeType.val('custom');
-        } else {
-            $customRange.slideUp(200);
-            $rangeType.val('preset');
-            $form.submit();
-        }
-    });
-    
-    $form.on('submit', function(e) {
-        if ($rangeType.val() === 'custom') {
-            var startDate = $('#start_date').val();
-            var endDate = $('#end_date').val();
-            
-            if (!startDate && !endDate) {
-                alert(<?php echo wp_json_encode(__('Please select at least a start or end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-            
-            if (startDate && endDate && startDate > endDate) {
-                alert(<?php echo wp_json_encode(__('Start date must be before end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-        }
-    });
-});
 </script>

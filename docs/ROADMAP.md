@@ -146,6 +146,9 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 - [x] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
 - [x] **Hide title & description** — `hideTitle` block attribute and `hide_title` shortcode attribute suppress the rating title and description; particularly useful in Query Loop layouts where each item shouldn't repeat the rating name
 - [ ] **Star rating with multiple icons** — the current star rating type only supports a single icon for all stars. We want to support multiple icons (e.g. 1 star = 😡, 2 stars = 🙁, 3 stars = 😐, 4 stars = 🙂, 5 stars = 😍) with a mapping of icon per rating value. This is a separate system from Emoji reactions system.
+- [x] **Date filter not working on contextual item-stats page** — the time period `<select>` change handler was only wired up in the global view's `<script>` block; the contextual view's script was missing the jQuery bindings entirely. Fixed by centralizing into `admin-analytics.js`.
+- [x] **Best Performing avg wrong for binary types** — `get_rating_context_summary()` used `denormalize_average()` on like/dislike's 0–1 ratio, showing `0.2` instead of `100%`. Fixed to compute percentage for binary types.
+- [x] **Admin analytics JS DRY cleanup** — Consolidated 5 duplicate date-range filter handlers, 4 duplicate `formatDate()` definitions, 3 duplicate clickable-row handlers, 2 duplicate `shuriken_sort_link()` definitions, and hardcoded chart color constants. Shared utilities now live in `admin-analytics.js` (`initDateRangeFilter`, `initClickableRows`, `formatDate`, `colors`) with `shurikenAnalyticsShared` localized i18n. `shuriken_sort_link()` moved to `class-shuriken-admin.php` as a global helper.
 
 ---
 

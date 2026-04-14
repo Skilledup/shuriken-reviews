@@ -2114,7 +2114,13 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         if ($best) {
             $summary->best_context_id = (int) $best->context_id;
             $summary->best_context_type = $best->context_type;
-            $summary->best_context_avg = Shuriken_Database::denormalize_average((float) $best->avg_rating, $scale);
+            $rating_type_str = $rating ? ($rating->rating_type ?: 'stars') : 'stars';
+            $type_enum = Shuriken_Rating_Type::tryFrom($rating_type_str) ?? Shuriken_Rating_Type::Stars;
+            if ($type_enum->isBinary()) {
+                $summary->best_context_avg = round((float) $best->avg_rating * 100) . '%';
+            } else {
+                $summary->best_context_avg = Shuriken_Database::denormalize_average((float) $best->avg_rating, $scale);
+            }
             $summary->best_context_votes = (int) $best->votes;
             $summary->best_context_title = $this->get_context_title($best->context_id, $best->context_type);
         } else {

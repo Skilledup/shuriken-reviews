@@ -198,18 +198,6 @@ if ($rating_type === 'like_dislike') {
 }
 } // end: if ($current_scope !== 'contextual') — chart data
 
-// Sort link helper — available in both contextual and global views
-if (!function_exists('shuriken_sort_link')) {
-    function shuriken_sort_link(string $col, string $current_sort, string $current_order, string $base_url, string $label, string $param_name = 'sort_by', string $order_param = 'sort_order'): string {
-        $new_order = ($current_sort === $col && $current_order === 'desc') ? 'asc' : 'desc';
-        $url = add_query_arg(array($param_name => $col, $order_param => $new_order), $base_url);
-        $arrow = '';
-        if ($current_sort === $col) {
-            $arrow = $current_order === 'desc' ? ' ▼' : ' ▲';
-        }
-        return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
-    }
-}
 ?>
 
 <div class="wrap shuriken-analytics shuriken-item-stats">
@@ -1040,15 +1028,15 @@ var shurikenContextData = {
 
 jQuery(document).ready(function($) {
     if (typeof Chart === 'undefined') return;
-    
+
     var d = shurikenContextData;
-    var gridColor = '#f0f0f1';
-    var tickColor = '#646970';
-    
-    function formatDate(dateStr) {
+    var u = window.shurikenAnalyticsUtils || {};
+    var gridColor = u.colors ? u.colors.grid : '#f0f0f1';
+    var tickColor = u.colors ? u.colors.tick : '#646970';
+    var formatDate = u.formatDate || function(dateStr) {
         var date = new Date(dateStr);
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    }
+    };
     
     // Top Posts by Votes (horizontal bar)
     var topCtx = document.getElementById('ctxTopPostsChart');
@@ -1146,12 +1134,6 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
-    // Clickable rows
-    $(document).on('click', '.shuriken-clickable-row', function(e) {
-        if ($(e.target).is('a, button, input') || $(e.target).closest('a, button').length) return;
-        window.location = $(this).data('href');
-    });
 });
 </script>
 <?php else : ?>
@@ -1188,54 +1170,19 @@ var shurikenItemStatsData = {
 };
 
 jQuery(document).ready(function($) {
-    // Date range filter
-    var $itemDateSelect = $('#item_date_range');
-    var $itemCustomRange = $('#shuriken-item-date-filter-form .custom-date-range');
-    var $itemRangeType = $('#item_range_type');
-    var $itemForm = $('#shuriken-item-date-filter-form');
-    
-    $itemDateSelect.on('change', function() {
-        if ($(this).val() === 'custom') {
-            $itemCustomRange.slideDown(200);
-            $itemRangeType.val('custom');
-        } else {
-            $itemCustomRange.slideUp(200);
-            $itemRangeType.val('preset');
-            $itemForm.submit();
-        }
-    });
-    
-    $itemForm.on('submit', function(e) {
-        if ($itemRangeType.val() === 'custom') {
-            var startDate = $('#item_start_date').val();
-            var endDate = $('#item_end_date').val();
-            
-            if (!startDate && !endDate) {
-                alert(<?php echo wp_json_encode(__('Please select at least a start or end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-            if (startDate && endDate && startDate > endDate) {
-                alert(<?php echo wp_json_encode(__('Start date must be before end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-        }
-    });
-    
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js not loaded');
         return;
     }
     
     var d = shurikenItemStatsData;
-    var gridColor = '#f0f0f1';
-    var tickColor = '#646970';
-    
-    function formatDate(dateStr) {
+    var u = window.shurikenAnalyticsUtils || {};
+    var gridColor = u.colors ? u.colors.grid : '#f0f0f1';
+    var tickColor = u.colors ? u.colors.tick : '#646970';
+    var formatDate = u.formatDate || function(dateStr) {
         var date = new Date(dateStr);
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    }
+    };
     
     if (d.ratingType === 'like_dislike') {
         // Approval Ring Chart

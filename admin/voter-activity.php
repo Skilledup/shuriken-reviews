@@ -485,42 +485,6 @@ var shurikenVoterActivityData = {
 
 // Initialize charts and filters when DOM is ready
 jQuery(document).ready(function($) {
-    // Date range filter handling
-    var $voterDateSelect = $('#voter_date_range');
-    var $voterCustomRange = $('#shuriken-voter-date-filter-form .custom-date-range');
-    var $voterRangeType = $('#voter_range_type');
-    var $voterForm = $('#shuriken-voter-date-filter-form');
-    
-    $voterDateSelect.on('change', function() {
-        if ($(this).val() === 'custom') {
-            $voterCustomRange.slideDown(200);
-            $voterRangeType.val('custom');
-        } else {
-            $voterCustomRange.slideUp(200);
-            $voterRangeType.val('preset');
-            $voterForm.submit();
-        }
-    });
-    
-    $voterForm.on('submit', function(e) {
-        if ($voterRangeType.val() === 'custom') {
-            var startDate = $('#voter_start_date').val();
-            var endDate = $('#voter_end_date').val();
-            
-            if (!startDate && !endDate) {
-                alert(<?php echo wp_json_encode(__('Please select at least a start or end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-            
-            if (startDate && endDate && startDate > endDate) {
-                alert(<?php echo wp_json_encode(__('Start date must be before end date.', 'shuriken-reviews')); ?>);
-                e.preventDefault();
-                return false;
-            }
-        }
-    });
-    
     // Sort control
     $('#voter-sort').on('change', function() {
         var parts = $(this).val().split('-');
@@ -620,16 +584,5 @@ jQuery(document).ready(function($) {
             });
         }
     }
-    
-    // Clickable rows
-    $('.shuriken-clickable-row').on('click', function(e) {
-        if ($(e.target).is('a') || $(e.target).closest('a').length) {
-            return;
-        }
-        var href = $(this).data('href');
-        if (href) {
-            window.location.href = href;
-        }
-    });
 });
 </script>
