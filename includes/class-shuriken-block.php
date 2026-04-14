@@ -38,7 +38,7 @@ class Shuriken_Block {
      * @param Shuriken_Database_Interface $db Database instance.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $db,
     ) {
         add_filter('block_categories_all', $this->register_block_category(...), 10, 2);
         add_action('init', $this->register_block(...));
@@ -73,17 +73,17 @@ class Shuriken_Block {
      */
     public static function get_instance(): self {
         if (null === self::$instance) {
-            self::$instance = new self(shuriken_db());
+            self::$instance = new self(shuriken_ratings_repo());
         }
         return self::$instance;
     }
 
     /**
-     * Get the database instance
+     * Get the rating repository
      *
-     * @return Shuriken_Database_Interface
+     * @return Shuriken_Rating_Repository
      */
-    public function get_db(): Shuriken_Database_Interface {
+    public function get_db(): Shuriken_Rating_Repository {
         return $this->db;
     }
 

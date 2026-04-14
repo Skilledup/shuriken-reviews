@@ -30,10 +30,12 @@ class Shuriken_AJAX {
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface $db Database instance.
+     * @param Shuriken_Rating_Repository $ratings Rating repository.
+     * @param Shuriken_Vote_Repository   $votes   Vote repository.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $ratings,
+        private readonly Shuriken_Vote_Repository $votes,
     ) {
         
         // Rating submission
@@ -48,18 +50,18 @@ class Shuriken_AJAX {
      */
     public static function get_instance(): self {
         if (null === self::$instance) {
-            self::$instance = new self(shuriken_db());
+            self::$instance = new self(shuriken_ratings_repo(), shuriken_votes_repo());
         }
         return self::$instance;
     }
 
     /**
-     * Get the database instance
+     * Get the rating repository
      *
-     * @return Shuriken_Database_Interface
+     * @return Shuriken_Rating_Repository
      */
-    public function get_db(): Shuriken_Database_Interface {
-        return $this->db;
+    public function get_db(): Shuriken_Rating_Repository {
+        return $this->ratings;
     }
 
     /**
@@ -138,7 +140,7 @@ class Shuriken_AJAX {
 
         try {
             // Get the rating first to apply the filter
-            $rating = $this->db->get_rating($rating_id);
+            $rating = $this->ratings->get_rating($rating_id);
             if (!$rating) {
                 throw Shuriken_Not_Found_Exception::rating($rating_id);
             }
@@ -236,12 +238,12 @@ class Shuriken_AJAX {
 
         try {
             // Check if the user has already voted
-            $existing_vote = $this->db->get_user_vote($rating_id, $user_id, $user_ip, $context_id, $context_type);
+            $existing_vote = $this->votes->get_user_vote($rating_id, $user_id, $user_ip, $context_id, $context_type);
             $is_update = !empty($existing_vote);
 
             if ($existing_vote) {
                 // Update the existing vote (use normalized value for storage)
-                $this->db->update_vote(
+                $this->votes->update_vote(
                     $existing_vote->id,
                     $rating_id,
                     $existing_vote->rating_value,
@@ -266,7 +268,7 @@ class Shuriken_AJAX {
                 do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars, $context_id, $context_type);
             } else {
                 // Insert a new vote (use normalized value for storage)
-                $this->db->create_vote($rating_id, $normalized_value, $user_id, $user_ip, $context_id, $context_type);
+                $this->votes->create_vote($rating_id, $normalized_value, $user_id, $user_ip, $context_id, $context_type);
 
                 /**
                  * Fires after a new vote is created.
@@ -287,11 +289,11 @@ class Shuriken_AJAX {
 
             // If this is a sub-rating, recalculate the parent rating
             if (!empty($rating->parent_id)) {
-                $this->db->recalculate_parent_rating($rating->parent_id);
+                $this->ratings->recalculate_parent_rating($rating->parent_id);
             }
 
             // Get updated rating data
-            $updated_rating = $this->db->get_rating($rating_id);
+            $updated_rating = $this->ratings->get_rating($rating_id);
 
         } catch (Shuriken_Exception_Interface $e) {
             Shuriken_Exception_Handler::handle_ajax_exception($e);
@@ -300,7 +302,7 @@ class Shuriken_AJAX {
 
         // For contextual votes, return context-scoped stats instead of global totals
         if ($context_id !== null && $context_type !== null) {
-            $ctx_stats = $this->db->get_contextual_stats($rating_id, $context_id, $context_type, $max_stars);
+            $ctx_stats = $this->ratings->get_contextual_stats($rating_id, $context_id, $context_type, $max_stars);
             $ctx_total_votes = $ctx_stats->total_votes;
             $ctx_total_rating = $ctx_stats->total_rating;
             $ctx_average = $ctx_stats->average;
@@ -335,7 +337,7 @@ class Shuriken_AJAX {
 
         // Also send parent data if applicable
         if (!empty($rating->parent_id)) {
-            $parent_rating = $this->db->get_rating($rating->parent_id);
+            $parent_rating = $this->ratings->get_rating($rating->parent_id);
             if ($parent_rating) {
                 $parent_type = isset($parent_rating->rating_type) ? $parent_rating->rating_type : 'stars';
                 $parent_type = apply_filters('shuriken_rating_type', $parent_type, $parent_rating);
@@ -351,7 +353,7 @@ class Shuriken_AJAX {
 
                 // Use contextual stats for parent too if in context mode
                 if ($context_id !== null && $context_type !== null) {
-                    $parent_ctx = $this->db->get_contextual_stats($parent_rating->source_id, $context_id, $context_type, $parent_max_stars);
+                    $parent_ctx = $this->ratings->get_contextual_stats($parent_rating->source_id, $context_id, $context_type, $parent_max_stars);
                     $response_data['parent_id'] = $parent_rating->id;
                     $response_data['parent_average'] = $parent_ctx->average;
                     $response_data['parent_scaled_average'] = $parent_ctx->display_average;

@@ -49,16 +49,16 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
     public const MEMBER_DAILY_LIMIT_DEFAULT = 100;
 
     /**
-     * @var Shuriken_Database_Interface Database instance
+     * @var Shuriken_Vote_Repository Vote repository
      */
-    private Shuriken_Database_Interface $db;
+    private Shuriken_Vote_Repository $db;
 
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface $db Database instance.
+     * @param Shuriken_Vote_Repository $db Vote repository.
      */
-    public function __construct(Shuriken_Database_Interface $db) {
+    public function __construct(Shuriken_Vote_Repository $db) {
         $this->db = $db;
     }
 

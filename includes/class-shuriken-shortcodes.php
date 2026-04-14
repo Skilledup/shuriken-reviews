@@ -38,7 +38,7 @@ class Shuriken_Shortcodes {
      * @param Shuriken_Database_Interface $db Database instance.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $db,
     ) {
         
         add_shortcode('shuriken_rating', $this->render_rating(...));
@@ -52,17 +52,17 @@ class Shuriken_Shortcodes {
      */
     public static function get_instance(): self {
         if (null === self::$instance) {
-            self::$instance = new self(shuriken_db());
+            self::$instance = new self(shuriken_ratings_repo());
         }
         return self::$instance;
     }
 
     /**
-     * Get the database instance
+     * Get the rating repository
      *
-     * @return Shuriken_Database_Interface
+     * @return Shuriken_Rating_Repository
      */
-    public function get_db(): Shuriken_Database_Interface {
+    public function get_db(): Shuriken_Rating_Repository {
         return $this->db;
     }
 
@@ -276,7 +276,7 @@ class Shuriken_Shortcodes {
         // If contextual, overlay per-context stats onto the rating object
         $context_attrs = '';
         if ($context_id !== null && $context_type !== null) {
-            $ctx_stats = shuriken_db()->get_contextual_stats((int) $rating->source_id, $context_id, $context_type, $max_stars);
+            $ctx_stats = $this->db->get_contextual_stats((int) $rating->source_id, $context_id, $context_type, $max_stars);
 
             /**
              * Filter the per-context stats before they are applied to the rating for rendering.

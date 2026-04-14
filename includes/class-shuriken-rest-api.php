@@ -32,9 +32,9 @@ class Shuriken_REST_API {
     const NAMESPACE = 'shuriken-reviews/v1';
 
     /**
-     * @var Shuriken_Database_Interface Database instance
+     * @var Shuriken_Rating_Repository Rating repository
      */
-    private readonly Shuriken_Database_Interface $db;
+    private readonly Shuriken_Rating_Repository $db;
 
     /**
      * @var Shuriken_REST_Ratings_Controller Rating endpoints
@@ -49,10 +49,10 @@ class Shuriken_REST_API {
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Database instance (optional, for dependency injection).
+     * @param Shuriken_Rating_Repository|null $db Rating repository (optional, for dependency injection).
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
+    public function __construct(?Shuriken_Rating_Repository $db = null) {
+        $this->db = $db ?: shuriken_ratings_repo();
 
         $this->ratings_controller = new Shuriken_REST_Ratings_Controller($this->db, self::NAMESPACE);
         $this->votes_controller   = new Shuriken_REST_Votes_Controller($this->db, self::NAMESPACE);
@@ -80,17 +80,17 @@ class Shuriken_REST_API {
      */
     public static function get_instance(): self {
         if (null === self::$instance) {
-            self::$instance = new self(shuriken_db());
+            self::$instance = new self(shuriken_ratings_repo());
         }
         return self::$instance;
     }
 
     /**
-     * Get the database instance
+     * Get the rating repository
      *
-     * @return Shuriken_Database_Interface
+     * @return Shuriken_Rating_Repository
      */
-    public function get_db(): Shuriken_Database_Interface {
+    public function get_db(): Shuriken_Rating_Repository {
         return $this->db;
     }
 

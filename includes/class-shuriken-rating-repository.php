@@ -40,6 +40,40 @@ class Shuriken_Rating_Repository {
         private readonly string $votes_table,
     ) {}
 
+    // =========================================================================
+    // Accessors
+    // =========================================================================
+
+    /**
+     * Get the wpdb instance
+     *
+     * @return \wpdb
+     * @since 1.15.5
+     */
+    public function get_wpdb(): \wpdb {
+        return $this->wpdb;
+    }
+
+    /**
+     * Get the ratings table name
+     *
+     * @return string
+     * @since 1.15.5
+     */
+    public function get_ratings_table(): string {
+        return $this->ratings_table;
+    }
+
+    /**
+     * Get the votes table name
+     *
+     * @return string
+     * @since 1.15.5
+     */
+    public function get_votes_table(): string {
+        return $this->votes_table;
+    }
+
     /**
      * Compute normalized average and attach display_average to a rating/stats object.
      *

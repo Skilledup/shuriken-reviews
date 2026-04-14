@@ -70,39 +70,56 @@ class Shuriken_Container {
             return Shuriken_Database::get_instance();
         });
 
-        // Register analytics service (depends on database)
+        // Register individual repositories (extracted from database façade)
+        $this->singleton('rating_repository', function($container) {
+            return $container->get('database')->get_rating_repository();
+        });
+
+        $this->singleton('vote_repository', function($container) {
+            return $container->get('database')->get_vote_repository();
+        });
+
+        $this->singleton('schema_manager', function($container) {
+            return $container->get('database')->get_schema_manager();
+        });
+
+        // Register analytics service (depends on rating repository)
         $this->singleton('analytics', function($container) {
-            return new Shuriken_Analytics($container->get('database'));
+            return new Shuriken_Analytics($container->get('rating_repository'));
         });
 
-        // Register voter analytics service (depends on database)
+        // Register voter analytics service (depends on database for raw wpdb)
         $this->singleton('voter_analytics', function($container) {
-            return new Shuriken_Voter_Analytics($container->get('database'));
+            $db = $container->get('database');
+            return new Shuriken_Voter_Analytics($db->get_wpdb(), $db->get_ratings_table(), $db->get_votes_table());
         });
 
-        // Register REST API service (depends on database)
+        // Register REST API service (depends on rating repository)
         $this->singleton('rest_api', function($container) {
-            return new Shuriken_REST_API($container->get('database'));
+            return new Shuriken_REST_API($container->get('rating_repository'));
         });
 
-        // Register shortcodes service (depends on database)
+        // Register shortcodes service (depends on rating repository)
         $this->singleton('shortcodes', function($container) {
-            return new Shuriken_Shortcodes($container->get('database'));
+            return new Shuriken_Shortcodes($container->get('rating_repository'));
         });
 
-        // Register block service (depends on database)
+        // Register block service (depends on rating repository)
         $this->singleton('block', function($container) {
-            return new Shuriken_Block($container->get('database'));
+            return new Shuriken_Block($container->get('rating_repository'));
         });
 
-        // Register AJAX service (depends on database)
+        // Register AJAX service (depends on rating + vote repositories)
         $this->singleton('ajax', function($container) {
-            return new Shuriken_AJAX($container->get('database'));
+            return new Shuriken_AJAX(
+                $container->get('rating_repository'),
+                $container->get('vote_repository')
+            );
         });
 
-        // Register rate limiter service (depends on database)
+        // Register rate limiter service (depends on vote repository)
         $this->singleton('rate_limiter', function($container) {
-            return new Shuriken_Rate_Limiter($container->get('database'));
+            return new Shuriken_Rate_Limiter($container->get('vote_repository'));
         });
 
         // Register frontend service (no dependencies)
@@ -110,10 +127,10 @@ class Shuriken_Container {
             return Shuriken_Frontend::get_instance();
         });
 
-        // Register admin service (depends on database + analytics)
+        // Register admin service (depends on rating repository + analytics)
         $this->singleton('admin', function($container) {
             return new Shuriken_Admin(
-                $container->get('database'),
+                $container->get('rating_repository'),
                 $container->get('analytics')
             );
         });
@@ -263,5 +280,35 @@ function shuriken_analytics(): Shuriken_Analytics_Interface {
  */
 function shuriken_voter_analytics(): Shuriken_Voter_Analytics_Interface {
     return shuriken_container()->get('voter_analytics');
+}
+
+/**
+ * Get the rating repository
+ *
+ * @return Shuriken_Rating_Repository
+ * @since 1.15.5
+ */
+function shuriken_ratings_repo(): Shuriken_Rating_Repository {
+    return shuriken_container()->get('rating_repository');
+}
+
+/**
+ * Get the vote repository
+ *
+ * @return Shuriken_Vote_Repository
+ * @since 1.15.5
+ */
+function shuriken_votes_repo(): Shuriken_Vote_Repository {
+    return shuriken_container()->get('vote_repository');
+}
+
+/**
+ * Get the schema manager
+ *
+ * @return Shuriken_Schema_Manager
+ * @since 1.15.5
+ */
+function shuriken_schema_manager(): Shuriken_Schema_Manager {
+    return shuriken_container()->get('schema_manager');
 }
 

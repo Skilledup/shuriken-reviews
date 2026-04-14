@@ -28,33 +28,29 @@ class Shuriken_Voter_Analytics implements Shuriken_Voter_Analytics_Interface {
     /**
      * @var \wpdb WordPress database instance
      */
-    private \wpdb $wpdb;
+    private readonly \wpdb $wpdb;
 
     /**
      * @var string Ratings table name
      */
-    private string $ratings_table;
+    private readonly string $ratings_table;
 
     /**
      * @var string Votes table name
      */
-    private string $votes_table;
-
-    /**
-     * @var Shuriken_Database_Interface Database instance
-     */
-    private Shuriken_Database_Interface $db;
+    private readonly string $votes_table;
 
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface|null $db Optional database instance (for dependency injection).
+     * @param \wpdb  $wpdb          WordPress database instance.
+     * @param string $ratings_table Prefixed ratings table name.
+     * @param string $votes_table   Prefixed votes table name.
      */
-    public function __construct(?Shuriken_Database_Interface $db = null) {
-        $this->db = $db ?: shuriken_db();
-        $this->wpdb = $this->db->get_wpdb();
-        $this->ratings_table = $this->db->get_ratings_table();
-        $this->votes_table = $this->db->get_votes_table();
+    public function __construct(\wpdb $wpdb, string $ratings_table, string $votes_table) {
+        $this->wpdb = $wpdb;
+        $this->ratings_table = $ratings_table;
+        $this->votes_table = $votes_table;
     }
 
     /**

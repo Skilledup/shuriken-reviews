@@ -34,7 +34,7 @@ class Shuriken_Admin {
      * @param Shuriken_Analytics_Interface $analytics Analytics instance.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $db,
         private readonly Shuriken_Analytics_Interface $analytics,
     ) {
         
@@ -57,17 +57,17 @@ class Shuriken_Admin {
      */
     public static function get_instance(): self {
         if (null === self::$instance) {
-            self::$instance = new self(shuriken_db(), shuriken_analytics());
+            self::$instance = new self(shuriken_ratings_repo(), shuriken_analytics());
         }
         return self::$instance;
     }
 
     /**
-     * Get the database instance
+     * Get the rating repository
      *
-     * @return Shuriken_Database_Interface
+     * @return Shuriken_Rating_Repository
      */
-    public function get_db(): Shuriken_Database_Interface {
+    public function get_db(): Shuriken_Rating_Repository {
         return $this->db;
     }
 

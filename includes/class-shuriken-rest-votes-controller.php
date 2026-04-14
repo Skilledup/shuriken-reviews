@@ -29,7 +29,7 @@ class Shuriken_REST_Votes_Controller {
      * @param string                      $namespace REST API namespace.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $db,
         private readonly string $namespace,
     ) {}
 

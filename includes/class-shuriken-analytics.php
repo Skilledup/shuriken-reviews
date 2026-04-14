@@ -44,10 +44,10 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     /**
      * Constructor
      *
-     * @param Shuriken_Database_Interface $db Database instance.
+     * @param Shuriken_Rating_Repository $db Rating repository.
      */
     public function __construct(
-        private readonly Shuriken_Database_Interface $db,
+        private readonly Shuriken_Rating_Repository $db,
     ) {
         $this->wpdb = $this->db->get_wpdb();
         $this->ratings_table = $this->db->get_ratings_table();

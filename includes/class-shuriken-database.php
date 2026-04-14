@@ -151,6 +151,36 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         return $this->wpdb;
     }
 
+    /**
+     * Get the rating repository
+     *
+     * @return Shuriken_Rating_Repository
+     * @since 1.15.5
+     */
+    public function get_rating_repository(): Shuriken_Rating_Repository {
+        return $this->ratings;
+    }
+
+    /**
+     * Get the vote repository
+     *
+     * @return Shuriken_Vote_Repository
+     * @since 1.15.5
+     */
+    public function get_vote_repository(): Shuriken_Vote_Repository {
+        return $this->votes;
+    }
+
+    /**
+     * Get the schema manager
+     *
+     * @return Shuriken_Schema_Manager
+     * @since 1.15.5
+     */
+    public function get_schema_manager(): Shuriken_Schema_Manager {
+        return $this->schema;
+    }
+
     // =========================================================================
     // Static Helpers
     // =========================================================================

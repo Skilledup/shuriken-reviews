@@ -79,7 +79,20 @@ Decomposed the ~1,694-line monolithic `Shuriken_Database` class into three focus
 | `Shuriken_Schema_Manager` | ~204 | `create_tables()`, `tables_exist()`, column migrations |
 | `Shuriken_Database` (façade) | ~401 | Singleton, constants, static helpers, delegates all 28 interface methods to repos |
 
-> **Adoption gap (deferred to PHPUnit milestone):** All 6 callers (`Shuriken_Admin`, `Shuriken_AJAX`, `Shuriken_Block`, `Shuriken_Shortcodes`, `Shuriken_Analytics`, both REST controllers) still type-hint `Shuriken_Database_Interface` — the full 28-method contract — even though each class only uses a small slice of it. Full adoption means narrowing each caller to the specific repository it actually needs, adding per-repo helper functions (`shuriken_ratings_repo()`, `shuriken_vote_repo()`, `shuriken_schema_manager()`), and deleting `Shuriken_Database_Interface` and the façade entirely. Do this during the PHPUnit suite — mock narrowing is the direct payoff.
+> ~~**Adoption gap (deferred to PHPUnit milestone):**~~ ✅ All 8 callers now type-hint the specific repository they need instead of the 28-method `Shuriken_Database_Interface`. Per-repo helper functions added: `shuriken_ratings_repo()`, `shuriken_votes_repo()`, `shuriken_schema_manager()`. Container bindings updated. `Shuriken_Database_Interface` and the façade kept for backward compatibility (`shuriken_db()` still works).
+>
+> | Caller | Was | Now |
+> |---|---|---|
+> | `Shuriken_Admin` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_Block` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_Shortcodes` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_REST_Ratings_Controller` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_REST_Votes_Controller` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_REST_API` (bootstrap) | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_AJAX` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` + `Shuriken_Vote_Repository` |
+> | `Shuriken_Rate_Limiter` | `Shuriken_Database_Interface` | `Shuriken_Vote_Repository` |
+> | `Shuriken_Analytics` | `Shuriken_Database_Interface` | `Shuriken_Rating_Repository` |
+> | `Shuriken_Voter_Analytics` | `Shuriken_Database_Interface` | `\wpdb` + table names directly |
 
 #### ~~Step 5 — `Shuriken_REST_API` Controller Split~~ ✅
 
