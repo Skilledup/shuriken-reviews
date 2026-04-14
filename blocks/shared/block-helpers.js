@@ -258,7 +258,7 @@
     function getScaleRange(ratingType) {
         if (ratingType === 'numeric') return { min: 2, max: 100 };
         if (ratingType === 'stars')   return { min: 2, max: 10 };
-        return { min: 5, max: 5 };
+        return { min: 1, max: 1, fixed: true };
     }
 
     /**

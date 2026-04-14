@@ -311,11 +311,18 @@ class Shuriken_Rating_Repository {
                 if (!empty($existing->mirror_of)) {
                     unset($data['rating_type'], $data['scale']);
                 } elseif ($existing->total_votes > 0) {
-                    // Strip unchanged values to avoid false-positive validation errors
+                    // Strip unchanged values to avoid false-positive validation errors.
+                    // Normalise the incoming scale through the type's constraint so that
+                    // e.g. a binary type sent with scale=5 is compared against the
+                    // stored scale=1 after both are constrained to 1.
+                    $incoming_type  = $data['rating_type'] ?? ($existing->rating_type ?? 'stars');
+                    $type_enum      = Shuriken_Rating_Type::tryFrom($incoming_type) ?? Shuriken_Rating_Type::Stars;
+                    $existing_scale = $type_enum->constrainScale(intval($existing->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT));
+
                     if (isset($data['rating_type']) && $data['rating_type'] === ($existing->rating_type ?? 'stars')) {
                         unset($data['rating_type']);
                     }
-                    if (isset($data['scale']) && intval($data['scale']) === intval($existing->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT)) {
+                    if (isset($data['scale']) && $type_enum->constrainScale(intval($data['scale'])) === $existing_scale) {
                         unset($data['scale']);
                     }
                     if (isset($data['rating_type']) || isset($data['scale'])) {
