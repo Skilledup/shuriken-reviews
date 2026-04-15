@@ -21,7 +21,7 @@
             if (!href || !href.startsWith('#inline-edit-')) return;
             
             const editRowId = href.substring(1);
-            const $editRow = $('#' + editRowId);
+            const $editRow = $(`#${editRowId}`);
             const $dataRow = $editRow.prev('tr.iedit');
             
             // Hide any other open inline edit rows
@@ -88,7 +88,7 @@
         /**
          * Fallback copy method for older browsers
          */
-        function fallbackCopy(text) {
+        const fallbackCopy = (text) => {
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
@@ -111,11 +111,11 @@
         /**
          * Show copy notification
          */
-        function showCopyNotification() {
+        const showCopyNotification = () => {
             // Remove any existing notifications
             $('.shuriken-copy-notification').remove();
             
-            const notification = $('<div class="shuriken-copy-notification">' + shurikenRatingsAdmin.i18n.copied + '</div>');
+            const notification = $(`<div class="shuriken-copy-notification">${shurikenRatingsAdmin.i18n.copied}</div>`);
             $('body').append(notification);
             
             setTimeout(function() {
@@ -149,7 +149,7 @@
          * Handle page number input
          */
         $('#current-page-selector').on('keypress', function(e) {
-            if (e.which === 13) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 const page = parseInt($(this).val(), 10);
                 const totalPages = parseInt($('.total-pages').first().text().replace(/,/g, ''), 10);
@@ -183,15 +183,15 @@
         /**
          * Determine the type class: 'binary' or 'continuous'
          */
-        function getTypeClass(type) {
+        const getTypeClass = (type) => {
             return (type === 'like_dislike' || type === 'approval') ? 'binary' : 'continuous';
-        }
+        };
 
         /**
          * Update field visibility based on rating type and sub-rating state
          * for the Add New Rating form
          */
-        function updateAddNewVisibility() {
+        const updateAddNewVisibility = () => {
             const type = $('#rating_type').val();
             const isMirror = type === 'mirror';
             const isBinary = type === 'like_dislike' || type === 'approval';
@@ -233,7 +233,7 @@
         /**
          * Check type compatibility between the selected type and parent in Add New form
          */
-        function updateAddNewTypeWarning() {
+        const updateAddNewTypeWarning = () => {
             const $warning = $('#add-new-type-warning');
             const isSub = $('#is_sub_rating').is(':checked');
             const type = $('#rating_type').val();
@@ -280,7 +280,7 @@
         /**
          * Check type compatibility in an inline edit row
          */
-        function updateInlineTypeWarning($row) {
+        const updateInlineTypeWarning = ($row) => {
             const $warning = $row.find('.shuriken-inline-type-warning');
             const $parentSelect = $row.find('.parent-select');
             const parentVal = $parentSelect.val();
@@ -334,7 +334,7 @@
          * Toggle scale field visibility based on rating type selection (inline edit only)
          * Binary types (like_dislike, approval) don't use scale
          */
-        function updateScaleVisibility($container, typeSelector, scaleSelector) {
+        const updateScaleVisibility = ($container, typeSelector, scaleSelector) => {
             const type = $container.find(typeSelector).val();
             const isBinary = (type === 'like_dislike' || type === 'approval');
             $container.find(scaleSelector).toggle(!isBinary);

@@ -26,29 +26,29 @@
     /**
      * Validate that an ID is a positive integer (or numeric string).
      */
-    function isValidId(id) {
+    const isValidId = (id) => {
         const n = Number(id);
         return Number.isInteger(n) && n > 0;
-    }
+    };
 
     /**
      * Return the existing promise if a request for `key` is already in-flight,
      * otherwise call `fn()`, store its promise, and clean up when it settles.
      */
-    function dedup(key, fn) {
+    const dedup = (key, fn) => {
         if (_inflight[key]) {
             return _inflight[key];
         }
-        const p = fn().then(function(result) {
+        const p = fn().then((result) => {
             delete _inflight[key];
             return result;
-        }).catch(function(err) {
+        }).catch((err) => {
             delete _inflight[key];
             throw err;
         });
         _inflight[key] = p;
         return p;
-    }
+    };
 
     // =========================================================================
     // Batched fetchRating scheduler
@@ -59,18 +59,18 @@
     let _batchQueue = [];       // Array of { id, resolve, reject }
     let _batchTimer = null;
 
-    function scheduleBatchFetch(ratingId, args) {
-        return new Promise(function(resolve, reject) {
+    const scheduleBatchFetch = (ratingId, args) => {
+        return new Promise((resolve, reject) => {
             _batchQueue.push({ id: ratingId, resolve: resolve, reject: reject });
             if (!_batchTimer) {
-                _batchTimer = setTimeout(function() {
+                _batchTimer = setTimeout(() => {
                     flushBatchFetch(args);
                 }, 0);
             }
         });
-    }
+    };
 
-    function flushBatchFetch(args) {
+    const flushBatchFetch = (args) => {
         const queue = _batchQueue;
         _batchQueue = [];
         _batchTimer = null;
@@ -79,7 +79,7 @@
 
         // Deduplicate IDs
         const idMap = {};
-        queue.forEach(function(item) {
+        queue.forEach((item) => {
             if (!idMap[item.id]) idMap[item.id] = [];
             idMap[item.id].push(item);
         });
@@ -89,42 +89,42 @@
         let fetchPromise;
         if (uniqueIds.length === 1) {
             fetchPromise = apiFetch({
-                path: '/shuriken-reviews/v1/ratings/' + uniqueIds[0],
+                path: `/shuriken-reviews/v1/ratings/${uniqueIds[0]}`,
                 method: 'GET',
-            }).then(function(rating) {
+            }).then((rating) => {
                 return [rating];
             });
         } else {
             fetchPromise = apiFetch({
-                path: '/shuriken-reviews/v1/ratings/batch?ids=' + uniqueIds.join(','),
+                path: `/shuriken-reviews/v1/ratings/batch?ids=${uniqueIds.join(',')}`,
                 method: 'GET',
-            }).then(function(ratings) {
+            }).then((ratings) => {
                 return Array.isArray(ratings) ? ratings : [];
             });
         }
 
-        fetchPromise.then(function(ratings) {
+        fetchPromise.then((ratings) => {
             const byId = {};
-            ratings.forEach(function(r) { if (r && r.id) byId[r.id] = r; });
+            ratings.forEach((r) => { if (r && r.id) byId[r.id] = r; });
             args.dispatch.setRatings(ratings);
-            uniqueIds.forEach(function(id) {
+            uniqueIds.forEach((id) => {
                 args.dispatch.setIsLoadingRating(id, false);
                 const items = idMap[id];
-                items.forEach(function(item) {
+                items.forEach((item) => {
                     item.resolve(byId[id] || null);
                 });
             });
-        }).catch(function(error) {
+        }).catch((error) => {
             console.error('batch fetchRating error:', error);
-            uniqueIds.forEach(function(id) {
+            uniqueIds.forEach((id) => {
                 args.dispatch.setIsLoadingRating(id, false);
                 const items = idMap[id];
-                items.forEach(function(item) {
+                items.forEach((item) => {
                     item.resolve(null);
                 });
             });
         });
-    }
+    };
 
     // Default state
     const DEFAULT_STATE = {
@@ -242,290 +242,267 @@
     // Thunks - async action creators that use dispatch
     // WordPress @wordpress/data thunks receive { select, dispatch, registry }
     const thunks = {
-        fetchRating: function(ratingId) {
-            return function(args) {
-                if (!isValidId(ratingId)) {
-                    return Promise.resolve(null);
-                }
+        fetchRating: (ratingId) => (args) => {
+            if (!isValidId(ratingId)) {
+                return Promise.resolve(null);
+            }
 
-                // Check cache first
-                const cached = args.select.getRating(ratingId);
-                if (cached) {
-                    return Promise.resolve(cached);
-                }
+            // Check cache first
+            const cached = args.select.getRating(ratingId);
+            if (cached) {
+                return Promise.resolve(cached);
+            }
 
-                // Deduplicate: if this ID is already queued or in-flight, piggyback
-                return dedup('rating-' + ratingId, function() {
-                    args.dispatch.setIsLoadingRating(ratingId, true);
-                    return scheduleBatchFetch(ratingId, args);
-                });
-            };
+            // Deduplicate: if this ID is already queued or in-flight, piggyback
+            return dedup(`rating-${ratingId}`, () => {
+                args.dispatch.setIsLoadingRating(ratingId, true);
+                return scheduleBatchFetch(ratingId, args);
+            });
         },
 
-        searchRatings: function(searchTerm, type, limit) {
-            type = type || 'all';
-            limit = limit || 20;
+        searchRatings: (searchTerm, type = 'all', limit = 20) => (args) => {
+            // Don't make API call for empty search term
+            if (!searchTerm || searchTerm.trim().length === 0) {
+                args.dispatch.setSearchResults([]);
+                return Promise.resolve([]);
+            }
 
-            return function(args) {
-                // Don't make API call for empty search term
-                if (!searchTerm || searchTerm.trim().length === 0) {
-                    args.dispatch.setSearchResults([]);
-                    return Promise.resolve([]);
-                }
+            args.dispatch.setIsSearching(true);
+            args.dispatch.clearError();
 
-                args.dispatch.setIsSearching(true);
-                args.dispatch.clearError();
+            const path = `/shuriken-reviews/v1/ratings/search?q=${encodeURIComponent(searchTerm.trim())}&type=${type}&limit=${limit}`;
+            
+            return apiFetch({
+                path: path,
+                method: 'GET',
+            }).then((results) => {
+                const resultsArray = Array.isArray(results) ? results : [];
+                args.dispatch.setRatings(resultsArray);
+                args.dispatch.setSearchResults(resultsArray);
+                args.dispatch.setIsSearching(false);
+                return resultsArray;
+            }).catch((error) => {
+                console.error('searchRatings error:', error);
+                // Only log search errors — do not set store-level error
+                // to avoid propagating to every block instance.
+                args.dispatch.setSearchResults([]);
+                args.dispatch.setIsSearching(false);
+                return [];
+            });
+        },
 
-                const path = '/shuriken-reviews/v1/ratings/search?q=' + encodeURIComponent(searchTerm.trim()) + '&type=' + type + '&limit=' + limit;
-                
+        fetchParentRatings: () => (args) => {
+            // Check if already fetched
+            if (args.select.areParentsFetched()) {
+                return Promise.resolve(args.select.getParentRatings());
+            }
+
+            // Deduplicate: all blocks share the same in-flight request
+            return dedup('parents', () => {
+                args.dispatch.setIsLoadingParents(true);
+
                 return apiFetch({
-                    path: path,
+                    path: '/shuriken-reviews/v1/ratings/parents',
                     method: 'GET',
-                }).then(function(results) {
-                    const resultsArray = Array.isArray(results) ? results : [];
-                    args.dispatch.setRatings(resultsArray);
-                    args.dispatch.setSearchResults(resultsArray);
-                    args.dispatch.setIsSearching(false);
-                    return resultsArray;
-                }).catch(function(error) {
-                    console.error('searchRatings error:', error);
-                    // Only log search errors — do not set store-level error
-                    // to avoid propagating to every block instance.
-                    args.dispatch.setSearchResults([]);
-                    args.dispatch.setIsSearching(false);
+                }).then((ratings) => {
+                    const ratingsArray = Array.isArray(ratings) ? ratings : [];
+                    args.dispatch.setParentRatings(ratingsArray);
+                    args.dispatch.setRatings(ratingsArray);
+                    args.dispatch.setParentsFetched(true);
+                    args.dispatch.setIsLoadingParents(false);
+                    return ratingsArray;
+                }).catch((error) => {
+                    console.error('fetchParentRatings error:', error);
+                    args.dispatch.setError(error.message || 'Failed to fetch parent ratings');
+                    args.dispatch.setIsLoadingParents(false);
                     return [];
                 });
-            };
+            });
         },
 
-        fetchParentRatings: function() {
-            return function(args) {
-                // Check if already fetched
-                if (args.select.areParentsFetched()) {
-                    return Promise.resolve(args.select.getParentRatings());
-                }
+        fetchMirrorableRatings: () => (args) => {
+            // Check if already fetched
+            if (args.select.areMirrorableFetched()) {
+                return Promise.resolve(args.select.getMirrorableRatings());
+            }
 
-                // Deduplicate: all blocks share the same in-flight request
-                return dedup('parents', function() {
-                    args.dispatch.setIsLoadingParents(true);
-
-                    return apiFetch({
-                        path: '/shuriken-reviews/v1/ratings/parents',
-                        method: 'GET',
-                    }).then(function(ratings) {
-                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
-                        args.dispatch.setParentRatings(ratingsArray);
-                        args.dispatch.setRatings(ratingsArray);
-                        args.dispatch.setParentsFetched(true);
-                        args.dispatch.setIsLoadingParents(false);
-                        return ratingsArray;
-                    }).catch(function(error) {
-                        console.error('fetchParentRatings error:', error);
-                        args.dispatch.setError(error.message || 'Failed to fetch parent ratings');
-                        args.dispatch.setIsLoadingParents(false);
-                        return [];
-                    });
-                });
-            };
-        },
-
-        fetchMirrorableRatings: function() {
-            return function(args) {
-                // Check if already fetched
-                if (args.select.areMirrorableFetched()) {
-                    return Promise.resolve(args.select.getMirrorableRatings());
-                }
-
-                // Deduplicate: all blocks share the same in-flight request
-                return dedup('mirrorable', function() {
-                    args.dispatch.setIsLoadingMirrorable(true);
-
-                    return apiFetch({
-                        path: '/shuriken-reviews/v1/ratings/mirrorable',
-                        method: 'GET',
-                    }).then(function(ratings) {
-                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
-                        args.dispatch.setMirrorableRatings(ratingsArray);
-                        args.dispatch.setRatings(ratingsArray);
-                        args.dispatch.setMirrorableFetched(true);
-                        args.dispatch.setIsLoadingMirrorable(false);
-                        return ratingsArray;
-                    }).catch(function(error) {
-                        console.error('fetchMirrorableRatings error:', error);
-                        args.dispatch.setError(error.message || 'Failed to fetch mirrorable ratings');
-                        args.dispatch.setIsLoadingMirrorable(false);
-                        return [];
-                    });
-                });
-            };
-        },
-
-        fetchChildRatings: function(parentId) {
-            return function(args) {
-                if (!isValidId(parentId)) {
-                    return Promise.resolve([]);
-                }
-
-                return dedup('children-' + parentId, function() {
-                    return apiFetch({
-                        path: '/shuriken-reviews/v1/ratings/' + parentId + '/children',
-                        method: 'GET',
-                    }).then(function(ratings) {
-                        const ratingsArray = Array.isArray(ratings) ? ratings : [];
-                        // Add children to the ratings cache
-                        args.dispatch.setRatings(ratingsArray);
-                        return ratingsArray;
-                    }).catch(function(error) {
-                        console.error('fetchChildRatings error:', error);
-                        args.dispatch.setError(error.message || 'Failed to fetch child ratings');
-                        return [];
-                    });
-                });
-            };
-        },
-
-        createRating: function(ratingData) {
-            return function(args) {
-                return apiFetch({
-                    path: '/shuriken-reviews/v1/ratings',
-                    method: 'POST',
-                    data: ratingData,
-                }).then(function(newRating) {
-                    args.dispatch.setRating(newRating);
-
-                    // Update parent/mirrorable lists if applicable
-                    if (!newRating.parent_id && !newRating.mirror_of) {
-                        args.dispatch.addToParentRatings(newRating);
-                    }
-                    if (!newRating.mirror_of) {
-                        args.dispatch.addToMirrorableRatings(newRating);
-                    }
-
-                    return newRating;
-                }).catch(function(error) {
-                    console.error('createRating error:', error);
-                    args.dispatch.setError(error.message || 'Failed to create rating');
-                    throw error;
-                });
-            };
-        },
-
-        updateRating: function(ratingId, ratingData) {
-            return function(args) {
-                if (!isValidId(ratingId)) {
-                    return Promise.reject(new Error('Invalid rating ID'));
-                }
+            // Deduplicate: all blocks share the same in-flight request
+            return dedup('mirrorable', () => {
+                args.dispatch.setIsLoadingMirrorable(true);
 
                 return apiFetch({
-                    path: '/shuriken-reviews/v1/ratings/' + ratingId,
-                    method: 'PUT',
-                    data: ratingData,
-                }).then(function(updatedRating) {
-                    args.dispatch.setRating(updatedRating);
-                    args.dispatch.updateRatingInLists(updatedRating);
-                    return updatedRating;
-                }).catch(function(error) {
-                    console.error('updateRating error:', error);
-                    args.dispatch.setError(error.message || 'Failed to update rating');
-                    throw error;
+                    path: '/shuriken-reviews/v1/ratings/mirrorable',
+                    method: 'GET',
+                }).then((ratings) => {
+                    const ratingsArray = Array.isArray(ratings) ? ratings : [];
+                    args.dispatch.setMirrorableRatings(ratingsArray);
+                    args.dispatch.setRatings(ratingsArray);
+                    args.dispatch.setMirrorableFetched(true);
+                    args.dispatch.setIsLoadingMirrorable(false);
+                    return ratingsArray;
+                }).catch((error) => {
+                    console.error('fetchMirrorableRatings error:', error);
+                    args.dispatch.setError(error.message || 'Failed to fetch mirrorable ratings');
+                    args.dispatch.setIsLoadingMirrorable(false);
+                    return [];
                 });
-            };
+            });
         },
 
-        deleteRating: function(ratingId) {
-            return function(args) {
-                if (!isValidId(ratingId)) {
-                    return Promise.reject(new Error('Invalid rating ID'));
+        fetchChildRatings: (parentId) => (args) => {
+            if (!isValidId(parentId)) {
+                return Promise.resolve([]);
+            }
+
+            return dedup(`children-${parentId}`, () => {
+                return apiFetch({
+                    path: `/shuriken-reviews/v1/ratings/${parentId}/children`,
+                    method: 'GET',
+                }).then((ratings) => {
+                    const ratingsArray = Array.isArray(ratings) ? ratings : [];
+                    // Add children to the ratings cache
+                    args.dispatch.setRatings(ratingsArray);
+                    return ratingsArray;
+                }).catch((error) => {
+                    console.error('fetchChildRatings error:', error);
+                    args.dispatch.setError(error.message || 'Failed to fetch child ratings');
+                    return [];
+                });
+            });
+        },
+
+        createRating: (ratingData) => (args) => {
+            return apiFetch({
+                path: '/shuriken-reviews/v1/ratings',
+                method: 'POST',
+                data: ratingData,
+            }).then((newRating) => {
+                args.dispatch.setRating(newRating);
+
+                // Update parent/mirrorable lists if applicable
+                if (!newRating.parent_id && !newRating.mirror_of) {
+                    args.dispatch.addToParentRatings(newRating);
+                }
+                if (!newRating.mirror_of) {
+                    args.dispatch.addToMirrorableRatings(newRating);
                 }
 
-                return apiFetch({
-                    path: '/shuriken-reviews/v1/ratings/' + ratingId,
-                    method: 'DELETE',
-                }).then(function() {
-                    args.dispatch.removeFromLists(ratingId);
-                    return true;
-                }).catch(function(error) {
-                    console.error('deleteRating error:', error);
-                    args.dispatch.setError(error.message || 'Failed to delete rating');
-                    throw error;
-                });
-            };
+                return newRating;
+            }).catch((error) => {
+                console.error('createRating error:', error);
+                args.dispatch.setError(error.message || 'Failed to create rating');
+                throw error;
+            });
+        },
+
+        updateRating: (ratingId, ratingData) => (args) => {
+            if (!isValidId(ratingId)) {
+                return Promise.reject(new Error('Invalid rating ID'));
+            }
+
+            return apiFetch({
+                path: `/shuriken-reviews/v1/ratings/${ratingId}`,
+                method: 'PUT',
+                data: ratingData,
+            }).then((updatedRating) => {
+                args.dispatch.setRating(updatedRating);
+                args.dispatch.updateRatingInLists(updatedRating);
+                return updatedRating;
+            }).catch((error) => {
+                console.error('updateRating error:', error);
+                args.dispatch.setError(error.message || 'Failed to update rating');
+                throw error;
+            });
+        },
+
+        deleteRating: (ratingId) => (args) => {
+            if (!isValidId(ratingId)) {
+                return Promise.reject(new Error('Invalid rating ID'));
+            }
+
+            return apiFetch({
+                path: `/shuriken-reviews/v1/ratings/${ratingId}`,
+                method: 'DELETE',
+            }).then(() => {
+                args.dispatch.removeFromLists(ratingId);
+                return true;
+            }).catch((error) => {
+                console.error('deleteRating error:', error);
+                args.dispatch.setError(error.message || 'Failed to delete rating');
+                throw error;
+            });
         },
 
         /**
          * Batch-fetch multiple ratings by ID in a single API call.
          * Skips IDs already in cache. Returns array of fetched ratings.
          */
-        fetchRatingsBatch: function(ids) {
-            return function(args) {
-                if (!ids || !ids.length) {
-                    return Promise.resolve([]);
-                }
+        fetchRatingsBatch: (ids) => (args) => {
+            if (!ids || !ids.length) {
+                return Promise.resolve([]);
+            }
 
-                // Filter out IDs already in cache
-                const missing = ids.filter(function(id) {
-                    return !args.select.getRating(id);
+            // Filter out IDs already in cache
+            const missing = ids.filter((id) => {
+                return !args.select.getRating(id);
+            });
+
+            if (missing.length === 0) {
+                return Promise.resolve([]);
+            }
+
+            return apiFetch({
+                path: `/shuriken-reviews/v1/ratings/batch?ids=${missing.join(',')}`,
+                method: 'GET',
+            }).then((ratings) => {
+                const arr = Array.isArray(ratings) ? ratings : [];
+                args.dispatch.setRatings(arr);
+                return arr;
+            }).catch((error) => {
+                // Batch endpoint may not exist yet (new install / stale cache).
+                // Fall back to individual fetches so mirrors still load.
+                console.warn('fetchRatingsBatch unavailable, falling back to individual fetches:', error.code || error.message);
+                missing.forEach((id) => {
+                    args.dispatch(thunks.fetchRating(id));
                 });
-
-                if (missing.length === 0) {
-                    return Promise.resolve([]);
-                }
-
-                return apiFetch({
-                    path: '/shuriken-reviews/v1/ratings/batch?ids=' + missing.join(','),
-                    method: 'GET',
-                }).then(function(ratings) {
-                    const arr = Array.isArray(ratings) ? ratings : [];
-                    args.dispatch.setRatings(arr);
-                    return arr;
-                }).catch(function(error) {
-                    // Batch endpoint may not exist yet (new install / stale cache).
-                    // Fall back to individual fetches so mirrors still load.
-                    console.warn('fetchRatingsBatch unavailable, falling back to individual fetches:', error.code || error.message);
-                    missing.forEach(function(id) {
-                        args.dispatch(thunks.fetchRating(id));
-                    });
-                    return [];
-                });
-            };
+                return [];
+            });
         },
 
-        fetchMirrorsForRating: function(ratingId) {
-            return function(args) {
-                if (!isValidId(ratingId)) {
-                    return Promise.resolve([]);
-                }
+        fetchMirrorsForRating: (ratingId) => (args) => {
+            if (!isValidId(ratingId)) {
+                return Promise.resolve([]);
+            }
 
-                // Check cache first
-                const cached = args.select.getMirrorsForRating(ratingId);
-                if (cached !== null) {
-                    return Promise.resolve(cached);
-                }
+            // Check cache first
+            const cached = args.select.getMirrorsForRating(ratingId);
+            if (cached !== null) {
+                return Promise.resolve(cached);
+            }
 
-                return dedup('mirrors-' + ratingId, function() {
-                    args.dispatch.setIsLoadingMirrors(ratingId, true);
+            return dedup(`mirrors-${ratingId}`, () => {
+                args.dispatch.setIsLoadingMirrors(ratingId, true);
 
-                    return apiFetch({
-                        path: '/shuriken-reviews/v1/ratings/' + ratingId + '/mirrors',
-                        method: 'GET',
-                    }).then(function(mirrors) {
-                        const mirrorsArray = Array.isArray(mirrors) ? mirrors : [];
-                        // Also cache each mirror in ratingsById
-                        args.dispatch.setRatings(mirrorsArray);
-                        args.dispatch.setMirrorsForRating(ratingId, mirrorsArray);
-                        args.dispatch.setIsLoadingMirrors(ratingId, false);
-                        return mirrorsArray;
-                    }).catch(function(error) {
-                        // Mirrors endpoint may return invalid JSON on stale cache / new install.
-                        // Don't set a store-level error — mirrors are non-critical for the block.
-                        // Cache empty array so the request isn't retried every render.
-                        console.warn('fetchMirrorsForRating failed for ' + ratingId + ':', error.code || error.message);
-                        args.dispatch.setMirrorsForRating(ratingId, []);
-                        args.dispatch.setIsLoadingMirrors(ratingId, false);
-                        return [];
-                    });
+                return apiFetch({
+                    path: `/shuriken-reviews/v1/ratings/${ratingId}/mirrors`,
+                    method: 'GET',
+                }).then((mirrors) => {
+                    const mirrorsArray = Array.isArray(mirrors) ? mirrors : [];
+                    // Also cache each mirror in ratingsById
+                    args.dispatch.setRatings(mirrorsArray);
+                    args.dispatch.setMirrorsForRating(ratingId, mirrorsArray);
+                    args.dispatch.setIsLoadingMirrors(ratingId, false);
+                    return mirrorsArray;
+                }).catch((error) => {
+                    // Mirrors endpoint may return invalid JSON on stale cache / new install.
+                    // Don't set a store-level error — mirrors are non-critical for the block.
+                    // Cache empty array so the request isn't retried every render.
+                    console.warn(`fetchMirrorsForRating failed for ${ratingId}:`, error.code || error.message);
+                    args.dispatch.setMirrorsForRating(ratingId, []);
+                    args.dispatch.setIsLoadingMirrors(ratingId, false);
+                    return [];
                 });
-            };
+            });
         },
     };
 
@@ -533,7 +510,7 @@
     const allActions = Object.assign({}, actions, thunks);
 
     // Reducer
-    function reducer(state = DEFAULT_STATE, action) {
+    const reducer = (state = DEFAULT_STATE, action) => {
         switch (action.type) {
             case ACTIONS.SET_RATING:
                 return {
@@ -548,7 +525,7 @@
                 const newRatingsById = { ...state.ratingsById };
                 // Safely handle the ratings array
                 const ratingsArray = Array.isArray(action.ratings) ? action.ratings : [];
-                ratingsArray.forEach(function(rating) {
+                ratingsArray.forEach((rating) => {
                     if (rating && rating.id) {
                         newRatingsById[rating.id] = rating;
                     }
@@ -647,11 +624,11 @@
                 // Handle parent ratings list
                 if (!rating.parent_id && !rating.mirror_of) {
                     // Should be in parents list
-                    const existsInParents = state.parentRatings.some(function(r) {
+                    const existsInParents = state.parentRatings.some((r) => {
                         return parseInt(r.id, 10) === parseInt(rating.id, 10);
                     });
                     if (existsInParents) {
-                        newParentRatings = state.parentRatings.map(function(r) {
+                        newParentRatings = state.parentRatings.map((r) => {
                             return parseInt(r.id, 10) === parseInt(rating.id, 10) ? rating : r;
                         });
                     } else {
@@ -659,7 +636,7 @@
                     }
                 } else {
                     // Should not be in parents list
-                    newParentRatings = state.parentRatings.filter(function(r) {
+                    newParentRatings = state.parentRatings.filter((r) => {
                         return parseInt(r.id, 10) !== parseInt(rating.id, 10);
                     });
                 }
@@ -667,11 +644,11 @@
                 // Handle mirrorable ratings list
                 if (!rating.mirror_of) {
                     // Should be in mirrorable list
-                    const existsInMirrorable = state.mirrorableRatings.some(function(r) {
+                    const existsInMirrorable = state.mirrorableRatings.some((r) => {
                         return parseInt(r.id, 10) === parseInt(rating.id, 10);
                     });
                     if (existsInMirrorable) {
-                        newMirrorableRatings = state.mirrorableRatings.map(function(r) {
+                        newMirrorableRatings = state.mirrorableRatings.map((r) => {
                             return parseInt(r.id, 10) === parseInt(rating.id, 10) ? rating : r;
                         });
                     } else {
@@ -679,7 +656,7 @@
                     }
                 } else {
                     // Should not be in mirrorable list
-                    newMirrorableRatings = state.mirrorableRatings.filter(function(r) {
+                    newMirrorableRatings = state.mirrorableRatings.filter((r) => {
                         return parseInt(r.id, 10) !== parseInt(rating.id, 10);
                     });
                 }
@@ -698,13 +675,13 @@
                 return {
                     ...state,
                     ratingsById: newById,
-                    parentRatings: state.parentRatings.filter(function(r) {
+                    parentRatings: state.parentRatings.filter((r) => {
                         return parseInt(r.id, 10) !== idToRemove;
                     }),
-                    mirrorableRatings: state.mirrorableRatings.filter(function(r) {
+                    mirrorableRatings: state.mirrorableRatings.filter((r) => {
                         return parseInt(r.id, 10) !== idToRemove;
                     }),
-                    searchResults: state.searchResults.filter(function(r) {
+                    searchResults: state.searchResults.filter((r) => {
                         return parseInt(r.id, 10) !== idToRemove;
                     }),
                 };
@@ -738,7 +715,7 @@
             default:
                 return state;
         }
-    }
+    };
 
     // Selectors
     const selectors = {

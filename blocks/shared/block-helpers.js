@@ -11,15 +11,15 @@
 (function (wp) {
     'use strict';
 
-    var __ = wp.i18n.__;
-    var h  = wp.element.createElement;
-    var useCallback = wp.element.useCallback;
-    var useRef      = wp.element.useRef;
-    var useEffect   = wp.element.useEffect;
+    const __ = wp.i18n.__;
+    const h  = wp.element.createElement;
+    const useCallback = wp.element.useCallback;
+    const useRef      = wp.element.useRef;
+    const useEffect   = wp.element.useEffect;
 
-    /* ── Lucide SVG icon helpers ─────────────────────────────────── */
+    /* ── Lucide SVG icon helpers ─────────────────────────────────────── */
 
-    var ICON_DEFAULTS = {
+    const ICON_DEFAULTS = {
         xmlns: 'http://www.w3.org/2000/svg',
         viewBox: '0 0 24 24',
         fill: 'none',
@@ -30,40 +30,34 @@
         className: 'shuriken-icon'
     };
 
-    function svgIcon(size, paths) {
-        var attrs = {};
-        var key;
-        for (key in ICON_DEFAULTS) {
-            attrs[key] = ICON_DEFAULTS[key];
-        }
-        attrs.width  = size;
-        attrs.height = size;
+    const svgIcon = (size, paths) => {
+        const attrs = { ...ICON_DEFAULTS, width: size, height: size };
         return h('svg', attrs, paths);
-    }
+    };
 
-    function iconStar(size) {
+    const iconStar = (size) => {
         return svgIcon(size || 24, h('polygon', { points: '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2' }));
     }
 
-    function iconThumbsUp(size) {
+    const iconThumbsUp = (size) => {
         return svgIcon(size || 18, [
             h('path', { key: 'p', d: 'M7 10v12' }),
             h('path', { key: 'h', d: 'M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z' })
         ]);
     }
 
-    function iconThumbsDown(size) {
+    const iconThumbsDown = (size) => {
         return svgIcon(size || 18, [
             h('path', { key: 'p', d: 'M17 14V2' }),
             h('path', { key: 'h', d: 'M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z' })
         ]);
     }
 
-    function iconChevronUp(size) {
+    const iconChevronUp = (size) => {
         return svgIcon(size || 14, h('path', { d: 'm18 15-6-6-6 6' }));
     }
 
-    function iconTriangleAlert(size) {
+    const iconTriangleAlert = (size) => {
         return svgIcon(size || 24, [
             h('path', { key: 'p', d: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3' }),
             h('line', { key: 'l1', x1: '12', x2: '12', y1: '9', y2: '13' }),
@@ -71,7 +65,7 @@
         ]);
     }
 
-    function iconShare2(size) {
+    const iconShare2 = (size) => {
         return svgIcon(size || 24, [
             h('circle', { key: 'c1', cx: '18', cy: '5', r: '3' }),
             h('circle', { key: 'c2', cx: '6', cy: '12', r: '3' }),
@@ -87,8 +81,8 @@
      * @param {Object|string} err - Error from apiFetch or store thunk.
      * @return {string} Localised error message.
      */
-    function formatApiError(err) {
-        var msg = __('An unexpected error occurred.', 'shuriken-reviews');
+    const formatApiError = (err) => {
+        let msg = __('An unexpected error occurred.', 'shuriken-reviews');
 
         if (err.message) {
             msg = err.message;
@@ -117,7 +111,7 @@
      * Error codes that indicate a non-retryable validation failure.
      * Retry would produce the same error, so the Retry button is suppressed.
      */
-    var NON_RETRYABLE_CODES = [
+    const NON_RETRYABLE_CODES = [
         'validation_rating_type_invalid',
         'validation_name_invalid',
         'validation_scale_invalid',
@@ -131,12 +125,12 @@
      * @param {Function} setLastFailedAction - setState for the retry callback.
      * @return {Function} handleApiError(err, retryAction)
      */
-    function makeErrorHandler(setError, setLastFailedAction) {
-        return function handleApiError(err, retryAction) {
+    const makeErrorHandler = (setError, setLastFailedAction) => {
+        return (err, retryAction) => {
             console.error('Shuriken Reviews API Error:', err);
             setError(formatApiError(err));
             // Only offer retry for transient / retryable errors
-            var code = (err && err.code) ? err.code : '';
+            const code = (err && err.code) ? err.code : '';
             if (NON_RETRYABLE_CODES.indexOf(code) === -1) {
                 setLastFailedAction(retryAction);
             } else {
@@ -153,21 +147,21 @@
      * @param {Function} clearError          - Store dispatch to clear global error.
      * @return {{ retryLastAction: Function, dismissError: Function }}
      */
-    function makeErrorDismissers(setError, setLastFailedAction, clearError) {
-        function retryLastAction(lastFailedAction) {
+    const makeErrorDismissers = (setError, setLastFailedAction, clearError) => {
+        const retryLastAction = (lastFailedAction) => {
             setError(null);
             clearError();
             if (lastFailedAction) {
                 lastFailedAction();
             }
             setLastFailedAction(null);
-        }
+        };
 
-        function dismissError() {
+        const dismissError = () => {
             setError(null);
             clearError();
             setLastFailedAction(null);
-        }
+        };
 
         return { retryLastAction: retryLastAction, dismissError: dismissError };
     }
@@ -181,39 +175,39 @@
      * @param {number}   delay    - Debounce delay in ms (default 300).
      * @return {Function} handleSearchChange(term) — safe to pass as onFilterValueChange.
      */
-    function useSearchHandler(searchFn, type, limit, delay) {
+    const useSearchHandler = (searchFn, type, limit, delay) => {
         type  = type  || 'all';
         limit = limit || 20;
         delay = delay || 300;
 
-        var timeoutRef = useRef(null);
+        const timeoutRef = useRef(null);
 
         // Cleanup on unmount
-        useEffect(function () {
-            return function () {
+        useEffect( () => {
+            return () => {
                 if (timeoutRef.current) {
                     clearTimeout(timeoutRef.current);
                 }
             };
         }, []);
 
-        return useCallback(function (term) {
+        return useCallback( (term) => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
 
             if (term && term.trim().length > 0) {
-                timeoutRef.current = setTimeout(function () {
+                timeoutRef.current = setTimeout( () => {
                     searchFn(term.trim(), type, limit);
                 }, delay);
             }
         }, [searchFn, type, limit, delay]);
-    }
+    };
 
     /**
      * Title tag options shared by both blocks.
      */
-    var titleTagOptions = [
+    const titleTagOptions = [
         { label: 'H1', value: 'h1' },
         { label: 'H2', value: 'h2' },
         { label: 'H3', value: 'h3' },
@@ -231,8 +225,8 @@
      * @param {Object} rating - { total_votes, total_rating }
      * @return {number} Average rounded to one decimal (0 if no votes).
      */
-    function calculateAverage(rating) {
-        var tv = parseInt(rating.total_votes, 10) || 0;
+    const calculateAverage = (rating) => {
+        const tv = parseInt(rating.total_votes, 10) || 0;
         if (tv > 0) {
             return Math.round((parseFloat(rating.total_rating) / tv) * 100) / 100;
         }
@@ -242,7 +236,7 @@
     /**
      * Rating type options shared by both blocks.
      */
-    var ratingTypeOptions = [
+    const ratingTypeOptions = [
         { label: __('Stars', 'shuriken-reviews'), value: 'stars' },
         { label: __('Like / Dislike', 'shuriken-reviews'), value: 'like_dislike' },
         { label: __('Numeric Slider', 'shuriken-reviews'), value: 'numeric' },
@@ -255,7 +249,7 @@
      * @param {string} ratingType
      * @return {{ min: number, max: number }}
      */
-    function getScaleRange(ratingType) {
+    const getScaleRange = (ratingType) => {
         if (ratingType === 'numeric') return { min: 2, max: 100 };
         if (ratingType === 'stars')   return { min: 2, max: 10 };
         return { min: 1, max: 1, fixed: true };
@@ -267,7 +261,7 @@
      * @param {Object} rating
      * @return {string}
      */
-    function getRatingType(rating) {
+    const getRatingType = (rating) => {
         return (rating && rating.rating_type) ? rating.rating_type : 'stars';
     }
 
@@ -277,7 +271,7 @@
      * @param {Object} rating
      * @return {number}
      */
-    function getRatingScale(rating) {
+    const getRatingScale = (rating) => {
         return (rating && rating.scale) ? parseInt(rating.scale, 10) : 5;
     }
 
@@ -287,7 +281,7 @@
      * @param {Object} rating
      * @return {number}
      */
-    function calculateScaledAverage(rating) {
+    const calculateScaledAverage = (rating) => {
         return parseFloat(rating.display_average) || 0;
     }
 
@@ -298,15 +292,15 @@
      * @param {Function} h      - wp.element.createElement.
      * @return {Array} [widgetElement, statsElement]
      */
-    function renderRatingPreview(rating, h) {
-        var type        = getRatingType(rating);
-        var scale       = getRatingScale(rating);
-        var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
-        var totalRating = parseFloat(rating.total_rating) || 0;
+    const renderRatingPreview = (rating, h) => {
+        const type        = getRatingType(rating);
+        const scale       = getRatingScale(rating);
+        const totalVotes  = parseInt(rating.total_votes, 10)  || 0;
+        const totalRating = parseFloat(rating.total_rating) || 0;
 
         if (type === 'like_dislike') {
-            var likes    = totalRating;
-            var dislikes = Math.max(0, totalVotes - totalRating);
+            const likes    = totalRating;
+            const dislikes = Math.max(0, totalVotes - totalRating);
             return [
                 h('div', { className: 'shuriken-like-dislike display-only-stars' },
                     h('span', { className: 'shuriken-btn shuriken-like-btn' },
@@ -335,22 +329,22 @@
         }
 
         if (type === 'numeric') {
-            var numAvg    = calculateScaledAverage(rating);
-            var isDisplayOnly = rating.display_only == 1 || rating.is_display_only == 1;
-            var sliderVal = numAvg > 0 ? Math.round(numAvg) : Math.round(scale / 2);
+            const numAvg    = calculateScaledAverage(rating);
+            const isDisplayOnly = rating.display_only == 1 || rating.is_display_only == 1;
+            const sliderVal = numAvg > 0 ? Math.round(numAvg) : Math.round(scale / 2);
 
             // Display-only numeric: simplified readout matching PHP output
             if (isDisplayOnly) {
-                var displayVal = numAvg > 0 ? (Math.round(numAvg * 10) / 10) : 0;
+                const displayVal = numAvg > 0 ? (Math.round(numAvg * 10) / 10) : 0;
                 return [
                     h('div', { className: 'shuriken-numeric display-only-stars' },
                         h('span', { className: 'shuriken-numeric-display' },
                             h('span', { className: 'shuriken-numeric-value' }, String(displayVal)),
-                            h('span', { className: 'shuriken-slider-max' }, '/ ' + scale)
+                            h('span', { className: 'shuriken-slider-max' }, `/ ${scale}`)
                         )
                     ),
                     h('div', { className: 'rating-stats' },
-                        __('Average:', 'shuriken-reviews') + ' ' + numAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+                        `${__('Average:', 'shuriken-reviews')} ${numAvg}/${scale} (${totalVotes} ${__('votes', 'shuriken-reviews')})`
                     )
                 ];
             }
@@ -368,7 +362,7 @@
                         disabled: true
                     }),
                     h('span', { className: 'shuriken-slider-value' }, String(sliderVal)),
-                    h('span', { className: 'shuriken-slider-max' }, '/ ' + scale),
+                    h('span', { className: 'shuriken-slider-max' }, `/ ${scale}`),
                     h('button', {
                         type: 'button',
                         className: 'shuriken-slider-submit',
@@ -376,27 +370,27 @@
                     }, __('Rate', 'shuriken-reviews'))
                 ),
                 h('div', { className: 'rating-stats' },
-                    __('Average:', 'shuriken-reviews') + ' ' + numAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+                    `${__('Average:', 'shuriken-reviews')} ${numAvg}/${scale} (${totalVotes} ${__('votes', 'shuriken-reviews')})`
                 )
             ];
         }
 
         // Default: stars
-        var starAvg = calculateScaledAverage(rating);
-        var starEls = [];
-        for (var i = 1; i <= scale; i++) {
+        const starAvg = calculateScaledAverage(rating);
+        const starEls = [];
+        for (let i = 1; i <= scale; i++) {
             starEls.push(h('span', {
                 key: i,
-                className: 'star' + (i <= starAvg ? ' active' : '')
+                className: `star${i <= starAvg ? ' active' : ''}`
             }, iconStar(24)));
         }
         return [
             h('div', { className: 'stars display-only-stars' }, starEls),
             h('div', { className: 'rating-stats' },
-                __('Average:', 'shuriken-reviews') + ' ' + starAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')'
+                `${__('Average:', 'shuriken-reviews')} ${starAvg}/${scale} (${totalVotes} ${__('votes', 'shuriken-reviews')})`
             )
         ];
-    }
+    };
 
     /**
      * Format a compact stats string for card headers etc.
@@ -404,21 +398,21 @@
      * @param {Object} rating
      * @return {string}
      */
-    function formatCompactStats(rating) {
-        var type        = getRatingType(rating);
-        var totalVotes  = parseInt(rating.total_votes, 10)  || 0;
-        var totalRating = parseFloat(rating.total_rating) || 0;
+    const formatCompactStats = (rating) => {
+        const type        = getRatingType(rating);
+        const totalVotes  = parseInt(rating.total_votes, 10)  || 0;
+        const totalRating = parseFloat(rating.total_rating) || 0;
 
         if (type === 'like_dislike') {
-            return '+' + totalRating + ' / -' + Math.max(0, totalVotes - totalRating);
+            return `+${totalRating} / -${Math.max(0, totalVotes - totalRating)}`;
         }
         if (type === 'approval') {
-            return totalVotes + ' ' + __('votes', 'shuriken-reviews');
+            return `${totalVotes} ${__('votes', 'shuriken-reviews')}`;
         }
 
-        var scale     = getRatingScale(rating);
-        var scaledAvg = calculateScaledAverage(rating);
-        return scaledAvg + '/' + scale + ' (' + totalVotes + ' ' + __('votes', 'shuriken-reviews') + ')';
+        const scale     = getRatingScale(rating);
+        const scaledAvg = calculateScaledAverage(rating);
+        return `${scaledAvg}/${scale} (${totalVotes} ${__('votes', 'shuriken-reviews')})`;
     }
 
     /**
@@ -429,7 +423,7 @@
      * @param {string} ratingType
      * @return {string} 'continuous' or 'binary'
      */
-    function getTypeClass(ratingType) {
+    const getTypeClass = (ratingType) => {
         if (ratingType === 'like_dislike' || ratingType === 'approval') {
             return 'binary';
         }
@@ -447,7 +441,7 @@
      * @param {string} childType
      * @return {boolean}
      */
-    function areTypesCompatible(parentType, childType) {
+    const areTypesCompatible = (parentType, childType) => {
         return getTypeClass(parentType) === getTypeClass(childType);
     }
 
@@ -458,7 +452,7 @@
      * @param {string} ratingType
      * @return {boolean}
      */
-    function hasWidgetColor(ratingType) {
+    const hasWidgetColor = (ratingType) => {
         return ratingType === 'stars' || ratingType === 'numeric';
     }
 
@@ -468,7 +462,7 @@
      * @param {string} ratingType
      * @return {string}
      */
-    function getWidgetColorLabel(ratingType) {
+    const getWidgetColorLabel = (ratingType) => {
         if (ratingType === 'numeric') {
             return __('Slider Color', 'shuriken-reviews');
         }
@@ -486,8 +480,8 @@
      * @param {Function} opts.setStar     - onChange for star/widget color.
      * @return {Array} colorSettings array for PanelColorSettings.
      */
-    function buildColorSettings(opts) {
-        var settings = [
+    const buildColorSettings = (opts) => {
+        const settings = [
             {
                 value: opts.accentColor,
                 onChange: opts.setAccent,

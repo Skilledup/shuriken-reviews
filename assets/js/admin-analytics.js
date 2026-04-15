@@ -13,7 +13,7 @@
     'use strict';
 
     // Color palette — exposed globally for inline page scripts
-    var colors = {
+    const colors = {
         blue: '#2271b1',
         blueLight: 'rgba(34, 113, 177, 0.15)',
         green: '#00a32a',
@@ -28,14 +28,14 @@
     };
 
     // Type-to-color mapping
-    var typeColors = {
+    const typeColors = {
         stars: { border: colors.blue, bg: colors.blueLight },
         like_dislike: { border: colors.green, bg: colors.greenLight },
         numeric: { border: colors.orange, bg: colors.orangeLight },
         approval: { border: colors.purple, bg: colors.purpleLight }
     };
 
-    $(document).ready(function () {
+    $(document).ready(() => {
         initDateRangeFilter();
         initClickableRows();
 
@@ -55,54 +55,54 @@
     /**
      * Initialize Stacked Area Chart — votes over time split by rating type
      */
-    function initStackedAreaChart() {
-        var ctx = document.getElementById('votesOverTimeChart');
+    const initStackedAreaChart = () => {
+        const ctx = document.getElementById('votesOverTimeChart');
         if (!ctx) return;
 
-        var rawData = shurikenAnalyticsData.votesOverTimeByType || [];
+        const rawData = shurikenAnalyticsData.votesOverTimeByType || [];
         if (!rawData.length) {
             showEmptyState(ctx, 'No voting activity yet');
             return;
         }
 
         // Group data: { date: { type: count } }
-        var dateMap = {};
-        var typesFound = {};
-        rawData.forEach(function (row) {
+        const dateMap = {};
+        const typesFound = {};
+        rawData.forEach((row) => {
             if (!dateMap[row.vote_date]) dateMap[row.vote_date] = {};
             dateMap[row.vote_date][row.rating_type] = parseInt(row.vote_count, 10);
             typesFound[row.rating_type] = true;
         });
 
         // Fill missing dates
-        var allDates = Object.keys(dateMap).sort();
-        var start = new Date(allDates[0]);
-        var end = new Date(allDates[allDates.length - 1]);
-        var filledDates = [];
-        var cur = new Date(start);
+        const allDates = Object.keys(dateMap).sort();
+        const start = new Date(allDates[0]);
+        const end = new Date(allDates[allDates.length - 1]);
+        const filledDates = [];
+        const cur = new Date(start);
         while (cur <= end) {
-            var ds = cur.toISOString().split('T')[0];
+            const ds = cur.toISOString().split('T')[0];
             filledDates.push(ds);
             if (!dateMap[ds]) dateMap[ds] = {};
             cur.setDate(cur.getDate() + 1);
         }
 
-        var i18n = shurikenAnalyticsData.i18n;
-        var typeLabels = {
+        const i18n = shurikenAnalyticsData.i18n;
+        const typeLabels = {
             stars: i18n.stars,
             like_dislike: i18n.like_dislike,
             numeric: i18n.numeric,
             approval: i18n.approval
         };
 
-        var datasets = [];
-        var typeOrder = ['stars', 'like_dislike', 'numeric', 'approval'];
-        typeOrder.forEach(function (type) {
+        const datasets = [];
+        const typeOrder = ['stars', 'like_dislike', 'numeric', 'approval'];
+        typeOrder.forEach((type) => {
             if (!typesFound[type]) return;
-            var tc = typeColors[type] || typeColors.stars;
+            const tc = typeColors[type] || typeColors.stars;
             datasets.push({
                 label: typeLabels[type] || type,
-                data: filledDates.map(function (d) { return dateMap[d][type] || 0; }),
+                data: filledDates.map((d) => dateMap[d][type] || 0),
                 borderColor: tc.border,
                 backgroundColor: tc.bg,
                 borderWidth: 2,
@@ -134,9 +134,7 @@
                         bodyColor: '#fff',
                         padding: 12,
                         callbacks: {
-                            label: function (context) {
-                                return context.dataset.label + ': ' + context.parsed.y + ' ' + i18n.votes.toLowerCase();
-                            }
+                            label: (context) => `${context.dataset.label}: ${context.parsed.y} ${i18n.votes.toLowerCase()}`
                         }
                     }
                 },
@@ -155,98 +153,98 @@
                 }
             }
         });
-    }
+    };
 
     /**
      * Initialize Voting Heatmap — CSS grid showing day-of-week × hour activity
      */
-    function initHeatmap() {
-        var container = document.getElementById('votingHeatmap');
+    const initHeatmap = () => {
+        const container = document.getElementById('votingHeatmap');
         if (!container) return;
 
-        var rawData = shurikenAnalyticsData.heatmap || [];
+        const rawData = shurikenAnalyticsData.heatmap || [];
         if (!rawData.length) {
             container.innerHTML = '<div class="chart-empty-state"><svg class="shuriken-icon shuriken-icon-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No voting data yet</p></div>';
             return;
         }
 
         // Build grid: MySQL DAYOFWEEK returns 1=Sun..7=Sat, hours 0-23
-        var maxCount = 0;
-        var grid = {};
-        rawData.forEach(function (row) {
-            var key = row.dow + '-' + row.hour;
-            var c = parseInt(row.count, 10);
+        let maxCount = 0;
+        const grid = {};
+        rawData.forEach((row) => {
+            const key = `${row.dow}-${row.hour}`;
+            const c = parseInt(row.count, 10);
             grid[key] = c;
             if (c > maxCount) maxCount = c;
         });
 
-        var i18n = shurikenAnalyticsData.i18n;
-        var dayLabels = [i18n.sun, i18n.mon, i18n.tue, i18n.wed, i18n.thu, i18n.fri, i18n.sat];
+        const i18n = shurikenAnalyticsData.i18n;
+        const dayLabels = [i18n.sun, i18n.mon, i18n.tue, i18n.wed, i18n.thu, i18n.fri, i18n.sat];
 
         // Only show hours 0,3,6,9,12,15,18,21 for readability
-        var hourSlots = [0, 3, 6, 9, 12, 15, 18, 21];
+        const hourSlots = [0, 3, 6, 9, 12, 15, 18, 21];
 
-        var html = '<div class="heatmap-grid">';
+        let html = '<div class="heatmap-grid">';
 
         // Header row (hours)
         html += '<div class="heatmap-corner"></div>';
-        hourSlots.forEach(function (h) {
-            var label = h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p';
-            html += '<div class="heatmap-hour-label">' + label + '</div>';
+        hourSlots.forEach((h) => {
+            const label = h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h - 12}p`;
+            html += `<div class="heatmap-hour-label">${label}</div>`;
         });
 
         // Data rows
-        for (var day = 1; day <= 7; day++) {
-            html += '<div class="heatmap-day-label">' + dayLabels[day - 1] + '</div>';
-            hourSlots.forEach(function (h) {
+        for (let day = 1; day <= 7; day++) {
+            html += `<div class="heatmap-day-label">${dayLabels[day - 1]}</div>`;
+            hourSlots.forEach((h) => {
                 // Aggregate 3-hour blocks: sum the 3 hours starting at h
-                var total = 0;
-                for (var offset = 0; offset < 3; offset++) {
-                    total += grid[day + '-' + (h + offset)] || 0;
+                let total = 0;
+                for (let offset = 0; offset < 3; offset++) {
+                    total += grid[`${day}-${h + offset}`] || 0;
                 }
-                var intensity = maxCount > 0 ? total / maxCount : 0;
-                var opacity = intensity > 0 ? (0.15 + intensity * 0.85).toFixed(2) : 0;
-                var bgColor = intensity > 0 ? 'rgba(34, 113, 177, ' + opacity + ')' : 'transparent';
-                var title = dayLabels[day - 1] + ' ' + h + ':00-' + (h + 2) + ':59 — ' + total + ' ' + i18n.votes.toLowerCase();
-                html += '<div class="heatmap-cell" style="background-color:' + bgColor + '" title="' + title + '"></div>';
+                const intensity = maxCount > 0 ? total / maxCount : 0;
+                const opacity = intensity > 0 ? (0.15 + intensity * 0.85).toFixed(2) : 0;
+                const bgColor = intensity > 0 ? `rgba(34, 113, 177, ${opacity})` : 'transparent';
+                const title = `${dayLabels[day - 1]} ${h}:00-${h + 2}:59 — ${total} ${i18n.votes.toLowerCase()}`;
+                html += `<div class="heatmap-cell" style="background-color:${bgColor}" title="${title}"></div>`;
             });
         }
         html += '</div>';
 
         container.innerHTML = html;
-    }
+    };
 
     /**
      * Format date string for chart labels
      */
-    function formatDate(dateStr) {
-        var date = new Date(dateStr);
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    }
+    };
 
     /**
      * Show empty state for a chart canvas
      */
-    function showEmptyState(ctx, message) {
-        var parent = ctx.parentElement;
+    const showEmptyState = (ctx, message) => {
+        const parent = ctx.parentElement;
         ctx.style.display = 'none';
-        var div = document.createElement('div');
+        const div = document.createElement('div');
         div.className = 'chart-empty-state';
-        div.innerHTML = '<svg class="shuriken-icon shuriken-icon-pie-chart" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><p>' + message + '</p>';
+        div.innerHTML = `<svg class="shuriken-icon shuriken-icon-pie-chart" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><p>${message}</p>`;
         div.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#646970;';
         parent.appendChild(div);
-    }
+    };
 
     /**
      * Initialize clickable table rows (event delegation for dynamically added rows)
      */
-    function initClickableRows() {
+    const initClickableRows = () => {
         $(document).on('click', '.shuriken-clickable-row', function (e) {
             if ($(e.target).is('a, button, input') || $(e.target).closest('a, button').length) return;
-            var href = $(this).data('href');
+            const href = $(this).data('href');
             if (href) window.location.href = href;
         });
-    }
+    };
 
     /**
      * Initialize date range filter — auto-detects the form on the current page
@@ -256,18 +254,18 @@
      * - A hidden input with name="range_type"
      * - A .custom-date-range container with start/end date inputs
      */
-    function initDateRangeFilter() {
-        var $form = $('form:has(.preset-select)');
+    const initDateRangeFilter = () => {
+        const $form = $('form:has(.preset-select)');
         if (!$form.length) return;
 
-        var $select = $form.find('.preset-select');
-        var $customRange = $form.find('.custom-date-range');
-        var $rangeType = $form.find('input[name="range_type"]');
-        var $startDate = $form.find('input[name="start_date"]');
-        var $endDate = $form.find('input[name="end_date"]');
+        const $select = $form.find('.preset-select');
+        const $customRange = $form.find('.custom-date-range');
+        const $rangeType = $form.find('input[name="range_type"]');
+        const $startDate = $form.find('input[name="start_date"]');
+        const $endDate = $form.find('input[name="end_date"]');
 
-        var shared = typeof shurikenAnalyticsShared !== 'undefined' ? shurikenAnalyticsShared : {};
-        var i18n = shared.i18n || {};
+        const shared = typeof shurikenAnalyticsShared !== 'undefined' ? shurikenAnalyticsShared : {};
+        const i18n = shared.i18n || {};
 
         $select.on('change', function () {
             if ($(this).val() === 'custom') {
@@ -280,10 +278,10 @@
             }
         });
 
-        $form.on('submit', function (e) {
+        $form.on('submit', (e) => {
             if ($rangeType.val() === 'custom') {
-                var startVal = $startDate.val();
-                var endVal = $endDate.val();
+                const startVal = $startDate.val();
+                const endVal = $endDate.val();
 
                 if (!startVal && !endVal) {
                     alert(i18n.dateRangeEmpty || 'Please select at least a start or end date.');
@@ -297,7 +295,7 @@
                 }
             }
         });
-    }
+    };
 
     // Expose shared utilities for inline page scripts
     window.shurikenAnalyticsUtils = {

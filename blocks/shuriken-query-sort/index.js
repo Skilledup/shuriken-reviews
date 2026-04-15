@@ -23,46 +23,46 @@
 (function (wp) {
     'use strict';
 
-    var addFilter         = wp.hooks.addFilter;
-    var createHOC         = wp.compose.createHigherOrderComponent;
-    var InspectorControls = wp.blockEditor.InspectorControls;
-    var PanelBody         = wp.components.PanelBody;
-    var SelectControl     = wp.components.SelectControl;
-    var __                = wp.i18n.__;
-    var Fragment          = wp.element.Fragment;
-    var createElement     = wp.element.createElement;
-    var useEffect         = wp.element.useEffect;
-    var useSelect         = wp.data.useSelect;
-    var useDispatch       = wp.data.useDispatch;
+    const addFilter         = wp.hooks.addFilter;
+    const createHOC         = wp.compose.createHigherOrderComponent;
+    const InspectorControls = wp.blockEditor.InspectorControls;
+    const PanelBody         = wp.components.PanelBody;
+    const SelectControl     = wp.components.SelectControl;
+    const __                = wp.i18n.__;
+    const Fragment          = wp.element.Fragment;
+    const createElement     = wp.element.createElement;
+    const useEffect         = wp.element.useEffect;
+    const useSelect         = wp.data.useSelect;
+    const useDispatch       = wp.data.useDispatch;
 
-    var STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
+    const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
 
     // -------------------------------------------------------------------------
     // Inject inspector panel into core/query
     // -------------------------------------------------------------------------
-    var withShurikenQuerySortControls = createHOC(function (BlockEdit) {
-        return function (props) {
+    const withShurikenQuerySortControls = createHOC( (BlockEdit) => {
+        return (props) => {
             if (props.name !== 'core/query') {
                 return createElement(BlockEdit, props);
             }
 
-            var attributes    = props.attributes;
-            var setAttributes = props.setAttributes;
-            var query         = attributes.query || {};
-            var isInherited   = !!query.inherit;
+            const attributes    = props.attributes;
+            const setAttributes = props.setAttributes;
+            const query         = attributes.query || {};
+            const isInherited   = !!query.inherit;
 
-            var shurikenRatingId = query.shurikenRatingId || 0;
-            var shurikenOrderBy  = query.shurikenOrderBy  || 'average';
-            var shurikenOrder    = query.shurikenOrder     || 'DESC';
+            const shurikenRatingId = query.shurikenRatingId || 0;
+            const shurikenOrderBy  = query.shurikenOrderBy  || 'average';
+            const shurikenOrder    = query.shurikenOrder     || 'DESC';
 
             // Helper: merge into the existing query attribute object.
-            function updateQuery(patch) {
+            const updateQuery = (patch) => {
                 setAttributes({ query: Object.assign({}, query, patch) });
-            }
+            };
 
             // Fetch available ratings from store
-            var storeResult = useSelect(function (select) {
-                var store = select(STORE_NAME);
+            const storeResult = useSelect( (select) => {
+                const store = select(STORE_NAME);
                 if (!store) {
                     return { parentRatings: [], isLoadingParents: false };
                 }
@@ -72,31 +72,31 @@
                 };
             }, []);
 
-            var parentRatings    = storeResult.parentRatings;
-            var isLoadingParents = storeResult.isLoadingParents;
+            const parentRatings    = storeResult.parentRatings;
+            const isLoadingParents = storeResult.isLoadingParents;
 
-            var dispatch = useDispatch(STORE_NAME);
+            const dispatch = useDispatch(STORE_NAME);
 
-            useEffect(function () {
+            useEffect( () => {
                 if (dispatch && dispatch.fetchParentRatings) {
                     dispatch.fetchParentRatings();
                 }
             }, []);
 
-            var ratingOptions = [
+            const ratingOptions = [
                 { label: __('— Disabled —', 'shuriken-reviews'), value: 0 },
             ].concat(
-                (parentRatings || []).map(function (r) {
-                    return { label: r.name + ' (ID: ' + r.id + ')', value: r.id };
+                (parentRatings || []).map( (r) => {
+                    return { label: `${r.name} (ID: ${r.id})`, value: r.id };
                 })
             );
 
-            var orderByOptions = [
+            const orderByOptions = [
                 { label: __('Average Rating', 'shuriken-reviews'), value: 'average' },
                 { label: __('Total Votes',    'shuriken-reviews'), value: 'votes'   },
             ];
 
-            var orderOptions = [
+            const orderOptions = [
                 { label: __('Descending (highest first)', 'shuriken-reviews'), value: 'DESC' },
                 { label: __('Ascending (lowest first)',   'shuriken-reviews'), value: 'ASC'  },
             ];
@@ -126,8 +126,8 @@
                                 label:   __('Sort by Rating', 'shuriken-reviews'),
                                 value:   shurikenRatingId,
                                 options: ratingOptions,
-                                onChange: function (val) {
-                                    var id = parseInt(val, 10) || 0;
+                                onChange: (val) => {
+                                    const id = parseInt(val, 10) || 0;
                                     updateQuery({
                                         shurikenRatingId: id,
                                         shurikenOrderBy:  id ? shurikenOrderBy : '',
@@ -144,7 +144,7 @@
                                 label:   __('Sort metric', 'shuriken-reviews'),
                                 value:   shurikenOrderBy,
                                 options: orderByOptions,
-                                onChange: function (val) {
+                                onChange: (val) => {
                                     updateQuery({ shurikenOrderBy: val });
                                 },
                             })
@@ -154,7 +154,7 @@
                                 label:   __('Direction', 'shuriken-reviews'),
                                 value:   shurikenOrder,
                                 options: orderOptions,
-                                onChange: function (val) {
+                                onChange: (val) => {
                                     updateQuery({ shurikenOrder: val });
                                 },
                             })

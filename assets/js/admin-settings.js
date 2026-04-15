@@ -11,59 +11,41 @@
     'use strict';
 
     /**
-     * Initialize settings page functionality
-     */
-    function init() {
-        initCollapsibleSections();
-        initToggleControls();
-        initDismissWarning();
-    }
-
-    /**
      * Initialize collapsible sections controlled by toggles
      */
-    function initCollapsibleSections() {
-        // Set initial state based on checkbox
+    const initCollapsibleSections = () => {
         $('[data-controls]').each(function() {
-            var $checkbox = $(this);
-            var targetId = $checkbox.data('controls');
-            var $target = $('#' + targetId);
+            const $checkbox = $(this);
+            const targetId = $checkbox.data('controls');
+            const $target = $(`#${targetId}`);
             
             if ($target.length) {
-                if ($checkbox.is(':checked')) {
-                    $target.addClass('is-expanded');
-                } else {
-                    $target.removeClass('is-expanded');
-                }
+                $target.toggleClass('is-expanded', $checkbox.is(':checked'));
             }
         });
-    }
+    };
 
     /**
      * Initialize toggle controls that show/hide sections
      */
-    function initToggleControls() {
+    const initToggleControls = () => {
         $(document).on('change', '[data-controls]', function() {
-            var $checkbox = $(this);
-            var targetId = $checkbox.data('controls');
-            var $target = $('#' + targetId);
+            const $checkbox = $(this);
+            const targetId = $checkbox.data('controls');
+            const $target = $(`#${targetId}`);
             
             if ($target.length) {
-                if ($checkbox.is(':checked')) {
-                    $target.addClass('is-expanded');
-                } else {
-                    $target.removeClass('is-expanded');
-                }
+                $target.toggleClass('is-expanded', $checkbox.is(':checked'));
             }
         });
-    }
+    };
 
     /**
      * Initialize dismissible warning banner
      */
-    function initDismissWarning() {
+    const initDismissWarning = () => {
         $(document).on('click', '.shuriken-dismiss-warning', function() {
-            var $banner = $(this).closest('.shuriken-rate-limit-warning');
+            const $banner = $(this).closest('.shuriken-rate-limit-warning');
             $banner.fadeOut(200, function() { $banner.remove(); });
 
             $.post(ajaxurl, {
@@ -71,9 +53,13 @@
                 _wpnonce: shurikenSettings.dismissNonce
             });
         });
-    }
+    };
 
     // Initialize when DOM is ready
-    $(document).ready(init);
+    $(document).ready(() => {
+        initCollapsibleSections();
+        initToggleControls();
+        initDismissWarning();
+    });
 
 })(jQuery);

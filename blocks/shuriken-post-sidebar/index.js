@@ -10,20 +10,20 @@
 ( function () {
     'use strict';
 
-    var el           = wp.element.createElement;
-    var useState     = wp.element.useState;
-    var useEffect    = wp.element.useEffect;
-    var useSelect    = wp.data.useSelect;
-    var registerPlugin = wp.plugins.registerPlugin;
-    var PluginDocumentSettingPanel = wp.editPost
+    const el           = wp.element.createElement;
+    const useState     = wp.element.useState;
+    const useEffect    = wp.element.useEffect;
+    const useSelect    = wp.data.useSelect;
+    const registerPlugin = wp.plugins.registerPlugin;
+    const PluginDocumentSettingPanel = wp.editPost
         ? wp.editPost.PluginDocumentSettingPanel
         : ( wp.editor && wp.editor.PluginDocumentSettingPanel )
             ? wp.editor.PluginDocumentSettingPanel
             : null;
-    var Spinner      = wp.components.Spinner;
-    var Icon         = wp.components.Icon;
-    var apiFetch     = wp.apiFetch;
-    var __           = wp.i18n.__;
+    const Spinner      = wp.components.Spinner;
+    const Icon         = wp.components.Icon;
+    const apiFetch     = wp.apiFetch;
+    const __           = wp.i18n.__;
 
     if ( ! PluginDocumentSettingPanel ) {
         return; // Not available in this editor context (e.g. widgets).
@@ -32,45 +32,45 @@
     /**
      * Format a rating display string based on type.
      */
-    function formatRating( item ) {
+    const formatRating = ( item ) => {
         if ( item.rating_type === 'like_dislike' ) {
-            var likes    = item.total;
-            var dislikes = item.votes - likes;
-            return '+' + likes + '  -' + dislikes;
+            const likes    = item.total;
+            const dislikes = item.votes - likes;
+            return `+${likes}  -${dislikes}`;
         }
         if ( item.rating_type === 'approval' ) {
-            return item.votes + ' ' + __( 'votes', 'shuriken-reviews' );
+            return `${item.votes} ${__( 'votes', 'shuriken-reviews' )}`;
         }
-        return item.average + ' / ' + item.scale + '  (' + item.votes + ')';
-    }
+        return `${item.average} / ${item.scale}  (${item.votes})`;
+    };
 
     /**
      * Sidebar panel component.
      */
-    function ShurikenPostSidebar() {
-        var postId   = useSelect( function ( select ) { return select( 'core/editor' ).getCurrentPostId(); }, [] );
-        var postType = useSelect( function ( select ) { return select( 'core/editor' ).getCurrentPostType(); }, [] );
+    const ShurikenPostSidebar = () => {
+        const postId   = useSelect( ( select ) => select( 'core/editor' ).getCurrentPostId(), [] );
+        const postType = useSelect( ( select ) => select( 'core/editor' ).getCurrentPostType(), [] );
 
-        var stateData    = useState( null );
-        var stateLoading = useState( false );
-        var stateError   = useState( null );
+        const stateData    = useState( null );
+        const stateLoading = useState( false );
+        const stateError   = useState( null );
 
-        var data    = stateData[0],    setData    = stateData[1];
-        var loading = stateLoading[0], setLoading = stateLoading[1];
-        var error   = stateError[0],   setError   = stateError[1];
+        const data    = stateData[0],    setData    = stateData[1];
+        const loading = stateLoading[0], setLoading = stateLoading[1];
+        const error   = stateError[0],   setError   = stateError[1];
 
-        useEffect( function () {
+        useEffect( () => {
             if ( ! postId || ! postType ) {
                 return;
             }
             setLoading( true );
             setError( null );
             apiFetch( {
-                path: '/shuriken-reviews/v1/context-stats?context_id=' + postId + '&context_type=' + postType,
-            } ).then( function ( res ) {
+                path: `/shuriken-reviews/v1/context-stats?context_id=${postId}&context_type=${postType}`,
+            } ).then( ( res ) => {
                 setData( res );
                 setLoading( false );
-            } ).catch( function ( err ) {
+            } ).catch( ( err ) => {
                 setError( err.message || __( 'Failed to load', 'shuriken-reviews' ) );
                 setLoading( false );
             } );
@@ -98,7 +98,7 @@
                 : error
                     ? el( 'p', { className: 'shuriken-sidebar-error' }, error )
                     : el( 'div', { className: 'shuriken-sidebar-list' },
-                        data.map( function ( item ) {
+                        data.map( ( item ) => {
                             return el( 'div', { key: item.id, className: 'shuriken-sidebar-item' },
                                 el( 'div', { className: 'shuriken-sidebar-item-name' }, item.name ),
                                 el( 'div', { className: 'shuriken-sidebar-item-stats' }, formatRating( item ) )
@@ -106,7 +106,7 @@
                         } )
                       )
         );
-    }
+    };
 
     registerPlugin( 'shuriken-post-sidebar', {
         render: ShurikenPostSidebar,

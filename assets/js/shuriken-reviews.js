@@ -11,10 +11,10 @@ jQuery(document).ready(function($) {
      */
     $.fn.smoothHtml = function(html) {
         return this.each(function() {
-            var $el = $(this);
+            const $el = $(this);
 
             // Cancel any pending swap
-            var timer = $el.data('shuriken-swap-timer');
+            let timer = $el.data('shuriken-swap-timer');
             if (timer) {
                 clearTimeout(timer);
                 $el.data('shuriken-swap-timer', null);
@@ -47,7 +47,7 @@ jQuery(document).ready(function($) {
      * @param {jQuery} $rating - The rating container element
      * @param {number} scaledAverage - The average in display scale (matches max_stars)
      */
-    function updateStars($rating, scaledAverage) {
+    const updateStars = ($rating, scaledAverage) => {
         $rating.find('.star').each(function() {
             if ($(this).data('value') <= scaledAverage) {
                 $(this).addClass('active');
@@ -55,21 +55,21 @@ jQuery(document).ready(function($) {
                 $(this).removeClass('active');
             }
         });
-    }
+    };
 
     /**
      * Reset stars to show the current average (reads from scaled-average data attr set by server-rendered HTML)
      */
-    function resetStars($rating) {
+    const resetStars = ($rating) => {
         const $stats = $rating.find('.rating-stats');
         const scaledAverage = parseFloat($stats.data('scaled-average')) || 0;
         updateStars($rating, scaledAverage);
-    }
+    };
 
     /**
      * Fetch fresh nonce and rating data from server (bypasses cache)
      */
-    function fetchFreshData() {
+    const fetchFreshData = () => {
         if (isFetchingFreshData) {
             return;
         }
@@ -87,7 +87,7 @@ jQuery(document).ready(function($) {
             const id = $(this).data('id');
             const ctxId = $(this).data('context-id') || '';
             const ctxType = $(this).data('context-type') || '';
-            const key = ctxId + ':' + ctxType;
+            const key = `${ctxId}:${ctxType}`;
             
             if (id) {
                 if (!contextGroups[key]) {
@@ -134,12 +134,12 @@ jQuery(document).ready(function($) {
                 let completedRequests = 0;
                 const totalRequests = groupKeys.length;
                 
-                function applyStats(statsResponse, ctxId, ctxType) {
+                const applyStats = (statsResponse, ctxId, ctxType) => {
                     $.each(statsResponse, function(ratingId, stats) {
                         // Select only ratings matching this context
-                        let selector = '.shuriken-rating[data-id="' + ratingId + '"]';
+                        let selector = `.shuriken-rating[data-id="${ratingId}"]`;
                         if (ctxId) {
-                            selector += '[data-context-id="' + ctxId + '"][data-context-type="' + ctxType + '"]';
+                            selector += `[data-context-id="${ctxId}"][data-context-type="${ctxType}"]`;
                         } else {
                             selector += ':not([data-context-id])';
                         }
@@ -187,15 +187,15 @@ jQuery(document).ready(function($) {
                             $rating.removeClass('shuriken-refreshing');
                         });
                     });
-                }
+                };
                 
-                function onRequestComplete() {
+                const onRequestComplete = () => {
                     completedRequests++;
                     if (completedRequests >= totalRequests) {
                         isFetchingFreshData = false;
                         $('.shuriken-rating.shuriken-refreshing').removeClass('shuriken-refreshing');
                     }
-                }
+                };
                 
                 $.each(contextGroups, function(key, group) {
                     const requestData = { ids: group.ids.join(',') };
@@ -227,11 +227,24 @@ jQuery(document).ready(function($) {
                 $('.shuriken-rating').removeClass('shuriken-refreshing');
             }
         });
-    }
+    };
     
+    /**
+     * Update the --fill-pct custom property on a range slider so the
+     * track pseudo-elements can paint a filled-portion gradient.
+     * Works cross-browser (Chromium, Firefox, Safari).
+     */
+    const updateSliderFill = ($slider) => {
+        const min = parseFloat($slider.attr('min')) || 0;
+        const max = parseFloat($slider.attr('max')) || 100;
+        const val = parseFloat($slider.val()) || 0;
+        const pct = ((val - min) / (max - min)) * 100;
+        $slider[0].style.setProperty('--fill-pct', `${pct}%`);
+    };
+
     // Run on initial page load and after WP Interactivity Router client-side navigation.
     // Uses data-shuriken-init to skip already-initialized elements so re-runs are safe.
-    function shurikenInit() {
+    const shurikenInit = () => {
         fetchFreshData();
 
         // Initialize stars (guard prevents duplicate setInterval on re-runs)
@@ -271,7 +284,7 @@ jQuery(document).ready(function($) {
             $(this).attr('data-shuriken-fill-init', '1');
             updateSliderFill($(this));
         });
-    }
+    };
 
     shurikenInit();
 
@@ -314,7 +327,7 @@ jQuery(document).ready(function($) {
     /**
      * Submit a rating vote
      */
-    function submitRating($rating, value, retryCount) {
+    const submitRating = ($rating, value, retryCount) => {
         retryCount = retryCount || 0;
         
         const $stars = $rating.find('.stars');
@@ -325,7 +338,7 @@ jQuery(document).ready(function($) {
         let originalText = $rating.find('.rating-stats').html();
         $rating.addClass('shuriken-loading');
 
-        var postData = {
+        const postData = {
             action: 'submit_rating',
             rating_id: ratingId,
             rating_value: value,
@@ -368,7 +381,7 @@ jQuery(document).ready(function($) {
                     
                     // If there's a parent rating on the page, update it too
                     if (response.data.parent_id) {
-                        const $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
+                        const $parentRating = $(`.shuriken-rating[data-id="${response.data.parent_id}"]`);
                         if ($parentRating.length) {
                             const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
                             const parentMaxStars = response.data.parent_max_stars || 5;
@@ -497,7 +510,7 @@ jQuery(document).ready(function($) {
                 $stars.css('pointer-events', 'auto');
             }
         });
-    }
+    };
 
     // Only allow clicking on votable ratings (not display-only)
     $(document).on('click', '.shuriken-rating:not(.display-only) .star', function(e) {
@@ -511,14 +524,12 @@ jQuery(document).ready(function($) {
         const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = `${shurikenReviews.login_url}?redirect_to=${encodeURIComponent(window.location.href)}`;
             
             // Add login message using translated string
             if (!$rating.find('.login-message').length) {
                 $rating.find('.rating-stats').after(
-                    '<div class="login-message">[' + 
-                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
-                    ']</div>'
+                    `<div class="login-message">[${shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl)}]</div>`
                 );
             }
 
@@ -546,8 +557,8 @@ jQuery(document).ready(function($) {
 
     // Only allow keyboard navigation on votable ratings (not display-only)
     $(document).on('keydown', '.shuriken-rating:not(.display-only) .star', function(e) {
-        // Handle Enter (13) or Space (32) key press
-        if (e.which === 13 || e.which === 32) {
+        // Handle Enter or Space key press
+        if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             $(this).click();
         }
@@ -556,7 +567,7 @@ jQuery(document).ready(function($) {
     /**
      * Submit a like/dislike or approval vote
      */
-    function submitBinaryRating($rating, value, retryCount) {
+    const submitBinaryRating = ($rating, value, retryCount) => {
         retryCount = retryCount || 0;
 
         const ratingId = $rating.data('id');
@@ -565,13 +576,13 @@ jQuery(document).ready(function($) {
         const contextType = $rating.data('context-type') || '';
         const $feedback = $rating.find('.shuriken-feedback');
 
-        function showFeedback(msg, duration) {
+        const showFeedback = (msg, duration) => {
             $feedback.smoothHtml(msg);
-            setTimeout(function() { $feedback.smoothHtml(''); }, duration || 3000);
-        }
+            setTimeout(() => { $feedback.smoothHtml(''); }, duration || 3000);
+        };
 
-        function showError(response, xhr) {
-            var msg;
+        const showError = (response, xhr) => {
+            let msg;
             if (response && response.data && typeof response.data === 'string') {
                 msg = shurikenReviews.i18n.error.replace('%s', response.data);
             } else if (xhr && xhr.responseJSON && xhr.responseJSON.data && typeof xhr.responseJSON.data === 'string') {
@@ -580,12 +591,12 @@ jQuery(document).ready(function($) {
                 msg = shurikenReviews.i18n.genericError;
             }
             showFeedback(msg, 4000);
-        }
+        };
 
         // Pulse the widget while AJAX is in-flight
         $rating.addClass('shuriken-loading');
 
-        var postData = {
+        const postData = {
             action: 'submit_rating',
             rating_id: ratingId,
             rating_value: value,
@@ -617,7 +628,7 @@ jQuery(document).ready(function($) {
 
                     // Update parent rating if applicable (display-only parents)
                     if (response.data.parent_id) {
-                        const $parentRating = $('.shuriken-rating[data-id="' + response.data.parent_id + '"]');
+                        const $parentRating = $(`.shuriken-rating[data-id="${response.data.parent_id}"]`);
                         if ($parentRating.length) {
                             const parentType = $parentRating.data('rating-type');
                             if (parentType === 'like_dislike') {
@@ -628,7 +639,7 @@ jQuery(document).ready(function($) {
                                 const $approvalPct = $parentRating.find('.shuriken-approval-pct');
                                 if ($approvalPct.length) {
                                     // Display-only parents show approval percentage summary
-                                    $approvalPct.text(pParentPct + '%');
+                                    $approvalPct.text(`${pParentPct}%`);
                                 } else {
                                     // Non-display-only parents: update like/dislike counts
                                     const pTotalVotes = response.data.parent_total_votes;
@@ -640,7 +651,7 @@ jQuery(document).ready(function($) {
                                 // Update vote summary text
                                 const $voteSummary = $parentRating.find('.shuriken-vote-summary');
                                 if ($voteSummary.length) {
-                                    $voteSummary.text('(' + response.data.parent_total_votes + ' ' + shurikenReviews.i18n.votes + ')');
+                                    $voteSummary.text(`(${response.data.parent_total_votes} ${shurikenReviews.i18n.votes})`);
                                 }
                             } else if (parentType === 'approval') {
                                 $parentRating.find('.shuriken-upvote-count').text(response.data.parent_total_votes);
@@ -722,7 +733,7 @@ jQuery(document).ready(function($) {
                 $rating.find('.shuriken-btn').css('pointer-events', 'auto');
             }
         });
-    }
+    };
 
     // Like/Dislike button click handler
     $(document).on('click', '.shuriken-rating:not(.display-only) .shuriken-like-btn, .shuriken-rating:not(.display-only) .shuriken-dislike-btn', function(e) {
@@ -735,12 +746,10 @@ jQuery(document).ready(function($) {
         const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = `${shurikenReviews.login_url}?redirect_to=${encodeURIComponent(window.location.href)}`;
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-like-dislike').after(
-                    '<div class="login-message">[' + 
-                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
-                    ']</div>'
+                    `<div class="login-message">[${shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl)}]</div>`
                 );
             }
             $rating.find('.login-message').show();
@@ -753,22 +762,9 @@ jQuery(document).ready(function($) {
         submitBinaryRating($rating, value, 0);
     });
 
-    /**
-     * Update the --fill-pct custom property on a range slider so the
-     * track pseudo-elements can paint a filled-portion gradient.
-     * Works cross-browser (Chromium, Firefox, Safari).
-     */
-    function updateSliderFill($slider) {
-        var min = parseFloat($slider.attr('min')) || 0;
-        var max = parseFloat($slider.attr('max')) || 100;
-        var val = parseFloat($slider.val()) || 0;
-        var pct = ((val - min) / (max - min)) * 100;
-        $slider[0].style.setProperty('--fill-pct', pct + '%');
-    }
-
     // Numeric slider: live value update on input + fill track
     $(document).on('input', '.shuriken-rating:not(.display-only) .shuriken-slider', function() {
-        var $s = $(this);
+        const $s = $(this);
         $s.closest('.shuriken-numeric').find('.shuriken-slider-value').text($s.val());
         updateSliderFill($s);
     });
@@ -785,12 +781,10 @@ jQuery(document).ready(function($) {
         const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = `${shurikenReviews.login_url}?redirect_to=${encodeURIComponent(window.location.href)}`;
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-numeric').after(
-                    '<div class="login-message">[' + 
-                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
-                    ']</div>'
+                    `<div class="login-message">[${shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl)}]</div>`
                 );
             }
             $rating.find('.login-message').show();
@@ -821,12 +815,10 @@ jQuery(document).ready(function($) {
         const guestVotingAllowed = shurikenReviews.allow_guest_voting === true || shurikenReviews.allow_guest_voting === "1" || shurikenReviews.allow_guest_voting === 1;
         
         if (!isLoggedIn && !guestVotingAllowed) {
-            const loginUrl = shurikenReviews.login_url + '?redirect_to=' + encodeURIComponent(window.location.href);
+            const loginUrl = `${shurikenReviews.login_url}?redirect_to=${encodeURIComponent(window.location.href)}`;
             if (!$rating.find('.login-message').length) {
                 $rating.find('.shuriken-approval').after(
-                    '<div class="login-message">[' + 
-                    shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl) + 
-                    ']</div>'
+                    `<div class="login-message">[${shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl)}]</div>`
                 );
             }
             $rating.find('.login-message').show();

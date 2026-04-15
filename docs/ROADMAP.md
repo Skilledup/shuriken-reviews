@@ -125,6 +125,7 @@ The largest file in the codebase. Single class responsible for formatting, ranki
 - [x] **DRY effect-type inversion SQL** — `Shuriken_Analytics_Ranking::get_inversion_sql()` static method extracts the CASE WHEN fragment used by ranking queries.
 - [x] **Extract `Shuriken_Analytics_Context`** — 12 contextual analytics methods (660 lines) moved to dedicated class. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait for sharing. Analytics delegates via composed `$this->context`.
 - [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — deferred; internal refactor, no interface impact.
+- [ ] **Split jumbo `Shuriken_Analytics_Interface`** — the interface declares ~50 methods across 4 concerns. Consider splitting into `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Context_Interface` + a core `Shuriken_Analytics_Interface`. Analytics class would implement all four. Enables add-on decorators to implement only the sub-interface they need.
 
 ##### 6b — Admin Template DRY (~1,500 lines of duplication across 4+ files)
 
@@ -155,6 +156,16 @@ Admin templates (`item-stats.php`, `analytics.php`, `context-stats.php`, `voter-
 - [ ] **Remove `getTypeClass()` duplication** — identical function in `admin-ratings.js` and `block-helpers.js`. Admin file should reference the shared version.
 - [ ] **Remove unused `useRef` import** — `block-helpers.js` imports `wp.element.useRef` but never uses it.
 - [ ] **Audit unused CSS classes** — `.rating-text` and `.display-only-notice` defined in `shuriken-reviews.css` but not referenced in any template or JS. Remove or verify usage from dynamic output.
+
+##### 6e — JS Modernization ✅
+
+All 10 project JS files modernized to ES6+. jQuery `function()` callbacks intentionally preserved where `$(this)` binding is required.
+
+- [x] **`var` → `const`/`let`** — 135 `var` declarations converted across 10 files. `const` by default, `let` only when reassigned.
+- [x] **`function` → arrow functions** — named function declarations and anonymous callbacks converted to arrows (except jQuery callbacks needing `this`).
+- [x] **String concatenation → template literals** — all `+` string building converted to backtick template literals.
+- [x] **`e.which` → `e.key`** — legacy keyCode check in `admin-ratings.js` replaced with `e.key === 'Enter'`.
+- [ ] **Optional chaining** — `typeof x !== 'undefined'` checks where `x?.prop` suffices (deferred — low impact).
 
 #### Step 7 — Platform & Add-on Extensibility
 

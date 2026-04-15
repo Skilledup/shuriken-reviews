@@ -43,7 +43,7 @@
 
     registerBlockType('shuriken-reviews/rating', {
         icon: iconStar(24),
-        edit: function (props) {
+        edit: (props) => {
             const { attributes, setAttributes } = props;
             const { ratingId, titleTag, anchorTag, accentColor, starColor, postContext, hideTitle, buttonColor } = attributes;
 
@@ -75,7 +75,7 @@
             const [searchTerm, setSearchTerm] = useState('');
 
             // ---- Build CSS variables for accent / star colour ----
-            var cssVars = {};
+            const cssVars = {};
             if (accentColor) {
                 cssVars['--shuriken-user-accent'] = accentColor;
             }
@@ -105,7 +105,7 @@
                 isSearching,
                 isLoadingRating,
                 storeError
-            } = useSelect(function (select) {
+            } = useSelect((select) => {
                 const store = select(STORE_NAME);
                 return {
                     selectedRating: ratingId ? store.getRating(ratingId) : null,
@@ -121,12 +121,12 @@
             // ---- blockProps -- merge .shuriken-rating onto the wrapper
             //      when a rating is selected so is-style-* and .shuriken-rating
             //      live on the same DOM element (matching frontend HTML) ----
-            var previewClass = (ratingId && selectedRating)
+            const previewClass = (ratingId && selectedRating)
                 ? ' shuriken-rating'
                 : '';
 
             const blockProps = useBlockProps({
-                className: 'shuriken-rating-block-editor' + previewClass,
+                className: `shuriken-rating-block-editor${previewClass}`,
                 style: cssVars
             });
 
@@ -136,19 +136,19 @@
             // Error handling helpers (shared)
             const handleApiError = makeErrorHandler(setLocalError, setLastFailedAction);
             const { retryLastAction: _retry, dismissError } = makeErrorDismissers(setLocalError, setLastFailedAction, clearError);
-            function retryLastAction() { _retry(lastFailedAction); }
+            const retryLastAction = () => { _retry(lastFailedAction); };
 
             // Debounced search handler (shared)
             const handleSearchChange = useSearchHandler(searchRatings, 'all', 20);
 
             // Track search term for option building
-            const handleSearchWithTerm = useCallback(function (term) {
+            const handleSearchWithTerm = useCallback((term) => {
                 setSearchTerm(term);
                 handleSearchChange(term);
             }, [handleSearchChange]);
 
             // Fetch selected rating and initial data on mount
-            useEffect(function () {
+            useEffect(() => {
                 if (ratingId && !selectedRating) {
                     fetchRating(ratingId);
                 }
@@ -158,14 +158,14 @@
             }, []);
 
             // Fetch rating when ratingId changes
-            useEffect(function () {
+            useEffect(() => {
                 if (ratingId && !selectedRating) {
                     fetchRating(ratingId);
                 }
             }, [ratingId]);
 
             // Create new rating
-            function createNewRating() {
+            const createNewRating = () => {
                 if (!newRatingName.trim() || creating) {
                     return;
                 }
@@ -173,13 +173,13 @@
                 setCreating(true);
                 setLocalError(null);
 
-                var requestData = { name: newRatingName };
+                const requestData = { name: newRatingName };
 
                 if (newRatingMirrorOf) {
                     requestData.mirror_of = parseInt(newRatingMirrorOf, 10);
                 } else {
                     requestData.rating_type = newRatingType;
-                    var scaleRange = getScaleRange(newRatingType);
+                    const scaleRange = getScaleRange(newRatingType);
                     requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, newRatingScale));
                     if (newRatingParentId) {
                         requestData.parent_id = parseInt(newRatingParentId, 10);
@@ -191,7 +191,7 @@
                 requestData.label_description = newRatingDescription;
 
                 storeCreateRating(requestData)
-                    .then(function (data) {
+                    .then((data) => {
                         setAttributes({ ratingId: parseInt(data.id, 10) });
                         setNewRatingName('');
                         setNewRatingMirrorOf('');
@@ -204,14 +204,14 @@
                         setIsModalOpen(false);
                         setCreating(false);
                     })
-                    .catch(function (err) {
+                    .catch((err) => {
                         setCreating(false);
                         handleApiError(err, createNewRating);
                     });
-            }
+            };
 
             // Open edit modal with current rating data
-            function openEditModal() {
+            const openEditModal = () => {
                 if (!selectedRating) {
                     return;
                 }
@@ -219,17 +219,17 @@
                 setEditRatingMirrorOf(selectedRating.mirror_of ? String(selectedRating.mirror_of) : '');
                 setEditRatingParentId(selectedRating.parent_id ? String(selectedRating.parent_id) : '');
                 setEditRatingEffectType(selectedRating.effect_type || 'positive');
-                var displayOnlyValue = selectedRating.display_only;
-                var isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
+                const displayOnlyValue = selectedRating.display_only;
+                const isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
                 setEditRatingDisplayOnly(isDisplayOnly);
                 setEditRatingType(selectedRating.rating_type || 'stars');
                 setEditRatingScale(parseInt(selectedRating.scale, 10) || 5);
                 setEditRatingDescription(selectedRating.label_description || '');
                 setIsEditModalOpen(true);
-            }
+            };
 
             // Update existing rating
-            function updateRatingFn() {
+            const updateRatingFn = () => {
                 if (!editRatingName.trim() || updating || !selectedRating) {
                     return;
                 }
@@ -237,7 +237,7 @@
                 setUpdating(true);
                 setLocalError(null);
 
-                var requestData = { name: editRatingName };
+                const requestData = { name: editRatingName };
 
                 if (editRatingMirrorOf) {
                     requestData.mirror_of = parseInt(editRatingMirrorOf, 10);
@@ -246,7 +246,7 @@
                 } else {
                     requestData.mirror_of = 0;
                     requestData.rating_type = editRatingType;
-                    var scaleRange = getScaleRange(editRatingType);
+                    const scaleRange = getScaleRange(editRatingType);
                     requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, editRatingScale));
                     if (editRatingParentId) {
                         requestData.parent_id = parseInt(editRatingParentId, 10);
@@ -261,51 +261,51 @@
                 requestData.label_description = editRatingDescription;
 
                 storeUpdateRating(selectedRating.id, requestData)
-                    .then(function () {
+                    .then(() => {
                         setIsEditModalOpen(false);
                         setUpdating(false);
                     })
-                    .catch(function (err) {
+                    .catch((err) => {
                         setUpdating(false);
                         handleApiError(err, updateRatingFn);
                     });
-            }
+            };
 
             // Handle Enter key in modals
-            function handleKeyDown(event) {
+            const handleKeyDown = (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     createNewRating();
                 }
-            }
+            };
 
-            function handleEditKeyDown(event) {
+            const handleEditKeyDown = (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     updateRatingFn();
                 }
-            }
+            };
 
             // Build rating options for ComboboxControl
-            var ratingOptions = useMemo(function () {
-                var options = [];
-                var seenIds = {};
+            const ratingOptions = useMemo(() => {
+                const options = [];
+                const seenIds = {};
 
                 if (selectedRating && selectedRating.id) {
                     seenIds[selectedRating.id] = true;
                     options.push({
-                        label: selectedRating.name + ' (ID: ' + selectedRating.id + ')',
+                        label: `${selectedRating.name} (ID: ${selectedRating.id})`,
                         value: String(selectedRating.id)
                     });
                 }
 
                 if (searchTerm && searchTerm.trim().length > 0) {
-                    var results = Array.isArray(searchResults) ? searchResults : [];
-                    results.forEach(function (rating) {
+                    const results = Array.isArray(searchResults) ? searchResults : [];
+                    results.forEach((rating) => {
                         if (rating && rating.id && !seenIds[rating.id]) {
                             seenIds[rating.id] = true;
                             options.push({
-                                label: rating.name + ' (ID: ' + rating.id + ')',
+                                label: `${rating.name} (ID: ${rating.id})`,
                                 value: String(rating.id)
                             });
                         }
@@ -316,10 +316,10 @@
             }, [searchResults, selectedRating, searchTerm]);
 
             // Type-aware preview elements
-            var preview = selectedRating ? renderRatingPreview(selectedRating, wp.element.createElement) : [null, null];
+            const preview = selectedRating ? renderRatingPreview(selectedRating, wp.element.createElement) : [null, null];
 
             // Loading state
-            var loading = isLoadingRating || (ratingId && !selectedRating && !localError && !storeError);
+            const loading = isLoadingRating || (ratingId && !selectedRating && !localError && !storeError);
 
             // ---- Render ----
             return wp.element.createElement(
@@ -337,7 +337,7 @@
                             label: __('Select Rating', 'shuriken-reviews'),
                             value: ratingId ? String(ratingId) : '',
                             options: ratingOptions,
-                            onChange: function (value) {
+                            onChange: (value) => {
                                 setAttributes({ ratingId: value ? parseInt(value, 10) : 0 });
                             },
                             onFilterValueChange: handleSearchWithTerm,
@@ -356,7 +356,7 @@
                             { style: { display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '16px' } },
                             wp.element.createElement(Button, {
                                 variant: 'secondary',
-                                onClick: function () { setIsModalOpen(true); }
+                                onClick: () => { setIsModalOpen(true); }
                             }, __('Create New', 'shuriken-reviews')),
                             selectedRating && wp.element.createElement(Button, {
                                 variant: 'secondary',
@@ -367,15 +367,15 @@
                             label: __('Title Tag', 'shuriken-reviews'),
                             value: titleTag,
                             options: titleTagOptions,
-                            onChange: function (value) {
+                            onChange: (value) => {
                                 setAttributes({ titleTag: value || 'h2' });
                             },
-                            onFilterValueChange: function () {}
+                            onFilterValueChange: () => {}
                         }),
                         wp.element.createElement(TextControl, {
                             label: __('Anchor ID', 'shuriken-reviews'),
                             value: anchorTag,
-                            onChange: function (value) {
+                            onChange: (value) => {
                                 setAttributes({ anchorTag: value });
                             },
                             help: __('Optional anchor ID for linking to this rating.', 'shuriken-reviews')
@@ -383,7 +383,7 @@
                         wp.element.createElement(CheckboxControl, {
                             label: __('Per-post voting', 'shuriken-reviews'),
                             checked: postContext,
-                            onChange: function (value) {
+                            onChange: (value) => {
                                 setAttributes({ postContext: value });
                             },
                             help: __('When enabled, votes are counted separately for each post/page this block appears on.', 'shuriken-reviews')
@@ -391,7 +391,7 @@
                         wp.element.createElement(CheckboxControl, {
                             label: __('Hide title & description', 'shuriken-reviews'),
                             checked: hideTitle,
-                            onChange: function (value) {
+                            onChange: (value) => {
                                 setAttributes({ hideTitle: value });
                             },
                             help: __('Hide the rating name and description. Useful in Query Loop layouts.', 'shuriken-reviews')
@@ -401,17 +401,17 @@
                     wp.element.createElement(PanelColorSettings, {
                         title: __('Colors', 'shuriken-reviews'),
                         initialOpen: false,
-                        colorSettings: (function () {
-                                var ratingType = selectedRating ? getRatingType(selectedRating) : 'stars';
-                                var isNumeric = ratingType === 'numeric';
+                        colorSettings: (() => {
+                                const ratingType = selectedRating ? getRatingType(selectedRating) : 'stars';
+                                const isNumeric = ratingType === 'numeric';
                                 return buildColorSettings({
                                     ratingType: ratingType,
                                     accentColor: accentColor,
                                     starColor: starColor,
                                     buttonColor: buttonColor || undefined,
-                                    setAccent: function (value) { setAttributes({ accentColor: value || '' }); },
-                                    setStar: function (value) { setAttributes({ starColor: value || '' }); },
-                                    setButton: isNumeric ? function (value) { setAttributes({ buttonColor: value || '' }); } : undefined
+                                    setAccent: (value) => { setAttributes({ accentColor: value || '' }); },
+                                    setStar: (value) => { setAttributes({ starColor: value || '' }); },
+                                    setButton: isNumeric ? (value) => { setAttributes({ buttonColor: value || '' }); } : undefined
                                 });
                             })()
                     })
@@ -421,7 +421,7 @@
                     Modal,
                     {
                         title: __('Create New Rating', 'shuriken-reviews'),
-                        onRequestClose: function () {
+                        onRequestClose: () => {
                             setIsModalOpen(false);
                             setNewRatingName('');
                             setNewRatingMirrorOf('');
@@ -453,11 +453,11 @@
                         label: __('Mirror of', 'shuriken-reviews'),
                         value: newRatingMirrorOf,
                         options: [{ label: __(' Not a Mirror ', 'shuriken-reviews'), value: '' }].concat(
-                            mirrorableRatings.map(function (r) {
+                            mirrorableRatings.map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
-                        onChange: function (value) {
+                        onChange: (value) => {
                             setNewRatingMirrorOf(value);
                             if (value) {
                                 setNewRatingParentId('');
@@ -470,9 +470,9 @@
                         label: __('Rating Type', 'shuriken-reviews'),
                         value: newRatingType,
                         options: ratingTypeOptions,
-                        onChange: function (value) {
+                        onChange: (value) => {
                             setNewRatingType(value);
-                            var range = getScaleRange(value);
+                            const range = getScaleRange(value);
                             if (newRatingScale < range.min || newRatingScale > range.max) {
                                 setNewRatingScale(range.min === range.max ? range.min : 5);
                             }
@@ -483,9 +483,9 @@
                         label: __('Scale', 'shuriken-reviews'),
                         type: 'number',
                         value: String(newRatingScale),
-                        onChange: function (value) {
-                            var range = getScaleRange(newRatingType);
-                            var num = parseInt(value, 10);
+                        onChange: (value) => {
+                            const range = getScaleRange(newRatingType);
+                            const num = parseInt(value, 10);
                             if (!isNaN(num)) {
                                 setNewRatingScale(Math.max(range.min, Math.min(range.max, num)));
                             }
@@ -498,7 +498,7 @@
                         label: __('Parent Rating', 'shuriken-reviews'),
                         value: newRatingParentId,
                         options: [{ label: __(' None ', 'shuriken-reviews'), value: '' }].concat(
-                            parentRatings.map(function (r) {
+                            parentRatings.map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
@@ -516,8 +516,8 @@
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     // Type-compatibility warning for sub-ratings
-                    !newRatingMirrorOf && newRatingParentId && (function () {
-                        var parent = parentRatings.find(function (r) { return String(r.id) === newRatingParentId; });
+                    !newRatingMirrorOf && newRatingParentId && (() => {
+                        const parent = parentRatings.find((r) => { return String(r.id) === newRatingParentId; });
                         if (parent && !areTypesCompatible(parent.rating_type || 'stars', newRatingType)) {
                             return wp.element.createElement(Notice, {
                                 status: 'warning',
@@ -538,7 +538,7 @@
                         { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
                         wp.element.createElement(Button, {
                             variant: 'secondary',
-                            onClick: function () { setIsModalOpen(false); }
+                            onClick: () => { setIsModalOpen(false); }
                         }, __('Cancel', 'shuriken-reviews')),
                         wp.element.createElement(Button, {
                             variant: 'primary',
@@ -553,7 +553,7 @@
                     Modal,
                     {
                         title: __('Edit Rating', 'shuriken-reviews'),
-                        onRequestClose: function () { setIsEditModalOpen(false); },
+                        onRequestClose: () => { setIsEditModalOpen(false); },
                         style: { width: '500px' }
                     },
                     wp.element.createElement(TextControl, {
@@ -573,13 +573,13 @@
                         label: __('Mirror of', 'shuriken-reviews'),
                         value: editRatingMirrorOf,
                         options: [{ label: __(' Not a Mirror ', 'shuriken-reviews'), value: '' }].concat(
-                            mirrorableRatings.filter(function (r) {
+                            mirrorableRatings.filter((r) => {
                                 return parseInt(r.id, 10) !== parseInt(ratingId, 10);
-                            }).map(function (r) {
+                            }).map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
-                        onChange: function (value) {
+                        onChange: (value) => {
                             setEditRatingMirrorOf(value);
                             if (value) {
                                 setEditRatingParentId('');
@@ -591,9 +591,9 @@
                         label: __('Rating Type', 'shuriken-reviews'),
                         value: editRatingType,
                         options: ratingTypeOptions,
-                        onChange: function (value) {
+                        onChange: (value) => {
                             setEditRatingType(value);
-                            var range = getScaleRange(value);
+                            const range = getScaleRange(value);
                             if (editRatingScale < range.min || editRatingScale > range.max) {
                                 setEditRatingScale(range.min === range.max ? range.min : 5);
                             }
@@ -607,9 +607,9 @@
                         label: __('Scale', 'shuriken-reviews'),
                         type: 'number',
                         value: String(editRatingScale),
-                        onChange: function (value) {
-                            var range = getScaleRange(editRatingType);
-                            var num = parseInt(value, 10);
+                        onChange: (value) => {
+                            const range = getScaleRange(editRatingType);
+                            const num = parseInt(value, 10);
                             if (!isNaN(num)) {
                                 setEditRatingScale(Math.max(range.min, Math.min(range.max, num)));
                             }
@@ -625,9 +625,9 @@
                         label: __('Parent Rating', 'shuriken-reviews'),
                         value: editRatingParentId,
                         options: [{ label: __(' None ', 'shuriken-reviews'), value: '' }].concat(
-                            parentRatings.filter(function (r) {
+                            parentRatings.filter((r) => {
                                 return parseInt(r.id, 10) !== parseInt(ratingId, 10);
-                            }).map(function (r) {
+                            }).map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
@@ -644,8 +644,8 @@
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     // Type-compatibility warning for edit modal
-                    !editRatingMirrorOf && editRatingParentId && (function () {
-                        var parent = parentRatings.find(function (r) { return String(r.id) === editRatingParentId; });
+                    !editRatingMirrorOf && editRatingParentId && (() => {
+                        const parent = parentRatings.find((r) => { return String(r.id) === editRatingParentId; });
                         if (parent && !areTypesCompatible(parent.rating_type || 'stars', editRatingType)) {
                             return wp.element.createElement(Notice, {
                                 status: 'warning',
@@ -665,7 +665,7 @@
                         { style: { marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
                         wp.element.createElement(Button, {
                             variant: 'secondary',
-                            onClick: function () { setIsEditModalOpen(false); }
+                            onClick: () => { setIsEditModalOpen(false); }
                         }, __('Cancel', 'shuriken-reviews')),
                         wp.element.createElement(Button, {
                             variant: 'primary',
@@ -719,6 +719,6 @@
                 )
             );
         },
-        save: function () { return null; }
+        save: () => null
     });
 })(window.wp);
