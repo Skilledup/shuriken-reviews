@@ -205,7 +205,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
 - [ ] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
 - [x] **Rating label description** — optional description text displayed beneath a rating's title; stored as a `label_description` field on the rating; exposed in block editor, shortcodes, and REST API
-- [x] **Hide title & description** — `hideTitle` block attribute and `hide_title` shortcode attribute suppress the rating title and description; particularly useful in Query Loop layouts where each item shouldn't repeat the rating name
+- [x] **Hide title & description** — `hideTitle` block attribute and `hide_title` shortcode attribute suppress the rating name and description; particularly useful in Query Loop layouts where each item shouldn't repeat the rating name
 - [ ] **Star rating with multiple icons** — the current star rating type only supports a single icon for all stars. We want to support multiple icons (e.g. 1 star = 😡, 2 stars = 🙁, 3 stars = 😐, 4 stars = 🙂, 5 stars = 😍) with a mapping of icon per rating value. This is a separate system from Emoji reactions system.
 - [x] **Date filter not working on contextual item-stats page** — the time period `<select>` change handler was only wired up in the global view's `<script>` block; the contextual view's script was missing the jQuery bindings entirely. Fixed by centralizing into `admin-analytics.js`.
 - [x] **Best Performing avg wrong for binary types** — `get_rating_context_summary()` used `denormalize_average()` on like/dislike's 0–1 ratio, showing `0.2` instead of `100%`. Fixed to compute percentage for binary types.
@@ -228,7 +228,7 @@ A gap audit was done using the "engagement factor (views vs votes)" feature as a
 
 ### Internationalization
 - [ ] Alternative calendar display hook — `shuriken_display_date` filter; route all dates through helper (Jalali/Shamsi)
-- [ ] Native multilingual support — WPML/Polylang compatibility for rating titles/descriptions.
+- [ ] Native multilingual support — WPML/Polylang compatibility for rating names/descriptions.
 
 ---
 

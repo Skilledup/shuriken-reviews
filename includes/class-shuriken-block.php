@@ -28,7 +28,7 @@ class Shuriken_Block {
     private static ?self $instance = null;
 
     /**
-     * Allowed HTML tags for rating title
+     * Allowed HTML tags for rating name
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
 

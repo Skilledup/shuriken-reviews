@@ -394,7 +394,7 @@
                             onChange: function (value) {
                                 setAttributes({ hideTitle: value });
                             },
-                            help: __('Hide the rating title and description. Useful in Query Loop layouts.', 'shuriken-reviews')
+                            help: __('Hide the rating name and description. Useful in Query Loop layouts.', 'shuriken-reviews')
                         })
                     ),
                     // Colors Panel (type-aware)
@@ -446,8 +446,8 @@
                         label: __('Description', 'shuriken-reviews'),
                         value: newRatingDescription,
                         onChange: setNewRatingDescription,
-                        placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
-                        help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
+                        placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
+                        help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),
@@ -566,8 +566,8 @@
                         label: __('Description', 'shuriken-reviews'),
                         value: editRatingDescription,
                         onChange: setEditRatingDescription,
-                        placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
-                        help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
+                        placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
+                        help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),

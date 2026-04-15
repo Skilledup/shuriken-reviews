@@ -28,7 +28,7 @@ class Shuriken_Shortcodes {
     private static ?self $instance = null;
 
     /**
-     * Allowed HTML tags for rating title
+     * Allowed HTML tags for rating name
      */
     const ALLOWED_TITLE_TAGS = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'span');
 
@@ -84,7 +84,7 @@ class Shuriken_Shortcodes {
      *     Shortcode attributes.
      *     
      *     @type int    $id           Required. The ID of the rating to display.
-     *     @type string $tag          Optional. HTML tag to wrap the rating title. Default 'h2'.
+     *     @type string $tag          Optional. HTML tag to wrap the rating name. Default 'h2'.
      *     @type string $anchor_tag   Optional. ID attribute for anchor linking. Default empty.
      *     @type string $style        Optional. Preset style name (classic, card, minimal, dark, outlined). Default empty.
      *     @type string $accent_color Optional. Hex color for accent elements. Default empty.

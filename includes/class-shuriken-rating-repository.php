@@ -245,7 +245,7 @@ class Shuriken_Rating_Repository {
      * @param int|null    $mirror_of         Original rating ID to mirror (optional)
      * @param string      $rating_type       Rating type
      * @param int         $scale             Display scale
-     * @param string|null $label_description Optional description displayed beneath the rating title
+     * @param string|null $label_description Optional description displayed beneath the rating name
      * @return int The new rating ID
      * @throws Shuriken_Database_Exception If insert fails
      * @throws Shuriken_Validation_Exception If name is empty

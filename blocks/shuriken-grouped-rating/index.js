@@ -850,7 +850,7 @@
                             label: __('Hide title & description', 'shuriken-reviews'),
                             checked: hideTitle,
                             onChange: function (value) { setAttributes({ hideTitle: value }); },
-                            help: __('Hide rating titles and descriptions. Useful in Query Loop layouts.', 'shuriken-reviews')
+                            help: __('Hide rating names and descriptions. Useful in Query Loop layouts.', 'shuriken-reviews')
                         })
                     ),
 
@@ -1030,8 +1030,8 @@
                             label: __('Description', 'shuriken-reviews'),
                             value: newParentDescription,
                             onChange: setNewParentDescription,
-                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
-                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
+                            placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                         }),
                         !newRatingIsMirror && wp.element.createElement(CheckboxControl, {
                             label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
@@ -1123,8 +1123,8 @@
                             label: __('Description', 'shuriken-reviews'),
                             value: editParentDescription,
                             onChange: setEditParentDescription,
-                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
-                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
+                            placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                         }),
                         wp.element.createElement(CheckboxControl, {
                             label: __('Display Only (No Direct Voting)', 'shuriken-reviews'),
@@ -1361,8 +1361,8 @@
                             label: __('Description', 'shuriken-reviews'),
                             value: newChildDescription,
                             onChange: setNewChildDescription,
-                            placeholder: __('Optional description beneath rating title', 'shuriken-reviews'),
-                            help: __('Optional text displayed beneath the rating title.', 'shuriken-reviews')
+                            placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
+                            help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                         }),
                         wp.element.createElement(SelectControl, {
                             label: __('Effect on Parent', 'shuriken-reviews'),

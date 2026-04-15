@@ -95,7 +95,7 @@ Create a new rating.
 | `mirror_of` | integer | No | null | ID of rating to mirror |
 | `effect_type` | string | No | `positive` | Effect type (`positive` or `negative`) |
 | `display_only` | boolean | No | `false` | Whether rating is display-only |
-| `label_description` | string | No | `""` | Optional description displayed beneath the rating title |
+| `label_description` | string | No | `""` | Optional description displayed beneath the rating name |
 
 **Example Request:**
 ```json
@@ -146,7 +146,7 @@ Update an existing rating.
 | `mirror_of` | integer | No | New mirror source ID |
 | `effect_type` | string | No | New effect type |
 | `display_only` | boolean | No | New display-only status |
-| `label_description` | string | No | Description text beneath the rating title |
+| `label_description` | string | No | Description text beneath the rating name |
 
 **Response:** Returns the updated rating object.
 

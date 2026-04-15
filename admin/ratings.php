@@ -505,7 +505,7 @@ $col_class = function($col) use ($hidden_columns) {
                                         <label>
                                             <span class="title"><?php esc_html_e('Description', 'shuriken-reviews'); ?></span>
                                             <span class="input-text-wrap">
-                                                <input type="text" name="label_description" value="<?php echo esc_attr($rating->label_description ?? ''); ?>" placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>" maxlength="500">
+                                                <input type="text" name="label_description" value="<?php echo esc_attr($rating->label_description ?? ''); ?>" placeholder="<?php esc_attr_e('Optional description beneath rating name', 'shuriken-reviews'); ?>" maxlength="500">
                                             </span>
                                         </label>
                                         
@@ -747,9 +747,9 @@ $col_class = function($col) use ($hidden_columns) {
                                    id="label_description"
                                    class="regular-text"
                                    maxlength="500"
-                                   placeholder="<?php esc_attr_e('Optional description beneath rating title', 'shuriken-reviews'); ?>">
+                                   placeholder="<?php esc_attr_e('Optional description beneath rating name', 'shuriken-reviews'); ?>">
                             <p class="description">
-                                <?php esc_html_e('Optional text displayed beneath the rating title.', 'shuriken-reviews'); ?>
+                                <?php esc_html_e('Optional text displayed beneath the rating name.', 'shuriken-reviews'); ?>
                             </p>
                         </td>
                     </tr>
