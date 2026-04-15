@@ -82,7 +82,7 @@ $col_count          = $show_source_column ? 6 : 5;
                         </td>
                         <?php if ( $show_source_column ) : ?>
                         <td class="column-source">
-                            <?php if ( $vote->rating_id == $rating_id ) : ?>
+                            <?php if ( (int) $vote->rating_id === (int) $rating_id ) : ?>
                                 <span class="source-badge direct" title="<?php esc_attr_e( 'Direct vote on parent', 'shuriken-reviews' ); ?>">
                                     <?php Shuriken_Icons::render( 'star', array( 'width' => 14, 'height' => 14 ) ); ?>
                                     <?php esc_html_e( 'Direct', 'shuriken-reviews' ); ?>
