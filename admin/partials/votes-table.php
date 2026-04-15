@@ -114,7 +114,7 @@ $col_count          = $show_source_column ? 6 : 5;
                 <?php endforeach; ?>
             <?php else : ?>
                 <tr>
-                    <td colspan="<?php echo $col_count; ?>"><?php echo esc_html( $empty_message ); ?></td>
+                    <td colspan="<?php echo esc_attr( $col_count ); ?>"><?php echo esc_html( $empty_message ); ?></td>
                 </tr>
             <?php endif; ?>
         </tbody>
