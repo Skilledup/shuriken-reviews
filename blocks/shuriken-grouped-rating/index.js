@@ -576,7 +576,6 @@
                     })
                     .catch((err) => { handleApiError(err, retry); });
             };
-            }
 
             // ---- Mirror CRUD helpers ----
             const createMirrorForParent = () => {
