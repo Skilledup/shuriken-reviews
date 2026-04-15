@@ -776,3 +776,28 @@ function shuriken_sort_link(string $col, string $current_sort, string $current_o
     return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
 }
 
+/**
+ * Format a rating value for display based on the rating type.
+ *
+ * Handles the common 3-way conditional: like_dislike → approval %, approval → raw count, stars/numeric → formatted average.
+ *
+ * @param string                     $rating_type  The rating type (like_dislike, approval, stars, numeric, etc.)
+ * @param int                        $total_votes  Total number of votes
+ * @param int                        $total_rating Sum of rating values (likes count for like_dislike)
+ * @param float                      $average      Normalized average (0-1 range)
+ * @param Shuriken_Analytics_Interface $analytics  Analytics instance for format_average_display()
+ * @param int                        $scale        Rating scale (default 5)
+ * @return string Escaped, display-ready value string
+ * @since 1.15.5
+ */
+function shuriken_format_rating_value(string $rating_type, int $total_votes, int $total_rating, float $average, Shuriken_Analytics_Interface $analytics, int $scale = 5): string {
+    if ($rating_type === 'like_dislike') {
+        $approval_pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
+        return esc_html($approval_pct) . '%';
+    }
+    if ($rating_type === 'approval') {
+        return esc_html((string) $total_rating);
+    }
+    return esc_html($analytics->format_average_display($average, $rating_type, $scale, $total_votes, $total_rating));
+}
+

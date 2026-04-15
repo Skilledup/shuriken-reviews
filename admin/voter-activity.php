@@ -155,49 +155,17 @@ $tendency_icons = array(
         <?php endif; ?>
     </div>
     
-    <!-- Date Range Filter -->
-    <div class="shuriken-filter-bar">
-        <form method="get" action="" id="shuriken-voter-date-filter-form">
-            <input type="hidden" name="page" value="shuriken-reviews-voter-activity">
-            <?php if ($is_member) : ?>
-                <input type="hidden" name="user_id" value="<?php echo esc_attr($user_id); ?>">
-            <?php else : ?>
-                <input type="hidden" name="user_ip" value="<?php echo esc_attr($user_ip); ?>">
-            <?php endif; ?>
-            <input type="hidden" name="range_type" id="voter_range_type" value="<?php echo esc_attr($range_type); ?>">
-            
-            <div class="filter-row">
-                <label for="voter_date_range"><?php esc_html_e('Time Period:', 'shuriken-reviews'); ?></label>
-                <select name="date_range" id="voter_date_range" class="preset-select">
-                    <option value="7" <?php selected($preset_value, '7'); ?>><?php esc_html_e('Last 7 Days', 'shuriken-reviews'); ?></option>
-                    <option value="30" <?php selected($preset_value, '30'); ?>><?php esc_html_e('Last 30 Days', 'shuriken-reviews'); ?></option>
-                    <option value="90" <?php selected($preset_value, '90'); ?>><?php esc_html_e('Last 90 Days', 'shuriken-reviews'); ?></option>
-                    <option value="365" <?php selected($preset_value, '365'); ?>><?php esc_html_e('Last Year', 'shuriken-reviews'); ?></option>
-                    <option value="all" <?php selected($preset_value, 'all'); ?>><?php esc_html_e('All Time', 'shuriken-reviews'); ?></option>
-                    <option value="custom" <?php selected($range_type, 'custom'); ?>><?php esc_html_e('Custom Range...', 'shuriken-reviews'); ?></option>
-                </select>
-                
-                <div class="custom-date-range" style="<?php echo $range_type === 'custom' ? '' : 'display: none;'; ?>">
-                    <label for="voter_start_date"><?php esc_html_e('From:', 'shuriken-reviews'); ?></label>
-                    <input type="date" name="start_date" id="voter_start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
-                    <label for="voter_end_date"><?php esc_html_e('To:', 'shuriken-reviews'); ?></label>
-                    <input type="date" name="end_date" id="voter_end_date" value="<?php echo esc_attr($end_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
-                    <button type="submit" class="button button-primary"><?php esc_html_e('Apply', 'shuriken-reviews'); ?></button>
-                </div>
-            </div>
-            
-            <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
-            <div class="current-range-label">
-                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
-                <?php echo esc_html($date_range_label); ?>
-                <a href="<?php echo esc_url($base_filter_url); ?>" class="clear-filter">
-                    <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
-                </a>
-            </div>
-            <?php endif; ?>
-        </form>
+    <?php
+    $form_id = 'shuriken-voter-date-filter-form';
+    $id_prefix = 'voter_';
+    $hidden_fields_html = '<input type="hidden" name="page" value="shuriken-reviews-voter-activity">'
+        . ($is_member
+            ? '<input type="hidden" name="user_id" value="' . esc_attr($user_id) . '">'
+            : '<input type="hidden" name="user_ip" value="' . esc_attr($user_ip) . '">'
+        );
+    $clear_url = $base_filter_url;
+    include __DIR__ . '/partials/date-filter-bar.php';
+    ?>
     </div>
     
     <!-- Overview Stats Cards -->
@@ -418,28 +386,10 @@ $tendency_icons = array(
             </tbody>
         </table>
         
-        <?php if ($total_pages > 1) : ?>
-            <div class="tablenav bottom">
-                <div class="tablenav-pages">
-                    <span class="displaying-num">
-                        <?php printf(esc_html(_n('%s vote', '%s votes', $total_votes_count, 'shuriken-reviews')), number_format_i18n($total_votes_count)); ?>
-                    </span>
-                    <span class="pagination-links">
-                        <?php
-                        $page_links = paginate_links(array(
-                            'base'      => add_query_arg('paged', '%#%'),
-                            'format'    => '',
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                            'total'     => $total_pages,
-                            'current'   => $current_page,
-                        ));
-                        echo $page_links;
-                        ?>
-                    </span>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php
+        $total_count = $total_votes_count;
+        include __DIR__ . '/partials/pagination.php';
+        ?>
     </div>
     
     <!-- Export Section -->

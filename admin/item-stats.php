@@ -339,16 +339,7 @@ if ($rating_type === 'like_dislike') {
             <span class="stat-icon"><?php Shuriken_Icons::render('star', array('width' => 28, 'height' => 28)); ?></span>
             <div class="stat-content">
                 <h3>
-                    <?php
-                    if ($rating_type === 'like_dislike') {
-                        $ctx_approval = $context_summary->total_votes > 0 ? round(($context_summary->total_rating / $context_summary->total_votes) * 100) : 0;
-                        echo esc_html($ctx_approval) . '%';
-                    } elseif ($rating_type === 'approval') {
-                        echo esc_html($context_summary->total_rating);
-                    } else {
-                        echo esc_html($analytics->format_average_display($context_summary->average, $rating_type, $rating->scale ?: 5, $context_summary->total_votes, $context_summary->total_rating));
-                    }
-                    ?>
+                    <?php echo shuriken_format_rating_value($rating_type, $context_summary->total_votes, $context_summary->total_rating, $context_summary->average, $analytics, $rating->scale ?: 5); ?>
                 </h3>
                 <p>
                     <?php
@@ -555,27 +546,15 @@ if ($rating_type === 'like_dislike') {
             </tbody>
         </table>
         
-        <?php if ($contexts_result->total_pages > 1) : ?>
-        <div class="tablenav bottom">
-            <div class="tablenav-pages">
-                <span class="displaying-num">
-                    <?php printf(esc_html(_n('%s context', '%s contexts', $contexts_result->total_count, 'shuriken-reviews')), number_format_i18n($contexts_result->total_count)); ?>
-                </span>
-                <span class="pagination-links">
-                    <?php
-                    echo paginate_links(array(
-                        'base'      => add_query_arg('ctx_paged', '%#%'),
-                        'format'    => '',
-                        'prev_text' => '&laquo;',
-                        'next_text' => '&raquo;',
-                        'total'     => $contexts_result->total_pages,
-                        'current'   => $ctx_page,
-                    ));
-                    ?>
-                </span>
-            </div>
-        </div>
-        <?php endif; ?>
+        <?php
+        $total_pages = $contexts_result->total_pages;
+        $current_page = $ctx_page;
+        $total_count = $contexts_result->total_count;
+        $page_arg = 'ctx_paged';
+        $singular = __('context', 'shuriken-reviews');
+        $plural = __('contexts', 'shuriken-reviews');
+        include __DIR__ . '/partials/pagination.php';
+        ?>
     </div>
 
     <?php else : // Global view (existing content) ?>
@@ -969,28 +948,10 @@ if ($rating_type === 'like_dislike') {
             </tbody>
         </table>
         
-        <?php if ($total_pages > 1) : ?>
-            <div class="tablenav bottom">
-                <div class="tablenav-pages">
-                    <span class="displaying-num">
-                        <?php printf(esc_html(_n('%s vote', '%s votes', $total_votes_count, 'shuriken-reviews')), number_format_i18n($total_votes_count)); ?>
-                    </span>
-                    <span class="pagination-links">
-                        <?php
-                        $page_links = paginate_links(array(
-                            'base'      => add_query_arg('paged', '%#%'),
-                            'format'    => '',
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                            'total'     => $total_pages,
-                            'current'   => $current_page,
-                        ));
-                        echo $page_links;
-                        ?>
-                    </span>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php
+        $total_count = $total_votes_count;
+        include __DIR__ . '/partials/pagination.php';
+        ?>
     </div>
     
     <!-- Export Section -->

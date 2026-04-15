@@ -50,45 +50,12 @@ $contextual_posts     = $analytics->get_contextual_post_count();
 <div class="wrap shuriken-analytics">
     <h1><?php esc_html_e('Stats & Analytics', 'shuriken-reviews'); ?></h1>
     
-    <!-- Date Range Filter -->
-    <div class="shuriken-filter-bar">
-        <form method="get" action="" id="shuriken-date-filter-form">
-            <input type="hidden" name="page" value="shuriken-reviews-analytics">
-            <input type="hidden" name="range_type" id="range_type" value="<?php echo esc_attr($range_type); ?>">
-            
-            <div class="filter-row">
-                <label for="date_range"><?php esc_html_e('Time Period:', 'shuriken-reviews'); ?></label>
-                <select name="date_range" id="date_range" class="preset-select">
-                    <option value="7" <?php selected($preset_value, '7'); ?>><?php esc_html_e('Last 7 Days', 'shuriken-reviews'); ?></option>
-                    <option value="30" <?php selected($preset_value, '30'); ?>><?php esc_html_e('Last 30 Days', 'shuriken-reviews'); ?></option>
-                    <option value="90" <?php selected($preset_value, '90'); ?>><?php esc_html_e('Last 90 Days', 'shuriken-reviews'); ?></option>
-                    <option value="365" <?php selected($preset_value, '365'); ?>><?php esc_html_e('Last Year', 'shuriken-reviews'); ?></option>
-                    <option value="all" <?php selected($preset_value, 'all'); ?>><?php esc_html_e('All Time', 'shuriken-reviews'); ?></option>
-                    <option value="custom" <?php selected($range_type, 'custom'); ?>><?php esc_html_e('Custom Range...', 'shuriken-reviews'); ?></option>
-                </select>
-                
-                <div class="custom-date-range" style="<?php echo $range_type === 'custom' ? '' : 'display: none;'; ?>">
-                    <label for="start_date"><?php esc_html_e('From:', 'shuriken-reviews'); ?></label>
-                    <input type="date" name="start_date" id="start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
-                    <label for="end_date"><?php esc_html_e('To:', 'shuriken-reviews'); ?></label>
-                    <input type="date" name="end_date" id="end_date" value="<?php echo esc_attr($end_date); ?>" max="<?php echo esc_attr(date('Y-m-d')); ?>">
-                    
-                    <button type="submit" class="button button-primary"><?php esc_html_e('Apply', 'shuriken-reviews'); ?></button>
-                </div>
-            </div>
-            
-            <?php if ($range_type === 'custom' && ($start_date || $end_date)) : ?>
-            <div class="current-range-label">
-                <?php Shuriken_Icons::render('calendar', array('width' => 18, 'height' => 18)); ?>
-                <?php echo esc_html($date_range_label); ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews-analytics')); ?>" class="clear-filter">
-                    <?php esc_html_e('Clear', 'shuriken-reviews'); ?>
-                </a>
-            </div>
-            <?php endif; ?>
-        </form>
-    </div>
+    <?php
+    $form_id = 'shuriken-date-filter-form';
+    $hidden_fields_html = '<input type="hidden" name="page" value="shuriken-reviews-analytics">';
+    $clear_url = admin_url('admin.php?page=shuriken-reviews-analytics');
+    include __DIR__ . '/partials/date-filter-bar.php';
+    ?>
     
     <!-- Overview Cards -->
     <div class="shuriken-stats-grid">

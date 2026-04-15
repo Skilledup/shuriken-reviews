@@ -17,12 +17,40 @@ if (!defined('ABSPATH')) {
 /**
  * Trait Shuriken_Analytics_Helpers
  *
- * Provides build_date_condition() for any analytics class that works with
- * date-filtered queries. Classes using this trait must have a $wpdb property.
+ * Provides build_date_condition() and rating-type utilities for any analytics
+ * class that works with date-filtered queries. Classes using this trait must
+ * have a $wpdb property.
  *
  * @since 1.14.0
  */
 trait Shuriken_Analytics_Helpers {
+
+    /**
+     * Check if a rating type uses binary values (0/1) instead of a 1-N scale
+     *
+     * @param string $rating_type Rating type identifier
+     * @return bool
+     */
+    protected function is_binary_type(string $rating_type): bool {
+        return (Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
+    }
+
+    /**
+     * Build an empty distribution array for a rating type and scale
+     *
+     * Stars/numeric: keys 1 through scale (e.g., {1:0, 2:0, 3:0, 4:0, 5:0})
+     * Binary: keys 0 and 1 (e.g., {0:0, 1:0})
+     *
+     * @param string $rating_type Rating type
+     * @param int $scale Rating scale
+     * @return array Empty distribution array
+     */
+    protected function build_empty_distribution(string $rating_type, int $scale): array {
+        if ($this->is_binary_type($rating_type)) {
+            return array(0 => 0, 1 => 0);
+        }
+        return array_fill(1, Shuriken_Database::RATING_SCALE_DEFAULT, 0);
+    }
 
     /**
      * Build date condition SQL for filtering by date range

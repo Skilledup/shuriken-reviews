@@ -52,7 +52,7 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 
 ## Up Next
 
-### 1.15.5 — Modern PHP & Architecture
+### 1.15.x — Modern PHP & Architecture
 
 Items are ordered by dependency and impact. The enum is the load-bearing foundation for everything — decomposing without it means string guards get duplicated into each new file. Callables and CPP are quick sweeps done while the class shapes are still stable. The two decompositions follow in dependency order (DB before REST). Platform extensibility is easiest to do surgically once the classes are small. Performance caps the series with a stable service layer to hang caches on.
 
@@ -108,32 +108,36 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 Full codebase audit identified **~4,200+ lines** of redundancy, bloat, and maintainability debt across PHP, JS, and admin templates. Items ordered by impact and dependency — decompositions first (they unblock later DRY work), then template/JS cleanup.
 
-##### ~~6a — `Shuriken_Analytics` Decomposition (2,608 → ~1,300 lines)~~ ✅
+##### ~~6a — `Shuriken_Analytics` Decomposition (2,608 → ~1,748 lines)~~ ✅
 
-The largest file in the codebase. Single class responsible for formatting, ranking, contextual analytics, pagination, and chart data preparation. Decomposed into three focused classes + a slimmed-down coordinator.
+The largest file in the codebase. Single class responsible for formatting, ranking, contextual analytics, pagination, and chart data preparation. Decomposed into four focused classes + a slimmed-down coordinator.
 
 | Class | Lines | Responsibility |
 |---|---|---|
-| `Shuriken_Analytics` (coordinator) | ~2,186 | Core analytics queries, delegates formatting + ranking, scoped methods merged |
+| `Shuriken_Analytics` (coordinator) | ~1,748 | Core + dashboard analytics, delegates formatting, ranking, and context queries |
 | `Shuriken_Analytics_Formatter` | ~153 | `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()` |
 | `Shuriken_Analytics_Ranking` | ~184 | `get_top_rated()`, `get_most_voted()`, `get_low_performers()` — consolidated into single parametric `get_ranked()` with `get_inversion_sql()` static helper |
+| `Shuriken_Analytics_Context` | ~587 | 12 per-post/contextual methods: `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, etc. |
 
 - [x] **Extract `Shuriken_Analytics_Formatter`** — 5 display methods moved to stateless class. Analytics delegates via composed `$this->formatter`.
 - [x] **Extract `Shuriken_Analytics_Ranking`** — 3 ranking methods consolidated into single parametric `get_ranked()` engine (cached + date-filtered paths). Effect-type inversion SQL extracted to `get_inversion_sql()` static helper. Analytics delegates via composed `$this->ranking`.
 - [x] **Merge scoped method duplicates** — 7 pairs merged. Base methods gained `?string $scope = null` param: `get_votes_over_time`, `get_rating_stats`, `get_rating_distribution`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`. `_scoped()` methods retained as thin delegates for backward compat. Interface updated. `admin/item-stats.php` callers switched to base+scope.
 - [x] **DRY effect-type inversion SQL** — `Shuriken_Analytics_Ranking::get_inversion_sql()` static method extracts the CASE WHEN fragment used by ranking queries.
+- [x] **Extract `Shuriken_Analytics_Context`** — 12 contextual analytics methods (660 lines) moved to dedicated class. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait for sharing. Analytics delegates via composed `$this->context`.
 - [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — deferred; internal refactor, no interface impact.
 
 ##### 6b — Admin Template DRY (~1,500 lines of duplication across 4+ files)
 
 Admin templates (`item-stats.php`, `analytics.php`, `context-stats.php`, `voter-activity.php`, `ratings.php`) contain heavily duplicated HTML/PHP/JS patterns.
 
-- [ ] **Extract partial: `partials/date-filter-bar.php`** — identical date range filter form (preset select + custom range inputs + hidden fields) appears in 4 files (~200 lines total). Accept `$page`, `$range_type`, `$preset_value`, `$start_date`, `$end_date`, `$hidden_fields` as template vars.
-- [ ] **Extract partial: `partials/stats-grid.php`** — `.shuriken-stats-grid` with `.shuriken-stat-card` children repeated 15+ times across 4 files (~300 lines total). Accept `$cards` array of `['icon', 'value', 'label']`.
+- [x] **Extract partial: `partials/pagination.php`** — reusable pagination block accepting `$total_pages`, `$current_page`, `$total_count`, `$page_arg`, `$singular`, `$plural`. Replaces 4 inline blocks across `item-stats.php` (×2), `context-stats.php`, `voter-activity.php`.
+- [x] **Extract partial: `partials/date-filter-bar.php`** — filter-row style date range form accepting `$form_id`, `$id_prefix`, `$hidden_fields_html`, `$clear_url`. Replaces inline blocks in `analytics.php`, `context-stats.php`, `voter-activity.php`. (`item-stats.php` uses a structurally different filter-group layout with inline scope toggle — kept as-is.)
+- [x] **Extract helper: `shuriken_format_rating_value()`** — rating-type-conditional value display (`like_dislike → approval %, approval → count, else → format_average_display()`). Added to `class-shuriken-admin.php`. Used in 2 stat cards (`item-stats.php` context summary, `context-stats.php`). Third instance skipped (has downstream `$approval_pct` dependency for benchmark comparison).
 - [ ] **Extract partial: `partials/votes-table.php`** — identical vote history table structure (thead + voter rendering + pagination) appears in 3 files (~300 lines). Extract voter display logic into `shuriken_render_voter_cell()` helper.
-- [ ] **Extract partial: `partials/pagination.php`** — identical `paginate_links()` block with `displaying-num` + `pagination-links` repeated 6+ times (~100 lines).
 - [ ] **Extract chart init to `assets/js/admin-charts.js`** — inline `<script>` blocks with Chart.js setup (~450 lines across 4 files) are nearly identical: distribution bar chart, dual-axis vote activity chart, approval ring chart, approval trend line chart, cumulative chart. Extract factory functions: `initDistributionChart()`, `initVoteActivityChart()`, `initApprovalChart()`, etc. Pages pass data via `wp_localize_script()` instead of inline JSON.
-- [ ] **Extract helper: `shuriken_format_stat_display()`** — rating-type-conditional display logic (`if like_dislike → %, if approval → count, else → denormalized avg`) repeated 20+ times. Single helper method in `class-shuriken-admin.php`.
+
+**Not extracted (assessed, not worthwhile):**
+- Stats-grid partial — the `.shuriken-stats-grid` wrapper is only 2 lines; each card's content has unique embedded logic, varying card counts (4 vs 5), conditional markup, dynamic icons, and benchmark comparisons. A partial would need too many parameters to justify.
 
 ##### 6c — Block JS Decomposition (grouped-rating: 1,791 → ~600 lines)
 
