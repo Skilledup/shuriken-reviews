@@ -166,8 +166,7 @@ $tendency_icons = array(
     $clear_url = $base_filter_url;
     include __DIR__ . '/partials/date-filter-bar.php';
     ?>
-    </div>
-    
+
     <!-- Overview Stats Cards -->
     <div class="shuriken-stats-grid">
         <div class="shuriken-stat-card">
