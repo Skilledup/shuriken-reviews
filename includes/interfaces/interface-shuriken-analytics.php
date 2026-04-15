@@ -109,7 +109,7 @@ interface Shuriken_Analytics_Interface {
      * @param int|null $rating_id  Optional rating ID to filter by.
      * @return array Array with counts for each star rating (1-5).
      */
-    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null): array;
+    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array;
 
     /**
      * Get votes over time
@@ -118,7 +118,7 @@ interface Shuriken_Analytics_Interface {
      * @param int|null $rating_id  Optional rating ID to filter by.
      * @return array Array of date => count pairs.
      */
-    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null): array;
+    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array;
 
     /**
      * Get recent votes
@@ -145,7 +145,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $date_range Date range identifier.
      * @return array Array with statistics.
      */
-    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all'): ?object;
+    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object;
 
     /**
      * Get paginated votes for a rating
@@ -157,7 +157,7 @@ interface Shuriken_Analytics_Interface {
      * @param string $view   For parent ratings: 'direct', 'subs', or 'total'.
      * @return array Array with 'votes', 'total', and 'total_pages' keys.
      */
-    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc'): object;
+    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc', ?string $scope = null): object;
 
     /**
      * Get chart data for visualization
@@ -304,7 +304,7 @@ interface Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter.
      * @return array Array of objects with vote_date and approval_rate.
      */
-    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30): array;
+    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array;
 
     /**
      * Get cumulative approval count for an approval-type rating
@@ -313,7 +313,7 @@ interface Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter.
      * @return array Array of objects with vote_date, daily_count, cumulative_count.
      */
-    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30): array;
+    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array;
 
     /**
      * Get daily votes with rolling average for dual-axis chart
@@ -323,7 +323,7 @@ interface Shuriken_Analytics_Interface {
      * @param int              $scale      Display scale for display_daily_avg.
      * @return array Array of objects with vote_date, vote_count, avg_rating, display_daily_avg.
      */
-    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array;
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array;
 
     /**
      * Like get_votes_with_rolling_avg but accepts multiple rating IDs.

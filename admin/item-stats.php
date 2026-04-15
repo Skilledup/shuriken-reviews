@@ -61,7 +61,7 @@ if ($current_scope === 'contextual') {
     $trending_contexts = is_numeric($date_range) ? $analytics->get_trending_contexts($rating_id, $date_range, 5, $trend_sort_by, $trend_sort_order) : array();
 
     // Contextual votes over time
-    $contextual_votes_timeline = $analytics->get_votes_over_time_scoped($date_range, $rating_id, 'contextual');
+    $contextual_votes_timeline = $analytics->get_votes_over_time($date_range, $rating_id, 'contextual');
 
     // Paginated contexts table
     $ctx_per_page = 20;
@@ -75,7 +75,7 @@ if ($current_scope === 'contextual') {
 if ($current_scope !== 'contextual') {
     // Get detailed stats for this item with date range and scope filter
     $stats = $current_scope === 'global'
-        ? $analytics->get_rating_stats_scoped($rating_id, $date_range, 'global')
+        ? $analytics->get_rating_stats($rating_id, $date_range, 'global')
         : $analytics->get_rating_stats($rating_id, $date_range);
 
     // Get hierarchy-related data
@@ -132,7 +132,7 @@ $votes_sort_order = isset($_GET['votes_sort_order']) && in_array($_GET['votes_so
 // Get paginated votes (with view filter for parent ratings and scope)
 $vote_view = $is_parent ? $current_view : 'direct';
 if ($current_scope === 'global') {
-    $votes_result = $analytics->get_rating_votes_paginated_scoped($rating_id, $current_page, $per_page, $date_range, $vote_view, 'global', $votes_sort_by, $votes_sort_order);
+    $votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page, $date_range, $vote_view, $votes_sort_by, $votes_sort_order, 'global');
 } else {
     $votes_result = $analytics->get_rating_votes_paginated($rating_id, $current_page, $per_page, $date_range, $vote_view, $votes_sort_by, $votes_sort_order);
 }
@@ -164,13 +164,13 @@ if ($current_scope !== 'contextual') {
 
 if ($rating_type === 'like_dislike') {
     if ($current_scope === 'global') {
-        $approval_trend = $analytics->get_approval_trend_scoped($rating_id, $date_range, 'global');
+        $approval_trend = $analytics->get_approval_trend($rating_id, $date_range, 'global');
     } else {
         $approval_trend = $analytics->get_approval_trend($rating_id, $date_range);
     }
 } elseif ($rating_type === 'approval') {
     if ($current_scope === 'global') {
-        $cumulative_approvals = $analytics->get_cumulative_approvals_scoped($rating_id, $date_range, 'global');
+        $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range, 'global');
     } else {
         $cumulative_approvals = $analytics->get_cumulative_approvals($rating_id, $date_range);
     }
@@ -190,7 +190,7 @@ if ($rating_type === 'like_dislike') {
         $dual_axis_data = $analytics->get_votes_with_rolling_avg_for_ids($chart_ids, $date_range, $item_scale);
     } else {
         if ($current_scope === 'global') {
-            $dual_axis_data = $analytics->get_votes_with_rolling_avg_scoped($rating_id, $date_range, $item_scale, 'global');
+            $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range, $item_scale, 'global');
         } else {
             $dual_axis_data = $analytics->get_votes_with_rolling_avg($rating_id, $date_range, $item_scale);
         }

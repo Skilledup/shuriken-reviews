@@ -41,6 +41,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      */
     private readonly string $votes_table;
 
+    private readonly Shuriken_Analytics_Formatter $formatter;
+    private readonly Shuriken_Analytics_Ranking $ranking;
+
     /**
      * Constructor
      *
@@ -52,6 +55,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $this->wpdb = $this->db->get_wpdb();
         $this->ratings_table = $this->db->get_ratings_table();
         $this->votes_table = $this->db->get_votes_table();
+        $this->formatter = new Shuriken_Analytics_Formatter();
+        $this->ranking = new Shuriken_Analytics_Ranking($this->wpdb, $this->ratings_table, $this->votes_table);
     }
 
     /**
@@ -144,33 +149,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string Human-readable label
      */
     public function get_date_range_label(string|int|array $date_range): string {
-        if (is_array($date_range)) {
-            $start = !empty($date_range['start']) ? date_i18n(get_option('date_format'), strtotime($date_range['start'])) : '';
-            $end = !empty($date_range['end']) ? date_i18n(get_option('date_format'), strtotime($date_range['end'])) : '';
-            
-            if ($start && $end) {
-                return sprintf(__('%s to %s', 'shuriken-reviews'), $start, $end);
-            } elseif ($start) {
-                return sprintf(__('From %s', 'shuriken-reviews'), $start);
-            } elseif ($end) {
-                return sprintf(__('Until %s', 'shuriken-reviews'), $end);
-            }
-            return __('All Time', 'shuriken-reviews');
-        }
-        
-        switch ($date_range) {
-            case '7':
-                return __('Last 7 Days', 'shuriken-reviews');
-            case '30':
-                return __('Last 30 Days', 'shuriken-reviews');
-            case '90':
-                return __('Last 90 Days', 'shuriken-reviews');
-            case '365':
-                return __('Last Year', 'shuriken-reviews');
-            case 'all':
-            default:
-                return __('All Time', 'shuriken-reviews');
-        }
+        return $this->formatter->get_date_range_label($date_range);
     }
 
     /**
@@ -188,18 +167,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string Formatted display string
      */
     public function format_average_display(float $average, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, int $total_votes = 0, int $total_rating = 0): string {
-        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
-
-        if ($type_enum === Shuriken_Rating_Type::LikeDislike) {
-            $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
-            return $pct . '% ' . __('positive', 'shuriken-reviews');
-        }
-        if ($type_enum === Shuriken_Rating_Type::Approval) {
-            $pct = $total_votes > 0 ? round(($total_rating / $total_votes) * 100) : 0;
-            return $pct . '% ' . __('approved', 'shuriken-reviews');
-        }
-        $display_avg = Shuriken_Database::denormalize_average((float) $average, $scale);
-        return number_format($display_avg, 1) . '/' . intval($scale);
+        return $this->formatter->format_average_display($average, $rating_type, $scale, $total_votes, $total_rating);
     }
 
     /**
@@ -216,29 +184,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string HTML display string
      */
     public function format_vote_display(float|int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
-        $symbols = Shuriken_Icons::rating_symbols(14);
-        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
-
-        if ($type_enum === Shuriken_Rating_Type::LikeDislike) {
-            return intval($rating_value) === 1 ? $symbols['thumbs_up'] : $symbols['thumbs_down'];
-        }
-        if ($type_enum === Shuriken_Rating_Type::Approval) {
-            return $symbols['thumbs_up'];
-        }
-        $s = (int) $scale;
-        $display_value = (int) round(((float) $rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $s);
-        if ($type_enum === Shuriken_Rating_Type::Numeric) {
-            return $display_value . '/' . $s;
-        }
-        $out = '';
-        for ($i = 1; $i <= $s; $i++) {
-            if ($i <= $display_value) {
-                $out .= '<span class="svg-star filled">' . $symbols['star_filled'] . '</span>';
-            } else {
-                $out .= '<span class="svg-star empty">' . $symbols['star_empty'] . '</span>';
-            }
-        }
-        return $out;
+        return $this->formatter->format_vote_display($rating_value, $rating_type, $scale);
     }
 
     /**
@@ -565,62 +511,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return array Array of rating objects
      */
     public function get_top_rated(int $limit = 10, int $min_votes = 1, float $min_average = 3.0, string|int|array $date_range = 'all'): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        
-        // If no date filter, use the cached totals from ratings table (faster)
-        if (empty($date_condition)) {
-            return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average 
-                 FROM {$this->ratings_table} 
-                 WHERE total_votes >= %d 
-                   AND (total_rating / NULLIF(total_votes, 0)) >= %f
-                   AND mirror_of IS NULL
-                   AND parent_id IS NULL
-                 ORDER BY average DESC, total_votes DESC 
-                 LIMIT %d",
-                $min_votes,
-                $min_average,
-                $limit
-            ));
-        }
-        
-        // With date filter, calculate from votes table
-        // For parent ratings, include votes from sub-ratings with effect_type conversion
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
-                    COUNT(v.id) as total_votes,
-                    COALESCE(SUM(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 0) as total_rating,
-                    ROUND(AVG(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 4) as average
-             FROM {$this->ratings_table} r
-             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
-             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
-             WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
-             GROUP BY r.id
-             HAVING total_votes >= %d AND average >= %f
-             ORDER BY average DESC, total_votes DESC 
-             LIMIT %d",
-            $min_votes,
-            $min_average,
-            $limit
-        ));
+        return $this->ranking->get_top_rated($limit, $min_votes, $min_average, $date_range);
     }
 
     /**
@@ -631,56 +522,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return array Array of rating objects
      */
     public function get_most_voted(int $limit = 10, string|int|array $date_range = 'all'): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        
-        // If no date filter, use the cached totals from ratings table (faster)
-        if (empty($date_condition)) {
-            return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average
-                 FROM {$this->ratings_table} 
-                 WHERE mirror_of IS NULL
-                   AND parent_id IS NULL
-                 ORDER BY total_votes DESC 
-                 LIMIT %d",
-                $limit
-            ));
-        }
-        
-        // With date filter, calculate from votes table
-        // For parent ratings, include votes from sub-ratings with effect_type conversion
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
-                    COUNT(v.id) as total_votes,
-                    COALESCE(SUM(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 0) as total_rating,
-                    ROUND(AVG(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 4) as average
-             FROM {$this->ratings_table} r
-             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
-             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
-             WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
-             GROUP BY r.id
-             HAVING total_votes > 0
-             ORDER BY total_votes DESC 
-             LIMIT %d",
-            $limit
-        ));
+        return $this->ranking->get_most_voted($limit, $date_range);
     }
 
     /**
@@ -693,62 +535,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return array Array of rating objects
      */
     public function get_low_performers(int $limit = 10, int $min_votes = 1, float $max_average = 3.0, string|int|array $date_range = 'all'): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        
-        // If no date filter, use the cached totals from ratings table (faster)
-        if (empty($date_condition)) {
-            return $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT id, name, rating_type, scale, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of,
-                        ROUND(total_rating / NULLIF(total_votes, 0), 4) as average 
-                 FROM {$this->ratings_table} 
-                 WHERE total_votes >= %d 
-                   AND (total_rating / NULLIF(total_votes, 0)) < %f
-                   AND mirror_of IS NULL
-                   AND parent_id IS NULL
-                 ORDER BY average ASC, total_votes DESC 
-                 LIMIT %d",
-                $min_votes,
-                $max_average,
-                $limit
-            ));
-        }
-        
-        // With date filter, calculate from votes table
-        // For parent ratings, include votes from sub-ratings with effect_type conversion
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
-                    COUNT(v.id) as total_votes,
-                    COALESCE(SUM(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 0) as total_rating,
-                    ROUND(AVG(
-                        CASE 
-                            WHEN sub.effect_type = 'negative' AND sub.rating_type IN ('like_dislike', 'approval')
-                                THEN CAST(sub.scale AS SIGNED) - v.rating_value
-                            WHEN sub.effect_type = 'negative'
-                                THEN (CAST(sub.scale AS SIGNED) + 1) - v.rating_value
-                            ELSE v.rating_value
-                        END
-                    ), 4) as average
-             FROM {$this->ratings_table} r
-             LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
-             LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
-             WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
-             GROUP BY r.id
-             HAVING total_votes >= %d AND average < %f
-             ORDER BY average ASC, total_votes DESC 
-             LIMIT %d",
-            $min_votes,
-            $max_average,
-            $limit
-        ));
+        return $this->ranking->get_low_performers($limit, $min_votes, $max_average, $date_range);
     }
 
     /**
@@ -803,9 +590,10 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null $rating_id Optional specific rating ID
      * @return array Associative array with vote value keys and counts
      */
-    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null): array {
+    public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
+        $scope_condition = $this->build_scope_condition($scope, 'v.');
 
         // Determine the target rating's type and scale for proper bucketing
         $rating_type = 'stars';
@@ -840,7 +628,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                 COUNT(*) as count 
              FROM {$this->votes_table} v
              JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE 1=1 {$date_condition} {$rating_condition} {$type_condition}
+             WHERE 1=1 {$date_condition} {$rating_condition} {$type_condition} {$scope_condition}
              GROUP BY effective_value 
              ORDER BY effective_value"
         );
@@ -864,14 +652,15 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int|null $rating_id Optional specific rating ID
      * @return array Array of objects with vote_date and vote_count
      */
-    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null): array {
+    public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
         $rating_condition = $rating_id ? $this->wpdb->prepare(" AND rating_id = %d", $rating_id) : '';
+        $scope_condition = $this->build_scope_condition($scope);
         
         return $this->wpdb->get_results(
             "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
              FROM {$this->votes_table} 
-             WHERE 1=1 {$date_condition} {$rating_condition}
+             WHERE 1=1 {$date_condition} {$rating_condition} {$scope_condition}
              GROUP BY DATE(date_created) 
              ORDER BY vote_date"
         );
@@ -920,22 +709,23 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return object|null Object with comprehensive stats or null
      */
-    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all'): ?object {
+    public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
         $rating = $this->get_rating($rating_id);
         if (!$rating) {
             return null;
         }
         
         $date_condition = $this->build_date_condition($date_range);
+        $scope_condition = $this->build_scope_condition($scope);
         
         $stats = new stdClass();
         $stats->rating = $rating;
         
-        // If filtering by date, recalculate average from filtered votes
-        if (!empty($date_condition)) {
+        // If filtering by date or scope, recalculate average from filtered votes
+        if (!empty($date_condition) || $scope !== null) {
             $filtered_totals = $this->wpdb->get_row($this->wpdb->prepare(
                 "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
                 $rating_id
             ));
             $stats->total_votes = (int) $filtered_totals->total_votes;
@@ -952,36 +742,36 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         
         // Vote counts by user type
         $stats->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition}",
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $stats->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition}",
+            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         // Unique voters
         $stats->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
             "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         // First and last vote (within date range)
         $stats->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
         $stats->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition}",
+            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
             $rating_id
         ));
         
-        // Distribution and timeline (use same date range)
-        $stats->distribution = $this->get_rating_distribution($date_range, $rating_id);
-        $stats->votes_over_time = $this->get_votes_over_time($date_range, $rating_id);
+        // Distribution and timeline (use same date range and scope)
+        $stats->distribution = $this->get_rating_distribution($date_range, $rating_id, $scope);
+        $stats->votes_over_time = $this->get_votes_over_time($date_range, $rating_id, $scope);
         
         return $stats;
     }
@@ -1064,8 +854,8 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
             $rating_id
         ));
         
-        $breakdown->direct->distribution = $this->get_rating_distribution_scoped($date_range, $rating_id, $scope);
-        $breakdown->direct->votes_over_time = $scope ? $this->get_votes_over_time_scoped($date_range, $rating_id, $scope) : $this->get_votes_over_time($date_range, $rating_id);
+        $breakdown->direct->distribution = $this->get_rating_distribution($date_range, $rating_id, $scope);
+        $breakdown->direct->votes_over_time = $this->get_votes_over_time($date_range, $rating_id, $scope);
         
         // === SUB-RATINGS AGGREGATED ===
         $breakdown->subs = new stdClass();
@@ -1250,13 +1040,14 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string $view For parent ratings: 'direct', 'subs', or 'total'
      * @return object Object with votes array, total_count, total_pages, current_page
      */
-    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc'): object {
+    public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc', ?string $scope = null): object {
         $offset = ($page - 1) * $per_page;
         
         $result = new stdClass();
         
-        // Build date condition
+        // Build date and scope conditions
         $date_condition = $this->build_date_condition($date_range, 'v.date_created');
+        $scope_condition = $this->build_scope_condition($scope, 'v.');
         
         // Safe sort column map
         $sort_col_map = array('rating' => 'v.rating_value', 'date' => 'v.date_created');
@@ -1286,7 +1077,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
         $rating_ids_placeholder = implode(',', array_map('intval', $rating_ids));
         
         $result->total_count = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} v WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition}"
+            "SELECT COUNT(*) FROM {$this->votes_table} v WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}"
         );
         
         $result->total_pages = ceil($result->total_count / $per_page);
@@ -1298,7 +1089,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              FROM {$this->votes_table} v
              LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
              LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition}
+             WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}
              ORDER BY {$sort_col} {$sort_dir}
              LIMIT %d OFFSET %d",
             $per_page,
@@ -1319,11 +1110,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string Formatted "X time ago" string
      */
     public function format_time_ago(string $mysql_date): string {
-        if (empty($mysql_date)) {
-            return '-';
-        }
-        return human_time_diff(mysql2date('U', $mysql_date), current_time('timestamp')) 
-               . ' ' . __('ago', 'shuriken-reviews');
+        return $this->formatter->format_time_ago($mysql_date);
     }
 
     /**
@@ -1334,14 +1121,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @return string Formatted date string
      */
     public function format_date(string $mysql_date, bool $include_time = true): string {
-        if (empty($mysql_date)) {
-            return '-';
-        }
-        $format = get_option('date_format');
-        if ($include_time) {
-            $format .= ' ' . get_option('time_format');
-        }
-        return mysql2date($format, $mysql_date);
+        return $this->formatter->format_date($mysql_date, $include_time);
     }
 
     /**
@@ -1603,8 +1383,9 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of objects with vote_date and approval_rate (0-100)
      */
-    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30): array {
+    public function get_approval_trend(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
+        $scope_condition = $this->build_scope_condition($scope);
 
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(date_created) as vote_date,
@@ -1612,7 +1393,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
                     SUM(rating_value) as likes,
                     ROUND((SUM(rating_value) / COUNT(*)) * 100, 1) as approval_rate
              FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition}
+             WHERE rating_id = %d {$date_condition} {$scope_condition}
              GROUP BY DATE(date_created)
              ORDER BY vote_date",
             $rating_id
@@ -1626,13 +1407,14 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param string|int|array $date_range Date range filter
      * @return array Array of objects with vote_date, daily_count, cumulative_count
      */
-    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30): array {
+    public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
+        $scope_condition = $this->build_scope_condition($scope);
 
         $daily = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(date_created) as vote_date, COUNT(*) as daily_count
              FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition}
+             WHERE rating_id = %d {$date_condition} {$scope_condition}
              GROUP BY DATE(date_created)
              ORDER BY vote_date",
             $rating_id
@@ -1659,15 +1441,16 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @param int $scale Display scale for denormalization
      * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg
      */
-    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
+    public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array {
         $date_condition = $this->build_date_condition($date_range);
+        $scope_condition = $this->build_scope_condition($scope);
 
         $rows = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT DATE(date_created) as vote_date,
                     COUNT(*) as vote_count,
                     ROUND(AVG(rating_value), 2) as daily_avg
              FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition}
+             WHERE rating_id = %d {$date_condition} {$scope_condition}
              GROUP BY DATE(date_created)
              ORDER BY vote_date",
             $rating_id
@@ -1762,59 +1545,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_rating_stats_scoped(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
-        $rating = $this->get_rating($rating_id);
-        if (!$rating) {
-            return null;
-        }
-
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        $stats = new stdClass();
-        $stats->rating = $rating;
-
-        $filtered_totals = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        $stats->total_votes = (int) $filtered_totals->total_votes;
-        $stats->total_rating = (int) $filtered_totals->total_rating;
-        $stats->average = $stats->total_votes > 0 ? round($stats->total_rating / $stats->total_votes, 1) : 0;
-
-        $scale = isset($rating->scale) ? (int) $rating->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
-        $stats->display_average = Shuriken_Database::denormalize_average((float) $stats->average, $scale);
-
-        $stats->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-
-        $stats->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-
-        $stats->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END)
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-
-        $stats->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-
-        $stats->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-
-        $stats->distribution = $this->get_rating_distribution_scoped($date_range, $rating_id, $scope);
-        $stats->votes_over_time = $this->get_votes_over_time_scoped($date_range, $rating_id, $scope);
-
-        return $stats;
+        return $this->get_rating_stats($rating_id, $date_range, $scope);
     }
 
     /**
@@ -1827,52 +1558,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_rating_distribution_scoped(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
-        $scope_condition = $this->build_scope_condition($scope, 'v.');
-
-        $rating_type = 'stars';
-        $scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        if ($rating_id) {
-            $rating = $this->db->get_rating($rating_id);
-            if ($rating) {
-                $rating_type = $rating->rating_type ?: 'stars';
-                $scale = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
-            }
-        }
-
-        $type_condition = '';
-        if (!$rating_id) {
-            $type_condition = " AND r.rating_type NOT IN ('like_dislike', 'approval')";
-        }
-
-        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        $results = $this->wpdb->get_results(
-            "SELECT
-                CASE
-                    WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval')
-                        THEN CAST(r.scale AS SIGNED) - v.rating_value
-                    WHEN r.effect_type = 'negative'
-                        THEN ({$internal_scale} + 1) - ROUND(v.rating_value)
-                    ELSE ROUND(v.rating_value)
-                END as effective_value,
-                COUNT(*) as count
-             FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE 1=1 {$date_condition} {$rating_condition} {$type_condition} {$scope_condition}
-             GROUP BY effective_value
-             ORDER BY effective_value"
-        );
-
-        $distribution = $this->build_empty_distribution($rating_type, $scale);
-        foreach ($results as $row) {
-            $key = intval($row->effective_value);
-            if (array_key_exists($key, $distribution)) {
-                $distribution[$key] = intval($row->count);
-            }
-        }
-
-        return $distribution;
+        return $this->get_rating_distribution($date_range, $rating_id, $scope);
     }
 
     /**
@@ -1885,17 +1571,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_votes_over_time_scoped(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND rating_id = %d", $rating_id) : '';
-        $scope_condition = $this->build_scope_condition($scope);
-
-        return $this->wpdb->get_results(
-            "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count
-             FROM {$this->votes_table}
-             WHERE 1=1 {$date_condition} {$rating_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date"
-        );
+        return $this->get_votes_over_time($date_range, $rating_id, $scope);
     }
 
     /**
@@ -1911,54 +1587,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_rating_votes_paginated_scoped(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', ?string $scope = null, string $sort_by = 'date', string $sort_order = 'desc'): object {
-        $offset = ($page - 1) * $per_page;
-        $result = new stdClass();
-
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $scope_condition = $this->build_scope_condition($scope, 'v.');
-
-        // Safe sort column map
-        $sort_col_map = array('rating' => 'v.rating_value', 'date' => 'v.date_created');
-        $sort_col = $sort_col_map[$sort_by] ?? 'v.date_created';
-        $sort_dir = strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC';
-
-        $rating_ids = array($rating_id);
-        if (in_array($view, array('subs', 'total'))) {
-            $sub_rating_ids = $this->wpdb->get_col($this->wpdb->prepare(
-                "SELECT id FROM {$this->ratings_table} WHERE parent_id = %d",
-                $rating_id
-            ));
-            if (!empty($sub_rating_ids)) {
-                $rating_ids = $view === 'subs' ? $sub_rating_ids : array_merge(array($rating_id), $sub_rating_ids);
-            }
-        }
-
-        $rating_ids_placeholder = implode(',', array_map('intval', $rating_ids));
-
-        $result->total_count = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} v WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-
-        $result->total_pages = ceil($result->total_count / $per_page);
-        $result->current_page = $page;
-        $result->per_page = $per_page;
-
-        $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.*, u.display_name, u.user_email, r.name as rating_name, r.rating_type, r.scale
-             FROM {$this->votes_table} v
-             LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
-             LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}
-             ORDER BY {$sort_col} {$sort_dir}
-             LIMIT %d OFFSET %d",
-            $per_page,
-            $offset
-        ));
-
-        $result->is_multi_rating = count($rating_ids) > 1;
-        $result->parent_rating_id = $rating_id;
-
-        return $result;
+        return $this->get_rating_votes_paginated($rating_id, $page, $per_page, $date_range, $view, $sort_by, $sort_order, $scope);
     }
 
     /**
@@ -1972,26 +1601,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_votes_with_rolling_avg_scoped(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        $rows = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date,
-                    COUNT(*) as vote_count,
-                    ROUND(AVG(rating_value), 2) as daily_avg
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
-
-        foreach ($rows as &$row) {
-            $row->display_daily_avg = Shuriken_Database::denormalize_average((float) $row->daily_avg, $scale);
-        }
-        unset($row);
-
-        return $rows;
+        return $this->get_votes_with_rolling_avg($rating_id, $date_range, $scale, $scope);
     }
 
     /**
@@ -2004,20 +1614,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_approval_trend_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date,
-                    COUNT(*) as total,
-                    SUM(rating_value) as likes,
-                    ROUND((SUM(rating_value) / COUNT(*)) * 100, 1) as approval_rate
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
+        return $this->get_approval_trend($rating_id, $date_range, $scope);
     }
 
     /**
@@ -2030,26 +1627,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
      * @since 1.15.5
      */
     public function get_cumulative_approvals_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        $daily = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date, COUNT(*) as daily_count
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
-
-        $cumulative = 0;
-        foreach ($daily as &$row) {
-            $cumulative += (int) $row->daily_count;
-            $row->cumulative_count = $cumulative;
-        }
-        unset($row);
-
-        return $daily;
+        return $this->get_cumulative_approvals($rating_id, $date_range, $scope);
     }
 
     /**

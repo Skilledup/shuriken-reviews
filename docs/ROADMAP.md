@@ -52,7 +52,7 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 
 ## Up Next
 
-### 1.15.x — Modern PHP & Architecture
+### 1.15.5 — Modern PHP & Architecture
 
 Items are ordered by dependency and impact. The enum is the load-bearing foundation for everything — decomposing without it means string guards get duplicated into each new file. Callables and CPP are quick sweeps done while the class shapes are still stable. The two decompositions follow in dependency order (DB before REST). Platform extensibility is easiest to do surgically once the classes are small. Performance caps the series with a stable service layer to hang caches on.
 
@@ -108,15 +108,21 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 Full codebase audit identified **~4,200+ lines** of redundancy, bloat, and maintainability debt across PHP, JS, and admin templates. Items ordered by impact and dependency — decompositions first (they unblock later DRY work), then template/JS cleanup.
 
-##### 6a — `Shuriken_Analytics` Decomposition (2,608 → ~1,300 lines)
+##### ~~6a — `Shuriken_Analytics` Decomposition (2,608 → ~1,300 lines)~~ ✅
 
-The largest file in the codebase. Single class responsible for formatting, ranking, contextual analytics, pagination, and chart data preparation.
+The largest file in the codebase. Single class responsible for formatting, ranking, contextual analytics, pagination, and chart data preparation. Decomposed into three focused classes + a slimmed-down coordinator.
 
-- [ ] **Extract `Shuriken_Analytics_Formatter`** (~200 lines) — `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()`. Currently mixed into an analytics class that shouldn't own display logic.
-- [ ] **Extract `Shuriken_Analytics_Ranking`** (~300 lines) — `get_top_rated()`, `get_most_voted()`, `get_low_performers()`. All three share 80% identical SQL (date conditions, effect-type inversion, JOIN structure) and only differ in ORDER BY direction and WHERE thresholds. Consolidate into single parametric `get_ranked_ratings()` with convenience wrappers.
-- [ ] **Merge scoped method duplicates** (~500 lines) — 6 method pairs where `_scoped()` variant is 85–95% identical to the base: `get_votes_over_time`, `get_rating_stats`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`. Merge each pair into single method accepting optional `?string $scope` parameter.
-- [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — single 250-line method computing direct/subs/total stats with 80% duplicated SQL across the three contexts. Extract `get_direct_stats()` and `get_subs_stats()` as private helpers.
-- [ ] **DRY effect-type inversion SQL** — the `CASE WHEN r.effect_type = 'negative' ...` SQL fragment appears **8 times** with slight variations. Extract to static `get_inversion_clause()` query builder method.
+| Class | Lines | Responsibility |
+|---|---|---|
+| `Shuriken_Analytics` (coordinator) | ~2,186 | Core analytics queries, delegates formatting + ranking, scoped methods merged |
+| `Shuriken_Analytics_Formatter` | ~153 | `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()` |
+| `Shuriken_Analytics_Ranking` | ~184 | `get_top_rated()`, `get_most_voted()`, `get_low_performers()` — consolidated into single parametric `get_ranked()` with `get_inversion_sql()` static helper |
+
+- [x] **Extract `Shuriken_Analytics_Formatter`** — 5 display methods moved to stateless class. Analytics delegates via composed `$this->formatter`.
+- [x] **Extract `Shuriken_Analytics_Ranking`** — 3 ranking methods consolidated into single parametric `get_ranked()` engine (cached + date-filtered paths). Effect-type inversion SQL extracted to `get_inversion_sql()` static helper. Analytics delegates via composed `$this->ranking`.
+- [x] **Merge scoped method duplicates** — 7 pairs merged. Base methods gained `?string $scope = null` param: `get_votes_over_time`, `get_rating_stats`, `get_rating_distribution`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`. `_scoped()` methods retained as thin delegates for backward compat. Interface updated. `admin/item-stats.php` callers switched to base+scope.
+- [x] **DRY effect-type inversion SQL** — `Shuriken_Analytics_Ranking::get_inversion_sql()` static method extracts the CASE WHEN fragment used by ranking queries.
+- [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — deferred; internal refactor, no interface impact.
 
 ##### 6b — Admin Template DRY (~1,500 lines of duplication across 4+ files)
 
