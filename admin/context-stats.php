@@ -257,110 +257,11 @@ if ($rating_type === 'like_dislike') {
     </div>
     
     <!-- Votes Table -->
-    <div class="shuriken-table-card full-width">
-        <h2>
-            <?php Shuriken_Icons::render('list', array('width' => 18, 'height' => 18)); ?>
-            <?php esc_html_e('Vote History', 'shuriken-reviews'); ?>
-        </h2>
-        <p class="table-description">
-            <?php printf(
-                esc_html__('Showing %1$d-%2$d of %3$d votes', 'shuriken-reviews'),
-                min($offset + 1, $total_votes_count),
-                min($offset + $per_page, $total_votes_count),
-                $total_votes_count
-            ); ?>
-        </p>
-        
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th class="column-id"><?php esc_html_e('ID', 'shuriken-reviews'); ?></th>
-                    <th class="column-rating"><?php echo shuriken_sort_link('rating', $votes_sort_by, $votes_sort_order, $base_filter_url, __('Rating', 'shuriken-reviews'), 'votes_sort_by', 'votes_sort_order'); ?></th>
-                    <th class="column-voter"><?php esc_html_e('Voter', 'shuriken-reviews'); ?></th>
-                    <th class="column-ip"><?php esc_html_e('IP Address', 'shuriken-reviews'); ?></th>
-                    <th class="column-date"><?php echo shuriken_sort_link('date', $votes_sort_by, $votes_sort_order, $base_filter_url, __('Date & Time', 'shuriken-reviews'), 'votes_sort_by', 'votes_sort_order'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($votes) : ?>
-                    <?php foreach ($votes as $vote) : ?>
-                        <tr>
-                            <td class="column-id"><?php echo esc_html($vote->id); ?></td>
-                            <td class="column-rating">
-                                <span class="star-rating-display">
-                                    <?php echo $analytics->format_vote_display($vote->rating_value, $vote->rating_type ?? $rating->rating_type ?? 'stars', $vote->scale ?? $rating->scale ?? 5); ?>
-                                </span>
-                                <?php
-                                $vote_type = $vote->rating_type ?? $rating->rating_type ?? 'stars';
-                                $vote_type_enum = Shuriken_Rating_Type::tryFrom($vote_type) ?? Shuriken_Rating_Type::Stars;
-                                if (!$vote_type_enum->isBinary()) :
-                                    $vote_scale = $vote->scale ?? $rating->scale ?? 5;
-                                    $denorm_vote = round(((float) $vote->rating_value / Shuriken_Database::RATING_SCALE_DEFAULT) * $vote_scale, 1);
-                                ?>
-                                <span class="rating-number">(<?php echo esc_html($denorm_vote); ?>)</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="column-voter">
-                                <?php 
-                                $voter_activity_url = $vote->user_id > 0 
-                                    ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_id=' . $vote->user_id)
-                                    : ($vote->user_ip ? admin_url('admin.php?page=shuriken-reviews-voter-activity&user_ip=' . urlencode($vote->user_ip)) : '');
-                                ?>
-                                <?php if ($vote->user_id > 0) : ?>
-                                    <span class="voter-type member" title="<?php esc_attr_e('Registered Member', 'shuriken-reviews'); ?>">
-                                        <?php Shuriken_Icons::render('user', array('width' => 14, 'height' => 14)); ?>
-                                    </span>
-                                    <?php if ($vote->display_name) : ?>
-                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
-                                            <strong><?php echo esc_html($vote->display_name); ?></strong>
-                                        </a>
-                                        <br><small><?php echo esc_html($vote->user_email); ?></small>
-                                    <?php else : ?>
-                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
-                                            <em><?php esc_html_e('Deleted User', 'shuriken-reviews'); ?></em>
-                                        </a>
-                                        <br><small><?php printf(esc_html__('User ID: %d', 'shuriken-reviews'), $vote->user_id); ?></small>
-                                    <?php endif; ?>
-                                <?php else : ?>
-                                    <span class="voter-type guest" title="<?php esc_attr_e('Guest', 'shuriken-reviews'); ?>">
-                                        <?php Shuriken_Icons::render('briefcase', array('width' => 14, 'height' => 14)); ?>
-                                    </span>
-                                    <?php if ($voter_activity_url) : ?>
-                                        <a href="<?php echo esc_url($voter_activity_url); ?>" class="voter-link">
-                                            <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
-                                        </a>
-                                    <?php else : ?>
-                                        <em><?php esc_html_e('Guest', 'shuriken-reviews'); ?></em>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                            </td>
-                            <td class="column-ip">
-                                <?php if (empty($vote->user_ip)) : ?>
-                                    <em><?php esc_html_e('N/A', 'shuriken-reviews'); ?></em>
-                                <?php else : ?>
-                                    <code><?php echo esc_html($vote->user_ip); ?></code>
-                                <?php endif; ?>
-                            </td>
-                            <td class="column-date">
-                                <?php echo esc_html($analytics->format_date($vote->date_created)); ?>
-                                <br>
-                                <small class="timeago"><?php echo esc_html($analytics->format_time_ago($vote->date_created)); ?></small>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else : ?>
-                    <tr>
-                        <td colspan="5"><?php esc_html_e('No votes recorded for this context', 'shuriken-reviews'); ?></td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-        
-        <?php
-        $total_count = $total_votes_count;
-        include __DIR__ . '/partials/pagination.php';
-        ?>
-    </div>
+    <?php
+    $sort_base_url = $base_filter_url;
+    $empty_message = __( 'No votes recorded for this context', 'shuriken-reviews' );
+    include __DIR__ . '/partials/votes-table.php';
+    ?>
 </div>
 
 <script>

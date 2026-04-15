@@ -801,3 +801,48 @@ function shuriken_format_rating_value(string $rating_type, int $total_votes, int
     return esc_html($analytics->format_average_display($average, $rating_type, $scale, $total_votes, $total_rating));
 }
 
+/**
+ * Render the voter cell content for a vote history table row.
+ *
+ * Outputs the inner HTML for a `<td class="column-voter">` cell, including
+ * voter-type icon, display name (linked to voter-activity page), email for
+ * registered users, "Deleted User" for removed accounts, and guest handling.
+ *
+ * @param object $vote Vote row object with user_id, user_ip, display_name, user_email properties.
+ * @return void Outputs HTML directly.
+ * @since 1.15.5
+ */
+function shuriken_render_voter_cell( object $vote ): void {
+    $voter_activity_url = $vote->user_id > 0
+        ? admin_url( 'admin.php?page=shuriken-reviews-voter-activity&user_id=' . $vote->user_id )
+        : ( $vote->user_ip ? admin_url( 'admin.php?page=shuriken-reviews-voter-activity&user_ip=' . urlencode( $vote->user_ip ) ) : '' );
+
+    if ( $vote->user_id > 0 ) : ?>
+        <span class="voter-type member" title="<?php esc_attr_e( 'Registered Member', 'shuriken-reviews' ); ?>">
+            <?php Shuriken_Icons::render( 'user', array( 'width' => 14, 'height' => 14 ) ); ?>
+        </span>
+        <?php if ( $vote->display_name ) : ?>
+            <a href="<?php echo esc_url( $voter_activity_url ); ?>" class="voter-link">
+                <strong><?php echo esc_html( $vote->display_name ); ?></strong>
+            </a>
+            <br><small><?php echo esc_html( $vote->user_email ); ?></small>
+        <?php else : ?>
+            <a href="<?php echo esc_url( $voter_activity_url ); ?>" class="voter-link">
+                <em><?php esc_html_e( 'Deleted User', 'shuriken-reviews' ); ?></em>
+            </a>
+            <br><small><?php printf( esc_html__( 'User ID: %d', 'shuriken-reviews' ), $vote->user_id ); ?></small>
+        <?php endif; ?>
+    <?php else : ?>
+        <span class="voter-type guest" title="<?php esc_attr_e( 'Guest', 'shuriken-reviews' ); ?>">
+            <?php Shuriken_Icons::render( 'briefcase', array( 'width' => 14, 'height' => 14 ) ); ?>
+        </span>
+        <?php if ( $voter_activity_url ) : ?>
+            <a href="<?php echo esc_url( $voter_activity_url ); ?>" class="voter-link">
+                <em><?php esc_html_e( 'Guest', 'shuriken-reviews' ); ?></em>
+            </a>
+        <?php else : ?>
+            <em><?php esc_html_e( 'Guest', 'shuriken-reviews' ); ?></em>
+        <?php endif; ?>
+    <?php endif;
+}
+
