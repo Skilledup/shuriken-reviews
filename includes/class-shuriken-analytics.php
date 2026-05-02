@@ -1317,7 +1317,7 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
              JOIN {$this->votes_table} v ON v.rating_id = r.id
              WHERE r.mirror_of IS NULL
                AND r.parent_id IS NULL
-               AND r.rating_type NOT IN ('approval')
+               AND r.rating_type NOT IN ('like_dislike', 'approval')
                AND v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
              GROUP BY r.id
              HAVING recent_count >= 2 AND prev_count >= 2",
