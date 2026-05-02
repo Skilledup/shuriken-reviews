@@ -355,12 +355,13 @@ $contextual_posts     = $analytics->get_contextual_post_count();
                                 <td><a href="<?php echo esc_url($stats_url); ?>" class="rating-item-link"><?php echo esc_html($item->name); ?></a></td>
                                 <td><?php
                                     $lp_type = Shuriken_Rating_Type::tryFrom($item->rating_type ?? 'stars') ?? Shuriken_Rating_Type::Stars;
-                                    if ($lp_type === Shuriken_Rating_Type::Numeric) :
-                                ?><span class="star-display low"><?php Shuriken_Icons::render('hash', array('width' => 14, 'height' => 14)); ?></span> <?php
-                                    elseif (!$lp_type->isBinary()) :
-                                ?><span class="star-display low"><?php Shuriken_Icons::render('star', array('width' => 14, 'height' => 14)); ?></span> <?php
-                                    endif;
-                                ?><?php echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating)); ?></td>
+                                    if ($lp_type === Shuriken_Rating_Type::Numeric) {
+                                        echo '<span class="star-display low">' . Shuriken_Icons::render('hash', array('width' => 14, 'height' => 14), false) . '</span> ';
+                                    } elseif (!$lp_type->isBinary()) {
+                                        echo '<span class="star-display low">' . Shuriken_Icons::render('star', array('width' => 14, 'height' => 14), false) . '</span> ';
+                                    }
+                                    echo esc_html($analytics->format_average_display($item->average, $item->rating_type ?? 'stars', $item->scale ?? 5, $item->total_votes, $item->total_rating));
+                                ?></td>
                                 <td><?php echo esc_html($item->total_votes); ?></td>
                             </tr>
                         <?php endforeach; ?>

@@ -238,9 +238,8 @@ $result = $formatter->format_average_display(3.5, 'stars', 5, 10, 7);
 assert_contains('3.5', $result, '(e) stars formatter shows decimal average');
 assert_contains('/5', $result, '(e) stars formatter shows scale denominator');
 
-// numeric at scale 10: internal average 6.0 (stored on 0–5 scale) → denormalized to (6/5)*10=12? No.
-// denormalize_average(avg, scale) = round((avg / RATING_SCALE_DEFAULT) * scale, 1)
-// RATING_SCALE_DEFAULT = 5. So internal average 3.0 on scale 10 → (3/5)*10 = 6.0.
+// numeric at scale 10: denormalize_average(avg, scale) = round((avg / RATING_SCALE_DEFAULT) * scale, 1)
+// RATING_SCALE_DEFAULT = 5. Internal average 3.0 → (3.0/5)*10 = 6.0 → displayed as "6.0/10".
 $result = $formatter->format_average_display(3.0, 'numeric', 10, 10, 6);
 assert_contains('/10', $result, '(e) numeric formatter shows correct scale denominator');
 
