@@ -103,6 +103,9 @@ class Shuriken_Analytics_Ranking {
         }
 
         if ($avg_threshold !== null) {
+            // Binary types (like_dislike, approval) store values on a 0–1 scale, which
+            // is incompatible with the continuous 1–5 threshold used for top/low ranking.
+            $conditions[] = "rating_type NOT IN ('like_dislike', 'approval')";
             $conditions[] = "(total_rating / NULLIF(total_votes, 0)) {$avg_operator} %f";
             $params[] = $avg_threshold;
         }
@@ -130,7 +133,12 @@ class Shuriken_Analytics_Ranking {
         $having_parts = [];
         $params = [];
 
+        // Binary exclusion and threshold applied in WHERE so they scope to the rating row,
+        // not the aggregate (avoids filtering parent rows that have binary sub-ratings).
+        $where_extra = '';
         if ($avg_threshold !== null) {
+            // Exclude binary types from continuous-scale threshold comparisons.
+            $where_extra = " AND r.rating_type NOT IN ('like_dislike', 'approval')";
             $having_parts[] = 'total_votes >= %d';
             $params[] = $min_votes;
             $having_parts[] = "average {$avg_operator} %f";
@@ -151,7 +159,7 @@ class Shuriken_Analytics_Ranking {
              LEFT JOIN {$this->ratings_table} sub ON sub.parent_id = r.id
              LEFT JOIN {$this->votes_table} v ON (v.rating_id = r.id OR v.rating_id = sub.id) {$date_condition}
              WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
+               AND r.parent_id IS NULL{$where_extra}
              GROUP BY r.id
              HAVING {$having}
              ORDER BY {$sort_column} {$sort_direction}{$secondary_sort}
@@ -167,6 +175,10 @@ class Shuriken_Analytics_Ranking {
      * For binary: inverts 0↔1 using the rating's scale column.
      * For scaled: inverts within the normalized 1–5 range.
      *
+     * The condition `{$vote_alias}.rating_id = {$rating_alias}.id` ensures that only
+     * votes belonging to the sub-rating itself are inverted; direct votes on the parent
+     * rating (which appear in the same JOIN result set) fall through to the ELSE branch.
+     *
      * @param string $rating_alias Table alias for the ratings table (default 'sub')
      * @param string $vote_alias   Table alias for the votes table (default 'v')
      * @return string SQL CASE expression
@@ -174,9 +186,9 @@ class Shuriken_Analytics_Ranking {
     public static function get_inversion_sql(string $rating_alias = 'sub', string $vote_alias = 'v'): string {
         $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
         return "CASE
-            WHEN {$rating_alias}.effect_type = 'negative' AND {$rating_alias}.rating_type IN ('like_dislike', 'approval')
+            WHEN {$vote_alias}.rating_id = {$rating_alias}.id AND {$rating_alias}.effect_type = 'negative' AND {$rating_alias}.rating_type IN ('like_dislike', 'approval')
                 THEN CAST({$rating_alias}.scale AS SIGNED) - {$vote_alias}.rating_value
-            WHEN {$rating_alias}.effect_type = 'negative'
+            WHEN {$vote_alias}.rating_id = {$rating_alias}.id AND {$rating_alias}.effect_type = 'negative'
                 THEN ({$internal_scale} + 1) - {$vote_alias}.rating_value
             ELSE {$vote_alias}.rating_value
         END";
