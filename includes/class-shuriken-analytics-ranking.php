@@ -152,7 +152,8 @@ class Shuriken_Analytics_Ranking {
      * approval is excluded when a threshold is active (see get_ranked_cached).
      */
     private function get_ranked_filtered(int $limit, string $sort_column, string $sort_direction, string $secondary_sort, int $min_votes, ?float $avg_threshold, string $avg_operator, string $date_condition): array {
-        $inversion = self::get_inversion_sql();
+        $inversion  = self::get_inversion_sql();
+        $avg_select = self::build_like_dislike_scale_sql("AVG({$inversion})", 'r.rating_type');
 
         $having_parts = [];
         $params       = [];
@@ -163,19 +164,18 @@ class Shuriken_Analytics_Ranking {
         if ($avg_threshold !== null) {
             // approval is excluded: its average is always ~1.0, carrying no quality signal.
             // build_like_dislike_scale_sql() scales like_dislike values × RATING_SCALE_DEFAULT
-            // in the average alias so the HAVING threshold comparison operates on a uniform 0–5 range.
+            // so the HAVING threshold comparison operates on a uniform 0–5 range.
             $where_extra  = " AND r.rating_type NOT IN ('approval')";
             $having_parts[] = 'total_votes >= %d';
             $params[]       = $min_votes;
-            $having_parts[] = "average {$avg_operator} %f";
+            $having_parts[] = "({$avg_select}) {$avg_operator} %f";
             $params[]       = $avg_threshold;
         } else {
             $having_parts[] = 'total_votes > 0';
         }
 
-        $having      = implode(' AND ', $having_parts);
-        $params[]    = $limit;
-        $avg_select  = self::build_like_dislike_scale_sql("AVG({$inversion})", 'r.rating_type');
+        $having   = implode(' AND ', $having_parts);
+        $params[] = $limit;
 
         return $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT r.id, r.name, r.rating_type, r.scale, r.parent_id, r.effect_type, r.display_only, r.mirror_of,
@@ -209,7 +209,7 @@ class Shuriken_Analytics_Ranking {
      */
     private static function build_like_dislike_scale_sql(string $inner_expr, string $rating_type_col): string {
         $scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        return "CASE WHEN {$rating_type_col} = 'like_dislike' THEN ({$inner_expr}) * {$scale} ELSE {$inner_expr} END";
+        return "({$inner_expr}) * CASE WHEN {$rating_type_col} = 'like_dislike' THEN {$scale} ELSE 1 END";
     }
 
     /**
