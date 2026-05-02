@@ -52,6 +52,7 @@
 .shuriken-filter-bar .filter-group {
     display: flex;
     flex-direction: column;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 6px;
     padding: 14px 20px;
@@ -141,6 +142,7 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
     pointer-events: none;
+    width: stretch;
 }
 
 .filter-seg-btn .shuriken-icon {
