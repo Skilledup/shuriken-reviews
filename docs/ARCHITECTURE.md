@@ -44,11 +44,14 @@ This document provides a high-level overview of the plugin's structure, design d
 
 **Registered Services:**
 ```php
-database        → Shuriken_Database (implements Shuriken_Database_Interface)
-analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface)
+database        → Shuriken_Database (implements Shuriken_Database_Interface; façade delegates to repositories)
+ratings_repo    → Shuriken_Rating_Repository
+votes_repo      → Shuriken_Vote_Repository
+schema_manager  → Shuriken_Schema_Manager
+analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface; delegates to formatter/ranking/context)
 voter_analytics → Shuriken_Voter_Analytics (implements Shuriken_Voter_Analytics_Interface)
 rate_limiter    → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
-rest_api      → Shuriken_REST_API
+rest_api      → Shuriken_REST_API (bootstrap; wires Shuriken_REST_Ratings_Controller + Shuriken_REST_Votes_Controller)
 shortcodes    → Shuriken_Shortcodes
 block         → Shuriken_Block
 ajax          → Shuriken_AJAX
@@ -58,18 +61,44 @@ admin         → Shuriken_Admin
 
 **Note:** `Shuriken_Exception_Handler` is a utility class loaded directly (not registered in the container) — it provides static-style error formatting and does not depend on other services.
 
-### 3. Database Service (`class-shuriken-database.php`)
+### 3. Database Layer
 
-**Implements:** `Shuriken_Database_Interface`
+**Façade:** `class-shuriken-database.php` (`Shuriken_Database`)
+
+The `Shuriken_Database` class is a singleton façade that implements `Shuriken_Database_Interface` for full backward compatibility. all 28 interface methods delegate to three focused repository classes. Use `shuriken_db()` for generic access, or prefer the narrower helpers when only one repo is needed.
+
+**Helper functions:**
+- `shuriken_db()` — returns the `Shuriken_Database` façade (backward-compatible)
+- `shuriken_ratings_repo()` — returns `Shuriken_Rating_Repository` directly
+- `shuriken_votes_repo()` — returns `Shuriken_Vote_Repository` directly
+- `shuriken_schema_manager()` — returns `Shuriken_Schema_Manager` directly
+
+#### 3a. Rating Repository (`class-shuriken-rating-repository.php`)
+
+**Implements:** focused repository (not the full interface)
 
 **Responsibilities:**
-- All database operations (CRUD)
-- Query building and execution
-- Exception throwing on failures
-- Data validation before insert/update
-- Transaction management
+- Rating CRUD, search, pagination, hierarchy (parent/child), mirrors
+- Contextual stats (`get_contextual_stats()`, `get_contextual_stats_batch()`)
+- Bulk export
 
-**Key Methods:**
+#### 3b. Vote Repository (`class-shuriken-vote-repository.php`)
+
+**Implements:** focused repository
+
+**Responsibilities:**
+- Vote CRUD (`create_vote()`, `get_user_vote()`, `get_votes_for_rating()`)
+- Rate-limit timestamp queries (`get_last_vote_time()`, hourly/daily counts)
+- Transactional vote+total updates (`recalculate_parent_rating()`)
+
+#### 3c. Schema Manager (`class-shuriken-schema-manager.php`)
+
+**Responsibilities:**
+- `create_tables()` — initial table creation and column migrations
+- `tables_exist()` — health check
+- DB version tracking
+
+**Key Methods (on the façade / repositories):**
 - `get_rating($id)` - Retrieve rating
 - `get_ratings_by_ids($ids)` - Batch retrieve multiple ratings (single query)
 - `get_all_ratings($orderby, $order)` - Retrieve all ratings
@@ -94,14 +123,31 @@ Throws `Shuriken_Database_Exception` on failures instead of returning false.
 
 **Implements:** `Shuriken_Analytics_Interface`
 **Uses:** `Shuriken_Analytics_Helpers` trait
+**Composes:** `Shuriken_Analytics_Formatter`, `Shuriken_Analytics_Ranking`, `Shuriken_Analytics_Context`
 
 **Responsibilities:**
-- Calculate rating statistics and trends
-- Generate analytics reports (dashboard, item stats)
-- Format data for display (averages, votes, dates)
+- Dashboard analytics coordinator — delegates formatting, ranking, and contextual queries to composed services
 - Type-aware analytics (stars, like/dislike, numeric, approval)
 
-**Key Methods:**
+#### 4a. Analytics Formatter (`class-shuriken-analytics-formatter.php`)
+
+Stateless display formatting service composed into `Shuriken_Analytics`.
+
+**Methods:** `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()`
+
+#### 4b. Analytics Ranking (`class-shuriken-analytics-ranking.php`)
+
+Ranking engine composed into `Shuriken_Analytics`.
+
+**Methods:** parametric `get_ranked()` (replaces `get_top_rated()`, `get_most_voted()`, `get_low_performers()`); `get_inversion_sql()` static helper for effect-type inversion.
+
+#### 4c. Analytics Context (`class-shuriken-analytics-context.php`)
+
+Per-post contextual analytics service composed into `Shuriken_Analytics`.
+
+**Key Methods:** `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, and 8 more contextual methods.
+
+**Key Methods (on the coordinator):**
 - `get_rating_stats($rating_id, $date_range)` - Get statistics
 - `get_top_rated($limit)` - Top performers
 - `get_most_voted($limit)` - Most popular
@@ -249,7 +295,11 @@ Responsible for enqueuing frontend assets and localizing JavaScript data.
 
 ### REST API Module (`class-shuriken-rest-api.php`)
 
-Provides REST endpoints for programmatic access and AJAX fallback.
+`Shuriken_REST_API` is a thin bootstrap (singleton). all route logic lives in two focused controllers. Cross-cutting concerns (auth bypass, output buffer cleaning, CDN cache headers) remain on the bootstrap.
+
+**Controllers:**
+- `Shuriken_REST_Ratings_Controller` — 11 rating endpoints (CRUD, hierarchy, mirrors, search, batch) with arg schemas and permission callbacks
+- `Shuriken_REST_Votes_Controller` — 3 endpoints: stats (public), context-stats (editor), nonce (public)
 
 **Endpoints:**
 - `GET    /wp-json/shuriken-reviews/v1/ratings` - List all ratings

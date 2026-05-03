@@ -2,7 +2,7 @@
 
 A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.15.4-blue)
+![Version](https://img.shields.io/badge/version-1.15.5-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
@@ -86,6 +86,8 @@ Ratings support hierarchical and linked relationships:
 
 Type compatibility is enforced: the block editor warns when incompatible types are linked as mirrors or parent/child pairs.
 
+Ratings can also include an optional label description beneath the name, and both blocks and shortcodes can suppress the title/description entirely for denser layouts such as Query Loop cards.
+
 ---
 
 ## Block Editor Integration
@@ -119,6 +121,15 @@ Displays a parent rating with all its child sub-ratings in a unified section.
 
 Both blocks render a live editor preview that matches the frontend output. They also opt into WordPress client-side navigation support, and the frontend ratings script re-initialises after Interactivity Router navigations so voting widgets stay live on modern block-theme page transitions.
 
+### Query Loop Sort Extension
+
+For block themes, Shuriken Reviews also provides a Query Loop sorting extension so archive and loop output can be ordered by a chosen rating.
+
+**Capabilities:**
+- Pick which rating controls sorting
+- Choose sort direction and metric
+- Use archive sorting settings as a site-wide fallback where needed
+
 ---
 
 ## Shortcodes
@@ -134,6 +145,7 @@ Both blocks render a live editor preview that matches the frontend output. They 
 | `accent_color` | string | — | Hex colour override (e.g. `#e74c3c`) |
 | `star_color` | string | — | Hex colour override |
 | `button_color` | string | — | Hex colour override for numeric submit buttons |
+| `hide_title` | int/bool | — | Hide the rating title and description output |
 | `context_id` | int | — | Post ID for contextual voting |
 | `context_type` | string | — | Post type for contextual voting |
 
@@ -142,6 +154,7 @@ Both blocks render a live editor preview that matches the frontend output. They 
 [shuriken_rating id="1" tag="h3" anchor_tag="product-rating"]
 [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
 [shuriken_rating id="8" style="minimal" star_color="#0f766e" button_color="#155e75"]
+[shuriken_rating id="8" hide_title="1"]
 [shuriken_rating id="1" context_id="42" context_type="post"]
 ```
 
@@ -157,6 +170,7 @@ Both blocks render a live editor preview that matches the frontend output. They 
 | `star_color` | string | — | Hex colour override |
 | `button_color` | string | — | Hex colour override for numeric submit buttons |
 | `layout` | string | `grid` | Child layout: `grid` or `list` |
+| `hide_title` | int/bool | — | Hide the rating title and description output |
 | `context_id` | int | — | Post ID for contextual voting |
 | `context_type` | string | — | Post type for contextual voting |
 
@@ -164,6 +178,7 @@ Both blocks render a live editor preview that matches the frontend output. They 
 [shuriken_grouped_rating id="1"]
 [shuriken_grouped_rating id="1" style="dark" layout="list"]
 [shuriken_grouped_rating id="5" tag="h3" style="boxed" accent_color="#667eea" button_color="#1d4ed8" layout="list"]
+[shuriken_grouped_rating id="5" hide_title="1"]
 ```
 
 ---
@@ -289,6 +304,7 @@ Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-lim
 
 | Setting | Description |
 |---|---|
+| Enable Swiper Slider | Display the Latest Comments block as a swipeable carousel when the slider assets are enabled |
 | Exclude Author Comments | Remove the post author's own comments from the Latest Comments block |
 | Exclude Reply Comments | Remove comment replies from the Latest Comments block |
 
@@ -318,6 +334,9 @@ Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-lim
 
 ```php
 shuriken_db()         // Returns Shuriken_Database_Interface
+shuriken_ratings_repo() // Returns Shuriken_Rating_Repository
+shuriken_votes_repo()   // Returns Shuriken_Vote_Repository
+shuriken_schema_manager() // Returns Shuriken_Schema_Manager
 shuriken_analytics()  // Returns Shuriken_Analytics_Interface
 shuriken_container()  // Returns Shuriken_Container (DI service container)
 ```

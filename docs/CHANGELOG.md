@@ -6,6 +6,50 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.15.5] — 2026-05-03
+
+### Added
+- **Rating label descriptions** — ratings now support a `label_description` field that is editable in admin, available in the block editor, rendered by shortcodes/frontend output, and exposed through the REST API.
+- **Hide title/description controls** — single and grouped rating blocks now support `hideTitle`, and shortcodes now support `hide_title`, so layouts such as Query Loops can suppress repeated rating labels.
+- **Query Loop Sort extension for block themes** — new block-theme sorting controls let Query Loop output and archive views order content by a chosen rating, sort metric, and direction.
+- **Latest Comments Swiper option** — the comments settings now expose an option to render the Latest Comments block as a Swiper-powered slider.
+- **`Shuriken_Rating_Type` backed enum** — PHP 8.1 backed enum in `includes/enum-shuriken-rating-type.php`. Cases: `Stars`, `LikeDislike`, `Numeric`, `Approval`. Methods: `isBinary()`, `maxScale()`, `constrainScale()`, `typeClass()`, `values()`. Adopted across 13 files — `get_type_class()` deleted from REST API, all `$allowed_types` arrays and binary guards replaced with enum calls.
+- **`Shuriken_Analytics_Formatter` class** — stateless formatting service extracted from `Shuriken_Analytics`. Handles `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, and `get_date_range_label()`. `Shuriken_Analytics` delegates via `$this->formatter`.
+- **`Shuriken_Analytics_Ranking` class** — ranking service extracted from `Shuriken_Analytics`. Consolidates `get_top_rated()`, `get_most_voted()`, and `get_low_performers()` into a single parametric `get_ranked()` engine (cached + date-filtered paths). Effect-type inversion SQL extracted to `get_inversion_sql()` static helper.
+- **`Shuriken_Analytics_Context` class** — contextual analytics service extracted from `Shuriken_Analytics`. Owns 12 per-post/contextual methods (~660 lines): `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, and more. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
+- **`Shuriken_Rating_Repository` class** — rating-focused repository split from `Shuriken_Database`. Handles rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, and export (~1,041 lines). Helper function `shuriken_ratings_repo()` added.
+- **`Shuriken_Vote_Repository` class** — vote-focused repository split from `Shuriken_Database`. Handles vote CRUD, rate-limit timestamp queries, and transactional vote+total updates (~326 lines). Helper function `shuriken_votes_repo()` added.
+- **`Shuriken_Schema_Manager` class** — schema management split from `Shuriken_Database`. Handles `create_tables()`, `tables_exist()`, and column migrations (~204 lines). Helper function `shuriken_schema_manager()` added.
+- **`Shuriken_REST_Ratings_Controller` class** — 11 rating endpoints (CRUD, hierarchy, mirrors, search, batch) with their arg schemas and permission callbacks (~689 lines), split from the monolithic `Shuriken_REST_API`.
+- **`Shuriken_REST_Votes_Controller` class** — 3 vote-related endpoints (stats, context-stats, nonce) split from the monolithic `Shuriken_REST_API` (~268 lines).
+- **Admin template partials** — `partials/pagination.php` (reusable pagination block), `partials/date-filter-bar.php` (unified date-range filter form), `partials/votes-table.php` (reusable vote history table with voter display). Helper functions `shuriken_format_rating_value()` and `shuriken_render_voter_cell()` added to `class-shuriken-admin.php`.
+- **`Shuriken_REST_Permissions` trait** — shared permission logic extracted for the split REST controllers so ratings and vote endpoints stay aligned.
+
+### Changed
+- **Ratings terminology cleaned up** — rating description handling now consistently uses `name`/`label_description` terminology instead of older `title`-oriented wording across admin, blocks, REST docs, and related code paths.
+- **Archive sorting controls expanded** — admin settings and the Query Loop Sort integration now expose clearer rating-selection and direction options for archive ordering.
+- **Latest Comments block integration hardened** — the comments feature now tolerates missing extension metadata and missing block names more defensively when bootstrapping local assets or fallbacks.
+- **First-class callables for hooks** — all `array($this, 'method_name')` callback syntax replaced with `$this->method(...)` first-class callables across 6 classes: `Shuriken_Admin` (19), `Shuriken_REST_API` (30), `Shuriken_Block` (5), `Shuriken_AJAX` (2), `Shuriken_Shortcodes` (2), `Shuriken_Frontend` (2). Zero logic changes.
+- **`readonly` properties + Constructor Property Promotion** — CPP + `readonly` applied to `Shuriken_Admin` (2 promoted props), `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Shortcodes` (1 each), `Shuriken_Analytics` (1 promoted + 3 readonly derived). Constructor params made non-nullable throughout.
+- **`Shuriken_Database` refactored to delegation façade** — the class retains singleton, constants, static helpers, and implements `Shuriken_Database_Interface` for full backward compatibility, but delegates all 28 interface methods to the focused repository classes. `shuriken_db()` continues to work unchanged. All 10 callers now type-hint the specific repository they need.
+- **`Shuriken_REST_API` refactored to thin bootstrap** — singleton, controller wiring, `register_routes()` delegation, and cross-cutting REST filters (auth bypass, output buffer cleaning, CDN cache headers) remain; all route logic lives in the two controllers.
+- **Scoped analytics methods merged** — 7 duplicate method pairs (`get_votes_over_time`, `get_rating_stats`, `get_rating_distribution`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`) consolidated; base methods gained `?string $scope = null`. `_scoped()` delegates retained for backward compatibility.
+- **JS modernization across all 10 project files** — 135 `var` declarations converted to `const`/`let`, anonymous callbacks converted to arrow functions (except jQuery `this`-binding callbacks), string concatenation replaced with template literals, `e.which` replaced with `e.key`.
+- **Responsive analytics filter bar polish** — filter groups now wrap more gracefully on smaller screens and action buttons size more predictably.
+- **`@since` tags normalized** — all `@since 1.15.0` annotations corrected to `1.15.5` (33 occurrences) across the codebase.
+
+### Fixed
+- **Date filter not working on contextual item-stats page** — the time period `<select>` change handler was only wired in the global view's script block; the contextual view was missing the jQuery bindings entirely. Fixed by centralizing into `admin-analytics.js`.
+- **Best Performing average wrong for binary types** — `get_rating_context_summary()` ran `denormalize_average()` on a like/dislike 0–1 ratio, showing `0.2` instead of `100%`. Fixed to compute percentage for binary types.
+- **Analytics ranking and demoralize regressions** — low-performer momentum filtering, binary threshold handling, inversion scoping, numeric icon rendering, and like/dislike normalization in ranked filters were corrected so ranking cards use consistent scale logic.
+- **Incoming scale validation** — incoming rating scales are now normalized earlier so valid rating-type combinations do not fail REST or editor validation unnecessarily.
+- **Latest Comments fallback handling** — missing `mbstring` support, missing extension metadata, and missing block-name conditions no longer break the comments integration path.
+- **Ratings page includes** — the admin ratings page now uses `include_once` to avoid duplicate inclusion issues.
+- **Admin analytics JS duplication** — consolidated 5 duplicate date-range filter handlers, 4 duplicate `formatDate()` definitions, 3 duplicate clickable-row handlers, 2 duplicate `shuriken_sort_link()` definitions. Shared utilities moved to `admin-analytics.js`; `shuriken_sort_link()` moved to `class-shuriken-admin.php`.
+- **Votes table comparisons** — the reusable vote-history partial now uses stricter rating ID comparison logic, avoiding edge-case row mismatches.
+
+---
+
 ## [1.15.4] — 2026-04-10
 
 ### Added

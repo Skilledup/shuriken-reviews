@@ -50,48 +50,42 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('Yozora is the 1.15.4 release. It focuses on deeper contextual analytics, safer frontend re-initialization on modern block-theme navigation, and clearer mixed-scope reporting throughout the admin.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Version 1.15.5 focuses on modernizing the plugin internals while also shipping practical editor and analytics improvements: better rating labels, more flexible block-theme sorting, safer Latest Comments fallbacks, and more accurate ranking logic.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Per-Post Analytics Workspace', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Ratings with contextual votes now open into a dedicated Per-Post view with top-post charts, average distribution across posts, trending contexts, and sortable context tables.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Modern PHP Service Layer', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The codebase now uses a backed rating-type enum, focused repositories for ratings/votes/schema work, split REST controllers, and more readonly constructor-promoted services. This keeps the public API stable while making the internals easier to maintain and extend.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Global vs. Per-Post Scope Toggle', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('When a rating has both classic global votes and contextual votes, Item Stats now exposes separate Global Votes and Per-Post Votes views so totals, charts, and tables are never mixed accidentally.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Rating Descriptions + Hide Title', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Ratings can now carry an optional description beneath the name, and both blocks plus shortcodes can hide the title and description entirely. This is especially useful inside Query Loop layouts and dense review cards.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Context Drill-Down Screens', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Every post, page, or product in the Per-Post view now links to its own detail screen with context-specific summary cards, charts, and a paginated vote history table.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Query Loop Sorting for Block Themes', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('A dedicated Query Loop Sort extension adds rating-based ordering controls for block themes, and archive sorting settings now let you choose the target rating and sort direction more explicitly.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Client-Side Navigation Support', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Both rating blocks now opt into WordPress client navigation, and the frontend ratings script re-initialises automatically after Interactivity Router navigations so widgets stay interactive on block-theme transitions.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Analytics Accuracy + Ranking Fixes', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Ranking logic now handles like/dislike ratings more consistently, fixes low-performer and demoralize calculations, and keeps binary thresholds and inversion rules aligned with the intended scale behavior.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Mixed-Scope Rating Badges', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The Ratings list now distinguishes ratings that have both global and contextual activity, showing a mixed badge like “Global + 6 posts” instead of implying that all votes come from one source.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Latest Comments Improvements', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('The Latest Comments block now has an optional Swiper slider mode, and its fallback handling was hardened for environments missing mbstring support, extension metadata, or expected block names.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Unified, Responsive Filter Bar', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The Item Stats filter controls were reorganised into a cleaner responsive bar that preserves date range, scope, and parent-view selections more reliably while switching modes.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Chart and Display Accuracy', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Parent breakdown charts now respect the active scope and date range, while star and binary displays across analytics and the ratings list received icon and formatting polish for clearer at-a-glance stats.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Admin Template + JS Cleanup', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Analytics pages now share reusable filter bars, pagination, and vote-history tables, while the JavaScript codebase was modernized to ES6+ syntax for easier maintenance and fewer duplicated behaviors.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
             </ul>
