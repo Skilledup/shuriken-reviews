@@ -50,7 +50,7 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('Version 1.15.5 focuses on modernizing the plugin internals while also shipping practical editor and analytics improvements: better rating labels, more flexible block-theme sorting, safer Latest Comments fallbacks, and more accurate ranking logic.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Version 1.15.5 — Oboro, focuses on modernizing the plugin internals while also shipping practical editor and analytics improvements: better rating labels, more flexible block-theme sorting, safer Latest Comments fallbacks, and more accurate ranking logic.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
