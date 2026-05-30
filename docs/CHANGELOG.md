@@ -30,7 +30,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`Shuriken_REST_Permissions` trait** — shared permission logic extracted for the split REST controllers so ratings and vote endpoints stay aligned.
 
 ### Changed
-- **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics` into three clean, focused, testable, and reusable private methods.
+- **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics` into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`).
 - **Core extensibility hooks** — integrated complete hook and filter slots for decoupled third-party add-ons across the admin tables, pages, REST API permissions, and AJAX submission actions.
 - **Frontend JS & block registration filters** — exposed block settings filters and frontend JSON submission hooks (`shurikenVoteRequest` / `shurikenVoteSuccess`) using native `wp.hooks` integration.
 - **Ratings terminology cleaned up** — rating description handling now consistently uses `name`/`label_description` terminology instead of older `title`-oriented wording across admin, blocks, REST docs, and related code paths.
