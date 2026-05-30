@@ -869,4 +869,6 @@ $col_class = function($col) use ($hidden_columns) {
             </p>
         </form>
     </div>
+
+    <?php do_action('shuriken_after_ratings_list', $ratings); ?>
 </div>

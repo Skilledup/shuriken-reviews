@@ -58,7 +58,7 @@
         iconTriangleAlert
     } = window.ShurikenBlockHelpers;
 
-    registerBlockType('shuriken-reviews/grouped-rating', {
+    let settings = {
         icon: iconShare2(24),
         edit: (props) => {
             const { attributes, setAttributes } = props;
@@ -1787,5 +1787,11 @@
             // Dynamic block — rendered on server
             return null;
         }
-    });
+    };
+
+    if (window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function') {
+        settings = window.wp.hooks.applyFilters('shurikenBlockSettings_groupedRating', settings);
+    }
+
+    registerBlockType('shuriken-reviews/grouped-rating', settings);
 })(window.wp);

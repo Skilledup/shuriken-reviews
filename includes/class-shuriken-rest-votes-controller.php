@@ -47,7 +47,7 @@ class Shuriken_REST_Votes_Controller {
         register_rest_route($this->namespace, '/ratings/stats', array(
             'methods'             => 'GET',
             'callback'            => $this->get_rating_stats(...),
-            'permission_callback' => '__return_true',
+            'permission_callback' => $this->get_rating_stats_permission(...),
             'args'                => array(
                 'ids' => array(
                     'required'          => true,
@@ -183,6 +183,7 @@ class Shuriken_REST_Votes_Controller {
                 }
             }
             
+            $stats = apply_filters('shuriken_rating_stats_response', $stats, $ids, $context_id, $context_type);
             return rest_ensure_response($stats);
         } catch (Shuriken_Exception_Interface $e) {
             return Shuriken_Exception_Handler::handle_rest_exception($e);
@@ -252,5 +253,16 @@ class Shuriken_REST_Votes_Controller {
             'logged_in' => is_user_logged_in(),
             'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
         ));
+    }
+
+    /**
+     * Permission callback for public rating stats endpoint
+     *
+     * @param \WP_REST_Request $request The request object.
+     * @return bool
+     * @since 1.15.x
+     */
+    public function get_rating_stats_permission(\WP_REST_Request $request): bool {
+        return (bool) apply_filters('shuriken_stats_permission_callback', true, $request);
     }
 }

@@ -312,6 +312,19 @@ class Shuriken_Block {
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
 
+        // Pass block-level config through a wp_localize_script call on the view script handle
+        $block_data = array(
+            'rating_id'    => $rating_id,
+            'title_tag'    => $title_tag,
+            'anchor_tag'   => $anchor_tag,
+            'context_id'   => $context_id,
+            'context_type' => $context_type,
+            'hide_title'   => $hide_title,
+            'attributes'   => $attributes,
+        );
+        $filtered_data = apply_filters('shuriken_block_view_data', $block_data, $block);
+        wp_localize_script('shuriken-reviews', 'shurikenBlock_' . $rating_id, $filtered_data);
+
         // Use the shared render method from Shortcodes class
         $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag, $context_id, $context_type, $hide_title);
 
@@ -427,6 +440,19 @@ class Shuriken_Block {
 
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
+
+        // Pass block-level config through a wp_localize_script call on the view script handle
+        $block_data = array(
+            'rating_id'    => $rating_id,
+            'title_tag'    => $title_tag,
+            'anchor_tag'   => $anchor_tag,
+            'context_id'   => $context_id,
+            'context_type' => $context_type,
+            'hide_title'   => $hide_title,
+            'attributes'   => $attributes,
+        );
+        $filtered_data = apply_filters('shuriken_block_view_data', $block_data, $block);
+        wp_localize_script('shuriken-reviews', 'shurikenBlock_' . $rating_id, $filtered_data);
 
         // Render parent rating
         $html = '<div class="shuriken-rating-group' . esc_attr($layout_class) . '">';

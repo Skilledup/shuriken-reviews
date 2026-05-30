@@ -30,6 +30,7 @@ if (isset($_POST['save_general_settings'])) {
     $exclude_author_comments  = isset($_POST['shuriken_exclude_author_comments']) ? '1' : '0';
     $exclude_reply_comments   = isset($_POST['shuriken_exclude_reply_comments']) ? '1' : '0';
     $swiper_slider_enabled    = isset($_POST['shuriken_swiper_slider_enabled']) ? '1' : '0';
+    $delete_data_on_uninstall = isset($_POST['shuriken_delete_data_on_uninstall']) ? '1' : '0';
 
     $allowed_capabilities = array('manage_options', 'edit_others_posts', 'edit_posts', 'custom');
     $rest_write_cap = isset($_POST['shuriken_rest_write_capability'])
@@ -60,6 +61,10 @@ if (isset($_POST['save_general_settings'])) {
     update_option('shuriken_swiper_slider_enabled', $swiper_slider_enabled);
     update_option('shuriken_rest_write_capability', $rest_write_cap);
     update_option('shuriken_rest_write_capability_custom', $rest_write_cap_custom);
+    update_option('shuriken_delete_data_on_uninstall', $delete_data_on_uninstall);
+    
+    // Fire action for add-ons to save their settings on same tab
+    do_action('shuriken_save_settings', 'general', $_POST);
     
     echo '<div class="notice notice-success is-dismissible"><p>' . 
         esc_html__('Settings saved successfully!', 'shuriken-reviews') . 
@@ -286,6 +291,32 @@ if (isset($_POST['save_general_settings'])) {
                 </div>
                 <p class="settings-field-description">
                     <?php esc_html_e('Minimum capability required to create, update, or delete ratings via the REST API. Defaults to Administrator. Useful for multi-author sites that need editors or authors to manage ratings programmatically.', 'shuriken-reviews'); ?>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Management Card -->
+    <div class="shuriken-settings-card">
+        <div class="settings-card-header">
+            <span class="settings-card-icon"><?php Shuriken_Icons::render('database'); ?></span>
+            <h3><?php esc_html_e('Data Management', 'shuriken-reviews'); ?></h3>
+        </div>
+        <div class="settings-card-body">
+            <div class="settings-field">
+                <div class="settings-field-header">
+                    <label for="shuriken_delete_data_on_uninstall"><?php esc_html_e('Delete Data on Uninstall', 'shuriken-reviews'); ?></label>
+                    <label class="shuriken-toggle">
+                        <input type="checkbox"
+                               name="shuriken_delete_data_on_uninstall"
+                               id="shuriken_delete_data_on_uninstall"
+                               value="1"
+                               <?php checked('1', get_option('shuriken_delete_data_on_uninstall', '0')); ?>>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <p class="settings-field-description">
+                    <?php esc_html_e('When checked, all custom database tables (ratings, votes) and all plugin settings will be completely deleted from the database upon uninstallation (when deleting the plugin through the WP Admin plugins list). Leave unchecked to preserve your reviews data if you delete and re-install.', 'shuriken-reviews'); ?>
                 </p>
             </div>
         </div>

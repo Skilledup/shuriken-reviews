@@ -37,6 +37,9 @@ if (isset($_POST['save_rate_limiting_settings'])) {
     if ($enabled === '1') {
         delete_option('shuriken_rate_limit_warning_dismissed');
     }
+
+    // Fire action for add-ons to save their settings on same tab
+    do_action('shuriken_save_settings', 'rate-limiting', $_POST);
     
     echo '<div class="notice notice-success is-dismissible"><p>' . 
         esc_html__('Rate limiting settings saved successfully!', 'shuriken-reviews') . 

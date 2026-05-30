@@ -101,6 +101,7 @@ final class Shuriken_Reviews {
         // Interfaces
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-database.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics-extension.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-voter-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-rate-limiter.php';
         
@@ -158,6 +159,9 @@ final class Shuriken_Reviews {
         
         // Activation hook
         register_activation_hook(SHURIKEN_REVIEWS_PLUGIN_FILE, array($this, 'activate'));
+
+        // Deactivation hook
+        register_deactivation_hook(SHURIKEN_REVIEWS_PLUGIN_FILE, array($this, 'deactivate'));
     }
 
     /**
@@ -227,6 +231,9 @@ final class Shuriken_Reviews {
         if (is_admin()) {
             $container->get('admin');
         }
+
+        // Fire action after the container is fully built and services are initialized
+        do_action('shuriken_container_ready', $container);
     }
 
     /**
@@ -263,6 +270,18 @@ final class Shuriken_Reviews {
             deactivate_plugins(SHURIKEN_REVIEWS_PLUGIN_BASENAME);
             wp_die('Error creating required database tables. Please check the error log for details.');
         }
+    }
+
+    /**
+     * Plugin deactivation handler
+     *
+     * Fires a deactivation hook so add-ons can clean up.
+     *
+     * @return void
+     * @since 1.15.x
+     */
+    public function deactivate() {
+        do_action('shuriken_deactivate');
     }
 }
 

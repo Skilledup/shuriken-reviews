@@ -41,6 +41,9 @@ class Shuriken_AJAX {
         // Rating submission
         add_action('wp_ajax_submit_rating', $this->handle_submit_rating(...));
         add_action('wp_ajax_nopriv_submit_rating', $this->handle_submit_rating(...));
+
+        // Fire action for add-ons to register their own AJAX handlers
+        do_action('shuriken_ajax_register_handlers', $this);
     }
 
     /**

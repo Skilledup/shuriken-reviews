@@ -169,6 +169,8 @@ class Shuriken_Admin {
             $this->render_context_stats_page(...)
         );
 
+        // Fire action to register custom submenus
+        do_action('shuriken_admin_submenu', 'shuriken-reviews');
     }
 
     /**
@@ -197,11 +199,12 @@ class Shuriken_Admin {
      * @since 1.8.0
      */
     public function get_ratings_columns(): array {
-        return array(
+        $columns = array(
             'type'      => __('Type', 'shuriken-reviews'),
             'shortcode' => __('Shortcode', 'shuriken-reviews'),
             'stats'     => __('Rating', 'shuriken-reviews'),
         );
+        return apply_filters('shuriken_ratings_columns', $columns);
     }
 
     /**

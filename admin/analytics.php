@@ -450,6 +450,8 @@ $contextual_posts     = $analytics->get_contextual_post_count();
             </button>
         </form>
     </div>
+
+    <?php do_action('shuriken_after_analytics_overview', $date_range); ?>
 </div>
 
 <script>

@@ -2,6 +2,25 @@ jQuery(document).ready(function($) {
     'use strict';
 
     /**
+     * Safely apply WordPress frontend JS filters if wp.hooks is available.
+     */
+    const applyFilters = (hookName, val, ...args) => {
+        if (window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function') {
+            return window.wp.hooks.applyFilters(hookName, val, ...args);
+        }
+        return val;
+    };
+
+    /**
+     * Safely trigger WordPress frontend JS actions if wp.hooks is available.
+     */
+    const doAction = (hookName, ...args) => {
+        if (window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function') {
+            window.wp.hooks.doAction(hookName, ...args);
+        }
+    };
+
+    /**
      * Smoothly crossfade inner HTML to prevent abrupt layout jumps when
      * feedback / stats text changes.
      *
@@ -338,7 +357,7 @@ jQuery(document).ready(function($) {
         let originalText = $rating.find('.rating-stats').html();
         $rating.addClass('shuriken-loading');
 
-        const postData = {
+        let postData = {
             action: 'submit_rating',
             rating_id: ratingId,
             rating_value: value,
@@ -349,6 +368,9 @@ jQuery(document).ready(function($) {
             postData.context_id = contextId;
             postData.context_type = contextType;
         }
+
+        // Apply filters
+        postData = applyFilters('shurikenVoteRequest', postData, $rating, value);
         
         $.ajax({
             url: shurikenReviews.ajaxurl,
@@ -356,6 +378,7 @@ jQuery(document).ready(function($) {
             data: postData,
             success: function(response) {
                 if (response.success) {
+                    doAction('shurikenVoteSuccess', response, $rating, value);
                     // Show translated success feedback
                     $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.thankYou);
                     // Highlight selected stars
@@ -596,7 +619,7 @@ jQuery(document).ready(function($) {
         // Pulse the widget while AJAX is in-flight
         $rating.addClass('shuriken-loading');
 
-        const postData = {
+        let postData = {
             action: 'submit_rating',
             rating_id: ratingId,
             rating_value: value,
@@ -608,12 +631,16 @@ jQuery(document).ready(function($) {
             postData.context_type = contextType;
         }
 
+        // Apply filters
+        postData = applyFilters('shurikenVoteRequest', postData, $rating, value);
+
         $.ajax({
             url: shurikenReviews.ajaxurl,
             type: 'POST',
             data: postData,
             success: function(response) {
                 if (response.success) {
+                    doAction('shurikenVoteSuccess', response, $rating, value);
                     if (ratingType === 'like_dislike') {
                         // new_scaled_average is likes/(likes+dislikes)*100
                         const totalVotes = response.data.new_total_votes;

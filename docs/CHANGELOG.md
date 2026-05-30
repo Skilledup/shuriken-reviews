@@ -9,6 +9,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.15.5] — 2026-05-03
 
 ### Added
+- **Uninstall cleanup configuration option** — introduced a `Delete Data on Uninstall` toggle in the General settings screen which allows users to decide whether custom tables and options should be permanently deleted upon uninstallation. Under [uninstall.php](uninstall.php), database cleanup is now opt-in to prevent accidental data loss.
+- **Deactivation hook and custom callbacks** — registered a plugin `deactivate` hook emitting a custom `shuriken_deactivate` event for add-ons.
+- **`shuriken_container_ready` action** — fires after the container is fully built and services are initialized, enabling complete third-party service overrides.
+- **`Shuriken_Analytics_Extension_Interface`** — provides a dedicated interface contract for third-party extensions to hook custom statistics directly into Shuriken’s analytics queries.
 - **Rating label descriptions** — ratings now support a `label_description` field that is editable in admin, available in the block editor, rendered by shortcodes/frontend output, and exposed through the REST API.
 - **Hide title/description controls** — single and grouped rating blocks now support `hideTitle`, and shortcodes now support `hide_title`, so layouts such as Query Loops can suppress repeated rating labels.
 - **Query Loop Sort extension for block themes** — new block-theme sorting controls let Query Loop output and archive views order content by a chosen rating, sort metric, and direction.
@@ -26,6 +30,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`Shuriken_REST_Permissions` trait** — shared permission logic extracted for the split REST controllers so ratings and vote endpoints stay aligned.
 
 ### Changed
+- **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics` into three clean, focused, testable, and reusable private methods.
+- **Core extensibility hooks** — integrated complete hook and filter slots for decoupled third-party add-ons across the admin tables, pages, REST API permissions, and AJAX submission actions.
+- **Frontend JS & block registration filters** — exposed block settings filters and frontend JSON submission hooks (`shurikenVoteRequest` / `shurikenVoteSuccess`) using native `wp.hooks` integration.
 - **Ratings terminology cleaned up** — rating description handling now consistently uses `name`/`label_description` terminology instead of older `title`-oriented wording across admin, blocks, REST docs, and related code paths.
 - **Archive sorting controls expanded** — admin settings and the Query Loop Sort integration now expose clearer rating-selection and direction options for archive ordering.
 - **Latest Comments block integration hardened** — the comments feature now tolerates missing extension metadata and missing block names more defensively when bootstrapping local assets or fallbacks.

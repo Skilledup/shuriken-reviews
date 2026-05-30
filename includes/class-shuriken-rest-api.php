@@ -116,6 +116,9 @@ class Shuriken_REST_API {
     public function register_routes(): void {
         $this->ratings_controller->register_routes();
         $this->votes_controller->register_routes();
+
+        // Fire action for registering add-on REST routes under the plugin namespace
+        do_action('shuriken_rest_register_routes', self::NAMESPACE);
     }
 
     // =========================================================================

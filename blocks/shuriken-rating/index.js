@@ -41,7 +41,7 @@
         iconTriangleAlert
     } = window.ShurikenBlockHelpers;
 
-    registerBlockType('shuriken-reviews/rating', {
+    let settings = {
         icon: iconStar(24),
         edit: (props) => {
             const { attributes, setAttributes } = props;
@@ -720,5 +720,11 @@
             );
         },
         save: () => null
-    });
+    };
+
+    if (window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function') {
+        settings = window.wp.hooks.applyFilters('shurikenBlockSettings_rating', settings);
+    }
+
+    registerBlockType('shuriken-reviews/rating', settings);
 })(window.wp);

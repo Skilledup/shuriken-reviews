@@ -103,6 +103,9 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                         esc_html__('Settings tab file not found.', 'shuriken-reviews') . 
                         '</p></div>';
                 }
+
+                // Fire action to let add-ons render content or settings cards at the bottom of the tab
+                do_action('shuriken_after_settings_card', $current_tab);
                 ?>
             </div>
         </div>
@@ -170,6 +173,8 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                 </div>
 
             <?php endif; ?>
+
+            <?php do_action('shuriken_settings_sidebar_' . $current_tab); ?>
         </aside>
     </div>
 </div>

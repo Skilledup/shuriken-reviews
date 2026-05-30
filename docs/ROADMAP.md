@@ -100,8 +100,9 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 7 pairs of scoped/base method duplicates merged; 12 contextual methods (660 lines) moved to `Shuriken_Analytics_Context`. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
 
+- **Decomposed `get_parent_rating_stats_breakdown()`** ✅ — decomposed into three clean private sub-methods under `Shuriken_Analytics`, reducing the main method's footprint to under 65 lines.
+
 **Still open in 1.15.x:**
-- [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines)
 - [ ] **Split jumbo `Shuriken_Analytics_Interface`** into sub-interfaces per concern
 
 ##### 6b — Admin Template DRY ✅ (core items)
@@ -133,7 +134,6 @@ All 10 project JS files modernized: 135 `var` → `const`/`let`, arrow functions
 
 ##### 6a (remaining) — Analytics Interface Split
 
-- [ ] **Decompose `get_parent_rating_stats_breakdown()`** (~250 → ~150 lines) — deferred; internal refactor, no interface impact.
 - [ ] **Split jumbo `Shuriken_Analytics_Interface`** — the interface declares ~50 methods across 4 concerns. Consider splitting into `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Context_Interface` + a core `Shuriken_Analytics_Interface`. Enables add-on decorators to implement only the sub-interface they need.
 
 ##### 6c — Block JS Decomposition (grouped-rating: 1,791 → ~600 lines)
@@ -145,7 +145,22 @@ All 10 project JS files modernized: 135 `var` → `const`/`let`, arrow functions
 - [ ] **Extract `<CreateRatingForm>` shared component** — rating type selection, scale validation, description field, display-only toggle repeated across `shuriken-rating/index.js` and `shuriken-grouped-rating/index.js` (~250 lines duplicated). Move to `block-helpers.js`.
 - [ ] **Extract `useApiErrorHandling()` hook** — identical error handler setup (`makeErrorHandler`, `makeErrorDismissers`, `retryLastAction`) duplicated in both block `edit()` functions (~60 lines). Centralize in `block-helpers.js`.
 
-##### 6d — Frontend JS & CSS Cleanup
+##### 6d — Block Build Toolchain: `@wordpress/scripts` + JSX
+
+The blocks already use React (`wp.element` is React) and React hooks, but without a build step — elements are created via `wp.element.createElement` (aliased as `h`), all `wp.*` packages are consumed as runtime globals, and every block lives in a single file because there is no module system. This makes Step 6c (component decomposition) impractical: extracting components into separate files with raw `createElement` trees produces unreadable code.
+
+Adopting `@wordpress/scripts` adds only the missing build layer — it is zero-config for this exact setup, handles webpack + Babel/JSX, and automatically externalises all `wp.*` packages so bundle sizes stay small.
+
+- [ ] **Add `package.json` + install `@wordpress/scripts`** — one dev dependency; use the default `build`/`start` scripts.
+- [ ] **Add `webpack.config.js` entry points** — one entry per block (`blocks/shuriken-rating/index.js`, `blocks/shuriken-grouped-rating/index.js`, etc.) and one for the shared store/helpers.
+- [ ] **Convert all `wp.element.createElement` / `h(...)` calls to JSX** — straightforward mechanical swap; Babel handles it.
+- [ ] **Replace `(function(wp) { … })(wp)` IIFEs with ES module imports** — `import { registerBlockType } from '@wordpress/blocks'`; `@wordpress/scripts` webpack config externalises these to the `wp.*` globals automatically, so runtime behaviour is identical.
+- [ ] **Update `block.json` `editorScript` fields** to point at the compiled outputs (`build/shuriken-rating/index.js` etc.).
+- [ ] **Update `.gitignore`** to exclude `node_modules/` and `build/`; commit compiled assets separately or via CI.
+
+> **Why here (before 6c):** This is a prerequisite for 6c. Extracting `<CreateRatingForm>`, `<CreateParentModal>`, etc. into separate files is only tractable with JSX and ES module imports. No PHP, REST API, or frontend runtime is touched — this is a pure editor-toolchain change.
+
+##### 6f — Frontend JS & CSS Cleanup
 
 - [ ] **Define constants for selectors and timeouts** — `shuriken-reviews.js` has `.shuriken-rating` hardcoded 20+ times, `.rating-stats` 15+ times, and `4000` ms timeout repeated 4 times. Extract `SELECTORS` and `TIMEOUTS` objects at module scope.
 - [ ] **Fix `setInterval` memory leak** — `shuriken-reviews.js` sets up polling intervals cleaned only by `MutationObserver` on DOM removal, which doesn't fire on client-side page navigation. Add `wp-js-interactivity:navigated` cleanup handler.
