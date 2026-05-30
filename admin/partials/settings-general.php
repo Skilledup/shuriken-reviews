@@ -322,6 +322,8 @@ if (isset($_POST['save_general_settings'])) {
         </div>
     </div>
 
+    <?php do_action('shuriken_after_settings_card', $current_tab); ?>
+
     <div class="shuriken-settings-submit">
         <button type="submit" name="save_general_settings" class="button button-primary button-large">
             <?php esc_html_e('Save Settings', 'shuriken-reviews'); ?>

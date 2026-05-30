@@ -208,6 +208,8 @@ $guest_daily_limit = get_option('shuriken_guest_daily_limit', Shuriken_Rate_Limi
         
     </div>
     
+    <?php do_action('shuriken_after_settings_card', $current_tab); ?>
+
     <div class="shuriken-settings-submit">
         <button type="submit" name="save_rate_limiting_settings" class="button button-primary button-large">
             <?php esc_html_e('Save Settings', 'shuriken-reviews'); ?>

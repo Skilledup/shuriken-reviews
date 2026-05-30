@@ -104,8 +104,6 @@ $base_url = admin_url('admin.php?page=shuriken-reviews-settings');
                         '</p></div>';
                 }
 
-                // Fire action to let add-ons render content or settings cards at the bottom of the tab
-                do_action('shuriken_after_settings_card', $current_tab);
                 ?>
             </div>
         </div>
