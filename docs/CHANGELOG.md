@@ -18,8 +18,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics` into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`).
 - **Core extensibility hooks** — integrated complete hook and filter slots for decoupled third-party add-ons across the admin tables, pages, REST API permissions, and AJAX submission actions.
 - **Frontend JS & block registration filters** — exposed block settings filters and frontend JSON submission hooks (`shurikenVoteRequest` / `shurikenVoteSuccess`) using native `wp.hooks` integration.
+- **Frontend JS selector/timeout constants** — extracted `SELECTORS` (`.shuriken-rating`, `.rating-stats`) and `TIMEOUTS` (`fade`, `buttonPulse`, `thankYou`, `feedback`, `starRefresh`) objects at module scope in `shuriken-reviews.js`, replacing the repeated hardcoded class strings and `4000`/`3000`/`1500`/`300` ms magic numbers across all call sites.
+- **Optional chaining in frontend JS** — replaced verbose `typeof x !== 'undefined'` and `a && a.b` existence guards with optional chaining (`window.wp?.hooks?.applyFilters`, `nonceResponse?.nonce`, `xhr.responseJSON?.data`) throughout `shuriken-reviews.js`.
 
 ### Fixed
+- **`setInterval` memory leak in frontend ratings** — star-average refresh intervals were cleaned only by a `MutationObserver` on DOM removal, which does not reliably fire during WP Interactivity Router client-side navigation. Added a `ratingIntervals` registry and a `wp-js-interactivity:navigated` handler that clears intervals for rating elements detached during navigation.
 
 ---
 

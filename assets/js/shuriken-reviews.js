@@ -2,10 +2,31 @@ jQuery(document).ready(function($) {
     'use strict';
 
     /**
+     * Frequently reused DOM selectors. Centralized to avoid hardcoding the
+     * same class strings across dozens of call sites.
+     */
+    const SELECTORS = {
+        rating: '.shuriken-rating',
+        stats:  '.rating-stats'
+    };
+
+    /**
+     * Timing constants (milliseconds). Centralized so display/refresh timings
+     * stay consistent and are tweakable in one place.
+     */
+    const TIMEOUTS = {
+        fade:        300,   // smoothHtml crossfade duration
+        buttonPulse: 1500,  // Binary vote button "voted" highlight
+        thankYou:    3000,  // Brief thank-you / transient message duration
+        feedback:    4000,  // Error/result message display duration
+        starRefresh: 4000   // Star-average re-sync interval
+    };
+
+    /**
      * Safely apply WordPress frontend JS filters if wp.hooks is available.
      */
     const applyFilters = (hookName, val, ...args) => {
-        if (window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function') {
+        if (typeof window.wp?.hooks?.applyFilters === 'function') {
             return window.wp.hooks.applyFilters(hookName, val, ...args);
         }
         return val;
@@ -15,7 +36,7 @@ jQuery(document).ready(function($) {
      * Safely trigger WordPress frontend JS actions if wp.hooks is available.
      */
     const doAction = (hookName, ...args) => {
-        if (window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function') {
+        if (typeof window.wp?.hooks?.doAction === 'function') {
             window.wp.hooks.doAction(hookName, ...args);
         }
     };
@@ -51,7 +72,7 @@ jQuery(document).ready(function($) {
                 $el.html(html);
                 $el.removeClass('shuriken-fading');
                 $el.data('shuriken-swap-timer', null);
-            }, 300);
+            }, TIMEOUTS.fade);
 
             $el.data('shuriken-swap-timer', timer);
         });
@@ -118,7 +139,7 @@ jQuery(document).ready(function($) {
      * Reset stars to show the current average (reads from scaled-average data attr set by server-rendered HTML)
      */
     const resetStars = ($rating) => {
-        const $stats = $rating.find('.rating-stats');
+        const $stats = $rating.find(SELECTORS.stats);
         const scaledAverage = parseFloat($stats.data('scaled-average')) || 0;
         updateStars($rating, scaledAverage);
     };
@@ -135,7 +156,7 @@ jQuery(document).ready(function($) {
         
         // Collect all rating IDs on the page
         const ratingIds = [];
-        const $allRatings = $('.shuriken-rating');
+        const $allRatings = $(SELECTORS.rating);
         
         // Group ratings by context for batched fetching
         const contextGroups = {};
@@ -176,12 +197,12 @@ jQuery(document).ready(function($) {
             // without authentication to handle cached pages with stale nonces
             success: function(nonceResponse) {
                 // Update nonce in global object
-                if (nonceResponse && nonceResponse.nonce) {
+                if (nonceResponse?.nonce) {
                     shurikenReviews.nonce = nonceResponse.nonce;
-                    if (typeof nonceResponse.logged_in !== 'undefined') {
+                    if (nonceResponse.logged_in !== undefined) {
                         shurikenReviews.logged_in = nonceResponse.logged_in;
                     }
-                    if (typeof nonceResponse.allow_guest_voting !== 'undefined') {
+                    if (nonceResponse.allow_guest_voting !== undefined) {
                         shurikenReviews.allow_guest_voting = nonceResponse.allow_guest_voting;
                     }
                 }
@@ -194,7 +215,7 @@ jQuery(document).ready(function($) {
                 const applyStats = (statsResponse, ctxId, ctxType) => {
                     $.each(statsResponse, function(ratingId, stats) {
                         // Select only ratings matching this context
-                        let selector = `.shuriken-rating[data-id="${ratingId}"]`;
+                        let selector = `${SELECTORS.rating}[data-id="${ratingId}"]`;
                         if (ctxId) {
                             selector += `[data-context-id="${ctxId}"][data-context-type="${ctxType}"]`;
                         } else {
@@ -204,7 +225,7 @@ jQuery(document).ready(function($) {
                         $ratings.each(function() {
                             const $rating = $(this);
                             const ratingType = $rating.data('rating-type') || 'stars';
-                            const $statsEl = $rating.find('.rating-stats');
+                            const $statsEl = $rating.find(SELECTORS.stats);
                             const maxStars = parseInt($rating.data('max-stars')) || 5;
                             
                             if (ratingType === 'like_dislike') {
@@ -250,7 +271,7 @@ jQuery(document).ready(function($) {
                     completedRequests++;
                     if (completedRequests >= totalRequests) {
                         isFetchingFreshData = false;
-                        $('.shuriken-rating.shuriken-refreshing').removeClass('shuriken-refreshing');
+                        $(SELECTORS.rating + '.shuriken-refreshing').removeClass('shuriken-refreshing');
                     }
                 };
                 
@@ -271,7 +292,7 @@ jQuery(document).ready(function($) {
                         },
                         error: function(xhr, status, error) {
                             console.error('Failed to fetch fresh rating stats:', error);
-                            $('.shuriken-rating').removeClass('shuriken-refreshing');
+                            $(SELECTORS.rating).removeClass('shuriken-refreshing');
                         },
                         complete: onRequestComplete
                     });
@@ -281,7 +302,7 @@ jQuery(document).ready(function($) {
                 console.error('Failed to fetch fresh nonce:', error);
                 isFetchingFreshData = false;
                 // Remove refreshing state on error
-                $('.shuriken-rating').removeClass('shuriken-refreshing');
+                $(SELECTORS.rating).removeClass('shuriken-refreshing');
             }
         });
     };
@@ -305,7 +326,7 @@ jQuery(document).ready(function($) {
         fetchFreshData();
 
         // Initialize stars (guard prevents duplicate setInterval on re-runs)
-        $('.shuriken-rating:not([data-shuriken-init])').each(function() {
+        $(SELECTORS.rating + ':not([data-shuriken-init])').each(function() {
             const $rating = $(this);
             $rating.attr('data-shuriken-init', '1');
 
@@ -315,7 +336,7 @@ jQuery(document).ready(function($) {
                 return;
             }
 
-            const $stats = $rating.find('.rating-stats');
+            const $stats = $rating.find(SELECTORS.stats);
             const maxStars = parseInt($rating.data('max-stars')) || 5;
 
             // Use scaled-average if available, otherwise calculate from normalized average
@@ -332,7 +353,7 @@ jQuery(document).ready(function($) {
                 if (!$rating.data('hovering')) {
                     resetStars($rating);
                 }
-            }, 4000);
+            }, TIMEOUTS.starRefresh);
             $rating.data('shuriken-interval', intervalId);
             ratingIntervals.set(this, intervalId);
         });
@@ -392,7 +413,7 @@ jQuery(document).ready(function($) {
         const maxStars = parseInt($rating.data('max-stars')) || 5;
         const contextId = $rating.data('context-id') || '';
         const contextType = $rating.data('context-type') || '';
-        let originalText = $rating.find('.rating-stats').html();
+        let originalText = $rating.find(SELECTORS.stats).html();
         $rating.addClass('shuriken-loading');
 
         let postData = {
@@ -418,7 +439,7 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     doAction('shurikenVoteSuccess', response, $rating, value);
                     // Show translated success feedback
-                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.thankYou);
+                    $rating.find(SELECTORS.stats).smoothHtml(shurikenReviews.i18n.thankYou);
                     // Highlight selected stars
                     $stars.find('.star').each(function() {
                         if ($(this).data('value') <= value) {
@@ -437,12 +458,12 @@ jQuery(document).ready(function($) {
                         .replace('%1$s', displayAverage)
                         .replace('%2$s', displayMaxStars)
                         .replace('%3$s', response.data.new_total_votes);
-                    $rating.find('.rating-stats').data('average', response.data.new_average);
-                    $rating.find('.rating-stats').data('scaled-average', displayAverage);
+                    $rating.find(SELECTORS.stats).data('average', response.data.new_average);
+                    $rating.find(SELECTORS.stats).data('scaled-average', displayAverage);
                     
                     // If there's a parent rating on the page, update it too
                     if (response.data.parent_id) {
-                        const $parentRating = $(`.shuriken-rating[data-id="${response.data.parent_id}"]`);
+                        const $parentRating = $(`${SELECTORS.rating}[data-id="${response.data.parent_id}"]`);
                         if ($parentRating.length) {
                             const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
                             const parentMaxStars = response.data.parent_max_stars || 5;
@@ -450,9 +471,9 @@ jQuery(document).ready(function($) {
                                 .replace('%1$s', parentDisplayAverage)
                                 .replace('%2$s', parentMaxStars)
                                 .replace('%3$s', response.data.parent_total_votes);
-                            $parentRating.find('.rating-stats').data('average', response.data.parent_average);
-                            $parentRating.find('.rating-stats').data('scaled-average', parentDisplayAverage);
-                            $parentRating.find('.rating-stats').smoothHtml(parentText);
+                            $parentRating.find(SELECTORS.stats).data('average', response.data.parent_average);
+                            $parentRating.find(SELECTORS.stats).data('scaled-average', parentDisplayAverage);
+                            $parentRating.find(SELECTORS.stats).smoothHtml(parentText);
                             // Update stars based on normalized average (1-5 scale)
                             updateStars($parentRating, response.data.parent_average);
                         }
@@ -469,48 +490,48 @@ jQuery(document).ready(function($) {
                             type: 'GET',
                             cache: false,
                             success: function(nonceResponse) {
-                                if (nonceResponse && nonceResponse.nonce) {
+                                if (nonceResponse?.nonce) {
                                     shurikenReviews.nonce = nonceResponse.nonce;
                                     // Retry the rating submission
                                     submitRating($rating, value, 1);
                                 } else {
-                                    $rating.find('.rating-stats').smoothHtml(
+                                    $rating.find(SELECTORS.stats).smoothHtml(
                                         shurikenReviews.i18n.error.replace('%s', response.data)
                                     );
                                     setTimeout(function() {
-                                        $rating.find('.rating-stats').smoothHtml(originalText);
+                                        $rating.find(SELECTORS.stats).smoothHtml(originalText);
                                         $stars.css('pointer-events', 'auto');
-                                    }, 4000);
+                                    }, TIMEOUTS.feedback);
                                 }
                             },
                             error: function() {
-                                $rating.find('.rating-stats').smoothHtml(
+                                $rating.find(SELECTORS.stats).smoothHtml(
                                     shurikenReviews.i18n.error.replace('%s', response.data)
                                 );
                                 setTimeout(function() {
-                                    $rating.find('.rating-stats').smoothHtml(originalText);
+                                    $rating.find(SELECTORS.stats).smoothHtml(originalText);
                                     $stars.css('pointer-events', 'auto');
-                                }, 4000);
+                                }, TIMEOUTS.feedback);
                             }
                         });
                         return; // Don't re-enable stars yet, wait for retry
                     }
                     
-                    $rating.find('.rating-stats').smoothHtml(
+                    $rating.find(SELECTORS.stats).smoothHtml(
                         shurikenReviews.i18n.error.replace('%s', response.data)
                     );
                 }
                 setTimeout(function() {
-                    $rating.find('.rating-stats').smoothHtml(originalText);
-                }, 4000);
+                    $rating.find(SELECTORS.stats).smoothHtml(originalText);
+                }, TIMEOUTS.feedback);
             },
             error: function(xhr, status, error) {
                 console.error('Rating submission error:', error);
                 
                 // Check if it's a nonce error and we haven't retried yet
-                if (xhr.responseJSON && xhr.responseJSON.data && 
-                    typeof xhr.responseJSON.data === 'string' && 
-                    xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 && 
+                if (xhr.responseJSON?.data &&
+                    typeof xhr.responseJSON.data === 'string' &&
+                    xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 &&
                     retryCount === 0) {
                     // Keep stars disabled during nonce refresh + retry
                     $stars.css('pointer-events', 'none');
@@ -520,51 +541,51 @@ jQuery(document).ready(function($) {
                         type: 'GET',
                         cache: false,
                         success: function(nonceResponse) {
-                            if (nonceResponse && nonceResponse.nonce) {
+                            if (nonceResponse?.nonce) {
                                 shurikenReviews.nonce = nonceResponse.nonce;
                                 // Retry the rating submission
                                 submitRating($rating, value, 1);
                             } else {
-                                if (xhr.responseJSON && xhr.responseJSON.data) {
-                                    $rating.find('.rating-stats').smoothHtml(
+                                if (xhr.responseJSON?.data) {
+                                    $rating.find(SELECTORS.stats).smoothHtml(
                                         shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                                     );
                                 } else {
-                                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
+                                    $rating.find(SELECTORS.stats).smoothHtml(shurikenReviews.i18n.genericError);
                                 }
                                 setTimeout(function() {
-                                    $rating.find('.rating-stats').smoothHtml(originalText);
+                                    $rating.find(SELECTORS.stats).smoothHtml(originalText);
                                     $stars.css('pointer-events', 'auto');
-                                }, 4000);
+                                }, TIMEOUTS.feedback);
                             }
                         },
                         error: function() {
-                            if (xhr.responseJSON && xhr.responseJSON.data) {
-                                $rating.find('.rating-stats').smoothHtml(
+                            if (xhr.responseJSON?.data) {
+                                $rating.find(SELECTORS.stats).smoothHtml(
                                     shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                                 );
                             } else {
-                                $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
+                                $rating.find(SELECTORS.stats).smoothHtml(shurikenReviews.i18n.genericError);
                             }
                             setTimeout(function() {
-                                $rating.find('.rating-stats').smoothHtml(originalText);
+                                $rating.find(SELECTORS.stats).smoothHtml(originalText);
                                 $stars.css('pointer-events', 'auto');
-                            }, 4000);
+                            }, TIMEOUTS.feedback);
                         }
                     });
                     return; // Don't re-enable stars yet, wait for retry
                 }
                 
-                if (xhr.responseJSON && xhr.responseJSON.data) {
-                    $rating.find('.rating-stats').smoothHtml(
+                if (xhr.responseJSON?.data) {
+                    $rating.find(SELECTORS.stats).smoothHtml(
                         shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data)
                     );
                 } else {
-                    $rating.find('.rating-stats').smoothHtml(shurikenReviews.i18n.genericError);
+                    $rating.find(SELECTORS.stats).smoothHtml(shurikenReviews.i18n.genericError);
                 }
                 setTimeout(function() {
-                    $rating.find('.rating-stats').smoothHtml(originalText);
-                }, 4000);
+                    $rating.find(SELECTORS.stats).smoothHtml(originalText);
+                }, TIMEOUTS.feedback);
             },
             complete: function() {
                 $rating.removeClass('shuriken-loading');
@@ -589,7 +610,7 @@ jQuery(document).ready(function($) {
             
             // Add login message using translated string
             if (!$rating.find('.login-message').length) {
-                $rating.find('.rating-stats').after(
+                $rating.find(SELECTORS.stats).after(
                     `<div class="login-message">[${shurikenReviews.i18n.pleaseLogin.replace('%s', loginUrl)}]</div>`
                 );
             }
@@ -639,19 +660,19 @@ jQuery(document).ready(function($) {
 
         const showFeedback = (msg, duration) => {
             $feedback.smoothHtml(msg);
-            setTimeout(() => { $feedback.smoothHtml(''); }, duration || 3000);
+            setTimeout(() => { $feedback.smoothHtml(''); }, duration || TIMEOUTS.thankYou);
         };
 
         const showError = (response, xhr) => {
             let msg;
-            if (response && response.data && typeof response.data === 'string') {
+            if (response && typeof response.data === 'string') {
                 msg = shurikenReviews.i18n.error.replace('%s', response.data);
-            } else if (xhr && xhr.responseJSON && xhr.responseJSON.data && typeof xhr.responseJSON.data === 'string') {
+            } else if (typeof xhr?.responseJSON?.data === 'string') {
                 msg = shurikenReviews.i18n.error.replace('%s', xhr.responseJSON.data);
             } else {
                 msg = shurikenReviews.i18n.genericError;
             }
-            showFeedback(msg, 4000);
+            showFeedback(msg, TIMEOUTS.feedback);
         };
 
         // Pulse the widget while AJAX is in-flight
@@ -693,7 +714,7 @@ jQuery(document).ready(function($) {
 
                     // Update parent rating if applicable (display-only parents)
                     if (response.data.parent_id) {
-                        const $parentRating = $(`.shuriken-rating[data-id="${response.data.parent_id}"]`);
+                        const $parentRating = $(`${SELECTORS.rating}[data-id="${response.data.parent_id}"]`);
                         if ($parentRating.length) {
                             const parentType = $parentRating.data('rating-type');
                             if (parentType === 'like_dislike') {
@@ -729,7 +750,7 @@ jQuery(document).ready(function($) {
                                     .replace('%1$s', parentDisplayAverage)
                                     .replace('%2$s', parentMaxStars)
                                     .replace('%3$s', response.data.parent_total_votes);
-                                $parentRating.find('.rating-stats').smoothHtml(parentText);
+                                $parentRating.find(SELECTORS.stats).smoothHtml(parentText);
                             }
                         }
                     }
@@ -738,10 +759,10 @@ jQuery(document).ready(function($) {
                     $rating.find('.shuriken-btn').addClass('shuriken-voted');
                     setTimeout(function() {
                         $rating.find('.shuriken-btn').removeClass('shuriken-voted');
-                    }, 1500);
+                    }, TIMEOUTS.buttonPulse);
 
                     // Show thank-you message then clear
-                    showFeedback(shurikenReviews.i18n.thankYou, 3000);
+                    showFeedback(shurikenReviews.i18n.thankYou, TIMEOUTS.thankYou);
                 } else {
                     // Handle nonce retry for binary ratings
                     if (response.data && typeof response.data === 'string' &&
@@ -751,7 +772,7 @@ jQuery(document).ready(function($) {
                             type: 'GET',
                             cache: false,
                             success: function(nonceResponse) {
-                                if (nonceResponse && nonceResponse.nonce) {
+                                if (nonceResponse?.nonce) {
                                     shurikenReviews.nonce = nonceResponse.nonce;
                                     submitBinaryRating($rating, value, 1);
                                 } else {
@@ -769,7 +790,7 @@ jQuery(document).ready(function($) {
             },
             error: function(xhr, status, error) {
                 // Handle nonce retry for AJAX-level errors
-                if (xhr.responseJSON && xhr.responseJSON.data &&
+                if (xhr.responseJSON?.data &&
                     typeof xhr.responseJSON.data === 'string' &&
                     xhr.responseJSON.data.toLowerCase().indexOf('nonce') !== -1 &&
                     retryCount === 0) {
@@ -778,7 +799,7 @@ jQuery(document).ready(function($) {
                         type: 'GET',
                         cache: false,
                         success: function(nonceResponse) {
-                            if (nonceResponse && nonceResponse.nonce) {
+                            if (nonceResponse?.nonce) {
                                 shurikenReviews.nonce = nonceResponse.nonce;
                                 submitBinaryRating($rating, value, 1);
                             } else {
@@ -867,7 +888,7 @@ jQuery(document).ready(function($) {
         setTimeout(function() {
             $slider.prop('disabled', false);
             $btn.prop('disabled', false);
-        }, 4000);
+        }, TIMEOUTS.feedback);
     });
 
     // Approval (upvote) button click handler

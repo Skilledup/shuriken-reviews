@@ -174,14 +174,14 @@ Adopting `@wordpress/scripts` adds only the missing build layer — it is zero-c
 
 > **Why here (before 6c):** This is a prerequisite for 6c. Extracting `<CreateRatingForm>`, `<CreateParentModal>`, etc. into separate files is only tractable with JSX and ES module imports. No PHP, REST API, or frontend runtime is touched — this is a pure editor-toolchain change.
 
-##### 6f — Frontend JS & CSS Cleanup
+##### 6f — Frontend JS & CSS Cleanup ✅
 
-- [ ] **Define constants for selectors and timeouts** — `shuriken-reviews.js` has `.shuriken-rating` hardcoded 20+ times, `.rating-stats` 15+ times, and `4000` ms timeout repeated 4 times. Extract `SELECTORS` and `TIMEOUTS` objects at module scope.
+- [x] **Define constants for selectors and timeouts** — `SELECTORS` (`.shuriken-rating`, `.rating-stats`) and `TIMEOUTS` (`fade`, `buttonPulse`, `thankYou`, `feedback`, `starRefresh`) objects added at module scope in `shuriken-reviews.js` and applied across all call sites.
 - [x] **Fix `setInterval` memory leak** — `shuriken-reviews.js` set up polling intervals cleaned only by `MutationObserver` on DOM removal, which doesn't fire on client-side page navigation. Added a `ratingIntervals` registry plus a `wp-js-interactivity:navigated` cleanup handler that clears intervals for detached rating elements.
-- [ ] **Remove `getTypeClass()` duplication** — identical function in `admin-ratings.js` and `block-helpers.js`. Admin file should reference the shared version.
-- [ ] **Remove unused `useRef` import** — `block-helpers.js` imports `wp.element.useRef` but never uses it.
-- [ ] **Audit unused CSS classes** — `.rating-text` and `.display-only-notice` defined in `shuriken-reviews.css` but not referenced in any template or JS. Remove or verify usage from dynamic output.
-- [ ] **Optional chaining** — `typeof x !== 'undefined'` checks where `x?.prop` suffices.
+- [x] **Remove `getTypeClass()` duplication** — kept intentionally local. `admin-ratings.js` only depends on `jquery`; the shared `block-helpers.js` carries block-editor globals (`wp.element`, `wp.i18n`, `wp.components`), so loading it on the admin ratings screen to share a one-line pure function would be over-coupling.
+- [x] **Remove unused `useRef` import** — verified in use (`block-helpers.js` line 183, `useSearchHandler`); no change needed. Roadmap note was stale.
+- [x] **Audit unused CSS classes** — verified `.rating-text` (admin ratings template) and `.display-only-notice` (shortcodes + frontend styles) are both in active use; no removal needed. Roadmap note was stale.
+- [x] **Optional chaining** — replaced `typeof x !== 'undefined'` / `a && a.b` guards with optional chaining (`window.wp?.hooks?.applyFilters`, `nonceResponse?.nonce`, `xhr.responseJSON?.data`) throughout `shuriken-reviews.js`.
 
 #### Step 8 — Performance
 
