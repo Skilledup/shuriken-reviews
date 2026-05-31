@@ -58,7 +58,45 @@ jQuery(document).ready(function($) {
     };
 
     let isFetchingFreshData = false;
-    
+
+    /**
+     * Registry of active star-refresh intervals, keyed by their rating DOM
+     * element. The MutationObserver below does not reliably fire when the WP
+     * Interactivity Router swaps page content during client-side navigation,
+     * so this registry lets us explicitly clear intervals for any rating
+     * element that has become detached from the document.
+     *
+     * @type {Map<Element, number>}
+     */
+    const ratingIntervals = new Map();
+
+    /**
+     * Clear and unregister the refresh interval for a single rating element.
+     *
+     * @param {Element} el - The rating DOM element.
+     */
+    const clearRatingInterval = (el) => {
+        const id = ratingIntervals.get(el);
+        if (id) {
+            clearInterval(id);
+            ratingIntervals.delete(el);
+            $(el).removeData('shuriken-interval');
+        }
+    };
+
+    /**
+     * Sweep the registry and clear intervals for any rating element that is no
+     * longer attached to the document (e.g. after Interactivity Router nav).
+     */
+    const clearDetachedRatingIntervals = () => {
+        ratingIntervals.forEach((id, el) => {
+            if (!document.contains(el)) {
+                clearInterval(id);
+                ratingIntervals.delete(el);
+            }
+        });
+    };
+
     /**
      * Update star display based on average rating
      * The average should be in the DISPLAY scale (e.g., 8 for 8/10 stars)
@@ -296,6 +334,7 @@ jQuery(document).ready(function($) {
                 }
             }, 4000);
             $rating.data('shuriken-interval', intervalId);
+            ratingIntervals.set(this, intervalId);
         });
 
         // Paint the filled track for any new sliders (guard prevents redundant repaints)
@@ -315,8 +354,7 @@ jQuery(document).ready(function($) {
                     if (node.nodeType !== 1) return;
                     const $removed = $(node).find('.shuriken-rating').addBack('.shuriken-rating');
                     $removed.each(function() {
-                        const id = $(this).data('shuriken-interval');
-                        if (id) clearInterval(id);
+                        clearRatingInterval(this);
                     });
                 });
             });
@@ -858,6 +896,11 @@ jQuery(document).ready(function($) {
         submitBinaryRating($rating, 1, 0);
     });
 
-    // Re-initialize after WP Interactivity Router client-side navigation
-    document.addEventListener('wp-js-interactivity:navigated', shurikenInit);
+    // Re-initialize after WP Interactivity Router client-side navigation.
+    // Clear intervals for ratings detached during the swap first, since the
+    // MutationObserver does not reliably fire for router-driven DOM updates.
+    document.addEventListener('wp-js-interactivity:navigated', function() {
+        clearDetachedRatingIntervals();
+        shurikenInit();
+    });
 });

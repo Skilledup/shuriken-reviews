@@ -177,7 +177,7 @@ Adopting `@wordpress/scripts` adds only the missing build layer — it is zero-c
 ##### 6f — Frontend JS & CSS Cleanup
 
 - [ ] **Define constants for selectors and timeouts** — `shuriken-reviews.js` has `.shuriken-rating` hardcoded 20+ times, `.rating-stats` 15+ times, and `4000` ms timeout repeated 4 times. Extract `SELECTORS` and `TIMEOUTS` objects at module scope.
-- [ ] **Fix `setInterval` memory leak** — `shuriken-reviews.js` sets up polling intervals cleaned only by `MutationObserver` on DOM removal, which doesn't fire on client-side page navigation. Add `wp-js-interactivity:navigated` cleanup handler.
+- [x] **Fix `setInterval` memory leak** — `shuriken-reviews.js` set up polling intervals cleaned only by `MutationObserver` on DOM removal, which doesn't fire on client-side page navigation. Added a `ratingIntervals` registry plus a `wp-js-interactivity:navigated` cleanup handler that clears intervals for detached rating elements.
 - [ ] **Remove `getTypeClass()` duplication** — identical function in `admin-ratings.js` and `block-helpers.js`. Admin file should reference the shared version.
 - [ ] **Remove unused `useRef` import** — `block-helpers.js` imports `wp.element.useRef` but never uses it.
 - [ ] **Audit unused CSS classes** — `.rating-text` and `.display-only-notice` defined in `shuriken-reviews.css` but not referenced in any template or JS. Remove or verify usage from dynamic output.
