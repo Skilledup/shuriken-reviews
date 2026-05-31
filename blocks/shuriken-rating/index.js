@@ -16,32 +16,69 @@
  * @since 2.0.0
  */
 
-(function (wp) {
-    const { registerBlockType } = wp.blocks;
-    const { useBlockProps, InspectorControls, PanelColorSettings } = wp.blockEditor;
-    const { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice } = wp.components;
-    const { useState, useEffect, useMemo, useCallback } = wp.element;
-    const { __ } = wp.i18n;
-    const { useSelect, useDispatch } = wp.data;
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
+import { PanelBody, TextControl, Button, Spinner, Modal, ComboboxControl, SelectControl, CheckboxControl, Notice } from '@wordpress/components';
+import { createElement, Fragment, useState, useEffect, useMemo, useCallback, useReducer } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+import { useSelect, useDispatch } from '@wordpress/data';
 
-    const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
-    const {
-        makeErrorHandler,
-        makeErrorDismissers,
-        useSearchHandler,
-        titleTagOptions,
-        calculateAverage,
-        renderRatingPreview,
-        ratingTypeOptions,
-        getScaleRange,
-        getRatingType,
-        buildColorSettings,
-        areTypesCompatible,
-        iconStar,
-        iconTriangleAlert
-    } = window.ShurikenBlockHelpers;
+// Local element shim so the existing createElement/Fragment call sites
+// (wp.element.*) keep working after the ESM migration.
+const wp = { element: { createElement, Fragment } };
 
-    let settings = {
+const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
+
+// Initial shape shared by the create/edit rating forms.
+const RATING_FORM_INIT = {
+    name: '',
+    mirrorOf: '',
+    parentId: '',
+    effectType: 'positive',
+    displayOnly: false,
+    type: 'stars',
+    scale: 5,
+    description: ''
+};
+
+/**
+ * Reducer backing the create/edit rating forms. Keeps the many related
+ * fields in a single state object instead of a dozen separate useState
+ * hooks, and co-locates the field/merge/reset transitions.
+ *
+ * @param {Object} state  Current form state.
+ * @param {Object} action { type: 'SET_FIELD'|'MERGE'|'RESET', ... }.
+ * @return {Object} Next form state.
+ */
+function ratingFormReducer(state, action) {
+    switch (action.type) {
+        case 'SET_FIELD':
+            return { ...state, [action.field]: action.value };
+        case 'MERGE':
+            return { ...state, ...action.payload };
+        case 'RESET':
+            return RATING_FORM_INIT;
+        default:
+            return state;
+    }
+}
+
+const {
+    useApiErrorHandling,
+    useSearchHandler,
+    titleTagOptions,
+    calculateAverage,
+    renderRatingPreview,
+    getScaleRange,
+    renderRatingTypeScaleFields,
+    getRatingType,
+    buildColorSettings,
+    areTypesCompatible,
+    iconStar,
+    iconTriangleAlert
+} = window.ShurikenBlockHelpers;
+
+let settings = {
         icon: iconStar(24),
         edit: (props) => {
             const { attributes, setAttributes } = props;
@@ -50,26 +87,14 @@
             // Local UI state
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-            const [newRatingName, setNewRatingName] = useState('');
-            const [newRatingMirrorOf, setNewRatingMirrorOf] = useState('');
-            const [newRatingParentId, setNewRatingParentId] = useState('');
-            const [newRatingEffectType, setNewRatingEffectType] = useState('positive');
-            const [newRatingDisplayOnly, setNewRatingDisplayOnly] = useState(false);
-            const [editRatingName, setEditRatingName] = useState('');
-            const [editRatingMirrorOf, setEditRatingMirrorOf] = useState('');
-            const [editRatingParentId, setEditRatingParentId] = useState('');
-            const [editRatingEffectType, setEditRatingEffectType] = useState('positive');
-            const [editRatingDisplayOnly, setEditRatingDisplayOnly] = useState(false);
             const [creating, setCreating] = useState(false);
             const [updating, setUpdating] = useState(false);
-            const [localError, setLocalError] = useState(null);
-            const [lastFailedAction, setLastFailedAction] = useState(null);
-            const [newRatingType, setNewRatingType] = useState('stars');
-            const [newRatingScale, setNewRatingScale] = useState(5);
-            const [editRatingType, setEditRatingType] = useState('stars');
-            const [editRatingScale, setEditRatingScale] = useState(5);
-            const [newRatingDescription, setNewRatingDescription] = useState('');
-            const [editRatingDescription, setEditRatingDescription] = useState('');
+
+            // Create / edit rating form state (reducer-backed; see ratingFormReducer)
+            const [createForm, dispatchCreate] = useReducer(ratingFormReducer, RATING_FORM_INIT);
+            const [editForm, dispatchEdit] = useReducer(ratingFormReducer, RATING_FORM_INIT);
+            const setCreateField = (field, value) => dispatchCreate({ type: 'SET_FIELD', field, value });
+            const setEditField = (field, value) => dispatchEdit({ type: 'SET_FIELD', field, value });
 
             // Search state
             const [searchTerm, setSearchTerm] = useState('');
@@ -130,13 +155,14 @@
                 style: cssVars
             });
 
-            // Combined error state
-            const error = localError;
-
-            // Error handling helpers (shared)
-            const handleApiError = makeErrorHandler(setLocalError, setLastFailedAction);
-            const { retryLastAction: _retry, dismissError } = makeErrorDismissers(setLocalError, setLastFailedAction, clearError);
-            const retryLastAction = () => { _retry(lastFailedAction); };
+            // Error handling lifecycle (shared hook)
+            const {
+                error,
+                setError: setLocalError,
+                handleApiError,
+                dismissError,
+                retryLastAction
+            } = useApiErrorHandling(clearError);
 
             // Debounced search handler (shared)
             const handleSearchChange = useSearchHandler(searchRatings, 'all', 20);
@@ -166,41 +192,34 @@
 
             // Create new rating
             const createNewRating = () => {
-                if (!newRatingName.trim() || creating) {
+                if (!createForm.name.trim() || creating) {
                     return;
                 }
 
                 setCreating(true);
                 setLocalError(null);
 
-                const requestData = { name: newRatingName };
+                const requestData = { name: createForm.name };
 
-                if (newRatingMirrorOf) {
-                    requestData.mirror_of = parseInt(newRatingMirrorOf, 10);
+                if (createForm.mirrorOf) {
+                    requestData.mirror_of = parseInt(createForm.mirrorOf, 10);
                 } else {
-                    requestData.rating_type = newRatingType;
-                    const scaleRange = getScaleRange(newRatingType);
-                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, newRatingScale));
-                    if (newRatingParentId) {
-                        requestData.parent_id = parseInt(newRatingParentId, 10);
-                        requestData.effect_type = newRatingEffectType;
+                    requestData.rating_type = createForm.type;
+                    const scaleRange = getScaleRange(createForm.type);
+                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, createForm.scale));
+                    if (createForm.parentId) {
+                        requestData.parent_id = parseInt(createForm.parentId, 10);
+                        requestData.effect_type = createForm.effectType;
                     }
-                    requestData.display_only = newRatingDisplayOnly;
+                    requestData.display_only = createForm.displayOnly;
                 }
 
-                requestData.label_description = newRatingDescription;
+                requestData.label_description = createForm.description;
 
                 storeCreateRating(requestData)
                     .then((data) => {
                         setAttributes({ ratingId: parseInt(data.id, 10) });
-                        setNewRatingName('');
-                        setNewRatingMirrorOf('');
-                        setNewRatingParentId('');
-                        setNewRatingEffectType('positive');
-                        setNewRatingDisplayOnly(false);
-                        setNewRatingType('stars');
-                        setNewRatingScale(5);
-                        setNewRatingDescription('');
+                        dispatchCreate({ type: 'RESET' });
                         setIsModalOpen(false);
                         setCreating(false);
                     })
@@ -215,50 +234,55 @@
                 if (!selectedRating) {
                     return;
                 }
-                setEditRatingName(selectedRating.name || '');
-                setEditRatingMirrorOf(selectedRating.mirror_of ? String(selectedRating.mirror_of) : '');
-                setEditRatingParentId(selectedRating.parent_id ? String(selectedRating.parent_id) : '');
-                setEditRatingEffectType(selectedRating.effect_type || 'positive');
                 const displayOnlyValue = selectedRating.display_only;
                 const isDisplayOnly = displayOnlyValue === true || displayOnlyValue === 'true' || parseInt(displayOnlyValue, 10) === 1;
-                setEditRatingDisplayOnly(isDisplayOnly);
-                setEditRatingType(selectedRating.rating_type || 'stars');
-                setEditRatingScale(parseInt(selectedRating.scale, 10) || 5);
-                setEditRatingDescription(selectedRating.label_description || '');
+                dispatchEdit({
+                    type: 'MERGE',
+                    payload: {
+                        name: selectedRating.name || '',
+                        mirrorOf: selectedRating.mirror_of ? String(selectedRating.mirror_of) : '',
+                        parentId: selectedRating.parent_id ? String(selectedRating.parent_id) : '',
+                        effectType: selectedRating.effect_type || 'positive',
+                        displayOnly: isDisplayOnly,
+                        type: selectedRating.rating_type || 'stars',
+                        scale: parseInt(selectedRating.scale, 10) || 5,
+                        description: selectedRating.label_description || ''
+                    }
+                });
                 setIsEditModalOpen(true);
             };
 
             // Update existing rating
             const updateRatingFn = () => {
-                if (!editRatingName.trim() || updating || !selectedRating) {
+                if (!editForm.name.trim() || updating || !selectedRating) {
                     return;
                 }
 
                 setUpdating(true);
                 setLocalError(null);
 
-                const requestData = { name: editRatingName };
+                const requestData = { name: editForm.name };
 
-                if (editRatingMirrorOf) {
-                    requestData.mirror_of = parseInt(editRatingMirrorOf, 10);
+                if (editForm.mirrorOf) {
+                    requestData.mirror_of = parseInt(editForm.mirrorOf, 10);
                     requestData.parent_id = 0;
                     requestData.display_only = false;
                 } else {
                     requestData.mirror_of = 0;
-                    requestData.rating_type = editRatingType;
-                    const scaleRange = getScaleRange(editRatingType);
-                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, editRatingScale));
-                    if (editRatingParentId) {
-                        requestData.parent_id = parseInt(editRatingParentId, 10);
-                        requestData.effect_type = editRatingEffectType;
+                    requestData.rating_type = editForm.type;
+                    const scaleRange = getScaleRange(editForm.type);
+                    requestData.scale = Math.max(scaleRange.min, Math.min(scaleRange.max, editForm.scale));
+                    if (editForm.parentId) {
+                        requestData.parent_id = parseInt(editForm.parentId, 10);
+                        requestData.effect_type = editForm.effectType;
                         requestData.display_only = false;
                     } else {
                         requestData.parent_id = 0;
-                        requestData.display_only = editRatingDisplayOnly;
+                        requestData.display_only = editForm.displayOnly;
                     }
                 }
 
-                requestData.label_description = editRatingDescription;
+                requestData.label_description = editForm.description;
 
                 storeUpdateRating(selectedRating.id, requestData)
                     .then(() => {
@@ -423,102 +447,73 @@
                         title: __('Create New Rating', 'shuriken-reviews'),
                         onRequestClose: () => {
                             setIsModalOpen(false);
-                            setNewRatingName('');
-                            setNewRatingMirrorOf('');
-                            setNewRatingParentId('');
-                            setNewRatingEffectType('positive');
-                            setNewRatingDisplayOnly(false);
-                            setNewRatingType('stars');
-                            setNewRatingScale(5);
-                            setNewRatingDescription('');
+                            dispatchCreate({ type: 'RESET' });
                         },
                         style: { width: '500px' }
                     },
                     wp.element.createElement(TextControl, {
                         label: __('Rating Name', 'shuriken-reviews'),
-                        value: newRatingName,
-                        onChange: setNewRatingName,
+                        value: createForm.name,
+                        onChange: (value) => setCreateField('name', value),
                         onKeyDown: handleKeyDown,
                         placeholder: __('Enter rating name...', 'shuriken-reviews'),
                         help: __('Enter a descriptive name for this rating.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(TextControl, {
                         label: __('Description', 'shuriken-reviews'),
-                        value: newRatingDescription,
-                        onChange: setNewRatingDescription,
+                        value: createForm.description,
+                        onChange: (value) => setCreateField('description', value),
                         placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
                         help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),
-                        value: newRatingMirrorOf,
+                        value: createForm.mirrorOf,
                         options: [{ label: __(' Not a Mirror ', 'shuriken-reviews'), value: '' }].concat(
                             mirrorableRatings.map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
                         onChange: (value) => {
-                            setNewRatingMirrorOf(value);
+                            setCreateField('mirrorOf', value);
                             if (value) {
-                                setNewRatingParentId('');
-                                setNewRatingDisplayOnly(false);
+                                setCreateField('parentId', '');
+                                setCreateField('displayOnly', false);
                             }
                         },
                         help: __('Mirrors share vote data with another rating.', 'shuriken-reviews')
                     }),
-                    !newRatingMirrorOf && wp.element.createElement(SelectControl, {
-                        label: __('Rating Type', 'shuriken-reviews'),
-                        value: newRatingType,
-                        options: ratingTypeOptions,
-                        onChange: (value) => {
-                            setNewRatingType(value);
-                            const range = getScaleRange(value);
-                            if (newRatingScale < range.min || newRatingScale > range.max) {
-                                setNewRatingScale(range.min === range.max ? range.min : 5);
-                            }
-                        },
-                        help: __('Choose how users will rate this item.', 'shuriken-reviews')
+                    !createForm.mirrorOf && renderRatingTypeScaleFields({
+                        type: createForm.type,
+                        scale: createForm.scale,
+                        setType: (value) => setCreateField('type', value),
+                        setScale: (value) => setCreateField('scale', value)
                     }),
-                    !newRatingMirrorOf && (newRatingType === 'stars' || newRatingType === 'numeric') && wp.element.createElement(TextControl, {
-                        label: __('Scale', 'shuriken-reviews'),
-                        type: 'number',
-                        value: String(newRatingScale),
-                        onChange: (value) => {
-                            const range = getScaleRange(newRatingType);
-                            const num = parseInt(value, 10);
-                            if (!isNaN(num)) {
-                                setNewRatingScale(Math.max(range.min, Math.min(range.max, num)));
-                            }
-                        },
-                        help: newRatingType === 'stars'
-                            ? __('Number of stars (2–10).', 'shuriken-reviews')
-                            : __('Maximum slider value (2–100).', 'shuriken-reviews')
-                    }),
-                    !newRatingMirrorOf && wp.element.createElement(SelectControl, {
+                    !createForm.mirrorOf && wp.element.createElement(SelectControl, {
                         label: __('Parent Rating', 'shuriken-reviews'),
-                        value: newRatingParentId,
+                        value: createForm.parentId,
                         options: [{ label: __(' None ', 'shuriken-reviews'), value: '' }].concat(
                             parentRatings.map((r) => {
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
-                        onChange: setNewRatingParentId,
+                        onChange: (value) => setCreateField('parentId', value),
                         help: __('Sub-ratings contribute to parent score.', 'shuriken-reviews')
                     }),
-                    !newRatingMirrorOf && newRatingParentId && wp.element.createElement(SelectControl, {
+                    !createForm.mirrorOf && createForm.parentId && wp.element.createElement(SelectControl, {
                         label: __('Effect on Parent', 'shuriken-reviews'),
-                        value: newRatingEffectType,
+                        value: createForm.effectType,
                         options: [
                             { label: __('Positive — Higher votes improve parent rating', 'shuriken-reviews'), value: 'positive' },
                             { label: __('Negative — Higher votes lower parent rating', 'shuriken-reviews'), value: 'negative' }
                         ],
-                        onChange: setNewRatingEffectType,
+                        onChange: (value) => setCreateField('effectType', value),
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     // Type-compatibility warning for sub-ratings
-                    !newRatingMirrorOf && newRatingParentId && (() => {
-                        const parent = parentRatings.find((r) => { return String(r.id) === newRatingParentId; });
-                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', newRatingType)) {
+                    !createForm.mirrorOf && createForm.parentId && (() => {
+                        const parent = parentRatings.find((r) => { return String(r.id) === createForm.parentId; });
+                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', createForm.type)) {
                             return wp.element.createElement(Notice, {
                                 status: 'warning',
                                 isDismissible: false,
@@ -527,10 +522,10 @@
                         }
                         return null;
                     })(),
-                    !newRatingMirrorOf && !newRatingParentId && wp.element.createElement(CheckboxControl, {
+                    !createForm.mirrorOf && !createForm.parentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
-                        checked: newRatingDisplayOnly,
-                        onChange: setNewRatingDisplayOnly,
+                        checked: createForm.displayOnly,
+                        onChange: (value) => setCreateField('displayOnly', value),
                         help: __('No direct voting allowed.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(
@@ -544,7 +539,7 @@
                             variant: 'primary',
                             onClick: createNewRating,
                             isBusy: creating,
-                            disabled: creating || !newRatingName.trim()
+                            disabled: creating || !createForm.name.trim()
                         }, __('Create', 'shuriken-reviews'))
                     )
                 ),
@@ -558,20 +553,20 @@
                     },
                     wp.element.createElement(TextControl, {
                         label: __('Rating Name', 'shuriken-reviews'),
-                        value: editRatingName,
-                        onChange: setEditRatingName,
+                        value: editForm.name,
+                        onChange: (value) => setEditField('name', value),
                         onKeyDown: handleEditKeyDown
                     }),
                     wp.element.createElement(TextControl, {
                         label: __('Description', 'shuriken-reviews'),
-                        value: editRatingDescription,
-                        onChange: setEditRatingDescription,
+                        value: editForm.description,
+                        onChange: (value) => setEditField('description', value),
                         placeholder: __('Optional description beneath rating name', 'shuriken-reviews'),
                         help: __('Optional text displayed beneath the rating name.', 'shuriken-reviews')
                     }),
                     wp.element.createElement(SelectControl, {
                         label: __('Mirror of', 'shuriken-reviews'),
-                        value: editRatingMirrorOf,
+                        value: editForm.mirrorOf,
                         options: [{ label: __(' Not a Mirror ', 'shuriken-reviews'), value: '' }].concat(
                             mirrorableRatings.filter((r) => {
                                 return parseInt(r.id, 10) !== parseInt(ratingId, 10);
@@ -580,50 +575,29 @@
                             })
                         ),
                         onChange: (value) => {
-                            setEditRatingMirrorOf(value);
+                            setEditField('mirrorOf', value);
                             if (value) {
-                                setEditRatingParentId('');
-                                setEditRatingDisplayOnly(false);
+                                setEditField('parentId', '');
+                                setEditField('displayOnly', false);
                             }
                         }
                     }),
-                    !editRatingMirrorOf && wp.element.createElement(SelectControl, {
-                        label: __('Rating Type', 'shuriken-reviews'),
-                        value: editRatingType,
-                        options: ratingTypeOptions,
-                        onChange: (value) => {
-                            setEditRatingType(value);
-                            const range = getScaleRange(value);
-                            if (editRatingScale < range.min || editRatingScale > range.max) {
-                                setEditRatingScale(range.min === range.max ? range.min : 5);
-                            }
-                        },
+                    !editForm.mirrorOf && renderRatingTypeScaleFields({
+                        type: editForm.type,
+                        scale: editForm.scale,
+                        setType: (value) => setEditField('type', value),
+                        setScale: (value) => setEditField('scale', value),
                         disabled: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0,
-                        help: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
+                        typeHelp: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
                             ? __('Type cannot be changed after votes have been cast.', 'shuriken-reviews')
-                            : __('Choose how users will rate this item.', 'shuriken-reviews')
-                    }),
-                    !editRatingMirrorOf && (editRatingType === 'stars' || editRatingType === 'numeric') && wp.element.createElement(TextControl, {
-                        label: __('Scale', 'shuriken-reviews'),
-                        type: 'number',
-                        value: String(editRatingScale),
-                        onChange: (value) => {
-                            const range = getScaleRange(editRatingType);
-                            const num = parseInt(value, 10);
-                            if (!isNaN(num)) {
-                                setEditRatingScale(Math.max(range.min, Math.min(range.max, num)));
-                            }
-                        },
-                        disabled: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0,
-                        help: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
+                            : __('Choose how users will rate this item.', 'shuriken-reviews'),
+                        scaleHelp: (parseInt(selectedRating && selectedRating.total_votes, 10) || 0) > 0
                             ? __('Scale cannot be changed after votes have been cast.', 'shuriken-reviews')
-                            : editRatingType === 'stars'
-                                ? __('Number of stars (2–10).', 'shuriken-reviews')
-                                : __('Maximum slider value (2–100).', 'shuriken-reviews')
+                            : undefined
                     }),
-                    !editRatingMirrorOf && wp.element.createElement(SelectControl, {
+                    !editForm.mirrorOf && wp.element.createElement(SelectControl, {
                         label: __('Parent Rating', 'shuriken-reviews'),
-                        value: editRatingParentId,
+                        value: editForm.parentId,
                         options: [{ label: __(' None ', 'shuriken-reviews'), value: '' }].concat(
                             parentRatings.filter((r) => {
                                 return parseInt(r.id, 10) !== parseInt(ratingId, 10);
@@ -631,22 +605,22 @@
                                 return { label: r.name, value: String(r.id) };
                             })
                         ),
-                        onChange: setEditRatingParentId
+                        onChange: (value) => setEditField('parentId', value)
                     }),
-                    !editRatingMirrorOf && editRatingParentId && wp.element.createElement(SelectControl, {
+                    !editForm.mirrorOf && editForm.parentId && wp.element.createElement(SelectControl, {
                         label: __('Effect on Parent', 'shuriken-reviews'),
-                        value: editRatingEffectType,
+                        value: editForm.effectType,
                         options: [
                             { label: __('Positive — Higher votes improve parent rating', 'shuriken-reviews'), value: 'positive' },
                             { label: __('Negative — Higher votes lower parent rating', 'shuriken-reviews'), value: 'negative' }
                         ],
-                        onChange: setEditRatingEffectType,
+                        onChange: (value) => setEditField('effectType', value),
                         help: __('Negative is useful for aspects like "Difficulty" or "Price" where higher values are worse.', 'shuriken-reviews')
                     }),
                     // Type-compatibility warning for edit modal
-                    !editRatingMirrorOf && editRatingParentId && (() => {
-                        const parent = parentRatings.find((r) => { return String(r.id) === editRatingParentId; });
-                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', editRatingType)) {
+                    !editForm.mirrorOf && editForm.parentId && (() => {
+                        const parent = parentRatings.find((r) => { return String(r.id) === editForm.parentId; });
+                        if (parent && !areTypesCompatible(parent.rating_type || 'stars', editForm.type)) {
                             return wp.element.createElement(Notice, {
                                 status: 'warning',
                                 isDismissible: false,
@@ -655,10 +629,10 @@
                         }
                         return null;
                     })(),
-                    !editRatingMirrorOf && !editRatingParentId && wp.element.createElement(CheckboxControl, {
+                    !editForm.mirrorOf && !editForm.parentId && wp.element.createElement(CheckboxControl, {
                         label: __('Display Only', 'shuriken-reviews'),
-                        checked: editRatingDisplayOnly,
-                        onChange: setEditRatingDisplayOnly
+                        checked: editForm.displayOnly,
+                        onChange: (value) => setEditField('displayOnly', value)
                     }),
                     wp.element.createElement(
                         'div',
@@ -671,7 +645,7 @@
                             variant: 'primary',
                             onClick: updateRatingFn,
                             isBusy: updating,
-                            disabled: updating || !editRatingName.trim()
+                            disabled: updating || !editForm.name.trim()
                         }, __('Update', 'shuriken-reviews'))
                     )
                 ),
@@ -727,4 +701,3 @@
     }
 
     registerBlockType('shuriken-reviews/rating', settings);
-})(window.wp);

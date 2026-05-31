@@ -7,27 +7,20 @@
  * @package Shuriken_Reviews
  * @since   1.15.0
  */
-( function () {
-    'use strict';
+import { createElement as el, useState, useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import { registerPlugin } from '@wordpress/plugins';
+import { Spinner } from '@wordpress/components';
+import apiFetch from '@wordpress/api-fetch';
+import { __ } from '@wordpress/i18n';
 
-    const el           = wp.element.createElement;
-    const useState     = wp.element.useState;
-    const useEffect    = wp.element.useEffect;
-    const useSelect    = wp.data.useSelect;
-    const registerPlugin = wp.plugins.registerPlugin;
-    const PluginDocumentSettingPanel = wp.editPost
-        ? wp.editPost.PluginDocumentSettingPanel
-        : ( wp.editor && wp.editor.PluginDocumentSettingPanel )
-            ? wp.editor.PluginDocumentSettingPanel
-            : null;
-    const Spinner      = wp.components.Spinner;
-    const Icon         = wp.components.Icon;
-    const apiFetch     = wp.apiFetch;
-    const __           = wp.i18n.__;
+const PluginDocumentSettingPanel = window.wp.editPost
+    ? window.wp.editPost.PluginDocumentSettingPanel
+    : ( window.wp.editor && window.wp.editor.PluginDocumentSettingPanel )
+        ? window.wp.editor.PluginDocumentSettingPanel
+        : null;
 
-    if ( ! PluginDocumentSettingPanel ) {
-        return; // Not available in this editor context (e.g. widgets).
-    }
+if ( PluginDocumentSettingPanel ) {
 
     /**
      * Format a rating display string based on type.
@@ -112,4 +105,5 @@
         render: ShurikenPostSidebar,
         icon:   'star-filled',
     } );
-} )();
+}
+

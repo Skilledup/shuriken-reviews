@@ -106,7 +106,7 @@ class Shuriken_Block {
         // Register the shared ratings store (used by all blocks)
         wp_register_script(
             'shuriken-ratings-store',
-            plugins_url('blocks/shared/ratings-store.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shared/ratings-store.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-data',
                 'wp-api-fetch'
@@ -118,9 +118,10 @@ class Shuriken_Block {
         // Register shared block helpers (error handling, search, etc.)
         wp_register_script(
             'shuriken-block-helpers',
-            plugins_url('blocks/shared/block-helpers.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shared/block-helpers.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-element',
+                'wp-components',
                 'wp-i18n'
             ),
             SHURIKEN_REVIEWS_VERSION,
@@ -130,7 +131,7 @@ class Shuriken_Block {
         // Register the editor script with proper dependencies
         wp_register_script(
             'shuriken-rating-editor',
-            plugins_url('blocks/shuriken-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shuriken-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-blocks',
                 'wp-element',
@@ -171,7 +172,7 @@ class Shuriken_Block {
         // Register the grouped rating editor script
         wp_register_script(
             'shuriken-grouped-rating-editor',
-            plugins_url('blocks/shuriken-grouped-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shuriken-grouped-rating/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-blocks',
                 'wp-element',
@@ -204,7 +205,7 @@ class Shuriken_Block {
         // Register the Query Loop sort extension (FSE block theme support)
         wp_register_script(
             'shuriken-query-sort',
-            plugins_url('blocks/shuriken-query-sort/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shuriken-query-sort/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-hooks',
                 'wp-compose',
@@ -222,7 +223,7 @@ class Shuriken_Block {
         // Register the post sidebar plugin (shows per-post rating stats)
         wp_register_script(
             'shuriken-post-sidebar',
-            plugins_url('blocks/shuriken-post-sidebar/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            plugins_url('build/shuriken-post-sidebar/index.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(
                 'wp-plugins',
                 'wp-edit-post',

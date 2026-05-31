@@ -20,22 +20,15 @@
  * @since 1.15.5
  */
 
-(function (wp) {
-    'use strict';
+import { addFilter } from '@wordpress/hooks';
+import { createHigherOrderComponent as createHOC } from '@wordpress/compose';
+import { InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, SelectControl } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
+import { Fragment, createElement, useEffect } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 
-    const addFilter         = wp.hooks.addFilter;
-    const createHOC         = wp.compose.createHigherOrderComponent;
-    const InspectorControls = wp.blockEditor.InspectorControls;
-    const PanelBody         = wp.components.PanelBody;
-    const SelectControl     = wp.components.SelectControl;
-    const __                = wp.i18n.__;
-    const Fragment          = wp.element.Fragment;
-    const createElement     = wp.element.createElement;
-    const useEffect         = wp.element.useEffect;
-    const useSelect         = wp.data.useSelect;
-    const useDispatch       = wp.data.useDispatch;
-
-    const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
+const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
 
     // -------------------------------------------------------------------------
     // Inject inspector panel into core/query
@@ -184,5 +177,3 @@
         'shuriken-reviews/query-sort-controls',
         withShurikenQuerySortControls
     );
-
-}(window.wp));

@@ -8,14 +8,11 @@
  * @since   2.2.0
  */
 
-(function (wp) {
-    'use strict';
+import { createElement, useCallback, useRef, useEffect, useState } from '@wordpress/element';
+import { SelectControl, TextControl } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
 
-    const __ = wp.i18n.__;
-    const h  = wp.element.createElement;
-    const useCallback = wp.element.useCallback;
-    const useRef      = wp.element.useRef;
-    const useEffect   = wp.element.useEffect;
+const h = createElement;
 
     /* ── Lucide SVG icon helpers ─────────────────────────────────────── */
 
@@ -167,6 +164,43 @@
     }
 
     /**
+     * Custom hook bundling the full per-block API error-handling lifecycle.
+     *
+     * Replaces the identical `error` / `lastFailedAction` state pair plus the
+     * `makeErrorHandler` / `makeErrorDismissers` / retry wiring that was
+     * duplicated in both block `edit()` functions.
+     *
+     * @param {Function} clearError - Store dispatch to clear the global error.
+     * @return {{
+     *   error: (string|null),
+     *   setError: Function,
+     *   lastFailedAction: (Function|null),
+     *   setLastFailedAction: Function,
+     *   handleApiError: Function,
+     *   dismissError: Function,
+     *   retryLastAction: Function
+     * }}
+     */
+    const useApiErrorHandling = (clearError) => {
+        const [error, setError] = useState(null);
+        const [lastFailedAction, setLastFailedAction] = useState(null);
+
+        const handleApiError = makeErrorHandler(setError, setLastFailedAction);
+        const { retryLastAction: _retry, dismissError } = makeErrorDismissers(setError, setLastFailedAction, clearError);
+        const retryLastAction = () => { _retry(lastFailedAction); };
+
+        return {
+            error: error,
+            setError: setError,
+            lastFailedAction: lastFailedAction,
+            setLastFailedAction: setLastFailedAction,
+            handleApiError: handleApiError,
+            dismissError: dismissError,
+            retryLastAction: retryLastAction
+        };
+    };
+
+    /**
      * Custom hook: debounced search with automatic cleanup.
      *
      * @param {Function} searchFn - Store dispatch: searchRatings(term, type, limit)
@@ -253,6 +287,92 @@
         if (ratingType === 'numeric') return { min: 2, max: 100 };
         if (ratingType === 'stars')   return { min: 2, max: 10 };
         return { min: 1, max: 1, fixed: true };
+    }
+
+    /**
+     * Render the shared "Rating Type" + "Scale" control pair.
+     *
+     * Both blocks' create/edit forms expose an identical rating-type selector
+     * and a conditional scale input (shown only for the variable-scale types)
+     * with the same clamp logic. This helper centralises that markup so the
+     * behaviour stays consistent across the single-rating and grouped-rating
+     * editors.
+     *
+     * @param {Object}   opts
+     * @param {string}   opts.type          Current rating type value.
+     * @param {number}   opts.scale         Current scale value.
+     * @param {Function} opts.setType       Setter for the rating type.
+     * @param {Function} opts.setScale      Setter for the scale.
+     * @param {boolean}  [opts.disabled]    Disable both controls (e.g. after votes exist).
+     * @param {string}   [opts.typeHelp]    Help text under the type selector.
+     * @param {string}   [opts.scaleHelp]   Explicit help text under the scale input.
+     * @param {string}   [opts.scaleHelpMode] 'descriptive' (default) or 'range'.
+     * @param {boolean}  [opts.showScaleMinMax] Add native min/max attributes to the scale input.
+     * @return {Array} Array of control elements (keyed) for inclusion in a render tree.
+     */
+    const renderRatingTypeScaleFields = (opts) => {
+        const {
+            type,
+            scale,
+            setType,
+            setScale,
+            disabled = false,
+            typeHelp = __('Choose how users will rate this item.', 'shuriken-reviews'),
+            scaleHelp,
+            scaleHelpMode = 'descriptive',
+            showScaleMinMax = false
+        } = opts;
+
+        const range = getScaleRange(type);
+        const showScale = !range.fixed;
+
+        const derivedScaleHelp = scaleHelpMode === 'range'
+            ? `${__('Scale range: ', 'shuriken-reviews')}${range.min}–${range.max}`
+            : (type === 'stars'
+                ? __('Number of stars (2–10).', 'shuriken-reviews')
+                : __('Maximum slider value (2–100).', 'shuriken-reviews'));
+
+        const fields = [
+            h(SelectControl, {
+                key: 'shuriken-rating-type',
+                label: __('Rating Type', 'shuriken-reviews'),
+                value: type,
+                options: ratingTypeOptions,
+                disabled,
+                onChange: (value) => {
+                    setType(value);
+                    const nextRange = getScaleRange(value);
+                    if (scale < nextRange.min || scale > nextRange.max) {
+                        setScale(nextRange.fixed ? nextRange.min : 5);
+                    }
+                },
+                help: typeHelp
+            })
+        ];
+
+        if (showScale) {
+            const scaleProps = {
+                key: 'shuriken-rating-scale',
+                label: __('Scale', 'shuriken-reviews'),
+                type: 'number',
+                value: String(scale),
+                disabled,
+                onChange: (value) => {
+                    const num = parseInt(value, 10);
+                    if (!isNaN(num)) {
+                        setScale(Math.max(range.min, Math.min(range.max, num)));
+                    }
+                },
+                help: scaleHelp || derivedScaleHelp
+            };
+            if (showScaleMinMax) {
+                scaleProps.min = range.min;
+                scaleProps.max = range.max;
+            }
+            fields.push(h(TextControl, scaleProps));
+        }
+
+        return fields;
     }
 
     /**
@@ -513,11 +633,13 @@
         formatApiError:         formatApiError,
         makeErrorHandler:       makeErrorHandler,
         makeErrorDismissers:    makeErrorDismissers,
+        useApiErrorHandling:    useApiErrorHandling,
         useSearchHandler:       useSearchHandler,
         titleTagOptions:        titleTagOptions,
         calculateAverage:       calculateAverage,
         ratingTypeOptions:      ratingTypeOptions,
         getScaleRange:          getScaleRange,
+        renderRatingTypeScaleFields: renderRatingTypeScaleFields,
         getRatingType:          getRatingType,
         getRatingScale:         getRatingScale,
         calculateScaledAverage: calculateScaledAverage,
@@ -532,4 +654,4 @@
         iconTriangleAlert:      iconTriangleAlert,
         iconShare2:             iconShare2
     };
-})(window.wp);
+

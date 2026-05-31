@@ -1,0 +1,15 @@
+{
+    "name": "shuriken-reviews",
+    "version": "1.15.5",
+    "description": "Block editor build toolchain for the Shuriken Reviews plugin.",
+    "license": "GPL-3.0-or-later",
+    "private": true,
+    "scripts": {
+        "build": "wp-scripts build",
+        "start": "wp-scripts start",
+        "lint:js": "wp-scripts lint-js blocks"
+    },
+    "devDependencies": {
+        "@wordpress/scripts": "^27.9.0"
+    }
+}

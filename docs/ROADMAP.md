@@ -150,29 +150,26 @@ All hook, filter, and action slots shipped in v1.15.5 for fully decoupled third-
 
 - [ ] **Split jumbo `Shuriken_Analytics_Interface`** — the interface declares ~50 methods across 4 concerns. Consider splitting into `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Context_Interface` + a core `Shuriken_Analytics_Interface`. Enables add-on decorators to implement only the sub-interface they need.
 
-##### 6c — Block JS Decomposition (grouped-rating: 1,791 → ~600 lines)
+##### 6c — Block JS Decomposition (grouped-rating: 1,797 → 904 lines) ✅
 
-`blocks/shuriken-grouped-rating/index.js` is the largest JS file — a single `edit()` function with 40+ `useState` hooks, 30+ handlers, and 3 inline modals.
+`blocks/shuriken-grouped-rating/index.js` was the largest JS file — a single `edit()` function with 40+ `useState` hooks, 30+ handlers, and 3 inline modals. The three modals and the Inspector panels are now extracted into `blocks/shuriken-grouped-rating/components/`, bringing the file from 1,797 to 904 lines. Each extracted component is a plain function that receives a single `ctx` object carrying the `edit()`-local values/handlers it needs, keeping it decoupled from the closure.
 
-- [ ] **Consolidate state into structured objects** — replace 40+ individual `useState` hooks with ~5 state objects: `modals`, `createForm`, `editForm`, `loadingState`, `selectedItems`. Reduces prop drilling and makes state flow tractable.
-- [ ] **Extract modal components** — `<CreateParentModal>`, `<EditParentModal>`, `<ManageChildrenModal>` as separate components. Each modal is 100–200 lines of inline JSX.
-- [ ] **Extract `<CreateRatingForm>` shared component** — rating type selection, scale validation, description field, display-only toggle repeated across `shuriken-rating/index.js` and `shuriken-grouped-rating/index.js` (~250 lines duplicated). Move to `block-helpers.js`.
-- [ ] **Extract `useApiErrorHandling()` hook** — identical error handler setup (`makeErrorHandler`, `makeErrorDismissers`, `retryLastAction`) duplicated in both block `edit()` functions (~60 lines). Centralize in `block-helpers.js`.
+- [x] **Consolidate form state with `useReducer`** — the create/edit/add-child form clusters (the bulk of the `useState` sprawl) are now backed by reducers. The grouped block uses three reducers (`parentForm`, `editParentForm`, `childForm` via `groupFormReducer`) and the single-rating block uses two (`createForm`, `editForm` via `ratingFormReducer`), each with `SET_FIELD`/`MERGE`/`RESET` transitions and a small `setXField(field, value)` helper. Field/reset logic is co-located instead of scattered across a dozen setters. The grouped block keeps the same `modalCtx` keys (mapped to reducer reads + setter wrappers), so the extracted modal components needed zero changes. Remaining `useState` hooks are genuinely independent UI flags (open/creating/updating/drag/search), which is the idiomatic use of `useState`.
+- [x] **Extract modal components** — `CreateParentModal`, `EditParentModal`, `ManageChildrenModal` moved to `blocks/shuriken-grouped-rating/components/*.js` (172 / 255 / 457 lines). Inspector (sidebar) panels also extracted to `components/inspector-panels.js` (282 lines).
+- [x] **Extract shared rating type/scale fields** — the duplicated "Rating Type" + "Scale" control pair (with its type-aware scale-clamp logic) is now a single `renderRatingTypeScaleFields(opts)` helper in `block-helpers.js`, reused across all five call sites (single create/edit, grouped parent create/edit, and the manage-children add + per-child rows). A full `<CreateRatingForm>` was still not a clean extraction — the single-rating form carries mirror/parent/effect logic the grouped form lacks — but the type/scale pair was the genuinely shared, high-value slice.
+- [x] **Extract `useApiErrorHandling()` hook** — centralized in `block-helpers.js` (`useState` + `makeErrorHandler` + `makeErrorDismissers` + `retryLastAction`); both block `edit()` functions now consume it.
 
-##### 6d — Block Build Toolchain: `@wordpress/scripts` + JSX
+##### 6d — Block Build Toolchain: `@wordpress/scripts` + JSX ✅
 
-The blocks already use React (`wp.element` is React) and React hooks, but without a build step — elements are created via `wp.element.createElement` (aliased as `h`), all `wp.*` packages are consumed as runtime globals, and every block lives in a single file because there is no module system. This makes Step 6c (component decomposition) impractical: extracting components into separate files with raw `createElement` trees produces unreadable code.
+The blocks already use React (`wp.element` is React) and React hooks, but previously without a build step — elements were created via `wp.element.createElement`, all `wp.*` packages were consumed as runtime globals, and every block lived in a single file because there was no module system. Adopting `@wordpress/scripts` adds the missing build layer (webpack + Babel/JSX) and automatically externalises all `wp.*` packages so bundle sizes stay small.
 
-Adopting `@wordpress/scripts` adds only the missing build layer — it is zero-config for this exact setup, handles webpack + Babel/JSX, and automatically externalises all `wp.*` packages so bundle sizes stay small.
+- [x] **Add `package.json` + install `@wordpress/scripts`** — added as a dev dependency with `build`/`start`/`lint` scripts.
+- [x] **Add `webpack.config.js` entry points** — one entry per block plus the shared store/helpers (6 entries → `build/`).
+- [x] **Replace IIFEs with ES module imports** — blocks now `import` from `@wordpress/*`; webpack externalises these back to the `wp.*` globals, so runtime behaviour is identical. Within-bundle component files use ES imports; cross-bundle shared modules still publish `window` globals to preserve load order. A small `const wp = { element: { createElement, Fragment } }` shim keeps the existing `createElement` call sites working without a full JSX rewrite.
+- [x] **Update block script registration** — `includes/class-shuriken-block.php` now registers the compiled `build/` outputs (each with its generated `index.asset.php` dependency array).
+- [x] **Update `.gitignore`** — excludes `node_modules/` and `build/`.
 
-- [ ] **Add `package.json` + install `@wordpress/scripts`** — one dev dependency; use the default `build`/`start` scripts.
-- [ ] **Add `webpack.config.js` entry points** — one entry per block (`blocks/shuriken-rating/index.js`, `blocks/shuriken-grouped-rating/index.js`, etc.) and one for the shared store/helpers.
-- [ ] **Convert all `wp.element.createElement` / `h(...)` calls to JSX** — straightforward mechanical swap; Babel handles it.
-- [ ] **Replace `(function(wp) { … })(wp)` IIFEs with ES module imports** — `import { registerBlockType } from '@wordpress/blocks'`; `@wordpress/scripts` webpack config externalises these to the `wp.*` globals automatically, so runtime behaviour is identical.
-- [ ] **Update `block.json` `editorScript` fields** to point at the compiled outputs (`build/shuriken-rating/index.js` etc.).
-- [ ] **Update `.gitignore`** to exclude `node_modules/` and `build/`; commit compiled assets separately or via CI.
-
-> **Why here (before 6c):** This is a prerequisite for 6c. Extracting `<CreateRatingForm>`, `<CreateParentModal>`, etc. into separate files is only tractable with JSX and ES module imports. No PHP, REST API, or frontend runtime is touched — this is a pure editor-toolchain change.
+> **Why before 6c:** This was a prerequisite for 6c. Extracting modal/inspector components into separate files is only tractable with ES module imports. No PHP runtime, REST API, or frontend runtime behaviour changed — this is purely an editor-toolchain change.
 
 ##### 6f — Frontend JS & CSS Cleanup ✅
 

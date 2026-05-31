@@ -9,11 +9,10 @@
  * @since 1.9.0
  */
 
-(function(wp) {
-    const { createReduxStore, register, select, dispatch } = wp.data;
-    const apiFetch = wp.apiFetch;
+import { createReduxStore, register } from '@wordpress/data';
+import apiFetch from '@wordpress/api-fetch';
 
-    const STORE_NAME = 'shuriken-reviews';
+const STORE_NAME = 'shuriken-reviews';
 
     // =========================================================================
     // In-flight request deduplication
@@ -778,5 +777,3 @@
 
     // Export store name for use in blocks
     window.SHURIKEN_STORE_NAME = STORE_NAME;
-
-})(window.wp);
