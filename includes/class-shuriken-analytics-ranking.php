@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
  *
  * @since 1.15.5
  */
-class Shuriken_Analytics_Ranking {
+class Shuriken_Analytics_Ranking implements Shuriken_Analytics_Ranking_Interface {
 
     use Shuriken_Analytics_Helpers;
 

@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  *
  * @since 1.15.5
  */
-class Shuriken_Analytics_Formatter {
+class Shuriken_Analytics_Formatter implements Shuriken_Analytics_Formatter_Interface {
 
     /**
      * Get human-readable label for the current date range

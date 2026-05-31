@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
  *
  * @since 1.15.5
  */
-class Shuriken_Analytics_Context {
+class Shuriken_Analytics_Context implements Shuriken_Analytics_Context_Interface {
 
     use Shuriken_Analytics_Helpers;
 

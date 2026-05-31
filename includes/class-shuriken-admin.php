@@ -404,6 +404,16 @@ class Shuriken_Admin {
                 'dateRangeInvalid' => __('Start date must be before end date.', 'shuriken-reviews'),
             ),
         ));
+
+        // Enqueue chart factories for item-stats, context-stats, and voter-activity pages.
+        // Depends on admin-analytics for the shared shurikenAnalyticsUtils (colors, formatDate).
+        wp_enqueue_script(
+            'shuriken-admin-charts',
+            plugins_url('assets/js/admin-charts.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
+            array('jquery', 'chartjs', 'shuriken-admin-analytics'),
+            SHURIKEN_REVIEWS_VERSION,
+            true
+        );
     }
 
     /**

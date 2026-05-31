@@ -101,17 +101,13 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 7 pairs of scoped/base method duplicates merged; 12 contextual methods (660 lines) moved to `Shuriken_Analytics_Context`. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
 
 - **Decomposed `get_parent_rating_stats_breakdown()`** ✅ — decomposed into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`), reducing the main method's footprint to under 65 lines.
-
-**Still open in 1.15.x:**
-- [ ] **Split jumbo `Shuriken_Analytics_Interface`** into sub-interfaces per concern
+- **Split jumbo `Shuriken_Analytics_Interface`** ✅ — split into three focused sub-interfaces (`Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Context_Interface`); the core `Shuriken_Analytics_Interface` now `extends` all three, preserving the full 54-method contract for backward compatibility. The three concern classes (`Shuriken_Analytics_Formatter`, `Shuriken_Analytics_Ranking`, `Shuriken_Analytics_Context`) now `implements` their respective sub-interface, so add-on decorators can implement only the slice they need.
 
 ##### 6b — Admin Template DRY ✅ (core items)
 
 - Extracted `partials/pagination.php`, `partials/date-filter-bar.php`, `partials/votes-table.php`
 - Extracted helpers: `shuriken_format_rating_value()`, `shuriken_render_voter_cell()`
-
-**Still open in 1.15.x:**
-- [ ] **Extract chart init to `assets/js/admin-charts.js`** — ~450 lines of near-identical Chart.js setup across 4 admin files
+- **Extracted chart init to `assets/js/admin-charts.js`** ✅ — the near-identical Chart.js setup blocks (~450 lines across item-stats, context-stats, and voter-activity) are now factory functions (`initApprovalRing`, `initApprovalTrend`, `initCumulative`, `initDistribution`, `initDualAxis`, `initTopContexts`, `initContextAvgDist`, `initContextActivity`, `initVoterDistribution`, `initVoterActivity`). The item-stats global view and context-stats share a single `initTypeAwareCharts(data, ids)` dispatcher. Pages now emit only a small inline data object (the same pattern as the analytics dashboard) and the new script auto-initializes from it.
 
 ##### 6e — JS Modernization ✅
 
@@ -141,14 +137,6 @@ All hook, filter, and action slots shipped in v1.15.5 for fully decoupled third-
 ### 1.15.x — Remaining Code Quality & Extensibility Work
 
 #### Step 6 (remaining) — Coding Standards & DRY Sweep
-
-##### 6b (remaining) — Admin Template DRY
-
-- [ ] **Extract chart init to `assets/js/admin-charts.js`** — inline `<script>` blocks with Chart.js setup (~450 lines across 4 files) are nearly identical: distribution bar chart, dual-axis vote activity chart, approval ring chart, approval trend line chart, cumulative chart. Extract factory functions: `initDistributionChart()`, `initVoteActivityChart()`, `initApprovalChart()`, etc. Pages pass data via `wp_localize_script()` instead of inline JSON.
-
-##### 6a (remaining) — Analytics Interface Split
-
-- [ ] **Split jumbo `Shuriken_Analytics_Interface`** — the interface declares ~50 methods across 4 concerns. Consider splitting into `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Context_Interface` + a core `Shuriken_Analytics_Interface`. Enables add-on decorators to implement only the sub-interface they need.
 
 ##### 6c — Block JS Decomposition (grouped-rating: 1,797 → 904 lines) ✅
 
