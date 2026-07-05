@@ -48,7 +48,7 @@ database        → Shuriken_Database (implements Shuriken_Database_Interface; f
 ratings_repo    → Shuriken_Rating_Repository
 votes_repo      → Shuriken_Vote_Repository
 schema_manager  → Shuriken_Schema_Manager
-analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface; delegates to formatter/ranking/context)
+analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface; delegates to formatter, ranking, dashboard, rating_stats, context)
 voter_analytics → Shuriken_Voter_Analytics (implements Shuriken_Voter_Analytics_Interface)
 rate_limiter    → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
 rest_api      → Shuriken_REST_API (bootstrap; wires Shuriken_REST_Ratings_Controller + Shuriken_REST_Votes_Controller)
@@ -123,11 +123,13 @@ Throws `Shuriken_Database_Exception` on failures instead of returning false.
 
 **Implements:** `Shuriken_Analytics_Interface`
 **Uses:** `Shuriken_Analytics_Helpers` trait
-**Composes:** `Shuriken_Analytics_Formatter`, `Shuriken_Analytics_Ranking`, `Shuriken_Analytics_Context`
+**Composes:** `Shuriken_Analytics_Formatter`, `Shuriken_Analytics_Ranking`, `Shuriken_Analytics_Dashboard`, `Shuriken_Analytics_Rating_Stats`, `Shuriken_Analytics_Context`
 
 **Responsibilities:**
-- Dashboard analytics coordinator — delegates formatting, ranking, and contextual queries to composed services
+- Thin coordinator (~278 lines) — delegates to five composed services; applies extensibility filters on ranking and overall stats
 - Type-aware analytics (stars, like/dislike, numeric, approval)
+
+**Sub-interfaces:** `Shuriken_Analytics_Interface` extends `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Dashboard_Interface`, `Shuriken_Analytics_Rating_Stats_Interface`, and `Shuriken_Analytics_Context_Interface` for backward-compatible full-contract access.
 
 #### 4a. Analytics Formatter (`class-shuriken-analytics-formatter.php`)
 
@@ -147,20 +149,19 @@ Per-post contextual analytics service composed into `Shuriken_Analytics`.
 
 **Key Methods:** `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, and 8 more contextual methods.
 
-**Key Methods (on the coordinator):**
-- `get_rating_stats($rating_id, $date_range)` - Get statistics
-- `get_top_rated($limit)` - Top performers
-- `get_most_voted($limit)` - Most popular
-- `get_rating_distribution($date_range, $rating_id)` - Votes per rating value
-- `get_votes_over_time($date_range, $rating_id)` - Trend data
-- `get_voting_heatmap($date_range)` - Day-of-week × hour activity
-- `get_votes_over_time_by_type($date_range)` - Votes split by rating type
-- `get_per_type_summary()` - Per-type statistics
-- `get_momentum_items($date_range, $limit)` - Rising/falling items
-- `format_average_display()` - Type-aware average formatting
-- `format_vote_display()` - Type-aware vote rendering
+#### 4d. Analytics Dashboard (`class-shuriken-analytics-dashboard.php`)
 
-### 4b. Voter Analytics Service (`class-shuriken-voter-analytics.php`)
+Site-wide overview analytics composed into `Shuriken_Analytics`.
+
+**Methods:** `get_overall_stats()`, `get_contextual_post_count()`, `get_rating_type_counts()`, `get_vote_counts()`, `get_vote_change_percent()`, `get_type_benchmark()`, `get_voting_heatmap()`, `get_votes_over_time_by_type()`, `get_per_type_summary()`, `get_participation_rate()`, `get_momentum_items()`
+
+#### 4e. Analytics Rating Stats (`class-shuriken-analytics-rating-stats.php`)
+
+Per-rating SQL and breakdown queries composed into `Shuriken_Analytics`.
+
+**Methods:** `get_rating_stats()`, `get_parent_rating_stats_breakdown()`, `get_rating_distribution()`, `get_votes_over_time()`, `get_rating_votes_paginated()`, `get_chart_data()`, `get_approval_trend()`, `get_cumulative_approvals()`, `get_votes_with_rolling_avg()`, `build_scope_condition()`, and more.
+
+### 4f. Voter Analytics Service (`class-shuriken-voter-analytics.php`)
 
 **Implements:** `Shuriken_Voter_Analytics_Interface`
 **Uses:** `Shuriken_Analytics_Helpers` trait
@@ -747,7 +748,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHURIKEN_REVIEWS_VERSION', '2.0.0');
+define('SHURIKEN_REVIEWS_VERSION', '1.15.5');
 define('SHURIKEN_REVIEWS_DIR', plugin_dir_path(__FILE__));
 define('SHURIKEN_REVIEWS_URL', plugin_dir_url(__FILE__));
 
@@ -835,7 +836,7 @@ Database updated, redirect with message
 The Shuriken Reviews architecture emphasizes:
 
 - **Modularity** - Each component has a clear, focused responsibility
-- **Extensibility** - 30+ hooks for customization without core modifications
+- **Extensibility** - 50+ hooks for customization without modifying core
 - **Testability** - Interfaces and dependency injection enable unit testing
 - **Robustness** - Comprehensive exception handling and validation
 - **Maintainability** - Clear structure makes code easy to understand and modify

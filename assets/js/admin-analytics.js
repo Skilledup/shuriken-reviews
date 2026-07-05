@@ -264,7 +264,7 @@
         const $startDate = $form.find('input[name="start_date"]');
         const $endDate = $form.find('input[name="end_date"]');
 
-        const shared = typeof shurikenAnalyticsShared !== 'undefined' ? shurikenAnalyticsShared : {};
+        const shared = window.shurikenAnalyticsShared ?? {};
         const i18n = shared.i18n || {};
 
         $select.on('change', function () {

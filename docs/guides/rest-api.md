@@ -322,6 +322,8 @@ GET /wp-json/shuriken-reviews/v1/ratings/stats?ids=1&context_id=42&context_type=
 
 **Note:** This endpoint uses batch queries for efficiency and bypasses caching.
 
+**Extensibility (v1.15.6+):** Response data passes through `shuriken_rating_stats_response`. Permission defaults to public via `shuriken_stats_permission_callback` (filterable).
+
 ---
 
 #### GET `/context-stats`

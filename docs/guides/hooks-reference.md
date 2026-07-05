@@ -1386,6 +1386,81 @@ add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $u
 
 ---
 
+## Extensibility Hooks (v1.15.6+)
+
+Hooks added for third-party add-ons and platform integration. See also [ROADMAP.md](../ROADMAP.md) Step 7.
+
+### Admin UI
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `shuriken_admin_submenu` | Action | Register additional admin submenu pages under Shuriken Reviews |
+| `shuriken_ratings_columns` | Filter | Modify columns on the Ratings management list table |
+| `shuriken_after_ratings_list` | Action | Output content after the ratings list table |
+| `shuriken_after_analytics_overview` | Action | Output content after the analytics overview grid |
+| `shuriken_after_settings_card` | Action | Output content after a settings card (`$current_tab`) |
+| `shuriken_settings_sidebar_{tab}` | Action | Output sidebar content for a settings tab slug |
+| `shuriken_save_settings` | Action | Handle custom settings save logic (`$tab`, `$_POST`) |
+
+### REST API
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `shuriken_rest_register_routes` | Action | Register additional routes on the `shuriken-reviews/v1` namespace |
+| `shuriken_rating_stats_response` | Filter | Modify batch stats response (`$stats`, `$ids`, `$context_id`, `$context_type`) |
+| `shuriken_stats_permission_callback` | Filter | Override public stats endpoint permission (default: `true`) |
+
+### Analytics
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `shuriken_overall_stats` | Filter | Modify site-wide overview stats |
+| `shuriken_top_rated` | Filter | Modify top-rated leaderboard results |
+| `shuriken_most_voted` | Filter | Modify most-voted leaderboard results |
+| `shuriken_low_performers` | Filter | Modify low-performer leaderboard results |
+
+Third-party stats decorators can implement `Shuriken_Analytics_Extension_Interface`.
+
+### Frontend & Blocks
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `shuriken_block_view_data` | Filter | Modify localized block view data before `wp_localize_script` |
+| `shurikenBlockSettings_rating` | Filter | Modify single-rating block settings registration (JS, `wp.hooks`) |
+| `shurikenBlockSettings_groupedRating` | Filter | Modify grouped-rating block settings registration (JS, `wp.hooks`) |
+| `shurikenVoteRequest` | Filter | Modify vote AJAX payload before submission (JS, `wp.hooks`) |
+| `shurikenVoteSuccess` | Action | React after a successful vote (JS, `wp.hooks`) |
+
+### Lifecycle & AJAX
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `shuriken_container_ready` | Action | Fires after the DI container is fully built — override services here |
+| `shuriken_deactivate` | Action | Fires on plugin deactivation |
+| `shuriken_uninstall` | Action | Fires during uninstall (after opt-in data deletion check) |
+| `shuriken_ajax_register_handlers` | Action | Register additional AJAX handlers on the `Shuriken_AJAX` instance |
+
+**Example: override analytics overall stats**
+```php
+add_filter('shuriken_overall_stats', function ($stats) {
+    $stats['custom_metric'] = 42;
+    return $stats;
+});
+```
+
+**Example: register a custom REST route**
+```php
+add_action('shuriken_rest_register_routes', function ($namespace) {
+    register_rest_route($namespace, '/my-addon/health', [
+        'methods'             => 'GET',
+        'callback'            => 'my_addon_health_check',
+        'permission_callback' => '__return_true',
+    ]);
+});
+```
+
+---
+
 ## Need Help?
 
 - [GitHub Repository](https://github.com/Skilledup/shuriken-reviews)

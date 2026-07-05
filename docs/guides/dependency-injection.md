@@ -73,6 +73,9 @@ The following services are automatically registered:
 | Service Name | Class | Interface |
 |-------------|-------|-----------|
 | `database` | `Shuriken_Database` | `Shuriken_Database_Interface` |
+| `ratings_repo` | `Shuriken_Rating_Repository` | — |
+| `votes_repo` | `Shuriken_Vote_Repository` | — |
+| `schema_manager` | `Shuriken_Schema_Manager` | — |
 | `analytics` | `Shuriken_Analytics` | `Shuriken_Analytics_Interface` |
 | `voter_analytics` | `Shuriken_Voter_Analytics` | `Shuriken_Voter_Analytics_Interface` |
 | `rest_api` | `Shuriken_REST_API` | - |
@@ -103,6 +106,9 @@ Helper functions maintain backward compatibility:
 ```php
 // Old way (still works)
 $db = shuriken_db();
+$ratings = shuriken_ratings_repo();
+$votes = shuriken_votes_repo();
+$schema = shuriken_schema_manager();
 $analytics = shuriken_analytics();
 $voter_analytics = shuriken_voter_analytics();
 

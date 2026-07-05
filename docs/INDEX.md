@@ -30,7 +30,7 @@ Reference for all global helper functions providing access to plugin services an
 - Usage patterns and examples
 
 #### [Hooks Reference](guides/hooks-reference.md)
-Complete API reference for all 30 WordPress hooks (19 filters + 11 actions) with examples and use cases.
+Complete API reference for all WordPress hooks (50+ filters and actions) with examples and use cases.
 - Rating display filters
 - Vote submission filters  
 - Database operation filters
@@ -52,7 +52,7 @@ Guide to the lightweight DI container for flexible service management and testab
 - Registering services
 - Constructor injection pattern
 - Testing with mocks
-- DI adoption status (88.9% coverage)
+- DI adoption status (100% coverage)
 - Best practices
 
 #### [Testing & Testing Utilities](guides/testing.md)
@@ -118,7 +118,7 @@ The plugin uses a **modular architecture** with clear separation of concerns. Se
 - **Single Responsibility Principle** - Each class has one clear purpose
 - **Loose Coupling** - Depend on interfaces, not concrete classes
 - **High Cohesion** - Related functionality grouped together
-- **Extensibility** - 30+ hooks for customization without modifying core
+- **Extensibility** - 50+ hooks for customization without modifying core
 - **Testability** - Interfaces and dependency injection for unit testing
 
 ---
@@ -154,7 +154,7 @@ The plugin uses a **modular architecture** with clear separation of concerns. Se
 ## Key Concepts
 
 ### Hooks System
-The plugin exposes 30+ WordPress hooks (filters and actions) for complete customization:
+The plugin exposes 50+ WordPress hooks (filters and actions) for complete customization:
 - **Filters** modify data before processing or display
 - **Actions** run custom code at specific points in execution
 
@@ -176,7 +176,7 @@ Comprehensive error handling with specific exception types:
 ### Interfaces
 Contracts that classes implement to ensure testability:
 - `Shuriken_Database_Interface` - Database operations
-- `Shuriken_Analytics_Interface` - Analytics calculations
+- `Shuriken_Analytics_Interface` - Analytics calculations (extends five focused sub-interfaces: `Formatter`, `Ranking`, `Dashboard`, `Rating_Stats`, `Context`)
 
 ---
 

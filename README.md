@@ -38,7 +38,7 @@ Shuriken Reviews is designed around three core principles:
 
 **Type-aware and scale-aware.** Ratings can be Stars (1–N), Numeric sliders (configurable range), or Thumbs (Like/Dislike, Approval). All votes are normalised to an internal 1–5 scale for consistent cross-rating analytics, while each rating's own display scale is always preserved for presentation.
 
-**Developer-first architecture.** Services are resolved through a dependency injection container and backed by interfaces, making them fully swappable for unit testing or custom implementations. Thirty-plus WordPress hooks cover every significant operation. Nine typed exception classes map directly to HTTP status codes.
+**Developer-first architecture.** Services are resolved through a dependency injection container and backed by interfaces, making them fully swappable for unit testing or custom implementations. Fifty-plus WordPress hooks cover every significant operation. Nine typed exception classes map directly to HTTP status codes.
 
 ---
 
@@ -295,6 +295,7 @@ Shuriken Reviews is fully compatible with full-page caching and CDNs without any
 | Guest Voting | Allow non-logged-in users to vote; votes are tracked by IP address |
 | REST API Access | Minimum capability for write operations: Administrator, Editor, Author, or Custom |
 | Archive Sorting | Order archive pages by contextual rating — choose a rating, sort by average or total votes |
+| Delete Data on Uninstall | Opt-in toggle to permanently remove custom tables and options when the plugin is uninstalled |
 
 ### Rate Limiting Tab
 
@@ -314,7 +315,7 @@ Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-lim
 
 ### WordPress Hooks
 
-30+ hooks (19 filters + 11 actions). Key hooks:
+50+ hooks (filters and actions). Key hooks:
 
 | Hook | Type | Description |
 |---|---|---|
@@ -346,7 +347,7 @@ shuriken_container()  // Returns Shuriken_Container (DI service container)
 | Interface | Covers |
 |---|---|
 | `Shuriken_Database_Interface` | All read/write rating and vote operations |
-| `Shuriken_Analytics_Interface` | Aggregate statistics, trends, and breakdowns |
+| `Shuriken_Analytics_Interface` | Aggregate statistics, trends, and breakdowns (extends five analytics sub-interfaces) |
 | `Shuriken_Voter_Analytics_Interface` | Per-voter history and distribution |
 | `Shuriken_Rate_Limiter_Interface` | Pluggable rate-limit implementation |
 
@@ -378,6 +379,8 @@ All exceptions are caught and logged by `Shuriken_Exception_Handler`.
 ## Architecture
 
 All services are resolved through `Shuriken_Container`. Any service can be replaced with an alternative implementation (including mocks) by binding a new factory before the container resolves it.
+
+`Shuriken_Analytics` is a ~278-line coordinator that delegates to five focused services: `Shuriken_Analytics_Formatter`, `Shuriken_Analytics_Ranking`, `Shuriken_Analytics_Dashboard`, `Shuriken_Analytics_Rating_Stats`, and `Shuriken_Analytics_Context`.
 
 Internal votes are stored on a normalised 1–5 scale (`RATING_SCALE_DEFAULT`). Denormalisation to each rating's display scale is performed exclusively inside `Shuriken_Database::attach_averages()` and exposed as `display_average` on all returned objects — no consumer performs inline scale conversion.
 

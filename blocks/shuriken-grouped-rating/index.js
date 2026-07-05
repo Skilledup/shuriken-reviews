@@ -910,7 +910,7 @@ let settings = {
         }
     };
 
-    if (window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function') {
+    if (typeof window.wp?.hooks?.applyFilters === 'function') {
         settings = window.wp.hooks.applyFilters('shurikenBlockSettings_groupedRating', settings);
     }
 

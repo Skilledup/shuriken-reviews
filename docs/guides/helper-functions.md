@@ -112,6 +112,50 @@ $results = shuriken_db()->search_ratings('quality', 10, 'all');
 
 **Interface:** [interface-shuriken-database.php](../../includes/interfaces/interface-shuriken-database.php)
 
+Prefer narrower repository helpers when only one data domain is needed — see `shuriken_ratings_repo()`, `shuriken_votes_repo()`, and `shuriken_schema_manager()` below.
+
+---
+
+### `shuriken_ratings_repo()`
+
+Get the rating repository for rating CRUD, hierarchy, mirrors, and contextual stats.
+
+```php
+function shuriken_ratings_repo(): Shuriken_Rating_Repository
+```
+
+**Returns:** `Shuriken_Rating_Repository`
+
+**File:** [class-shuriken-rating-repository.php](../../includes/class-shuriken-rating-repository.php)
+
+---
+
+### `shuriken_votes_repo()`
+
+Get the vote repository for vote CRUD and rate-limit timestamp queries.
+
+```php
+function shuriken_votes_repo(): Shuriken_Vote_Repository
+```
+
+**Returns:** `Shuriken_Vote_Repository`
+
+**File:** [class-shuriken-vote-repository.php](../../includes/class-shuriken-vote-repository.php)
+
+---
+
+### `shuriken_schema_manager()`
+
+Get the schema manager for table creation and migrations.
+
+```php
+function shuriken_schema_manager(): Shuriken_Schema_Manager
+```
+
+**Returns:** `Shuriken_Schema_Manager`
+
+**File:** [class-shuriken-schema-manager.php](../../includes/class-shuriken-schema-manager.php)
+
 ---
 
 ### `shuriken_analytics()`
@@ -141,7 +185,7 @@ $daily = $analytics->get_daily_stats($rating_id, '2024-01-01', '2024-01-31');
 
 **File:** [class-shuriken-container.php](../../includes/class-shuriken-container.php)
 
-**Interface:** [interface-shuriken-analytics.php](../../includes/interfaces/interface-shuriken-analytics.php)
+**Interface:** [interface-shuriken-analytics.php](../../includes/interfaces/interface-shuriken-analytics.php) (extends `Shuriken_Analytics_Formatter_Interface`, `Shuriken_Analytics_Ranking_Interface`, `Shuriken_Analytics_Dashboard_Interface`, `Shuriken_Analytics_Rating_Stats_Interface`, and `Shuriken_Analytics_Context_Interface`)
 
 ---
 

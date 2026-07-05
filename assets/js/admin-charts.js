@@ -277,8 +277,9 @@
 
         if (typeof Chart === 'undefined') return;
 
-        if (typeof shurikenContextStatsData !== 'undefined') {
-            initTypeAwareCharts(shurikenContextStatsData, {
+        const contextStatsData = window.shurikenContextStatsData;
+        if (contextStatsData) {
+            initTypeAwareCharts(contextStatsData, {
                 ring: 'ctxApprovalRingChart',
                 trend: 'ctxApprovalTrendChart',
                 cumulative: 'ctxCumulativeChart',
@@ -287,8 +288,9 @@
             });
         }
 
-        if (typeof shurikenItemStatsData !== 'undefined') {
-            initTypeAwareCharts(shurikenItemStatsData, {
+        const itemStatsData = window.shurikenItemStatsData;
+        if (itemStatsData) {
+            initTypeAwareCharts(itemStatsData, {
                 ring: 'itemApprovalRingChart',
                 trend: 'itemApprovalTrendChart',
                 cumulative: 'itemCumulativeChart',
@@ -297,13 +299,15 @@
             });
         }
 
-        if (typeof shurikenContextData !== 'undefined') {
-            initContextOverviewCharts(shurikenContextData);
+        const contextData = window.shurikenContextData;
+        if (contextData) {
+            initContextOverviewCharts(contextData);
         }
 
-        if (typeof shurikenVoterActivityData !== 'undefined') {
-            initVoterDistribution('voterRatingDistributionChart', shurikenVoterActivityData.distributionLabels, shurikenVoterActivityData.ratingDistribution, shurikenVoterActivityData.i18n);
-            initVoterActivity('voterActivityChart', shurikenVoterActivityData.votesOverTime, shurikenVoterActivityData.i18n);
+        const voterActivityData = window.shurikenVoterActivityData;
+        if (voterActivityData) {
+            initVoterDistribution('voterRatingDistributionChart', voterActivityData.distributionLabels, voterActivityData.ratingDistribution, voterActivityData.i18n);
+            initVoterActivity('voterActivityChart', voterActivityData.votesOverTime, voterActivityData.i18n);
         }
     });
 

@@ -34,16 +34,28 @@ The exception handler converts exceptions to WP_Error objects with appropriate H
 
 ### 2. Frontend Error Handling
 
-In the block editor, errors are caught and displayed using the `handleApiError` helper:
+In the block editor, errors are caught and displayed using the shared `useApiErrorHandling` hook from `blocks/shared/block-helpers.js` (or the lower-level `handleApiError` helper it wraps):
+
+```javascript
+const {
+    error,
+    lastFailedAction,
+    handleApiError,
+    dismissError,
+    retryLastAction,
+} = useApiErrorHandling();
+```
+
+The hook bundles the full per-block API error-handling lifecycle (`error`, `lastFailedAction`, `handleApiError`, `dismissError`, `retryLastAction`) so both rating blocks share identical wiring.
 
 ```javascript
 function handleApiError(err, action) {
     // Parse error response
-    var errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
+    let errorMessage = __('An unexpected error occurred.', 'shuriken-reviews');
     
     if (err.message) {
         errorMessage = err.message;
-    } else if (err.data && err.data.message) {
+    } else if (err.data?.message) {
         errorMessage = err.data.message;
     }
     

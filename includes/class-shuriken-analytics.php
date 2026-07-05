@@ -26,24 +26,11 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
 
     use Shuriken_Analytics_Helpers;
 
-    /**
-     * @var \wpdb WordPress database instance
-     */
-    private readonly \wpdb $wpdb;
-
-    /**
-     * @var string Ratings table name
-     */
-    private readonly string $ratings_table;
-
-    /**
-     * @var string Votes table name
-     */
-    private readonly string $votes_table;
-
     private readonly Shuriken_Analytics_Formatter $formatter;
     private readonly Shuriken_Analytics_Ranking $ranking;
     private readonly Shuriken_Analytics_Context $context;
+    private readonly Shuriken_Analytics_Dashboard $dashboard;
+    private readonly Shuriken_Analytics_Rating_Stats $rating_stats;
 
     /**
      * Constructor
@@ -53,1793 +40,238 @@ class Shuriken_Analytics implements Shuriken_Analytics_Interface {
     public function __construct(
         private readonly Shuriken_Rating_Repository $db,
     ) {
-        $this->wpdb = $this->db->get_wpdb();
-        $this->ratings_table = $this->db->get_ratings_table();
-        $this->votes_table = $this->db->get_votes_table();
+        $wpdb = $this->db->get_wpdb();
+        $ratings_table = $this->db->get_ratings_table();
+        $votes_table = $this->db->get_votes_table();
+
         $this->formatter = new Shuriken_Analytics_Formatter();
-        $this->ranking = new Shuriken_Analytics_Ranking($this->wpdb, $this->ratings_table, $this->votes_table);
-        $this->context = new Shuriken_Analytics_Context($this->wpdb, $this->ratings_table, $this->votes_table, $this->db);
+        $this->ranking = new Shuriken_Analytics_Ranking($wpdb, $ratings_table, $votes_table);
+        $this->context = new Shuriken_Analytics_Context($wpdb, $ratings_table, $votes_table, $this->db);
+        $this->dashboard = new Shuriken_Analytics_Dashboard($wpdb, $ratings_table, $votes_table);
+        $this->rating_stats = new Shuriken_Analytics_Rating_Stats(
+            $wpdb,
+            $ratings_table,
+            $votes_table,
+            $this->db,
+            $this->dashboard
+        );
     }
 
-    /**
-     * Check if a rating type uses binary values (0/1) instead of a 1-N scale
-     *
-     * @param string $rating_type Rating type identifier
-     * @return bool
-     */
-    private function is_binary_type(string $rating_type): bool {
-        return (Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
-    }
-
-    /**
-     * Get the inversion constant for a rating's scale
-     *
-     * Stars/numeric: value range [1, scale], inversion = (scale + 1) - value
-     * Binary (like_dislike, approval): value range [0, 1], inversion = 1 - value
-     *
-     * @param string $rating_type Rating type
-     * @param int $scale Rating scale
-     * @return int The constant C where inverted_value = C - original_value
-     */
-    private function get_inversion_constant(string $rating_type, int $scale): int {
-        return $this->is_binary_type($rating_type) ? (int) $scale : (Shuriken_Database::RATING_SCALE_DEFAULT + 1);
-    }
-
-    /**
-     * Parse date range from request parameters
-     * 
-     * Converts GET/POST parameters into a date range value that can be passed to build_date_condition.
-     * Handles both preset ranges (7, 30, 90, 365, all) and custom date ranges.
-     *
-     * @param array $params Request parameters (typically $_GET)
-     * @return string|array Date range value ('all', number of days, or array with start/end)
-     */
     public function parse_date_range_params(array $params): string|array {
-        $range_type = isset($params['range_type']) ? sanitize_text_field($params['range_type']) : 'preset';
-        
-        if ($range_type === 'custom') {
-            $start_date = isset($params['start_date']) ? sanitize_text_field($params['start_date']) : '';
-            $end_date = isset($params['end_date']) ? sanitize_text_field($params['end_date']) : '';
-            
-            // Validate dates
-            $valid_start = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date);
-            $valid_end = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date);
-            
-            if ($valid_start || $valid_end) {
-                return array(
-                    'start' => $valid_start ? $start_date : '',
-                    'end' => $valid_end ? $end_date : ''
-                );
-            }
-        }
-        
-        // Preset range
-        $date_range = isset($params['date_range']) ? sanitize_text_field($params['date_range']) : '30';
-        $valid_ranges = array('7', '30', '90', '365', 'all');
-        
-        if (!in_array($date_range, $valid_ranges, true)) {
-            $date_range = '30';
-        }
-        
-        return $date_range;
+        return $this->rating_stats->parse_date_range_params($params);
     }
 
-    /**
-     * Get human-readable label for the current date range
-     *
-     * @param string|array $date_range Date range value
-     * @return string Human-readable label
-     */
     public function get_date_range_label(string|int|array $date_range): string {
         return $this->formatter->get_date_range_label($date_range);
     }
 
-    /**
-     * Format an average rating value for display, adapting to rating type
-     *
-     * Stars/numeric: "3.5/5"
-     * Like/dislike: "72% positive"
-     * Approval: "85% approved"
-     *
-     * @param float $average The average value (for binary: like ratio 0-1 from total_rating/total_votes)
-     * @param string $rating_type Rating type
-     * @param int $scale Rating scale
-     * @param int $total_votes Total votes (needed for binary percentage context)
-     * @param int $total_rating Total rating sum (needed for binary types)
-     * @return string Formatted display string
-     */
     public function format_average_display(float $average, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, int $total_votes = 0, int $total_rating = 0): string {
         return $this->formatter->format_average_display($average, $rating_type, $scale, $total_votes, $total_rating);
     }
 
-    /**
-     * Render a vote value for display in tables, adapting to rating type
-     *
-     * Stars: filled/empty star SVG icons
-     * Numeric: X/N format
-     * Like/dislike: thumbs-up or thumbs-down SVG icon
-     * Approval: thumbs-up SVG icon
-     *
-     * @param int $rating_value The vote value
-     * @param string $rating_type Rating type
-     * @param int $scale Rating scale
-     * @return string HTML display string
-     */
     public function format_vote_display(float|int $rating_value, string $rating_type = 'stars', int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): string {
         return $this->formatter->format_vote_display($rating_value, $rating_type, $scale);
     }
 
-    /**
-     * Get overall statistics
-     *
-     * @return object Object containing total_ratings, total_votes, overall_average, unique_voters
-     */
     public function get_overall_stats(): object {
-        $stats = new stdClass();
-        
-        // Count all ratings
-        $stats->total_ratings = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table}"
-        );
-        
-        // Get rating type breakdown
-        $stats->rating_types = $this->get_rating_type_counts();
-        
-        // Total votes (exclude mirrors as they don't have their own votes)
-        $stats->total_votes = (int) $this->wpdb->get_var(
-            "SELECT COALESCE(SUM(total_votes), 0) FROM {$this->ratings_table} WHERE mirror_of IS NULL"
-        );
-        
-        // Overall average (only from non-mirror ratings with votes)
-        $stats->overall_average = (float) $this->wpdb->get_var(
-            "SELECT AVG(total_rating / NULLIF(total_votes, 0)) 
-             FROM {$this->ratings_table} 
-             WHERE total_votes > 0 AND mirror_of IS NULL"
-        );
-        
-        $stats->unique_voters = (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table}"
-        );
-        
-        return apply_filters('shuriken_overall_stats', $stats);
+        return apply_filters('shuriken_overall_stats', $this->dashboard->get_overall_stats());
     }
 
-    /**
-     * Count distinct posts/entities that have at least one contextual vote
-     *
-     * @return int Number of unique contexts with votes.
-     * @since 1.15.5
-     */
     public function get_contextual_post_count(): int {
-        return (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT CONCAT(context_id, ':', context_type))
-             FROM {$this->votes_table}
-             WHERE context_id IS NOT NULL"
-        );
+        return $this->dashboard->get_contextual_post_count();
     }
 
-    /**
-     * Get rating type counts breakdown
-     *
-     * @return object Object with standalone, parent, sub, display_only, mirror counts
-     */
     public function get_rating_type_counts(): object {
-        $counts = new stdClass();
-        
-        // Standalone: no parent_id, no mirror_of, and not a parent itself
-        $counts->standalone = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} r
-             WHERE r.parent_id IS NULL 
-               AND r.mirror_of IS NULL 
-               AND NOT EXISTS (SELECT 1 FROM {$this->ratings_table} sub WHERE sub.parent_id = r.id)"
-        );
-        
-        // Parent ratings: has sub-ratings
-        $counts->parent = (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT parent_id) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL"
-        );
-        
-        // Sub-ratings
-        $counts->sub = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL"
-        );
-        
-        // Sub-ratings with positive effect
-        $counts->sub_positive = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL AND effect_type = 'positive'"
-        );
-        
-        // Sub-ratings with negative effect
-        $counts->sub_negative = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id IS NOT NULL AND effect_type = 'negative'"
-        );
-        
-        // Display-only ratings
-        $counts->display_only = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE display_only = 1"
-        );
-        
-        // Mirror ratings
-        $counts->mirror = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE mirror_of IS NOT NULL"
-        );
-        
-        return $counts;
+        return $this->dashboard->get_rating_type_counts();
     }
 
-    /**
-     * Get vote counts for a specific period
-     *
-     * @param string|int $date_range Number of days or 'all'
-     * @return object Object containing period_votes, member_votes, guest_votes
-     */
     public function get_vote_counts(string|int|array $date_range = 'all'): object {
-        $date_condition = $this->build_date_condition($date_range);
-        
-        $counts = new stdClass();
-        
-        $counts->period_votes = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE 1=1 {$date_condition}"
-        );
-        
-        $counts->member_votes = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE user_id > 0 {$date_condition}"
-        );
-        
-        $counts->guest_votes = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE user_id = 0 {$date_condition}"
-        );
-        
-        return $counts;
+        return $this->dashboard->get_vote_counts($date_range);
     }
 
-    /**
-     * Calculate vote change percentage compared to previous period
-     * 
-     * For preset ranges (7, 30, 90, 365 days): compares to previous same-length period
-     * For custom date ranges: compares to same-length period immediately before the start date
-     *
-     * @param string|int|array $date_range Date range (number of days or array with start/end)
-     * @return float|null Percentage change or null if not applicable
-     */
     public function get_vote_change_percent(string|int|array $date_range): ?float {
-        // For 'all' or empty, no comparison possible
-        if ($date_range === 'all' || empty($date_range)) {
-            return null;
-        }
-        
-        // Custom date range
-        if (is_array($date_range)) {
-            $start = !empty($date_range['start']) ? $date_range['start'] : null;
-            $end = !empty($date_range['end']) ? $date_range['end'] : date('Y-m-d');
-            
-            if (!$start) {
-                return null; // Can't calculate without a start date
-            }
-            
-            // Calculate period length in days
-            $start_time = strtotime($start);
-            $end_time = strtotime($end);
-            $period_days = max(1, ($end_time - $start_time) / 86400);
-            
-            // Previous period: same length, ending just before current start
-            $prev_end = date('Y-m-d', $start_time - 86400);
-            $prev_start = date('Y-m-d', $start_time - ($period_days * 86400));
-            
-            $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table} 
-                 WHERE date_created >= %s AND date_created <= %s",
-                $start . ' 00:00:00',
-                $end . ' 23:59:59'
-            ));
-            
-            $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table} 
-                 WHERE date_created >= %s AND date_created <= %s",
-                $prev_start . ' 00:00:00',
-                $prev_end . ' 23:59:59'
-            ));
-            
-            if ($previous_votes > 0) {
-                return round((($current_votes - $previous_votes) / $previous_votes) * 100, 1);
-            }
-            
-            return $current_votes > 0 ? 100 : 0;
-        }
-        
-        // Preset relative days
-        $days = intval($date_range);
-        
-        $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)",
-            $days
-        ));
-        
-        $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) 
-               AND date_created < DATE_SUB(NOW(), INTERVAL %d DAY)",
-            $days * 2,
-            $days
-        ));
-        
-        if ($previous_votes > 0) {
-            return round((($current_votes - $previous_votes) / $previous_votes) * 100, 1);
-        }
-        
-        return $current_votes > 0 ? 100 : 0;
+        return $this->dashboard->get_vote_change_percent($date_range);
     }
 
-    /**
-     * Get vote change percentage for a specific rating item compared to previous period
-     *
-     * @param int $rating_id Rating ID
-     * @param string|int|array $date_range Date range
-     * @return float|null Percentage change or null if not applicable
-     */
     public function get_rating_vote_change_percent(int $rating_id, string|int|array $date_range): ?float {
-        if ($date_range === 'all' || empty($date_range)) {
-            return null;
-        }
-
-        if (is_array($date_range)) {
-            $start = !empty($date_range['start']) ? $date_range['start'] : null;
-            $end = !empty($date_range['end']) ? $date_range['end'] : date('Y-m-d');
-            if (!$start) {
-                return null;
-            }
-            $start_time = strtotime($start);
-            $end_time = strtotime($end);
-            $period_days = max(1, ($end_time - $start_time) / 86400);
-            $prev_end = date('Y-m-d', $start_time - 86400);
-            $prev_start = date('Y-m-d', $start_time - ($period_days * 86400));
-
-            $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table}
-                 WHERE rating_id = %d AND date_created >= %s AND date_created <= %s",
-                $rating_id, $start . ' 00:00:00', $end . ' 23:59:59'
-            ));
-            $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table}
-                 WHERE rating_id = %d AND date_created >= %s AND date_created <= %s",
-                $rating_id, $prev_start . ' 00:00:00', $prev_end . ' 23:59:59'
-            ));
-        } else {
-            $days = intval($date_range);
-            $current_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table}
-                 WHERE rating_id = %d AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)",
-                $rating_id, $days
-            ));
-            $previous_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->votes_table}
-                 WHERE rating_id = %d AND date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
-                   AND date_created < DATE_SUB(NOW(), INTERVAL %d DAY)",
-                $rating_id, $days * 2, $days
-            ));
-        }
-
-        if ($previous_votes > 0) {
-            return round((($current_votes - $previous_votes) / $previous_votes) * 100, 1);
-        }
-        return $current_votes > 0 ? 100.0 : null;
+        return $this->dashboard->get_rating_vote_change_percent($rating_id, $date_range);
     }
 
-    /**
-     * Get benchmark stats for all items of a given rating type
-     *
-     * Returns the average metric across all items of the same type, useful for
-     * comparing a single item's performance against the site-wide average.
-     *
-     * @param string $rating_type Rating type (stars, numeric, like_dislike, approval)
-     * @param string|int|array $date_range Date range filter
-     * @return object Object with avg_rating, avg_votes, item_count
-     */
     public function get_type_benchmark(string $rating_type, string|int|array $date_range = 'all'): object {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $is_binary = (Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary();
-
-        $result = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT 
-                COUNT(*) as item_count,
-                AVG(sub.avg_value) as avg_rating,
-                AVG(sub.vote_count) as avg_votes,
-                AVG(sub.approval_rate) as avg_approval_rate
-             FROM (
-                SELECT r.id,
-                       AVG(v.rating_value) as avg_value,
-                       COUNT(v.id) as vote_count,
-                       CASE WHEN %s IN ('like_dislike', 'approval')
-                            THEN ROUND(SUM(CASE WHEN v.rating_value > 0 THEN 1 ELSE 0 END) / COUNT(v.id) * 100)
-                            ELSE NULL END as approval_rate
-                FROM {$this->ratings_table} r
-                JOIN {$this->votes_table} v ON v.rating_id = r.id
-                WHERE COALESCE(r.rating_type, 'stars') = %s
-                  AND r.mirror_of IS NULL
-                  AND r.parent_id IS NULL
-                  {$date_condition}
-                GROUP BY r.id
-             ) sub",
-            $rating_type,
-            $rating_type
-        ));
-
-        if (!$result || !$result->item_count) {
-            $default = new stdClass();
-            $default->avg_rating = null;
-            $default->avg_votes = null;
-            $default->avg_approval_rate = null;
-            $default->item_count = 0;
-            return $default;
-        }
-
-        $result->item_count = (int) $result->item_count;
-        $result->avg_rating = $result->avg_rating !== null ? round((float) $result->avg_rating, 2) : null;
-        $result->avg_votes = $result->avg_votes !== null ? round((float) $result->avg_votes, 1) : null;
-        $result->avg_approval_rate = $result->avg_approval_rate !== null ? round((float) $result->avg_approval_rate) : null;
-
-        return $result;
+        return $this->dashboard->get_type_benchmark($rating_type, $date_range);
     }
 
-    /**
-     * Get top rated items (standalone and parent ratings only)
-     *
-     * @param int $limit Maximum number of items to return
-     * @param int $min_votes Minimum votes required
-     * @param float $min_average Minimum average rating (default 3.0 for "top" items)
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of rating objects
-     */
     public function get_top_rated(int $limit = 10, int $min_votes = 1, float $min_average = 3.0, string|int|array $date_range = 'all'): array {
         $result = $this->ranking->get_top_rated($limit, $min_votes, $min_average, $date_range);
         return apply_filters('shuriken_top_rated', $result, $limit, $min_votes, $min_average, $date_range);
     }
 
-    /**
-     * Get most voted (popular) items (standalone and parent ratings only)
-     *
-     * @param int $limit Maximum number of items to return
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of rating objects
-     */
     public function get_most_voted(int $limit = 10, string|int|array $date_range = 'all'): array {
         $result = $this->ranking->get_most_voted($limit, $date_range);
         return apply_filters('shuriken_most_voted', $result, $limit, $date_range);
     }
 
-    /**
-     * Get low performing items (standalone and parent ratings only, average < threshold)
-     *
-     * @param int $limit Maximum number of items to return
-     * @param int $min_votes Minimum votes required
-     * @param float $max_average Maximum average rating (default 3.0)
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of rating objects
-     */
     public function get_low_performers(int $limit = 10, int $min_votes = 1, float $max_average = 3.0, string|int|array $date_range = 'all'): array {
         $result = $this->ranking->get_low_performers($limit, $min_votes, $max_average, $date_range);
         return apply_filters('shuriken_low_performers', $result, $limit, $min_votes, $max_average, $date_range);
     }
 
-    /**
-     * Get sub-ratings for a specific parent with contribution analysis
-     *
-     * @param int $parent_id Parent rating ID
-     * @return array Array of sub-rating objects with contribution data
-     */
     public function get_sub_ratings_contribution(int $parent_id): array {
-        $parent = $this->db->get_rating($parent_id);
-        if (!$parent || $parent->total_votes == 0) {
-            return array();
-        }
-        
-        $subs = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, name, total_votes, total_rating, effect_type, rating_type, scale,
-                    ROUND(total_rating / NULLIF(total_votes, 0), 4) as average,
-                    ROUND((total_votes / %d) * 100, 1) as vote_contribution_percent
-             FROM {$this->ratings_table}
-             WHERE parent_id = %d
-             ORDER BY total_votes DESC",
-            $parent->total_votes,
-            $parent_id
-        ));
-        
-        // Calculate effective contribution to parent score
-        foreach ($subs as &$sub) {
-            if ($sub->total_votes > 0) {
-                $sub_average = $sub->total_rating / $sub->total_votes;
-                if ($sub->effect_type === 'negative') {
-                    $inv = $this->get_inversion_constant($sub->rating_type, $sub->scale);
-                    $sub->effective_average = $inv - $sub_average;
-                } else {
-                    $sub->effective_average = $sub_average;
-                }
-                $sub->effective_average = round($sub->effective_average, 1);
-            } else {
-                $sub->effective_average = 0;
-            }
-        }
-        
-        return $subs;
+        return $this->rating_stats->get_sub_ratings_contribution($parent_id);
     }
 
-    /**
-     * Get rating distribution (count of each star value)
-     * 
-     * For sub-ratings with negative effect_type, the rating values are inverted
-     * to show the effective contribution (1★→5★, 2★→4★, 3★→3★, 4★→2★, 5★→1★).
-     *
-     * @param string|int $date_range Number of days or 'all'
-     * @param int|null $rating_id Optional specific rating ID
-     * @return array Associative array with vote value keys and counts
-     */
     public function get_rating_distribution(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND v.rating_id = %d", $rating_id) : '';
-        $scope_condition = $this->build_scope_condition($scope, 'v.');
-
-        // Determine the target rating's type and scale for proper bucketing
-        $rating_type = 'stars';
-        $scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        if ($rating_id) {
-            $rating = $this->db->get_rating($rating_id);
-            if ($rating) {
-                $rating_type = $rating->rating_type ?: 'stars';
-                $scale = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
-            }
-        }
-
-        // When aggregating globally (no rating_id), exclude binary types from the distribution
-        // since their 0/1 values are incompatible with star-scale buckets
-        $type_condition = '';
-        if (!$rating_id) {
-            $type_condition = " AND r.rating_type NOT IN ('like_dislike', 'approval')";
-        }
-
-        // Join with ratings table to get effect_type and invert negative effect votes
-        // Votes are normalized to 1-5 internally, so inversion uses RATING_SCALE_DEFAULT
-        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        $results = $this->wpdb->get_results(
-            "SELECT 
-                CASE 
-                    WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
-                        THEN CAST(r.scale AS SIGNED) - v.rating_value
-                    WHEN r.effect_type = 'negative' 
-                        THEN ({$internal_scale} + 1) - ROUND(v.rating_value) 
-                    ELSE ROUND(v.rating_value) 
-                END as effective_value, 
-                COUNT(*) as count 
-             FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE 1=1 {$date_condition} {$rating_condition} {$type_condition} {$scope_condition}
-             GROUP BY effective_value 
-             ORDER BY effective_value"
-        );
-        
-        // Build distribution with type-appropriate buckets
-        $distribution = $this->build_empty_distribution($rating_type, $scale);
-        foreach ($results as $row) {
-            $key = intval($row->effective_value);
-            if (array_key_exists($key, $distribution)) {
-                $distribution[$key] = intval($row->count);
-            }
-        }
-        
-        return $distribution;
+        return $this->rating_stats->get_rating_distribution($date_range, $rating_id, $scope);
     }
 
-    /**
-     * Get votes over time
-     *
-     * @param string|int|array $date_range Number of days, 'all', or array with start/end
-     * @param int|null $rating_id Optional specific rating ID
-     * @return array Array of objects with vote_date and vote_count
-     */
     public function get_votes_over_time(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $rating_condition = $rating_id ? $this->wpdb->prepare(" AND rating_id = %d", $rating_id) : '';
-        $scope_condition = $this->build_scope_condition($scope);
-        
-        return $this->wpdb->get_results(
-            "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
-             FROM {$this->votes_table} 
-             WHERE 1=1 {$date_condition} {$rating_condition} {$scope_condition}
-             GROUP BY DATE(date_created) 
-             ORDER BY vote_date"
-        );
+        return $this->rating_stats->get_votes_over_time($date_range, $rating_id, $scope);
     }
 
-    /**
-     * Get recent votes/activity
-     *
-     * @param int $limit Maximum number of votes to return
-     * @param int|null $rating_id Optional specific rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of vote objects with rating info
-     */
     public function get_recent_votes(int $limit = 10, ?int $rating_id = null, string|int|array $date_range = 'all'): array {
-        $rating_condition = $rating_id ? $this->wpdb->prepare("AND v.rating_id = %d", $rating_id) : '';
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.id, v.rating_id, v.rating_value, v.date_created, v.user_id, v.user_ip,
-                    v.context_id, v.context_type,
-                    r.name as rating_name, r.rating_type, r.scale, u.display_name, u.user_email
-             FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
-             WHERE 1=1 {$rating_condition} {$date_condition}
-             ORDER BY v.date_created DESC
-             LIMIT %d",
-            $limit
-        ));
+        return $this->rating_stats->get_recent_votes($limit, $rating_id, $date_range);
     }
 
-    /**
-     * Get single rating item with stats
-     *
-     * @param int $rating_id Rating ID
-     * @return object|null Rating object with calculated stats or null
-     */
     public function get_rating(int $rating_id): ?object {
-        return $this->db->get_rating($rating_id);
+        return $this->rating_stats->get_rating($rating_id);
     }
 
-    /**
-     * Get detailed stats for a single rating item
-     *
-     * @param int $rating_id Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return object|null Object with comprehensive stats or null
-     */
     public function get_rating_stats(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
-        $rating = $this->get_rating($rating_id);
-        if (!$rating) {
-            return null;
-        }
-        
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-        
-        $stats = new stdClass();
-        $stats->rating = $rating;
-        
-        // If filtering by date or scope, recalculate average from filtered votes
-        if (!empty($date_condition) || $scope !== null) {
-            $filtered_totals = $this->wpdb->get_row($this->wpdb->prepare(
-                "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-                $rating_id
-            ));
-            $stats->total_votes = (int) $filtered_totals->total_votes;
-            $stats->total_rating = (int) $filtered_totals->total_rating;
-            $stats->average = $stats->total_votes > 0 ? round($stats->total_rating / $stats->total_votes, 1) : 0;
-        } else {
-            $stats->total_votes = $rating->total_votes;
-            $stats->total_rating = $rating->total_rating;
-            $stats->average = $rating->average;
-        }
-        
-        $scale = isset($rating->scale) ? (int) $rating->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
-        $stats->display_average = Shuriken_Database::denormalize_average((float) $stats->average, $scale);
-        
-        // Vote counts by user type
-        $stats->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $stats->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        // Unique voters
-        $stats->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        // First and last vote (within date range)
-        $stats->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $stats->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        // Distribution and timeline (use same date range and scope)
-        $stats->distribution = $this->get_rating_distribution($date_range, $rating_id, $scope);
-        $stats->votes_over_time = $this->get_votes_over_time($date_range, $rating_id, $scope);
-        
-        return $stats;
+        return $this->rating_stats->get_rating_stats($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get detailed stats breakdown for a parent rating
-     * 
-     * Returns stats from three sources:
-     * - direct: Votes directly on the parent rating
-     * - subs: Aggregated stats from sub-ratings
-     * - total: Combined total
-     *
-     * @param int $rating_id Parent rating ID
-     * @return object|null Object with direct, subs, and total stats or null
-     */
-    /**
-     * Get detailed stats breakdown for a parent rating
-     * 
-     * Returns stats from three sources:
-     * - direct: Votes directly on the parent rating
-     * - subs: Aggregated stats from sub-ratings
-     * - total: Combined total
-     *
-     * @param int $rating_id Parent rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param string|null $scope Scope filter
-     * @return object|null Object with direct, subs, and total stats or null
-     */
     public function get_parent_rating_stats_breakdown(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
-        $rating = $this->get_rating($rating_id);
-        if (!$rating) {
-            return null;
-        }
-        
-        // Check if this is actually a parent rating
-        $sub_rating_ids = $this->wpdb->get_col($this->wpdb->prepare(
-            "SELECT id FROM {$this->ratings_table} WHERE parent_id = %d",
-            $rating_id
-        ));
-        
-        if (empty($sub_rating_ids)) {
-            return null; // Not a parent rating
-        }
-        
-        // Build date and scope conditions
-        $date_condition = $this->build_date_condition($date_range, 'date_created');
-        $date_condition_v = $this->build_date_condition($date_range, 'v.date_created');
-        $scope_condition = $this->build_scope_condition($scope);
-        $scope_condition_v = $this->build_scope_condition($scope, 'v.');
-        
-        $scale = isset($rating->scale) ? (int) $rating->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
-        $parent_type = $rating->rating_type ?: 'stars';
-        $parent_scale = (int) ($rating->scale ?: Shuriken_Database::RATING_SCALE_DEFAULT);
-        
-        // === DIRECT VOTES ===
-        $direct = $this->get_direct_votes_breakdown($rating_id, $scale, $date_condition, $scope_condition, $date_range, $scope);
-        
-        // === SUB-RATINGS AGGREGATED ===
-        $sub_ratings_info = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, effect_type, rating_type, scale FROM {$this->ratings_table} WHERE parent_id = %d",
-            $rating_id
-        ));
-        $subs_totals = $this->calculate_sub_ratings_rating_totals($sub_ratings_info, $date_condition, $scope_condition);
-        $subs = $this->get_sub_ratings_breakdown(
-            $sub_rating_ids,
-            $subs_totals,
-            $date_condition,
-            $scope_condition,
-            $date_condition_v,
-            $scope_condition_v,
-            $date_range,
-            $scope,
-            $parent_type,
-            $parent_scale,
-            $scale
-        );
-        
-        // === TOTAL (Combined) ===
-        $total = $this->combine_votes_breakdown(
-            $rating_id,
-            $sub_rating_ids,
-            $scale,
-            $parent_type,
-            $parent_scale,
-            $date_condition,
-            $scope_condition,
-            $date_range,
-            $scope,
-            $direct,
-            $subs,
-            $subs_totals->subs_total_rating
-        );
-        
-        $breakdown = new stdClass();
-        $breakdown->direct = $direct;
-        $breakdown->subs = $subs;
-        $breakdown->total = $total;
-        
-        return $breakdown;
+        return $this->rating_stats->get_parent_rating_stats_breakdown($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get direct votes breakdown stats
-     */
-    private function get_direct_votes_breakdown(int $rating_id, int $scale, string $date_condition, string $scope_condition, string|int|array $date_range, ?string $scope): stdClass {
-        $direct = new stdClass();
-        
-        $direct_totals = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->total_votes = (int) $direct_totals->total_votes;
-        $direct->total_rating = (int) $direct_totals->total_rating;
-        $direct->average = $direct->total_votes > 0 
-            ? round($direct->total_rating / $direct->total_votes, 1) 
-            : 0;
-        $direct->display_average = Shuriken_Database::denormalize_average((float) $direct->average, $scale);
-        
-        $direct->member_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id > 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->guest_votes = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->votes_table} WHERE rating_id = %d AND user_id = 0 {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->unique_voters = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->first_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->last_vote = $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-            $rating_id
-        ));
-        
-        $direct->distribution = $this->get_rating_distribution($date_range, $rating_id, $scope);
-        $direct->votes_over_time = $this->get_votes_over_time($date_range, $rating_id, $scope);
-        
-        return $direct;
-    }
-
-    /**
-     * Calculate effective totals from sub-ratings with date+scope filter
-     */
-    private function calculate_sub_ratings_rating_totals(array $sub_ratings_info, string $date_condition, string $scope_condition): stdClass {
-        $totals = new stdClass();
-        $totals->subs_total_votes = 0;
-        $totals->subs_total_rating = 0;
-        
-        foreach ($sub_ratings_info as $sub) {
-            $sub_totals = $this->wpdb->get_row($this->wpdb->prepare(
-                "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
-                 FROM {$this->votes_table} WHERE rating_id = %d {$date_condition} {$scope_condition}",
-                $sub->id
-            ));
-            
-            if ($sub_totals->total_votes > 0) {
-                $totals->subs_total_votes += (int) $sub_totals->total_votes;
-                if ($sub->effect_type === 'negative') {
-                    $inv = $this->get_inversion_constant($sub->rating_type, $sub->scale);
-                    $inverted_rating = ($sub_totals->total_votes * $inv) - $sub_totals->total_rating;
-                    $totals->subs_total_rating += $inverted_rating;
-                } else {
-                    $totals->subs_total_rating += (int) $sub_totals->total_rating;
-                }
-            }
-        }
-        
-        return $totals;
-    }
-
-    /**
-     * Get sub-ratings aggregated breakdown stats
-     */
-    private function get_sub_ratings_breakdown(
-        array $sub_rating_ids,
-        stdClass $subs_totals,
-        string $date_condition,
-        string $scope_condition,
-        string $date_condition_v,
-        string $scope_condition_v,
-        string|int|array $date_range,
-        ?string $scope,
-        string $parent_type,
-        int $parent_scale,
-        int $scale
-    ): stdClass {
-        $subs = new stdClass();
-        $sub_ids_placeholder = implode(',', array_map('intval', $sub_rating_ids));
-        
-        $subs->total_votes = $subs_totals->subs_total_votes;
-        $subs->total_rating = $subs_totals->subs_total_rating;
-        $subs->average = $subs->total_votes > 0 
-            ? round($subs->total_rating / $subs->total_votes, 1) 
-            : 0;
-        $subs->display_average = Shuriken_Database::denormalize_average((float) $subs->average, $scale);
-        
-        $subs->member_votes = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id > 0 {$date_condition} {$scope_condition}"
-        );
-        
-        $subs->guest_votes = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} 
-             WHERE rating_id IN ({$sub_ids_placeholder}) AND user_id = 0 {$date_condition} {$scope_condition}"
-        );
-        
-        $subs->unique_voters = (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-        
-        $subs->first_vote = $this->wpdb->get_var(
-            "SELECT MIN(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-        
-        $subs->last_vote = $this->wpdb->get_var(
-            "SELECT MAX(date_created) FROM {$this->votes_table} WHERE rating_id IN ({$sub_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-        
-        // Distribution from sub-ratings
-        $internal_scale = Shuriken_Database::RATING_SCALE_DEFAULT;
-        $subs_distribution_results = $this->wpdb->get_results(
-            "SELECT 
-                CASE 
-                    WHEN r.effect_type = 'negative' AND r.rating_type IN ('like_dislike', 'approval') 
-                        THEN CAST(r.scale AS SIGNED) - v.rating_value
-                    WHEN r.effect_type = 'negative' 
-                        THEN ({$internal_scale} + 1) - v.rating_value 
-                    ELSE v.rating_value 
-                END as effective_value, 
-                COUNT(*) as count 
-             FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE v.rating_id IN ({$sub_ids_placeholder}) {$date_condition_v} {$scope_condition_v}
-             GROUP BY effective_value 
-             ORDER BY effective_value"
-        );
-
-        $subs->distribution = $this->build_empty_distribution($parent_type, $parent_scale);
-        foreach ($subs_distribution_results as $row) {
-            $key = intval($row->effective_value);
-            if (array_key_exists($key, $subs->distribution)) {
-                $subs->distribution[$key] = intval($row->count);
-            }
-        }
-        
-        $subs->votes_over_time = $this->get_votes_over_time_for_ids($sub_rating_ids, $date_range, $scope);
-        
-        return $subs;
-    }
-
-    /**
-     * Combine direct and sub-ratings breakdown stats
-     */
-    private function combine_votes_breakdown(
-        int $rating_id,
-        array $sub_rating_ids,
-        int $scale,
-        string $parent_type,
-        int $parent_scale,
-        string $date_condition,
-        string $scope_condition,
-        string|int|array $date_range,
-        ?string $scope,
-        stdClass $direct,
-        stdClass $subs,
-        int $subs_total_rating
-    ): stdClass {
-        $total = new stdClass();
-        
-        $total->total_votes = $direct->total_votes + $subs->total_votes;
-        $total->total_rating = $direct->total_rating + $subs_total_rating;
-        $total->average = $total->total_votes > 0 
-            ? round($total->total_rating / $total->total_votes, 1) 
-            : 0;
-        $total->display_average = Shuriken_Database::denormalize_average((float) $total->average, $scale);
-        
-        $total->member_votes = $direct->member_votes + $subs->member_votes;
-        $total->guest_votes = $direct->guest_votes + $subs->guest_votes;
-        
-        // Unique voters across all
-        $all_rating_ids = array_merge(array($rating_id), $sub_rating_ids);
-        $all_ids_placeholder = implode(',', array_map('intval', $all_rating_ids));
-        
-        $total->unique_voters = (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT CASE WHEN user_id > 0 THEN user_id ELSE user_ip END) 
-             FROM {$this->votes_table} WHERE rating_id IN ({$all_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-        
-        // First and last vote across all
-        $total->first_vote = min(
-            $direct->first_vote ?: PHP_INT_MAX,
-            $subs->first_vote ?: PHP_INT_MAX
-        );
-        $total->first_vote = $total->first_vote === PHP_INT_MAX ? null : $total->first_vote;
-        
-        $total->last_vote = max(
-            $direct->last_vote ?: '',
-            $subs->last_vote ?: ''
-        ) ?: null;
-        
-        // Combined distribution
-        $total->distribution = $this->build_empty_distribution($parent_type, $parent_scale);
-        foreach ($total->distribution as $key => &$val) {
-            $direct_val = isset($direct->distribution[$key]) ? $direct->distribution[$key] : 0;
-            $subs_val = isset($subs->distribution[$key]) ? $subs->distribution[$key] : 0;
-            $val = $direct_val + $subs_val;
-        }
-        unset($val);
-        
-        // Combined votes over time
-        $total->votes_over_time = $this->get_votes_over_time_for_ids($all_rating_ids, $date_range, $scope);
-        
-        return $total;
-    }
-    
-    /**
-     * Get votes over time for multiple rating IDs
-     *
-     * @param array $rating_ids Array of rating IDs
-     * @param mixed $date_range Date range (days, 'all', or array with 'start'/'end')
-     * @return array Array of vote date/count objects
-     */
-    private function get_votes_over_time_for_ids(array $rating_ids, string|int|array $date_range = 30, ?string $scope = null): array {
-        if (empty($rating_ids)) {
-            return array();
-        }
-        
-        $ids_placeholder = implode(',', array_map('intval', $rating_ids));
-        $date_condition = $this->build_date_condition($date_range, 'date_created');
-        $scope_condition = $this->build_scope_condition($scope);
-        
-        return $this->wpdb->get_results(
-            "SELECT DATE(date_created) as vote_date, COUNT(*) as vote_count 
-             FROM {$this->votes_table} 
-             WHERE rating_id IN ({$ids_placeholder}) {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created) 
-             ORDER BY vote_date"
-        );
-    }
-
-    /**
-     * Get paginated votes for a rating
-     *
-     * @param int $rating_id Rating ID
-     * @param int $page Current page (1-indexed)
-     * @param int $per_page Items per page
-     * @param string|array $date_range Date range filter ('all', days, or array with start/end)
-     * @param string $view For parent ratings: 'direct', 'subs', or 'total'
-     * @return object Object with votes array, total_count, total_pages, current_page
-     */
     public function get_rating_votes_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', string $sort_by = 'date', string $sort_order = 'desc', ?string $scope = null): object {
-        $offset = ($page - 1) * $per_page;
-        
-        $result = new stdClass();
-        
-        // Build date and scope conditions
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-        $scope_condition = $this->build_scope_condition($scope, 'v.');
-        
-        // Safe sort column map
-        $sort_col_map = array('rating' => 'v.rating_value', 'date' => 'v.date_created');
-        $sort_col = $sort_col_map[$sort_by] ?? 'v.date_created';
-        $sort_dir = strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC';
-        
-        // Determine which rating IDs to query based on view
-        $rating_ids = array($rating_id);
-        if (in_array($view, array('subs', 'total'))) {
-            // Get sub-rating IDs
-            $sub_rating_ids = $this->wpdb->get_col($this->wpdb->prepare(
-                "SELECT id FROM {$this->ratings_table} WHERE parent_id = %d",
-                $rating_id
-            ));
-            
-            if (!empty($sub_rating_ids)) {
-                if ($view === 'subs') {
-                    // Only subs, not direct
-                    $rating_ids = $sub_rating_ids;
-                } else {
-                    // total: both direct and subs
-                    $rating_ids = array_merge(array($rating_id), $sub_rating_ids);
-                }
-            }
-        }
-        
-        $rating_ids_placeholder = implode(',', array_map('intval', $rating_ids));
-        
-        $result->total_count = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->votes_table} v WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}"
-        );
-        
-        $result->total_pages = ceil($result->total_count / $per_page);
-        $result->current_page = $page;
-        $result->per_page = $per_page;
-        
-        $result->votes = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT v.*, u.display_name, u.user_email, r.name as rating_name, r.rating_type, r.scale
-             FROM {$this->votes_table} v
-             LEFT JOIN {$this->wpdb->users} u ON v.user_id = u.ID
-             LEFT JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE v.rating_id IN ({$rating_ids_placeholder}) {$date_condition} {$scope_condition}
-             ORDER BY {$sort_col} {$sort_dir}
-             LIMIT %d OFFSET %d",
-            $per_page,
-            $offset
-        ));
-        
-        // Mark which votes are from sub-ratings vs direct (for parent rating views)
-        $result->is_multi_rating = count($rating_ids) > 1;
-        $result->parent_rating_id = $rating_id;
-        
-        return $result;
+        return $this->rating_stats->get_rating_votes_paginated($rating_id, $page, $per_page, $date_range, $view, $sort_by, $sort_order, $scope);
     }
 
-    /**
-     * Format time ago string with proper timezone handling
-     *
-     * @param string $mysql_date MySQL datetime string
-     * @return string Formatted "X time ago" string
-     */
     public function format_time_ago(string $mysql_date): string {
         return $this->formatter->format_time_ago($mysql_date);
     }
 
-    /**
-     * Format date with WordPress settings
-     *
-     * @param string $mysql_date MySQL datetime string
-     * @param bool $include_time Whether to include time
-     * @return string Formatted date string
-     */
     public function format_date(string $mysql_date, bool $include_time = true): string {
         return $this->formatter->format_date($mysql_date, $include_time);
     }
 
-    /**
-     * Get data formatted for charts (Chart.js compatible)
-     *
-     * @param string|int $date_range Number of days or 'all'
-     * @param int|null $rating_id Optional specific rating ID
-     * @return array Array with distribution, votes_over_time, user_types
-     */
     public function get_chart_data(string|int|array $date_range = 30, ?int $rating_id = null): array {
-        $vote_counts = $rating_id ? null : $this->get_vote_counts($date_range);
-        
-        return array(
-            'distribution' => array_values($this->get_rating_distribution($date_range, $rating_id)),
-            'votes_over_time' => $this->get_votes_over_time($date_range, $rating_id),
-            'user_types' => $rating_id ? null : array(
-                'members' => $vote_counts->member_votes,
-                'guests' => $vote_counts->guest_votes,
-            ),
-        );
+        return $this->rating_stats->get_chart_data($date_range, $rating_id);
     }
 
-    /**
-     * Check if a rating has sub-ratings
-     *
-     * @param int $rating_id Rating ID to check
-     * @return bool True if rating has sub-ratings
-     */
     public function has_sub_ratings(int $rating_id): bool {
-        $count = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->ratings_table} WHERE parent_id = %d",
-            $rating_id
-        ));
-        return $count > 0;
+        return $this->rating_stats->has_sub_ratings($rating_id);
     }
 
-    // =========================================================================
-    // Dashboard Analytics Methods (v2)
-    // =========================================================================
-
-    /**
-     * Get voting heatmap data (hour-of-day × day-of-week)
-     *
-     * Returns a 7×24 matrix of vote counts for visualizing when users vote.
-     * Day 1 = Sunday, Day 7 = Saturday (MySQL DAYOFWEEK convention).
-     *
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with dow, hour, count
-     */
     public function get_voting_heatmap(string|int|array $date_range = 'all'): array {
-        $date_condition = $this->build_date_condition($date_range);
-
-        return $this->wpdb->get_results(
-            "SELECT DAYOFWEEK(date_created) as dow, HOUR(date_created) as hour, COUNT(*) as count
-             FROM {$this->votes_table}
-             WHERE 1=1 {$date_condition}
-             GROUP BY dow, hour
-             ORDER BY dow, hour"
-        );
+        return $this->dashboard->get_voting_heatmap($date_range);
     }
 
-    /**
-     * Get votes over time split by rating type (stars, like_dislike, numeric, approval)
-     *
-     * Used for the stacked area chart on the dashboard.
-     *
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date, rating_type, vote_count
-     */
     public function get_votes_over_time_by_type(string|int|array $date_range = 30): array {
-        $date_condition = $this->build_date_condition($date_range, 'v.date_created');
-
-        return $this->wpdb->get_results(
-            "SELECT DATE(v.date_created) as vote_date,
-                    COALESCE(r.rating_type, 'stars') as rating_type,
-                    COUNT(*) as vote_count
-             FROM {$this->votes_table} v
-             JOIN {$this->ratings_table} r ON v.rating_id = r.id
-             WHERE 1=1 {$date_condition}
-             GROUP BY vote_date, rating_type
-             ORDER BY vote_date"
-        );
+        return $this->dashboard->get_votes_over_time_by_type($date_range);
     }
 
-    /**
-     * Get per-type summary statistics
-     *
-     * Returns one row per active rating type with appropriate metrics:
-     * - Stars/Numeric: weighted average, item count, total votes
-     * - Like/Dislike: average approval %, item count, total votes, likes, dislikes
-     * - Approval: total approvals, item count
-     *
-     * @return array Array of type summary objects
-     */
     public function get_per_type_summary(): array {
-        $results = $this->wpdb->get_results(
-            "SELECT COALESCE(r.rating_type, 'stars') as rating_type,
-                    r.scale,
-                    COUNT(DISTINCT r.id) as item_count,
-                    COALESCE(SUM(r.total_votes), 0) as total_votes,
-                    COALESCE(SUM(r.total_rating), 0) as total_rating
-             FROM {$this->ratings_table} r
-             WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
-               AND r.total_votes > 0
-             GROUP BY r.rating_type, r.scale
-             ORDER BY total_votes DESC"
-        );
-
-        // Aggregate by type (different scales of same type become one row)
-        $summaries = array();
-        foreach ($results as $row) {
-            $type = $row->rating_type;
-            if (!isset($summaries[$type])) {
-                $summaries[$type] = (object) array(
-                    'rating_type' => $type,
-                    'item_count'  => 0,
-                    'total_votes' => 0,
-                    'total_rating' => 0,
-                    'scale'       => (int) $row->scale,
-                );
-            }
-            $summaries[$type]->item_count  += (int) $row->item_count;
-            $summaries[$type]->total_votes += (int) $row->total_votes;
-            $summaries[$type]->total_rating += (float) $row->total_rating;
-        }
-
-        // Calculate display metrics per type
-        foreach ($summaries as &$s) {
-            if ((Shuriken_Rating_Type::tryFrom($s->rating_type) ?? Shuriken_Rating_Type::Stars)->isBinary()) {
-                $s->approval_rate = $s->total_votes > 0
-                    ? round(($s->total_rating / $s->total_votes) * 100)
-                    : 0;
-            } else {
-                $s->weighted_average = $s->total_votes > 0
-                    ? Shuriken_Database::denormalize_average($s->total_rating / $s->total_votes, $s->scale)
-                    : 0;
-            }
-        }
-        unset($s);
-
-        return array_values($summaries);
+        return $this->dashboard->get_per_type_summary();
     }
 
-    /**
-     * Get participation rate — how many rating items have received at least one vote
-     *
-     * @return object Object with total_items, active_items, rate (0-100)
-     */
     public function get_participation_rate(): object {
-        $result = new stdClass();
-
-        // Count only top-level, non-mirror ratings (sub-ratings and mirrors are excluded).
-        // Participation is based on ratings that have received at least one direct (global)
-        // vote — per-post (contextual) votes are intentionally excluded: a rating displayed
-        // on N posts could theoretically appear on any number of posts, making "total items"
-        // undefined until a user actually votes on them.
-        $result->total_items = (int) $this->wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->ratings_table}
-             WHERE mirror_of IS NULL AND parent_id IS NULL"
-        );
-
-        $result->active_items = (int) $this->wpdb->get_var(
-            "SELECT COUNT(DISTINCT v.rating_id)
-             FROM {$this->votes_table} v
-             INNER JOIN {$this->ratings_table} r ON r.id = v.rating_id
-             WHERE r.mirror_of IS NULL AND r.parent_id IS NULL AND v.context_id IS NULL"
-        );
-
-        $result->rate = $result->total_items > 0
-            ? round(($result->active_items / $result->total_items) * 100)
-            : 0;
-
-        return $result;
+        return $this->dashboard->get_participation_rate();
     }
 
-    /**
-     * Get momentum items — ratings whose average is rising or falling vs. previous period
-     *
-     * Compares current half-period average to previous half-period average.
-     * Only considers items with votes in both halves.
-     *
-     * @param string|int|array $date_range Date range filter (preset days only, not custom/all)
-     * @param int $limit Max items per direction (rising + falling)
-     * @return object Object with rising[] and falling[] arrays
-     */
     public function get_momentum_items(string|int|array $date_range = 30, int $limit = 3): object {
-        $result = new stdClass();
-        $result->rising = array();
-        $result->falling = array();
-
-        // Only works with numeric day presets
-        $days = intval($date_range);
-        if ($days <= 0) {
-            return $result;
-        }
-
-        $half = intval($days / 2);
-
-        // Get items with votes in both halves, compare averages
-        // Exclude binary types (approval rate momentum is different from star averages)
-        $items = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT r.id, r.name, r.rating_type, r.scale, r.total_votes,
-                    AVG(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) THEN v.rating_value END) as recent_avg,
-                    AVG(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
-                              AND v.date_created < DATE_SUB(NOW(), INTERVAL %d DAY) THEN v.rating_value END) as prev_avg,
-                    COUNT(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY) THEN 1 END) as recent_count,
-                    COUNT(CASE WHEN v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
-                               AND v.date_created < DATE_SUB(NOW(), INTERVAL %d DAY) THEN 1 END) as prev_count
-             FROM {$this->ratings_table} r
-             JOIN {$this->votes_table} v ON v.rating_id = r.id
-             WHERE r.mirror_of IS NULL
-               AND r.parent_id IS NULL
-               AND r.rating_type NOT IN ('like_dislike', 'approval')
-               AND v.date_created >= DATE_SUB(NOW(), INTERVAL %d DAY)
-             GROUP BY r.id
-             HAVING recent_count >= 2 AND prev_count >= 2",
-            $half, $days, $half, $half, $days, $half, $days
-        ));
-
-        foreach ($items as $item) {
-            $recent = round((float) $item->recent_avg, 2);
-            $prev = round((float) $item->prev_avg, 2);
-            if ($prev == 0) continue;
-
-            $delta = $recent - $prev;
-            $item->delta = round($delta, 1);
-            $item->recent_avg = round($recent, 1);
-            $item->prev_avg = round($prev, 1);
-
-            $s = isset($item->scale) ? (int) $item->scale : Shuriken_Database::RATING_SCALE_DEFAULT;
-            $item->display_delta = Shuriken_Database::denormalize_average(abs((float) $item->delta), $s) * ($delta < 0 ? -1 : 1);
-            $item->display_recent_avg = Shuriken_Database::denormalize_average((float) $item->recent_avg, $s);
-            $item->display_prev_avg = Shuriken_Database::denormalize_average((float) $item->prev_avg, $s);
-
-            if ($delta > 0) {
-                $result->rising[] = $item;
-            } elseif ($delta < 0) {
-                $result->falling[] = $item;
-            }
-        }
-
-        // Sort: rising by delta DESC, falling by delta ASC
-        usort($result->rising, fn($a, $b) => $b->delta <=> $a->delta);
-        usort($result->falling, fn($a, $b) => $a->delta <=> $b->delta);
-
-        $result->rising = array_slice($result->rising, 0, $limit);
-        $result->falling = array_slice($result->falling, 0, $limit);
-
-        return $result;
+        return $this->dashboard->get_momentum_items($date_range, $limit);
     }
 
-    /**
-     * Get approval rate trend over time for a like/dislike rating
-     *
-     * Returns daily approval percentage instead of raw vote counts.
-     *
-     * @param int $rating_id Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date and approval_rate (0-100)
-     */
     public function get_approval_trend(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        return $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date,
-                    COUNT(*) as total,
-                    SUM(rating_value) as likes,
-                    ROUND((SUM(rating_value) / COUNT(*)) * 100, 1) as approval_rate
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
+        return $this->rating_stats->get_approval_trend($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get cumulative approval count over time for an approval-type rating
-     *
-     * @param int $rating_id Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of objects with vote_date, daily_count, cumulative_count
-     */
     public function get_cumulative_approvals(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        $daily = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date, COUNT(*) as daily_count
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
-
-        // Build cumulative
-        $cumulative = 0;
-        foreach ($daily as &$row) {
-            $cumulative += (int) $row->daily_count;
-            $row->cumulative_count = $cumulative;
-        }
-        unset($row);
-
-        return $daily;
+        return $this->rating_stats->get_cumulative_approvals($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get votes over time with rolling average for stars/numeric items
-     *
-     * Returns daily vote counts alongside a rolling 7-day average score.
-     *
-     * @param int $rating_id Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param int $scale Display scale for denormalization
-     * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg
-     */
     public function get_votes_with_rolling_avg(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array {
-        $date_condition = $this->build_date_condition($date_range);
-        $scope_condition = $this->build_scope_condition($scope);
-
-        $rows = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT DATE(date_created) as vote_date,
-                    COUNT(*) as vote_count,
-                    ROUND(AVG(rating_value), 2) as daily_avg
-             FROM {$this->votes_table}
-             WHERE rating_id = %d {$date_condition} {$scope_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date",
-            $rating_id
-        ));
-
-        foreach ($rows as &$row) {
-            $row->display_daily_avg = Shuriken_Database::denormalize_average((float) $row->daily_avg, $scale);
-        }
-        unset($row);
-
-        return $rows;
+        return $this->rating_stats->get_votes_with_rolling_avg($rating_id, $date_range, $scale, $scope);
     }
 
-    /**
-     * Like get_votes_with_rolling_avg but accepts multiple rating IDs (for parent ratings).
-     *
-     * @param array $rating_ids Array of rating IDs to include
-     * @param string|int|array $date_range Date range filter
-     * @param int $scale Display scale for denormalization
-     * @return array Array of objects with vote_date, vote_count, daily_avg, display_daily_avg
-     */
     public function get_votes_with_rolling_avg_for_ids(array $rating_ids, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
-        if (empty($rating_ids)) {
-            return array();
-        }
-
-        $ids_placeholder = implode(',', array_map('intval', $rating_ids));
-        $date_condition = $this->build_date_condition($date_range);
-
-        $rows = $this->wpdb->get_results(
-            "SELECT DATE(date_created) as vote_date,
-                    COUNT(*) as vote_count,
-                    ROUND(AVG(rating_value), 2) as daily_avg
-             FROM {$this->votes_table}
-             WHERE rating_id IN ({$ids_placeholder}) {$date_condition}
-             GROUP BY DATE(date_created)
-             ORDER BY vote_date"
-        );
-
-        foreach ($rows as &$row) {
-            $row->display_daily_avg = Shuriken_Database::denormalize_average((float) $row->daily_avg, $scale);
-        }
-        unset($row);
-
-        return $rows;
+        return $this->rating_stats->get_votes_with_rolling_avg_for_ids($rating_ids, $date_range, $scale);
     }
 
-    // =========================================================================
-    // Contextual / Per-Post Analytics Methods
-    // =========================================================================
-
-    /**
-     * Build SQL condition for vote scope filtering (global vs contextual)
-     *
-     * @param string|null $scope 'global' (context_id IS NULL), 'contextual' (context_id IS NOT NULL), or null (no filter)
-     * @param string      $prefix Column prefix (e.g., 'v.' for aliased queries)
-     * @return string SQL condition string (includes leading AND)
-     */
     public function build_scope_condition(?string $scope, string $prefix = ''): string {
-        return match ($scope) {
-            'global'     => " AND {$prefix}context_id IS NULL",
-            'contextual' => " AND {$prefix}context_id IS NOT NULL",
-            default      => '',
-        };
+        return $this->rating_stats->build_scope_condition($scope, $prefix);
     }
 
-    /**
-     * Check if a rating has any contextual (per-post) votes
-     *
-     * @param int $rating_id Rating ID
-     * @return bool True if at least one contextual vote exists
-     * @since 1.15.5
-     */
     public function has_contextual_votes(int $rating_id): bool {
         return $this->context->has_contextual_votes($rating_id);
     }
 
-    /**
-     * Get global-only (scope-filtered) stats for a rating
-     *
-     * Like get_rating_stats() but with scope filter applied.
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return object|null Stats object or null
-     * @since 1.15.5
-     */
     public function get_rating_stats_scoped(int $rating_id, string|int|array $date_range = 'all', ?string $scope = null): ?object {
-        return $this->get_rating_stats($rating_id, $date_range, $scope);
+        return $this->rating_stats->get_rating_stats($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get rating distribution with scope filtering
-     *
-     * @param string|int|array $date_range Date range filter
-     * @param int|null         $rating_id  Rating ID
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return array Distribution array
-     * @since 1.15.5
-     */
     public function get_rating_distribution_scoped(string|int|array $date_range = 'all', ?int $rating_id = null, ?string $scope = null): array {
-        return $this->get_rating_distribution($date_range, $rating_id, $scope);
+        return $this->rating_stats->get_rating_distribution($date_range, $rating_id, $scope);
     }
 
-    /**
-     * Get votes over time with scope filtering
-     *
-     * @param string|int|array $date_range Date range filter
-     * @param int|null         $rating_id  Rating ID
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return array Array of vote_date/vote_count objects
-     * @since 1.15.5
-     */
     public function get_votes_over_time_scoped(string|int|array $date_range = 30, ?int $rating_id = null, ?string $scope = null): array {
-        return $this->get_votes_over_time($date_range, $rating_id, $scope);
+        return $this->rating_stats->get_votes_over_time($date_range, $rating_id, $scope);
     }
 
-    /**
-     * Get paginated votes for a rating with scope filtering
-     *
-     * @param int              $rating_id  Rating ID
-     * @param int              $page       Page number
-     * @param int              $per_page   Items per page
-     * @param string|int|array $date_range Date range filter
-     * @param string           $view       Parent view: 'direct', 'subs', 'total'
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return object Paginated result
-     * @since 1.15.5
-     */
     public function get_rating_votes_paginated_scoped(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $view = 'direct', ?string $scope = null, string $sort_by = 'date', string $sort_order = 'desc'): object {
-        return $this->get_rating_votes_paginated($rating_id, $page, $per_page, $date_range, $view, $sort_by, $sort_order, $scope);
+        return $this->rating_stats->get_rating_votes_paginated($rating_id, $page, $per_page, $date_range, $view, $sort_by, $sort_order, $scope);
     }
 
-    /**
-     * Get scope-filtered dual-axis chart data (votes + rolling avg)
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param int              $scale      Display scale for denormalization
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return array Chart data
-     * @since 1.15.5
-     */
     public function get_votes_with_rolling_avg_scoped(int $rating_id, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT, ?string $scope = null): array {
-        return $this->get_votes_with_rolling_avg($rating_id, $date_range, $scale, $scope);
+        return $this->rating_stats->get_votes_with_rolling_avg($rating_id, $date_range, $scale, $scope);
     }
 
-    /**
-     * Get scope-filtered approval trend
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return array Approval trend data
-     * @since 1.15.5
-     */
     public function get_approval_trend_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        return $this->get_approval_trend($rating_id, $date_range, $scope);
+        return $this->rating_stats->get_approval_trend($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get scope-filtered cumulative approvals
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @param string|null      $scope      'global', 'contextual', or null
-     * @return array Cumulative data
-     * @since 1.15.5
-     */
     public function get_cumulative_approvals_scoped(int $rating_id, string|int|array $date_range = 30, ?string $scope = null): array {
-        return $this->get_cumulative_approvals($rating_id, $date_range, $scope);
+        return $this->rating_stats->get_cumulative_approvals($rating_id, $date_range, $scope);
     }
 
-    /**
-     * Get contextual overview summary for a rating (used in the Per-Post view)
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return object Summary with total_contexts, total_votes, avg_across_contexts, best_context
-     * @since 1.15.5
-     */
     public function get_rating_context_summary(int $rating_id, string|int|array $date_range = 'all'): object {
         return $this->context->get_rating_context_summary($rating_id, $date_range);
     }
 
-    /**
-     * Get paginated list of contexts (posts/pages/products) for a rating
-     *
-     * @param int              $rating_id  Rating ID
-     * @param int              $page       Page number
-     * @param int              $per_page   Items per page
-     * @param string|int|array $date_range Date range filter
-     * @param string           $sort_by    Column to sort by: 'votes', 'average', 'last_vote'
-     * @param string           $sort_order Sort direction: 'asc' or 'desc'
-     * @return object Paginated result with contexts, total_count, total_pages
-     * @since 1.15.5
-     */
     public function get_rating_contexts_paginated(int $rating_id, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'votes', string $sort_order = 'desc'): object {
         return $this->context->get_rating_contexts_paginated($rating_id, $page, $per_page, $date_range, $sort_by, $sort_order);
     }
 
-    /**
-     * Get top contexts by vote count for a rating (for chart data)
-     *
-     * @param int              $rating_id  Rating ID
-     * @param int              $limit      Max results
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of context objects
-     * @since 1.15.5
-     */
     public function get_top_contexts_by_votes(int $rating_id, int $limit = 10, string|int|array $date_range = 'all'): array {
         return $this->context->get_top_contexts_by_votes($rating_id, $limit, $date_range);
     }
 
-    /**
-     * Get distribution of average ratings across contexts (histogram buckets)
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter
-     * @return array Array of bucket => count pairs
-     * @since 1.15.5
-     */
     public function get_context_avg_distribution(int $rating_id, string|int|array $date_range = 'all'): array {
         return $this->context->get_context_avg_distribution($rating_id, $date_range);
     }
 
-    /**
-     * Get trending contexts — contexts with rising vote momentum
-     *
-     * @param int              $rating_id  Rating ID
-     * @param string|int|array $date_range Date range filter (numeric days only)
-     * @param int              $limit      Max results
-     * @return array Array of trending context objects
-     * @since 1.15.5
-     */
     public function get_trending_contexts(int $rating_id, string|int|array $date_range = 30, int $limit = 5, string $sort_by = 'velocity', string $sort_order = 'desc'): array {
         return $this->context->get_trending_contexts($rating_id, $date_range, $limit, $sort_by, $sort_order);
     }
 
-    /**
-     * Get detailed stats for a rating scoped to a single context (post/page/product)
-     *
-     * @param int              $rating_id    Rating ID
-     * @param int              $context_id   Post ID
-     * @param string           $context_type Context type
-     * @param string|int|array $date_range   Date range filter
-     * @return object|null Stats object or null if no data
-     * @since 1.15.5
-     */
     public function get_context_rating_stats(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 'all'): ?object {
         return $this->context->get_context_rating_stats($rating_id, $context_id, $context_type, $date_range);
     }
 
-    /**
-     * Get paginated votes for a rating scoped to a single context
-     *
-     * @param int              $rating_id    Rating ID
-     * @param int              $context_id   Post ID
-     * @param string           $context_type Context type
-     * @param int              $page         Page number
-     * @param int              $per_page     Items per page
-     * @param string|int|array $date_range   Date range filter
-     * @return object Paginated result
-     * @since 1.15.5
-     */
     public function get_context_votes_paginated(int $rating_id, int $context_id, string $context_type, int $page = 1, int $per_page = 20, string|int|array $date_range = 'all', string $sort_by = 'date', string $sort_order = 'desc'): object {
         return $this->context->get_context_votes_paginated($rating_id, $context_id, $context_type, $page, $per_page, $date_range, $sort_by, $sort_order);
     }
 
-    /**
-     * Get dual-axis chart data for a rating scoped to a single context
-     *
-     * @param int              $rating_id    Rating ID
-     * @param int              $context_id   Post ID
-     * @param string           $context_type Context type
-     * @param string|int|array $date_range   Date range filter
-     * @param int              $scale        Display scale
-     * @return array Chart data
-     * @since 1.15.5
-     */
     public function get_context_votes_with_rolling_avg(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): array {
         return $this->context->get_context_votes_with_rolling_avg($rating_id, $context_id, $context_type, $date_range, $scale);
     }
 
-    /**
-     * Get approval trend for a rating scoped to a single context
-     *
-     * @param int              $rating_id    Rating ID
-     * @param int              $context_id   Post ID
-     * @param string           $context_type Context type
-     * @param string|int|array $date_range   Date range filter
-     * @return array Approval trend data
-     * @since 1.15.5
-     */
     public function get_context_approval_trend(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array {
         return $this->context->get_context_approval_trend($rating_id, $context_id, $context_type, $date_range);
     }
 
-    /**
-     * Get cumulative approvals for a rating scoped to a single context
-     *
-     * @param int              $rating_id    Rating ID
-     * @param int              $context_id   Post ID
-     * @param string           $context_type Context type
-     * @param string|int|array $date_range   Date range filter
-     * @return array Cumulative data
-     * @since 1.15.5
-     */
     public function get_context_cumulative_approvals(int $rating_id, int $context_id, string $context_type, string|int|array $date_range = 30): array {
         return $this->context->get_context_cumulative_approvals($rating_id, $context_id, $context_type, $date_range);
     }

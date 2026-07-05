@@ -7,7 +7,7 @@ Learn how to test your code with mock implementations without requiring a databa
 The plugin now provides interfaces for core classes, making it easy to create mock implementations for testing:
 
 - `Shuriken_Database_Interface` - Database operations
-- `Shuriken_Analytics_Interface` - Analytics and statistics
+- `Shuriken_Analytics_Interface` - Analytics and statistics (coordinator delegating to formatter, ranking, dashboard, rating stats, and context services)
 
 ## Using Mock Implementations
 
