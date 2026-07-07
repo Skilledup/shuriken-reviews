@@ -218,6 +218,7 @@ let settings = {
             const {
                 error,
                 setError,
+                lastFailedAction,
                 handleApiError,
                 dismissError,
                 retryLastAction

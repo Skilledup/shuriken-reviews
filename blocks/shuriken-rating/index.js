@@ -159,6 +159,7 @@ let settings = {
             const {
                 error,
                 setError: setLocalError,
+                lastFailedAction,
                 handleApiError,
                 dismissError,
                 retryLastAction
@@ -343,7 +344,7 @@ let settings = {
             const preview = selectedRating ? renderRatingPreview(selectedRating, wp.element.createElement) : [null, null];
 
             // Loading state
-            const loading = isLoadingRating || (ratingId && !selectedRating && !localError && !storeError);
+            const loading = isLoadingRating || (ratingId && !selectedRating && !error && !storeError);
 
             // ---- Render ----
             return wp.element.createElement(
