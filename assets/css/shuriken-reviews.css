@@ -215,6 +215,12 @@
     color: #1a202c;
 }
 
+.shuriken-rating.is-style-card .rating-description {
+    color: #718096;
+    opacity: 1;
+    text-align: center;
+}
+
 .shuriken-rating.is-style-card .stars {
     font-size: 28px;
 }
@@ -254,6 +260,11 @@
     color: #2d3748;
 }
 
+.shuriken-rating.is-style-minimal .rating-description {
+    color: #a0aec0;
+    opacity: 1;
+}
+
 .shuriken-rating.is-style-minimal .stars .star.active {
     color: var(--shuriken-star-color);
 }
@@ -280,6 +291,11 @@
 
 .shuriken-rating.is-style-dark .rating-title {
     color: #f7fafc;
+}
+
+.shuriken-rating.is-style-dark .rating-description {
+    color: #a0aec0;
+    opacity: 1;
 }
 
 .shuriken-rating.is-style-dark .stars .star {
@@ -322,6 +338,11 @@
 .shuriken-rating.is-style-outlined .rating-title {
     font-weight: 600;
     color: var(--shuriken-accent);
+}
+
+.shuriken-rating.is-style-outlined .rating-description {
+    color: #718096;
+    opacity: 1;
 }
 
 .shuriken-rating.is-style-outlined .stars .star.active {
@@ -441,6 +462,13 @@
     color: #ffffff;
 }
 
+.shuriken-rating-group.is-style-gradient .parent-rating .rating-description,
+.shuriken-rating-group:not([class*="is-style-"]) .parent-rating .rating-description {
+    color: rgba(255, 255, 255, 0.85);
+    opacity: 1;
+    text-align: center;
+}
+
 .shuriken-rating-group.is-style-gradient .parent-rating .stars,
 .shuriken-rating-group:not([class*="is-style-"]) .parent-rating .stars {
     font-size: 36px;
@@ -513,6 +541,12 @@
     color: #1a202c;
 }
 
+.shuriken-rating-group.is-style-gradient .child-rating .rating-description,
+.shuriken-rating-group:not([class*="is-style-"]) .child-rating .rating-description {
+    color: #718096;
+    opacity: 1;
+}
+
 .shuriken-rating-group.is-style-gradient .child-rating .stars,
 .shuriken-rating-group:not([class*="is-style-"]) .child-rating .stars {
     font-size: 22px;
@@ -549,6 +583,12 @@
     color: #1a202c;
 }
 
+.shuriken-rating-group.is-style-minimal .parent-rating .rating-description {
+    color: #718096;
+    opacity: 1;
+    text-align: center;
+}
+
 .shuriken-rating-group.is-style-minimal .parent-rating .stars {
     font-size: 32px;
 }
@@ -583,6 +623,11 @@
     font-size: 1em;
     font-weight: 500;
     color: #2d3748;
+}
+
+.shuriken-rating-group.is-style-minimal .child-rating .rating-description {
+    color: #a0aec0;
+    opacity: 1;
 }
 
 .shuriken-rating-group.is-style-minimal .child-rating .stars {
@@ -635,6 +680,12 @@
     color: #ffffff;
 }
 
+.shuriken-rating-group.is-style-boxed .parent-rating .rating-description {
+    color: rgba(255, 255, 255, 0.85);
+    opacity: 1;
+    text-align: center;
+}
+
 .shuriken-rating-group.is-style-boxed .parent-rating .stars {
     font-size: 32px;
 }
@@ -676,6 +727,11 @@
     color: #2d3748;
 }
 
+.shuriken-rating-group.is-style-boxed .child-rating .rating-description {
+    color: #718096;
+    opacity: 1;
+}
+
 .shuriken-rating-group.is-style-boxed .child-rating .stars {
     font-size: 22px;
 }
@@ -705,6 +761,12 @@
     font-size: 1.6em;
     font-weight: 700;
     color: #f7fafc;
+}
+
+.shuriken-rating-group.is-style-dark .parent-rating .rating-description {
+    color: #a0aec0;
+    opacity: 1;
+    text-align: center;
 }
 
 .shuriken-rating-group.is-style-dark .parent-rating .stars {
@@ -747,6 +809,11 @@
     font-size: 1em;
     font-weight: 600;
     color: #e2e8f0;
+}
+
+.shuriken-rating-group.is-style-dark .child-rating .rating-description {
+    color: #718096;
+    opacity: 1;
 }
 
 .shuriken-rating-group.is-style-dark .child-rating .stars {
@@ -803,6 +870,12 @@
     color: var(--shuriken-accent);
 }
 
+.shuriken-rating-group.is-style-outlined .parent-rating .rating-description {
+    color: #718096;
+    opacity: 1;
+    text-align: center;
+}
+
 .shuriken-rating-group.is-style-outlined .parent-rating .stars {
     font-size: 32px;
 }
@@ -836,6 +909,11 @@
     font-size: 1em;
     font-weight: 600;
     color: #2d3748;
+}
+
+.shuriken-rating-group.is-style-outlined .child-rating .rating-description {
+    color: #718096;
+    opacity: 1;
 }
 
 .shuriken-rating-group.is-style-outlined .child-rating .stars {
