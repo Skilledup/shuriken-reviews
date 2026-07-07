@@ -12,33 +12,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build project
-        run: |
-          mkdir -p build
-          mkdir -p /tmp/plugin/shuriken-reviews
-          rsync -av \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='node_modules' \
-            --exclude='.*' \
-            --exclude='CODE_OF_CONDUCT.md' \
-            --exclude='CONTRIBUTING.md' \
-            --exclude='ISSUE_TEMPLATE.md' \
-            --exclude='PULL_REQUEST_TEMPLATE.md' \
-            --exclude='*.dist' \
-            --exclude='*.yml' \
-            --exclude='*.neon' \
-            --exclude='composer.*' \
-            --exclude='dev-helpers' \
-            --exclude='build' \
-            --exclude='wporg-assets' \
-            --exclude='phpunit' \
-            --exclude='docs' \
-            --exclude='tests' \
-            . /tmp/plugin/shuriken-reviews/
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
 
-      - name: Create artifact
-        run: cd /tmp/plugin && zip -X -r $GITHUB_WORKSPACE/build/shuriken-reviews.zip shuriken-reviews
+      - name: Build block assets
+        run: npm ci && npm run build
+
+      - name: Package plugin
+        run: bash bin/package-plugin.sh --skip-build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -47,7 +31,7 @@ jobs:
           path: build/shuriken-reviews.zip
 
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: build/shuriken-reviews.zip

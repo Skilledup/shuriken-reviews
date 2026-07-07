@@ -1,6 +1,11 @@
-# Node / build artifacts
+# Node dependencies
 node_modules/
+
+# Generated block bundles (npm run build) and release zip (bin/package-plugin.sh)
 build/
+
+# Optional custom package output (--output dist/...)
+dist/
 
 # OS / editor cruft
 .DS_Store

@@ -159,12 +159,12 @@ class Shuriken_Contextual_Stats_Collector {
     /**
      * Register rating IDs from a block instance before its render callback runs.
      *
-     * @param string|null $pre_render  Pre-render content (passthrough).
-     * @param array       $parsed_block Parsed block array.
-     * @param \WP_Block   $block        Block instance.
+     * @param string|null   $pre_render   Pre-render content (passthrough).
+     * @param array         $parsed_block Parsed block array.
+     * @param \WP_Block|null $block       Block instance (null when render_block() has no parent).
      * @return string|null
      */
-    public function register_from_block(?string $pre_render, array $parsed_block, \WP_Block $block): ?string {
+    public function register_from_block(?string $pre_render, array $parsed_block, ?\WP_Block $block): ?string {
         $block_name = $parsed_block['blockName'] ?? '';
         if ($block_name !== 'shuriken-reviews/rating' && $block_name !== 'shuriken-reviews/grouped-rating') {
             return $pre_render;
@@ -173,7 +173,9 @@ class Shuriken_Contextual_Stats_Collector {
         $this->activate();
 
         $attributes = $parsed_block['attrs'] ?? array();
-        $context = $this->resolve_block_context($attributes, $block);
+        $context = $block !== null
+            ? $this->resolve_block_context($attributes, $block)
+            : $this->resolve_static_context($attributes);
         if ($context === null) {
             return $pre_render;
         }

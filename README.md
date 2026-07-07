@@ -14,6 +14,7 @@ A professional WordPress rating plugin built for flexibility, performance, and e
 - [Overview](#overview)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Building from Source](#building-from-source)
 - [Rating Types & Scales](#rating-types--scales)
 - [Rating Structure](#rating-structure)
 - [Block Editor Integration](#block-editor-integration)
@@ -53,11 +54,68 @@ Shuriken Reviews is designed around three core principles:
 
 ## Installation
 
+**From a release (recommended)**
+
+1. Download `shuriken-reviews.zip` from [GitHub Releases](https://github.com/Skilledup/shuriken-reviews/releases).
+2. In WordPress, go to **Plugins → Add New → Upload Plugin**, choose the zip, and install.
+3. Activate through **Plugins → Installed Plugins**.
+4. Navigate to **Shuriken Reviews → Ratings** to create your first rating.
+
+**Manual upload**
+
 1. Upload the `shuriken-reviews` directory to `/wp-content/plugins/`.
-2. Activate through **Plugins → Installed Plugins**.
-3. Navigate to **Shuriken Reviews → Ratings** to create your first rating.
+2. Activate and configure as above.
 
 The plugin creates its database tables on activation. No manual database setup is needed.
+
+---
+
+## Building from Source
+
+Use this when developing locally or packaging a zip yourself. Block editor scripts must be compiled before the plugin is installable.
+
+**Requirements:** Node.js 20+ and npm.
+
+```bash
+git clone https://github.com/Skilledup/shuriken-reviews.git
+cd shuriken-reviews
+npm install
+```
+
+**Build block assets only**
+
+```bash
+npm run build
+```
+
+**Build assets and create an installable zip**
+
+```bash
+npm run package
+# or: bash bin/package-plugin.sh
+```
+
+Output: `build/shuriken-reviews.zip` (WordPress-ready; contains a top-level `shuriken-reviews/` folder).
+
+If assets are already built:
+
+```bash
+bash bin/package-plugin.sh --skip-build
+```
+
+Custom output path:
+
+```bash
+bash bin/package-plugin.sh --output dist/shuriken-reviews.zip
+```
+
+**Watch mode (block development)**
+
+```bash
+npm start
+```
+
+Published GitHub releases are built by [`.github/workflows/release.yml`](.github/workflows/release.yml), which runs the same build and packaging steps in CI.
 
 ---
 
