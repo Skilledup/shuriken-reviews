@@ -1,6 +1,7 @@
 # Shuriken Reviews Roadmap
 
 What's planned and why. For deep details, see:
+
 - Hooks/API: [guides/hooks-reference.md](guides/hooks-reference.md)
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Guides: [guides/dependency-injection.md](guides/dependency-injection.md), [guides/exception-handling.md](guides/exception-handling.md), [guides/testing.md](guides/testing.md)
@@ -69,12 +70,14 @@ Applied CPP + `readonly` to 5 classes: `Shuriken_Admin` (2 promoted props), `Shu
 
 Decomposed the ~1,694-line monolithic `Shuriken_Database` class into three focused repository classes + a slim delegation façade. All classes use CPP + `readonly` constructors. `Shuriken_Database_Interface` kept intact — façade implements it for full backward compatibility. Zero public API changes; callers use `shuriken_db()` as before.
 
-| New class | Lines | Responsibility |
-|---|---|---|
-| `Shuriken_Rating_Repository` | ~1,041 | Rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, export |
-| `Shuriken_Vote_Repository` | ~326 | Vote CRUD, rate-limit timestamp queries, transactional vote+total updates |
-| `Shuriken_Schema_Manager` | ~204 | `create_tables()`, `tables_exist()`, column migrations |
-| `Shuriken_Database` (façade) | ~401 | Singleton, constants, static helpers, delegates all 28 interface methods to repos |
+
+| New class                    | Lines  | Responsibility                                                                    |
+| ---------------------------- | ------ | --------------------------------------------------------------------------------- |
+| `Shuriken_Rating_Repository` | ~1,041 | Rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, export     |
+| `Shuriken_Vote_Repository`   | ~326   | Vote CRUD, rate-limit timestamp queries, transactional vote+total updates         |
+| `Shuriken_Schema_Manager`    | ~204   | `create_tables()`, `tables_exist()`, column migrations                            |
+| `Shuriken_Database` (façade) | ~401   | Singleton, constants, static helpers, delegates all 28 interface methods to repos |
+
 
 All 10 callers now type-hint the specific repository they need. Per-repo helper functions added: `shuriken_ratings_repo()`, `shuriken_votes_repo()`, `shuriken_schema_manager()`. Container bindings updated. `Shuriken_Database_Interface` and the façade kept for backward compatibility (`shuriken_db()` still works).
 
@@ -82,11 +85,13 @@ All 10 callers now type-hint the specific repository they need. Per-repo helper 
 
 Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused controllers + a thin bootstrap. Both controllers use CPP + `readonly` constructors and own their route registration, arg schemas, and permission callbacks. Cross-cutting filters (auth bypass, output buffer cleaning, CDN cache headers) remain on the bootstrap. Zero public API or hook changes.
 
-| New class | Lines | Responsibility |
-|---|---|---|
-| `Shuriken_REST_Ratings_Controller` | ~689 | 11 rating endpoints: CRUD, hierarchy, mirrors, search, batch + arg schemas + permissions |
-| `Shuriken_REST_Votes_Controller` | ~268 | 3 endpoints: stats (public), context-stats (editor), nonce (public) |
-| `Shuriken_REST_API` (bootstrap) | ~210 | Singleton, controller wiring, `register_routes()` delegation, REST filters |
+
+| New class                          | Lines | Responsibility                                                                           |
+| ---------------------------------- | ----- | ---------------------------------------------------------------------------------------- |
+| `Shuriken_REST_Ratings_Controller` | ~689  | 11 rating endpoints: CRUD, hierarchy, mirrors, search, batch + arg schemas + permissions |
+| `Shuriken_REST_Votes_Controller`   | ~268  | 3 endpoints: stats (public), context-stats (editor), nonce (public)                      |
+| `Shuriken_REST_API` (bootstrap)    | ~210  | Singleton, controller wiring, `register_routes()` delegation, REST filters               |
+
 
 #### Step 6 — Coding Standards & DRY Sweep ✅
 
@@ -94,14 +99,16 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 Formatter, Ranking, and Context services shipped in v1.15.5; Dashboard and Rating_Stats extraction plus the final ~278-line coordinator shipped in v1.15.6.
 
-| Class | Lines | Responsibility |
-|---|---|---|
-| `Shuriken_Analytics` (coordinator) | ~278 | Thin delegate façade; filter hooks for extensibility |
-| `Shuriken_Analytics_Formatter` | ~153 | `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()` |
-| `Shuriken_Analytics_Ranking` | ~184 | `get_top_rated()`, `get_most_voted()`, `get_low_performers()` — consolidated into single parametric `get_ranked()` with `get_inversion_sql()` static helper |
-| `Shuriken_Analytics_Dashboard` | ~528 | Site-wide overview: `get_overall_stats()`, heatmap, momentum, participation, type benchmarks |
-| `Shuriken_Analytics_Rating_Stats` | ~919 | Per-rating SQL: stats, breakdown, distribution, paginated votes, chart data, approval trends |
-| `Shuriken_Analytics_Context` | ~587 | 12 per-post/contextual methods |
+
+| Class                              | Lines | Responsibility                                                                                                                                              |
+| ---------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Shuriken_Analytics` (coordinator) | ~278  | Thin delegate façade; filter hooks for extensibility                                                                                                        |
+| `Shuriken_Analytics_Formatter`     | ~153  | `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, `get_date_range_label()`                                         |
+| `Shuriken_Analytics_Ranking`       | ~184  | `get_top_rated()`, `get_most_voted()`, `get_low_performers()` — consolidated into single parametric `get_ranked()` with `get_inversion_sql()` static helper |
+| `Shuriken_Analytics_Dashboard`     | ~528  | Site-wide overview: `get_overall_stats()`, heatmap, momentum, participation, type benchmarks                                                                |
+| `Shuriken_Analytics_Rating_Stats`  | ~919  | Per-rating SQL: stats, breakdown, distribution, paginated votes, chart data, approval trends                                                                |
+| `Shuriken_Analytics_Context`       | ~587  | 12 per-post/contextual methods                                                                                                                              |
+
 
 7 pairs of scoped/base method duplicates merged; 12 contextual methods (660 lines) moved to `Shuriken_Analytics_Context`. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
 
@@ -161,11 +168,50 @@ All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-
 
 ### Step 8 — Performance (v1.15.x)
 
-- [ ] Server-side render pre-fetch — batch query on frontend page load to avoid per-block queries
-- [ ] Statistics caching — TTL-based cache service in container; invalidate on vote change; optional Redis support
-- [ ] Rate limit performance caching — cache vote counts in transients per user/IP with TTL; invalidate on new vote
+Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grouped `/ratings/stats` JS) but SSR still runs per-block queries, the client always re-fetches stats on load, and rate limiting hits the DB on every vote. Step 8 closes those gaps in priority order — quick wins first, then prefetch, then caching.
 
 > **Why eighth:** Stable service boundaries from Steps 4–5 and clean code from Step 6 make a cache service cleanly injectable without coupling it to bloated classes.
+
+> **Cache compatibility:** Server-side caching (transients / object cache) is separate from edge/CDN caching. Cached pages still need a fresh nonce and stats refresh; uncached pages can trust SSR stats and skip the REST stats round-trip. REST responses keep `Cache-Control: no-store` for CDN safety.
+
+#### 8a — Quick Wins (low risk, high ROI)
+
+- [ ] **Conditional asset enqueue** — only load `shuriken-reviews.js` + jQuery when the page has a rating block or shortcode (`has_block()` + shortcode detection)
+- [ ] **Request-scoped rating memo** — dedupe `get_rating()` within a single request (mirrors, grouped children) via an in-request map on the rating repository
+- [ ] **Grouped block batch fetch** — replace per-child `get_rating()` loop in `render_grouped_block()` with one `get_ratings_by_ids()` call
+- [ ] **Remove dead `shurikenBlock_`* localize** — block render writes `wp_localize_script('shurikenBlock_{id}')` but frontend JS never reads it; remove or wire to eliminate redundant inline payload
+- [ ] **Revisit star `setInterval`** — 4s re-sync from `data-scaled-average` is unnecessary unless stats change without a vote event; remove or trigger only after vote/AJAX refresh
+
+#### 8b — SSR Batch Pre-fetch
+
+- [ ] **Contextual stats collector** — gather all `(source_id, context_id, context_type, scale)` tuples during block/shortcode render, then call `get_contextual_stats_batch()` once per context group instead of `get_contextual_stats()` per widget in `render_rating_html()`
+- [ ] **Serve from in-request map** — `render_rating_html()` reads pre-fetched stats from the collector; falls back to single query if collector not active (e.g. direct shortcode call outside normal render flow)
+
+> `get_contextual_stats_batch()` already exists and is used by REST — this step wires it into the PHP render path.
+
+#### 8c — Smart Client Fetch
+
+- [ ] **Always fetch nonce** — `GET /nonce` on every page load (required for full-page CDN cache compatibility)
+- [ ] **Skip stats REST on uncached pages** — when SSR stats are fresh (page not served from full-page cache), trust embedded `data-average` / `data-scaled-average` and skip `GET /ratings/stats`
+- [ ] **Always refresh after vote** — post-vote AJAX response already returns updated stats; no change needed
+- [ ] **Detect cached-page context** — use a localized flag or `document.wasDiscarded` / cache plugin hooks so cached pages still run the batched stats refresh
+
+#### 8d — Statistics Cache Service
+
+- [ ] `**Shuriken_Cache` service** — TTL-based cache in the DI container; `get` / `set` / `delete` with configurable TTL (default ~60s for stats)
+- [ ] **Object cache compatible** — backed by `wp_cache_`* (automatically uses Redis/Memcached when an object cache drop-in is present; no bespoke Redis wiring)
+- [ ] **Invalidate on vote change** — hook `shuriken_vote_created` / `shuriken_vote_updated` to bust per-rating and per-context cache keys
+- [ ] **Integrate at REST + AJAX + archive sort** — cache `get_contextual_stats_batch()` results and denormalized global stats reads; `shuriken_rating_stats_response` filter remains the extension point for add-ons
+
+> Resolves backlog research item: *Best caching strategy for rating stats*.
+
+#### 8e — Rate Limit Performance
+
+- [ ] **Transient vote counters** — cache hourly/daily counts per user/IP with TTL = window remainder; increment on vote write; invalidate on vote update
+- [ ] **DB indexes** — add `(user_id, date_modified)` and `(user_ip, user_id, date_modified)` indexes on `wp_shuriken_votes` for COUNT queries
+- [ ] **Cooldown cache** — cache `get_last_vote_time()` per `(rating_id, user_id|ip, context)` with TTL = cooldown duration
+
+> Lower priority — rate limiting is off by default. Indexes alone may be sufficient before adding transient counters.
 
 ### Known bugs and Gaps
 
@@ -178,16 +224,19 @@ All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-
 ## Later
 
 ### Engagement & Analytics
+
 - [ ] Mirror vote tracking — mirror vs. original vote breakdown, per-mirror stats, comparison view, CSV export
 - [ ] Engagement factor metric — new field on stats response; formula based on votes-to-views ratio; configurable thresholds for "high engagement" badges in analytics, and potential frontend display, a base for social-network algorithmic sorting features in the future
 
 ### Content Features
+
 - [ ] Rating notes/comments — notes table + CRUD; frontend UI; admin moderation; REST endpoints
 - [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users
 - [ ] Emoji reactions — separate system from rating types
 - [ ] **HTML embed code** — `GET /ratings/{id}/embed` REST endpoint returns a self-contained `<iframe>` snippet (similar to Google Maps embed); block editor and admin ratings page surface a "Get embed code" button with a copy-to-clipboard UI
 
 ### Internationalization
+
 - [ ] Alternative calendar display hook — `shuriken_display_date` filter; route all dates through helper (Jalali/Shamsi)
 - [ ] Native multilingual support — WPML/Polylang compatibility for rating names/descriptions.
 
@@ -196,9 +245,11 @@ All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-
 ## 2.0.0+ (Future)
 
 ### Email Notifications
+
 - Notify admins on low ratings; digest emails
 
 ### Webhook Integration
+
 - POST rating events to external services; retry/failure handling
 
 ---
@@ -206,7 +257,7 @@ All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-
 ## Backlog & Research
 
 - [ ] Rate limiting defaults that fit common sites
-- [ ] Best caching strategy for rating stats
+- [x] Best caching strategy for rating stats — resolved in Step 8d (server-side TTL cache via `wp_cache_*`; CDN pages keep client refresh, uncached pages trust SSR)
 - [ ] Webhook retry guarantees and failure modes
 - [ ] Email template customization approach
 
@@ -220,7 +271,7 @@ None planned. Backward compatibility is a goal for upcoming versions.
 
 ## Support
 
-- GitHub Issues: https://github.com/Skilledup/shuriken-reviews/issues
+- GitHub Issues: [https://github.com/Skilledup/shuriken-reviews/issues](https://github.com/Skilledup/shuriken-reviews/issues)
 - Documentation index: [INDEX.md](INDEX.md)
 
 ---
