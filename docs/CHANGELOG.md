@@ -10,7 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **Conditional frontend asset loading (Step 8a)** — `shuriken-reviews.js` and CSS load only when a rating block or shortcode renders on the page. Blocks declare `viewScript: "shuriken-reviews"` in `block.json` (WP 7.0+); shortcodes call `shuriken_enqueue_frontend_assets()`. Filters: `shuriken_enqueue_frontend_assets`, `shuriken_force_enqueue_frontend_assets`.
+- **Conditional frontend asset loading** — `shuriken-reviews.js` and CSS load only when a rating block or shortcode renders on the page. Blocks declare `viewScript: "shuriken-reviews"` in `block.json` (WP 7.0+); shortcodes call `shuriken_enqueue_frontend_assets()`. Filters: `shuriken_enqueue_frontend_assets`, `shuriken_force_enqueue_frontend_assets`.
 - `shuriken_enqueue_frontend_assets()` **helper** — idempotent on-demand enqueue used by block render callbacks and shortcodes.
 - **Uninstall cleanup configuration option** — introduced a `Delete Data on Uninstall` toggle in the General settings screen which allows users to decide whether custom tables and options should be permanently deleted upon uninstallation. Under [uninstall.php](uninstall.php), database cleanup is now opt-in to prevent accidental data loss.
 - **Deactivation hook and custom callbacks** — registered a plugin `deactivate` hook emitting a custom `shuriken_deactivate` event for add-ons.
@@ -25,7 +25,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- **SSR contextual stats batch pre-fetch (Step 8b)** — new `Shuriken_Contextual_Stats_Collector` service registers all contextual rating widgets during `the_content` (priority 1) and `pre_render_block`, then `render_rating_html()` serves stats from `get_contextual_stats_batch()` instead of per-widget `get_contextual_stats()` queries. Falls back to single query when collector is inactive (admin, REST, AJAX, isolated `do_shortcode()` calls). Cached vote totals are scale-independent; `display_average` is denormalized per widget from the requested scale so the same rating can render at different scales on one page.
+- **SSR contextual stats batch pre-fetch** — new `Shuriken_Contextual_Stats_Collector` service registers all contextual rating widgets during `the_content` (priority 1) and `pre_render_block`, then `render_rating_html()` serves stats from `get_contextual_stats_batch()` instead of per-widget `get_contextual_stats()` queries. Falls back to single query when collector is inactive (admin, REST, AJAX, isolated `do_shortcode()` calls). Cached vote totals are scale-independent; `display_average` is denormalized per widget from the requested scale so the same rating can render at different scales on one page.
 - **Minimum WordPress version raised to 7.0** — enables native `viewScript` conditional loading for dynamic blocks without backward-compat fallbacks.
 - **Minimum PHP version raised to 8.3** — aligns with WordPress 7.0's recommended PHP version; PHP 8.1 reached end-of-life in December 2025.
 - **Request-scoped rating memo** — `Shuriken_Rating_Repository::get_rating()` and `get_ratings_by_ids()` dedupe queries within a single request; returns clones to prevent contextual stat mutation leaking between widgets on the same page. `forget_request_cache()` clears memoized entries after rating mutations and vote writes.

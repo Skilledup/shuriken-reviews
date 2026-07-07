@@ -66,7 +66,7 @@ if (!defined('ABSPATH')) {
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Add-on Extensibility (Step 7)', 'shuriken-reviews'); ?></strong>
+                        <strong><?php esc_html_e('Add-on Extensibility', 'shuriken-reviews'); ?></strong>
                         <span><?php esc_html_e('New lifecycle hooks (shuriken_container_ready, shuriken_deactivate), REST and AJAX permission filters, frontend wp.hooks integration, and an opt-in Delete Data on Uninstall toggle give third-party add-ons clean extension points without forking core classes.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
