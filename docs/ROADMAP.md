@@ -182,10 +182,11 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 - [ ] **Remove dead `shurikenBlock_*` localize** — deferred to Step 8c (wire into smart client fetch)
 - [x] **Revisit star `setInterval`** — removed; vote success explicitly syncs stars
 
-#### 8b — SSR Batch Pre-fetch
+#### 8b — SSR Batch Pre-fetch ✅
 
-- [ ] **Contextual stats collector** — gather all `(source_id, context_id, context_type, scale)` tuples during block/shortcode render, then call `get_contextual_stats_batch()` once per context group instead of `get_contextual_stats()` per widget in `render_rating_html()`
-- [ ] **Serve from in-request map** — `render_rating_html()` reads pre-fetched stats from the collector; falls back to single query if collector not active (e.g. direct shortcode call outside normal render flow)
+- [x] **Contextual stats collector** — `Shuriken_Contextual_Stats_Collector` gathers `(source_id, context_id, context_type, scale)` tuples during block/shortcode render, then calls `get_contextual_stats_batch()` once per context group instead of `get_contextual_stats()` per widget in `render_rating_html()`
+- [x] **Serve from in-request map** — `render_rating_html()` reads pre-fetched stats from the collector; falls back to single query if collector not active (e.g. direct shortcode call outside normal render flow)
+- [x] **Early content registration** — `the_content` priority 1 scans parsed blocks and shortcodes; `pre_render_block` supplements Query Loop dynamic context and mirror/sub-rating IDs
 
 > `get_contextual_stats_batch()` already exists and is used by REST — this step wires it into the PHP render path.
 

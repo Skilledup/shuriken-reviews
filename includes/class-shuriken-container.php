@@ -127,6 +127,11 @@ class Shuriken_Container {
             return Shuriken_Frontend::get_instance();
         });
 
+        // Request-scoped contextual stats batch collector (depends on rating repository)
+        $this->singleton('contextual_stats_collector', function($container) {
+            return new Shuriken_Contextual_Stats_Collector($container->get('rating_repository'));
+        });
+
         // Register admin service (depends on rating repository + analytics)
         $this->singleton('admin', function($container) {
             return new Shuriken_Admin(
@@ -310,5 +315,15 @@ function shuriken_votes_repo(): Shuriken_Vote_Repository {
  */
 function shuriken_schema_manager(): Shuriken_Schema_Manager {
     return shuriken_container()->get('schema_manager');
+}
+
+/**
+ * Get the contextual stats collector for SSR batch pre-fetch.
+ *
+ * @return Shuriken_Contextual_Stats_Collector
+ * @since 1.15.7
+ */
+function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collector {
+    return shuriken_container()->get('contextual_stats_collector');
 }
 

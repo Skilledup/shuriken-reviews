@@ -83,6 +83,7 @@ The following services are automatically registered:
 | `block` | `Shuriken_Block` | - |
 | `ajax` | `Shuriken_AJAX` | - |
 | `frontend` | `Shuriken_Frontend` | - |
+| `contextual_stats_collector` | `Shuriken_Contextual_Stats_Collector` | - |
 | `admin` | `Shuriken_Admin` | - |
 
 ### Getting Services

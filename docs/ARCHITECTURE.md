@@ -326,7 +326,7 @@ Handles `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcode registrati
 **Responsibility:**
 - Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout, context_id, context_type) — `context_id` and `context_type` enable per-context (per-post) voting when provided.
 - Validate input: `id` is coerced to int; `context_id` is coerced to int; `context_type` is sanitized and validated against the `shuriken_allowed_context_types` filter (defaults: `post`, `page`, `product`).
-- When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and `get_contextual_stats()` overlays per-context vote totals.
+- When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and per-context stats overlay vote totals. Since v1.15.7, `render_rating_html()` reads from `Shuriken_Contextual_Stats_Collector` (batch pre-fetch) when active, falling back to `get_contextual_stats()` for isolated calls.
 - For grouped ratings, the same context is applied to the parent and all children so vote tallies are scoped consistently.
 - Render single or grouped ratings with preset style classes and CSS custom properties
 - Return HTML
@@ -345,6 +345,22 @@ PHP (in theme templates):
 ```
 echo do_shortcode( '[shuriken_rating id="5" context_id="' . get_the_ID() . '" context_type="post"]' );
 ```
+
+### Contextual Stats Collector (`class-shuriken-contextual-stats-collector.php`)
+
+Request-scoped batch pre-fetch for contextual stats during SSR (Step 8b).
+
+**Responsibility:**
+- Register `source_id` per context group before widgets render
+- Flush pending IDs per context group via `get_contextual_stats_batch()` on first `get()` miss (vote totals are scale-independent)
+- Denormalize `display_average` per widget in `get()` from the requested scale
+- Serve stats to `render_rating_html()`; inactive outside frontend render (admin, REST, AJAX, isolated calls fall back to single query)
+
+**Registration hooks** (wired in `Shuriken_Frontend`):
+- `the_content` priority 1 — `parse_blocks()` + shortcode scan on stored content before `do_blocks()`
+- `pre_render_block` — supplements Query Loop dynamic `postId` / mirror and sub-rating IDs
+
+**Helper:** `shuriken_contextual_stats_collector()`
 
 ### Block Module (`class-shuriken-block.php`)
 
@@ -535,7 +551,7 @@ The votes table has two extra columns: `context_id` (BIGINT) and `context_type` 
 
 ### Global vs contextual aggregates
 
-`total_votes` / `total_rating` on the ratings table remain **global** aggregates (backward compatible). Per-context totals and averages are computed from the votes table via `get_contextual_stats()`.
+`total_votes` / `total_rating` on the ratings table remain **global** aggregates (backward compatible). Per-context totals and averages are computed from the votes table via `get_contextual_stats()` or batched via `get_contextual_stats_batch()` through the request-scoped `Shuriken_Contextual_Stats_Collector` during SSR.
 
 ### Block integration
 

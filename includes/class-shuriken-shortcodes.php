@@ -165,6 +165,61 @@ class Shuriken_Shortcodes {
     }
 
     /**
+     * Resolve the display rating type for a rating object, applying filters.
+     *
+     * @param object $rating Rating object.
+     * @return string Rating type slug.
+     * @since 1.15.7
+     */
+    public static function resolve_render_rating_type(object $rating): string {
+        $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
+
+        /**
+         * Filter the resolved rating type before rendering.
+         *
+         * @since 1.14.0
+         * @param string $rating_type The rating type.
+         * @param object $rating      The rating object.
+         */
+        return apply_filters('shuriken_rating_type', $rating_type, $rating);
+    }
+
+    /**
+     * Resolve the display scale for a rating object, applying filters.
+     *
+     * Must match the scale used in render_rating_html() for correct display_average.
+     *
+     * @param object      $rating      Rating object.
+     * @param string|null $rating_type Optional pre-resolved rating type.
+     * @return int Display scale (max stars / slider max).
+     * @since 1.15.7
+     */
+    public static function resolve_render_scale(object $rating, ?string $rating_type = null): int {
+        $rating_type = $rating_type ?? self::resolve_render_rating_type($rating);
+        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
+
+        if ($type_enum->isBinary()) {
+            return 1;
+        }
+
+        $scale = isset($rating->scale) ? intval($rating->scale) : Shuriken_Database::RATING_SCALE_DEFAULT;
+
+        $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
+
+        /**
+         * Filter the rating scale for any rating type.
+         *
+         * @since 1.14.0
+         * @param int    $scale       The rating scale.
+         * @param object $rating      The rating object.
+         * @param string $rating_type The rating type.
+         */
+        $max_stars = apply_filters('shuriken_rating_scale', $max_stars, $rating, $rating_type);
+
+        return max(1, intval($max_stars));
+    }
+
+    /**
      * Render rating HTML
      *
      * @param object      $rating       Rating object from database.
@@ -208,60 +263,8 @@ class Shuriken_Shortcodes {
          */
         $css_classes = apply_filters('shuriken_rating_css_classes', $css_classes, $rating);
 
-        /**
-         * Filter the maximum number of stars displayed and accepted for voting.
-         *
-         * This filter controls both the visual display AND the voting scale.
-         * Votes are automatically normalized to a 1-5 scale internally.
-         * For example, with 10 stars: user clicks star 8 → stored as 4.0 (8/10 * 5)
-         *
-         * @since 1.7.0
-         * @param int    $max_stars The maximum number of stars. Default from rating scale.
-         * @param object $rating    The rating object.
-         */
-        $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
-        $scale = isset($rating->scale) ? intval($rating->scale) : Shuriken_Database::RATING_SCALE_DEFAULT;
-
-        /**
-         * Filter the resolved rating type before rendering.
-         *
-         * Allows overriding which rendering mode is used for a rating.
-         * For example, force all ratings to render as stars, or switch
-         * a specific rating to a different type.
-         *
-         * @since 1.14.0
-         * @param string $rating_type The rating type: 'stars', 'like_dislike', 'numeric', or 'approval'.
-         * @param object $rating      The rating object.
-         */
-        $rating_type = apply_filters('shuriken_rating_type', $rating_type, $rating);
-
-        $type_enum = Shuriken_Rating_Type::tryFrom($rating_type) ?? Shuriken_Rating_Type::Stars;
-
-        // Binary types have a fixed scale — skip scale filtering
-        if ($type_enum->isBinary()) {
-            $max_stars = 1;
-        } else {
-            // Legacy filter (stars-specific, kept for backward compatibility)
-            $max_stars = apply_filters('shuriken_rating_max_stars', $scale, $rating);
-
-            /**
-             * Filter the rating scale for any rating type.
-             *
-             * This is the type-aware replacement for `shuriken_rating_max_stars`.
-             * For stars, it controls the number of stars (2-10).
-             * For numeric, it controls the slider maximum (2-100).
-             * Not applied to binary types (like_dislike, approval) which always use scale 1.
-             *
-             * @since 1.14.0
-             * @param int    $scale       The rating scale. Default from rating settings.
-             * @param object $rating      The rating object.
-             * @param string $rating_type The rating type: 'stars' or 'numeric'.
-             */
-            $max_stars = apply_filters('shuriken_rating_scale', $max_stars, $rating, $rating_type);
-
-            // Ensure scale is at least 1
-            $max_stars = max(1, intval($max_stars));
-        }
+        $rating_type = self::resolve_render_rating_type($rating);
+        $max_stars = self::resolve_render_scale($rating, $rating_type);
 
         /**
          * Filter the star character/symbol used for star-type ratings.
@@ -278,7 +281,15 @@ class Shuriken_Shortcodes {
         // If contextual, overlay per-context stats onto the rating object
         $context_attrs = '';
         if ($context_id !== null && $context_type !== null) {
-            $ctx_stats = $this->db->get_contextual_stats((int) $rating->source_id, $context_id, $context_type, $max_stars);
+            $source_id = (int) $rating->source_id;
+            $collector = shuriken_contextual_stats_collector();
+
+            if ($collector->is_active()) {
+                $collector->register($source_id, $context_id, $context_type, $max_stars);
+                $ctx_stats = $collector->get($source_id, $context_id, $context_type, $max_stars);
+            } else {
+                $ctx_stats = $this->db->get_contextual_stats($source_id, $context_id, $context_type, $max_stars);
+            }
 
             /**
              * Filter the per-context stats before they are applied to the rating for rendering.

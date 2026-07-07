@@ -39,6 +39,13 @@ class Shuriken_Frontend {
         add_action('init', $this->register_assets(...), 5);
         add_action('wp_enqueue_scripts', $this->maybe_force_enqueue_assets(...), 10);
 
+        // SSR contextual stats batch pre-fetch (Step 8b)
+        if (!is_admin()) {
+            $collector = shuriken_contextual_stats_collector();
+            add_filter('the_content', array($collector, 'scan_content_for_registrations'), 1);
+            add_filter('pre_render_block', array($collector, 'register_from_block'), 10, 3);
+        }
+
         // Archive sorting by rating
         if (get_option('shuriken_archive_sort_enabled', '0') === '1') {
             add_action('pre_get_posts', $this->sort_archives_by_rating(...));
