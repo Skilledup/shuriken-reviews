@@ -174,13 +174,13 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 
 > **Cache compatibility:** Server-side caching (transients / object cache) is separate from edge/CDN caching. Cached pages still need a fresh nonce and stats refresh; uncached pages can trust SSR stats and skip the REST stats round-trip. REST responses keep `Cache-Control: no-store` for CDN safety.
 
-#### 8a — Quick Wins (low risk, high ROI)
+#### 8a — Quick Wins (low risk, high ROI) ✅
 
-- [ ] **Conditional asset enqueue** — only load `shuriken-reviews.js` + jQuery when the page has a rating block or shortcode (`has_block()` + shortcode detection)
-- [ ] **Request-scoped rating memo** — dedupe `get_rating()` within a single request (mirrors, grouped children) via an in-request map on the rating repository
-- [ ] **Grouped block batch fetch** — replace per-child `get_rating()` loop in `render_grouped_block()` with one `get_ratings_by_ids()` call
-- [ ] **Remove dead `shurikenBlock_`* localize** — block render writes `wp_localize_script('shurikenBlock_{id}')` but frontend JS never reads it; remove or wire to eliminate redundant inline payload
-- [ ] **Revisit star `setInterval`** — 4s re-sync from `data-scaled-average` is unnecessary unless stats change without a vote event; remove or trigger only after vote/AJAX refresh
+- [x] **Conditional asset enqueue** — `viewScript` in block.json + `shuriken_enqueue_frontend_assets()` from block/shortcode render callbacks (WP 7.0+)
+- [x] **Request-scoped rating memo** — dedupe `get_rating()` within a single request; clone-on-return prevents contextual stat leakage
+- [x] **Grouped block batch fetch** — `render_grouped_block()` uses one `get_ratings_by_ids()` call
+- [ ] **Remove dead `shurikenBlock_*` localize** — deferred to Step 8c (wire into smart client fetch)
+- [x] **Revisit star `setInterval`** — removed; vote success explicitly syncs stars
 
 #### 8b — SSR Batch Pre-fetch
 

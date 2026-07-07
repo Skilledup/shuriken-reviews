@@ -28,6 +28,13 @@ class Shuriken_Rating_Repository {
     private const RATING_FIELDS = 'id, name, total_votes, total_rating, parent_id, effect_type, display_only, mirror_of, rating_type, scale, label_description, date_created';
 
     /**
+     * Request-scoped cache of resolved rating objects keyed by rating ID.
+     *
+     * @var array<int|string, object>
+     */
+    private array $request_cache = array();
+
+    /**
      * Constructor
      *
      * @param \wpdb  $wpdb          WordPress database instance.
@@ -101,6 +108,10 @@ class Shuriken_Rating_Repository {
      * @return object|null Rating object or null if not found
      */
     public function get_rating(int $rating_id): ?object {
+        if (isset($this->request_cache[$rating_id])) {
+            return $this->clone_rating($this->request_cache[$rating_id]);
+        }
+
         $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
@@ -121,9 +132,20 @@ class Shuriken_Rating_Repository {
             }
 
             self::attach_averages($rating);
+            $this->request_cache[$rating_id] = $rating;
         }
 
-        return $rating;
+        return $this->clone_rating($rating);
+    }
+
+    /**
+     * Clone a rating object for safe per-render mutation.
+     *
+     * @param object|null $rating Rating object.
+     * @return object|null Cloned rating or null.
+     */
+    private function clone_rating(?object $rating): ?object {
+        return $rating !== null ? clone $rating : null;
     }
 
     /**
@@ -133,6 +155,11 @@ class Shuriken_Rating_Repository {
      * @return object|null Rating object or null if not found
      */
     private function get_original_rating(int $rating_id): ?object {
+        $cache_key = 'raw:' . $rating_id;
+        if (isset($this->request_cache[$cache_key])) {
+            return $this->request_cache[$cache_key];
+        }
+
         $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
@@ -141,6 +168,7 @@ class Shuriken_Rating_Repository {
 
         if ($rating) {
             self::attach_averages($rating);
+            $this->request_cache[$cache_key] = $rating;
         }
 
         return $rating;
@@ -807,7 +835,16 @@ class Shuriken_Rating_Repository {
             }
         }
 
-        return $result;
+        foreach ($result as $id => $rating) {
+            $this->request_cache[(int) $id] = $rating;
+        }
+
+        $cloned = array();
+        foreach ($result as $id => $rating) {
+            $cloned[$id] = clone $rating;
+        }
+
+        return $cloned;
     }
 
     /**

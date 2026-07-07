@@ -120,6 +120,8 @@ class Shuriken_Shortcodes {
             return '';
         }
 
+        shuriken_enqueue_frontend_assets();
+
         // Validate tag is allowed HTML tag
         $tag = in_array(strtolower($atts['tag']), self::ALLOWED_TITLE_TAGS, true) ? $atts['tag'] : 'h2';
 
@@ -529,6 +531,8 @@ class Shuriken_Shortcodes {
         if (!$id) {
             return '';
         }
+
+        shuriken_enqueue_frontend_assets();
 
         $tag = in_array(strtolower($atts['tag']), self::ALLOWED_TITLE_TAGS, true) ? $atts['tag'] : 'h2';
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';

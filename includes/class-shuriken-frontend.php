@@ -28,10 +28,16 @@ class Shuriken_Frontend {
     private static ?self $instance = null;
 
     /**
+     * Whether frontend assets have been enqueued this request.
+     */
+    private static bool $assets_enqueued = false;
+
+    /**
      * Constructor
      */
     private function __construct() {
-        add_action('wp_enqueue_scripts', $this->enqueue_scripts(...), 10);
+        add_action('init', $this->register_assets(...), 5);
+        add_action('wp_enqueue_scripts', $this->maybe_force_enqueue_assets(...), 10);
 
         // Archive sorting by rating
         if (get_option('shuriken_archive_sort_enabled', '0') === '1') {
@@ -61,34 +67,77 @@ class Shuriken_Frontend {
     }
 
     /**
-     * Enqueue frontend scripts and styles
+     * Register frontend script and style handles (enqueue on demand).
      *
      * @return void
-     * @since 1.1.0
+     * @since 1.15.6
      */
-    public function enqueue_scripts(): void {
-        // Enqueue styles
-        wp_enqueue_style(
-            'shuriken-reviews',
+    public function register_assets(): void {
+        wp_register_style(
+            'shuriken-reviews-frontend',
             plugins_url('assets/css/shuriken-reviews.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array(),
             SHURIKEN_REVIEWS_VERSION
         );
-        
-        // Enqueue jQuery
-        wp_enqueue_script('jquery');
-        
-        // Enqueue main script
-        wp_enqueue_script(
+
+        wp_register_script(
             'shuriken-reviews',
             plugins_url('assets/js/shuriken-reviews.js', SHURIKEN_REVIEWS_PLUGIN_FILE),
             array('jquery'),
             SHURIKEN_REVIEWS_VERSION,
             true
         );
-        
-        // Localize script with data and translations
+    }
+
+    /**
+     * Enqueue frontend assets when ratings are rendered or forced via filter.
+     *
+     * Idempotent — safe to call from every block/shortcode render callback.
+     *
+     * @return void
+     * @since 1.15.6
+     */
+    public function enqueue_frontend_assets(): void {
+        if (self::$assets_enqueued) {
+            return;
+        }
+
+        /**
+         * Filter whether frontend assets should be enqueued.
+         *
+         * Return false to skip enqueuing (e.g. custom asset delivery).
+         *
+         * @since 1.15.6
+         * @param bool $enqueue Whether to enqueue assets. Default true.
+         */
+        if (!apply_filters('shuriken_enqueue_frontend_assets', true)) {
+            return;
+        }
+
+        self::$assets_enqueued = true;
+
+        wp_enqueue_style('shuriken-reviews-frontend');
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('shuriken-reviews');
         wp_localize_script('shuriken-reviews', 'shurikenReviews', $this->get_localized_data());
+    }
+
+    /**
+     * Optionally enqueue assets on every page when forced via filter.
+     *
+     * @return void
+     * @since 1.15.6
+     */
+    public function maybe_force_enqueue_assets(): void {
+        /**
+         * Force frontend assets on all pages (legacy / custom HTML injection).
+         *
+         * @since 1.15.6
+         * @param bool $force Whether to enqueue on every frontend page. Default false.
+         */
+        if (apply_filters('shuriken_force_enqueue_frontend_assets', false)) {
+            $this->enqueue_frontend_assets();
+        }
     }
 
     /**
@@ -219,3 +268,14 @@ function shuriken_frontend(): Shuriken_Frontend {
     return Shuriken_Frontend::get_instance();
 }
 
+/**
+ * Enqueue frontend rating assets on demand.
+ *
+ * Called from block render callbacks and shortcodes when ratings are output.
+ *
+ * @return void
+ * @since 1.15.6
+ */
+function shuriken_enqueue_frontend_assets(): void {
+    shuriken_frontend()->enqueue_frontend_assets();
+}

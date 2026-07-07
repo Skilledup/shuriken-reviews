@@ -4,8 +4,8 @@ A professional WordPress rating plugin built for flexibility, performance, and e
 
 ![Version](https://img.shields.io/badge/version-1.15.5-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
-![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)
-![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)
+![WordPress](https://img.shields.io/badge/WordPress-7.0%2B-blue)
+![PHP](https://img.shields.io/badge/PHP-8.3%2B-purple)
 
 ---
 
@@ -46,8 +46,8 @@ Shuriken Reviews is designed around three core principles:
 
 | Dependency | Minimum Version |
 |---|---|
-| WordPress | 6.2 |
-| PHP | 8.1 |
+| WordPress | 7.0 |
+| PHP | 8.3 |
 
 ---
 

@@ -9,6 +9,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.15.6] — Unreleased
 
 ### Added
+- **Conditional frontend asset loading (Step 8a)** — `shuriken-reviews.js` and CSS load only when a rating block or shortcode renders on the page. Blocks declare `viewScript: "shuriken-reviews"` in `block.json` (WP 7.0+); shortcodes call `shuriken_enqueue_frontend_assets()`. Filters: `shuriken_enqueue_frontend_assets`, `shuriken_force_enqueue_frontend_assets`.
+- **`shuriken_enqueue_frontend_assets()` helper** — idempotent on-demand enqueue used by block render callbacks and shortcodes.
 - **Uninstall cleanup configuration option** — introduced a `Delete Data on Uninstall` toggle in the General settings screen which allows users to decide whether custom tables and options should be permanently deleted upon uninstallation. Under [uninstall.php](uninstall.php), database cleanup is now opt-in to prevent accidental data loss.
 - **Deactivation hook and custom callbacks** — registered a plugin `deactivate` hook emitting a custom `shuriken_deactivate` event for add-ons.
 - **`shuriken_container_ready` action** — fires after the container is fully built and services are initialized, enabling complete third-party service overrides.
@@ -18,19 +20,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Grouped-rating block component split** — extracted three dedicated component files from the grouped-rating `edit()` render function: `blocks/shuriken-grouped-rating/components/create-parent-modal.js` (Create Parent / Mirror modal), `blocks/shuriken-grouped-rating/components/edit-parent-modal.js` (Edit Parent + mirror-management modal), and `blocks/shuriken-grouped-rating/components/inspector-panels.js` (Inspector sidebar panels). Each receives its required state and handlers through a single `ctx` object with no hidden coupling to the parent closure.
 
 ### Changed
+- **Minimum WordPress version raised to 7.0** — enables native `viewScript` conditional loading for dynamic blocks without backward-compat fallbacks.
+- **Minimum PHP version raised to 8.3** — aligns with WordPress 7.0's recommended PHP version; PHP 8.1 reached end-of-life in December 2025.
+- **Request-scoped rating memo** — `Shuriken_Rating_Repository::get_rating()` and `get_ratings_by_ids()` dedupe queries within a single request; returns clones to prevent contextual stat mutation leaking between widgets on the same page.
+- **Grouped block batch fetch** — `render_grouped_block()` resolves parent, mirror, and child ratings via one `get_ratings_by_ids()` call instead of per-child `get_rating()` loops.
+- **Star display sync** — removed 4s `setInterval` star refresh; vote success now explicitly calls `updateStars()` and restores stars after the thank-you message.
 - **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics_Rating_Stats` into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`).
 - **`Shuriken_Analytics_Dashboard` and `Shuriken_Analytics_Rating_Stats` classes** — extracted site-wide dashboard queries (~12 methods) and per-rating SQL/breakdown queries (~16 methods + private helpers) from the analytics coordinator. Coordinator is now a ~278-line delegate façade; `Shuriken_Analytics_Interface` extends two new sub-interfaces (`Shuriken_Analytics_Dashboard_Interface`, `Shuriken_Analytics_Rating_Stats_Interface`), completing the five-interface analytics contract (`Formatter`, `Ranking`, `Context`, `Dashboard`, `Rating_Stats`).
 - **Removed duplicate `is_binary_type()` from coordinator** — the private method shadowing `Shuriken_Analytics_Helpers` was deleted; rating-stats uses the trait implementation.
 - **Optional chaining in admin and block editor JS** — `admin-charts.js` and `admin-analytics.js` use `window.*` / `??` instead of `typeof x !== 'undefined'` guards; block editor `wp.hooks` guards use `typeof window.wp?.hooks?.applyFilters === 'function'`.
 - **Core extensibility hooks** — integrated complete hook and filter slots for decoupled third-party add-ons across the admin tables, pages, REST API permissions, and AJAX submission actions.
 - **Frontend JS & block registration filters** — exposed block settings filters and frontend JSON submission hooks (`shurikenVoteRequest` / `shurikenVoteSuccess`) using native `wp.hooks` integration.
-- **Frontend JS selector/timeout constants** — extracted `SELECTORS` (`.shuriken-rating`, `.rating-stats`) and `TIMEOUTS` (`fade`, `buttonPulse`, `thankYou`, `feedback`, `starRefresh`) objects at module scope in `shuriken-reviews.js`, replacing the repeated hardcoded class strings and `4000`/`3000`/`1500`/`300` ms magic numbers across all call sites.
+- **Frontend JS selector/timeout constants** — extracted `SELECTORS` (`.shuriken-rating`, `.rating-stats`) and `TIMEOUTS` (`fade`, `buttonPulse`, `thankYou`, `feedback`) objects at module scope in `shuriken-reviews.js`, replacing the repeated hardcoded class strings and magic numbers across all call sites.
 - **Optional chaining in frontend JS** — replaced verbose `typeof x !== 'undefined'` and `a && a.b` existence guards with optional chaining (`window.wp?.hooks?.applyFilters`, `nonceResponse?.nonce`, `xhr.responseJSON?.data`) throughout `shuriken-reviews.js`.
 - **`admin-charts.js` chart extraction** — all Chart.js initialisation logic was extracted from inline `<script>` blocks in `context-stats.php`, `item-stats.php`, and `voter-activity.php` into a single shared `assets/js/admin-charts.js`. Each PHP page now emits only a small inline data object; all chart-construction code (approval ring, approval trend, cumulative, distribution, dual-axis, voter activity) is defined once in the shared module and reads shared utilities from `window.shurikenAnalyticsUtils`.
 - **Block shared modules converted to ES modules** — `blocks/shared/block-helpers.js` and `blocks/shared/ratings-store.js` migrated from IIFE / `window.wp` global pattern to standard ES module imports (`@wordpress/element`, `@wordpress/components`, `@wordpress/i18n`, `@wordpress/data`, `@wordpress/api-fetch`).
 
 ### Fixed
-- **`setInterval` memory leak in frontend ratings** — star-average refresh intervals were cleaned only by a `MutationObserver` on DOM removal, which does not reliably fire during WP Interactivity Router client-side navigation. Added a `ratingIntervals` registry and a `wp-js-interactivity:navigated` handler that clears intervals for rating elements detached during navigation.
+- **Star vote display after thank-you** — vote success now syncs star visuals from the updated average instead of relying on a periodic refresh interval.
 
 ---
 

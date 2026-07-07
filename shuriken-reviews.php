@@ -3,8 +3,8 @@
  * Plugin Name: Shuriken Reviews
  * Description: A powerful and flexible rating system for WordPress.
  * Version: 1.15.5
- * Requires at least: 6.2
- * Requires PHP: 8.1
+ * Requires at least: 7.0
+ * Requires PHP: 8.3
  * Author: Skilledup
  * Author URI: https://skilledup.ir
  * License: GPLv3

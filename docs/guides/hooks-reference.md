@@ -752,6 +752,24 @@ add_filter('shuriken_localized_data', function($data) {
 
 ---
 
+#### `shuriken_enqueue_frontend_assets`
+
+Filters whether frontend CSS/JS should be enqueued when a rating block or shortcode renders. Return `false` to skip (e.g. when delivering assets through a custom pipeline).
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enqueue` | bool | Whether to enqueue assets. Default `true`. |
+
+**Related:** `shuriken_force_enqueue_frontend_assets` — return `true` to load assets on every frontend page (for custom HTML injection that bypasses block/shortcode render paths).
+
+**Example: force global enqueue**
+```php
+add_filter('shuriken_force_enqueue_frontend_assets', '__return_true');
+```
+
+---
+
 #### `shuriken_i18n_strings`
 
 Filters the translatable strings passed to JavaScript. Use this to customize the user-facing messages.
@@ -1425,6 +1443,8 @@ Third-party stats decorators can implement `Shuriken_Analytics_Extension_Interfa
 
 | Hook | Type | Purpose |
 |------|------|---------|
+| `shuriken_enqueue_frontend_assets` | Filter | Control on-demand frontend asset enqueue from block/shortcode render |
+| `shuriken_force_enqueue_frontend_assets` | Filter | Force frontend assets on every page (default false) |
 | `shuriken_block_view_data` | Filter | Modify localized block view data before `wp_localize_script` |
 | `shurikenBlockSettings_rating` | Filter | Modify single-rating block settings registration (JS, `wp.hooks`) |
 | `shurikenBlockSettings_groupedRating` | Filter | Modify grouped-rating block settings registration (JS, `wp.hooks`) |

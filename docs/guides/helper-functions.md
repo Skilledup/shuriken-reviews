@@ -273,6 +273,20 @@ $frontend = shuriken_frontend();
 
 ---
 
+### `shuriken_enqueue_frontend_assets()`
+
+Enqueue frontend CSS/JS on demand when a rating block or shortcode renders.
+
+```php
+function shuriken_enqueue_frontend_assets(): void
+```
+
+Idempotent — safe to call from every render path. Use when injecting rating HTML outside the built-in block/shortcode callbacks and need assets loaded.
+
+**File:** [class-shuriken-frontend.php](../../includes/class-shuriken-frontend.php)
+
+---
+
 ### `shuriken_shortcodes()`
 
 Get the shortcodes component instance.
@@ -449,6 +463,7 @@ $rating = $db->get_rating(1); // Returns mock data
 | `shuriken_admin()` | 1.0.0 |
 | `shuriken_ajax()` | 1.0.0 |
 | `shuriken_frontend()` | 1.0.0 |
+| `shuriken_enqueue_frontend_assets()` | 1.15.6 |
 | `shuriken_shortcodes()` | 1.0.0 |
 | `shuriken_container()` | 1.7.5 |
 | `shuriken_analytics()` | 1.7.5 |

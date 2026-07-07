@@ -101,6 +101,7 @@
     },
     "usesContext": ["postId", "postType"],
     "editorScript": "shuriken-grouped-rating-editor",
+    "viewScript": "shuriken-reviews",
     "style": "shuriken-reviews-frontend",
     "editorStyle": ["shuriken-reviews-frontend", "shuriken-grouped-rating-editor"]
 }

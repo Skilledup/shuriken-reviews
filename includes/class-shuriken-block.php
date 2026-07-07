@@ -147,13 +147,7 @@ class Shuriken_Block {
             true
         );
 
-        // Register the front-end stylesheet and reuse it for the editor preview
-        wp_register_style(
-            'shuriken-reviews-frontend',
-            plugins_url('assets/css/shuriken-reviews.css', SHURIKEN_REVIEWS_PLUGIN_FILE),
-            array(),
-            SHURIKEN_REVIEWS_VERSION
-        );
+        // Front-end stylesheet registered by Shuriken_Frontend::register_assets().
 
         // Register the editor-specific stylesheet
         wp_register_style(
@@ -283,6 +277,8 @@ class Shuriken_Block {
             return '';
         }
 
+        shuriken_enqueue_frontend_assets();
+
         $rating = $this->db->get_rating($rating_id);
 
         if (!$rating) {
@@ -364,42 +360,75 @@ class Shuriken_Block {
             return '';
         }
 
+        shuriken_enqueue_frontend_assets();
+
+        // Collect all rating IDs for a single batch fetch
+        $ids_to_fetch = array_filter(array($rating_id, $mirror_id));
+
+        if (!empty($sub_ratings_config)) {
+            foreach ($sub_ratings_config as $sr_config) {
+                if (!isset($sr_config['id'])) {
+                    continue;
+                }
+
+                $visible = isset($sr_config['visible']) ? (bool) $sr_config['visible'] : true;
+                if (!$visible) {
+                    continue;
+                }
+
+                $ids_to_fetch[] = absint($sr_config['id']);
+
+                $sr_mirror_id = isset($sr_config['mirrorId']) ? absint($sr_config['mirrorId']) : 0;
+                if ($sr_mirror_id > 0) {
+                    $ids_to_fetch[] = $sr_mirror_id;
+                }
+            }
+        }
+
+        $ratings_map = $this->db->get_ratings_by_ids(array_values(array_unique(array_filter($ids_to_fetch))));
+
         // Resolve parent display rating (mirror or original)
         $parent_display_rating = null;
-        if ($mirror_id > 0) {
-            $parent_display_rating = $this->db->get_rating($mirror_id);
+        if ($mirror_id > 0 && isset($ratings_map[$mirror_id])) {
+            $parent_display_rating = $ratings_map[$mirror_id];
         }
-        // Fall back to original if mirror not found or not set
-        if (!$parent_display_rating) {
-            $parent_display_rating = $this->db->get_rating($rating_id);
+        if (!$parent_display_rating && isset($ratings_map[$rating_id])) {
+            $parent_display_rating = $ratings_map[$rating_id];
         }
 
         if (!$parent_display_rating) {
             return '';
         }
 
-        // Also fetch the original parent for source_id (used for data-parent-id on the wrapper)
-        $original_parent = ($mirror_id > 0) ? $this->db->get_rating($rating_id) : $parent_display_rating;
+        // Original parent for source_id (used for data-parent-id on the wrapper)
+        $original_parent = ($mirror_id > 0 && isset($ratings_map[$rating_id]))
+            ? $ratings_map[$rating_id]
+            : $parent_display_rating;
 
         // Resolve child ratings based on subRatings config
         $child_ratings = array();
         if (!empty($sub_ratings_config)) {
-            // Use the ordered, filtered config
             foreach ($sub_ratings_config as $sr_config) {
-                // Ensure required keys exist
-                if (!isset($sr_config['id'])) continue;
+                if (!isset($sr_config['id'])) {
+                    continue;
+                }
 
                 $visible = isset($sr_config['visible']) ? (bool) $sr_config['visible'] : true;
-                if (!$visible) continue;
+                if (!$visible) {
+                    continue;
+                }
 
                 $sr_mirror_id = isset($sr_config['mirrorId']) ? absint($sr_config['mirrorId']) : 0;
                 $child = null;
 
-                if ($sr_mirror_id > 0) {
-                    $child = $this->db->get_rating($sr_mirror_id);
+                if ($sr_mirror_id > 0 && isset($ratings_map[$sr_mirror_id])) {
+                    $child = $ratings_map[$sr_mirror_id];
                 }
                 if (!$child) {
-                    $child = $this->db->get_rating(absint($sr_config['id']));
+                    $child_id = absint($sr_config['id']);
+                    if (isset($ratings_map[$child_id])) {
+                        $child = $ratings_map[$child_id];
+                    }
                 }
 
                 if ($child) {
