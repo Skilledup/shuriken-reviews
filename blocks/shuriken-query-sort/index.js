@@ -16,7 +16,7 @@
  *     `_shuriken_block_sort` so persistent `posts_join` / `posts_orderby`
  *     filters can inject the rating-based ORDER BY.
  *
- * @package Shuriken_Reviews
+ * @package
  * @since 1.15.5
  */
 
@@ -30,150 +30,186 @@ import { useSelect, useDispatch } from '@wordpress/data';
 
 const STORE_NAME = window.SHURIKEN_STORE_NAME || 'shuriken-reviews';
 
-    // -------------------------------------------------------------------------
-    // Inject inspector panel into core/query
-    // -------------------------------------------------------------------------
-    const withShurikenQuerySortControls = createHOC( (BlockEdit) => {
-        return (props) => {
-            if (props.name !== 'core/query') {
-                return createElement(BlockEdit, props);
-            }
+// -------------------------------------------------------------------------
+// Inject inspector panel into core/query
+// -------------------------------------------------------------------------
+const withShurikenQuerySortControls = createHOC( ( BlockEdit ) => {
+	function ShurikenQuerySortControls( props ) {
+		const storeResult = useSelect( ( select ) => {
+			const store = select( STORE_NAME );
+			if ( ! store ) {
+				return { parentRatings: [], isLoadingParents: false };
+			}
+			return {
+				parentRatings: store.getParentRatings
+					? store.getParentRatings()
+					: [],
+				isLoadingParents: store.getIsLoadingParents
+					? store.getIsLoadingParents()
+					: false,
+			};
+		}, [] );
 
-            const attributes    = props.attributes;
-            const setAttributes = props.setAttributes;
-            const query         = attributes.query || {};
-            const isInherited   = !!query.inherit;
+		const dispatch = useDispatch( STORE_NAME );
 
-            const shurikenRatingId = query.shurikenRatingId || 0;
-            const shurikenOrderBy  = query.shurikenOrderBy  || 'average';
-            const shurikenOrder    = query.shurikenOrder     || 'DESC';
+		useEffect( () => {
+			if ( dispatch && dispatch.fetchParentRatings ) {
+				dispatch.fetchParentRatings();
+			}
+		}, [ dispatch ] );
 
-            // Helper: merge into the existing query attribute object.
-            const updateQuery = (patch) => {
-                setAttributes({ query: Object.assign({}, query, patch) });
-            };
+		if ( props.name !== 'core/query' ) {
+			return createElement( BlockEdit, props );
+		}
 
-            // Fetch available ratings from store
-            const storeResult = useSelect( (select) => {
-                const store = select(STORE_NAME);
-                if (!store) {
-                    return { parentRatings: [], isLoadingParents: false };
-                }
-                return {
-                    parentRatings:    store.getParentRatings    ? store.getParentRatings()    : [],
-                    isLoadingParents: store.getIsLoadingParents ? store.getIsLoadingParents() : false,
-                };
-            }, []);
+		const attributes = props.attributes;
+		const setAttributes = props.setAttributes;
+		const query = attributes.query || {};
+		const isInherited = !! query.inherit;
 
-            const parentRatings    = storeResult.parentRatings;
-            const isLoadingParents = storeResult.isLoadingParents;
+		const shurikenRatingId = query.shurikenRatingId || 0;
+		const shurikenOrderBy = query.shurikenOrderBy || 'average';
+		const shurikenOrder = query.shurikenOrder || 'DESC';
 
-            const dispatch = useDispatch(STORE_NAME);
+		// Helper: merge into the existing query attribute object.
+		const updateQuery = ( patch ) => {
+			setAttributes( { query: Object.assign( {}, query, patch ) } );
+		};
 
-            useEffect( () => {
-                if (dispatch && dispatch.fetchParentRatings) {
-                    dispatch.fetchParentRatings();
-                }
-            }, []);
+		const parentRatings = storeResult.parentRatings;
+		const isLoadingParents = storeResult.isLoadingParents;
 
-            const ratingOptions = [
-                { label: __('— Disabled —', 'shuriken-reviews'), value: 0 },
-            ].concat(
-                (parentRatings || []).map( (r) => {
-                    return { label: `${r.name} (ID: ${r.id})`, value: r.id };
-                })
-            );
+		const ratingOptions = [
+			{ label: __( '— Disabled —', 'shuriken-reviews' ), value: 0 },
+		].concat(
+			( parentRatings || [] ).map( ( r ) => {
+				return { label: `${ r.name } (ID: ${ r.id })`, value: r.id };
+			} )
+		);
 
-            const orderByOptions = [
-                { label: __('Average Rating', 'shuriken-reviews'), value: 'average' },
-                { label: __('Total Votes',    'shuriken-reviews'), value: 'votes'   },
-            ];
+		const orderByOptions = [
+			{
+				label: __( 'Average Rating', 'shuriken-reviews' ),
+				value: 'average',
+			},
+			{ label: __( 'Total Votes', 'shuriken-reviews' ), value: 'votes' },
+		];
 
-            const orderOptions = [
-                { label: __('Descending (highest first)', 'shuriken-reviews'), value: 'DESC' },
-                { label: __('Ascending (lowest first)',   'shuriken-reviews'), value: 'ASC'  },
-            ];
+		const orderOptions = [
+			{
+				label: __( 'Descending (highest first)', 'shuriken-reviews' ),
+				value: 'DESC',
+			},
+			{
+				label: __( 'Ascending (lowest first)', 'shuriken-reviews' ),
+				value: 'ASC',
+			},
+		];
 
-            return createElement(
-                Fragment,
-                null,
-                createElement(BlockEdit, props),
-                createElement(
-                    InspectorControls,
-                    null,
-                    createElement(
-                        PanelBody,
-                        {
-                            title:       __('Shuriken Reviews', 'shuriken-reviews'),
-                            initialOpen: !!shurikenRatingId,
-                        },
-                        isInherited
-                            ? createElement(
-                                'p',
-                                { style: { fontStyle: 'italic', color: '#757575' } },
-                                __('This query inherits from the template. To sort inherited queries by rating, enable "Sort Archives by Rating" in Shuriken Reviews \u2192 Settings \u2192 General.', 'shuriken-reviews')
-                            )
-                            : null,
-                        !isInherited
-                            ? createElement(SelectControl, {
-                                label:   __('Sort by Rating', 'shuriken-reviews'),
-                                value:   shurikenRatingId,
-                                options: ratingOptions,
-                                onChange: (val) => {
-                                    const id = parseInt(val, 10) || 0;
-                                    updateQuery({
-                                        shurikenRatingId: id,
-                                        shurikenOrderBy:  id ? shurikenOrderBy : '',
-                                        shurikenOrder:    id ? shurikenOrder : '',
-                                    });
-                                },
-                                help: isLoadingParents
-                                    ? __('Loading ratings…', 'shuriken-reviews')
-                                    : __('Overrides the default post order. Unrated posts appear last.', 'shuriken-reviews'),
-                            })
-                            : null,
-                        !isInherited && shurikenRatingId
-                            ? createElement(SelectControl, {
-                                label:   __('Sort metric', 'shuriken-reviews'),
-                                value:   shurikenOrderBy,
-                                options: orderByOptions,
-                                onChange: (val) => {
-                                    updateQuery({ shurikenOrderBy: val });
-                                },
-                            })
-                            : null,
-                        !isInherited && shurikenRatingId
-                            ? createElement(SelectControl, {
-                                label:   __('Direction', 'shuriken-reviews'),
-                                value:   shurikenOrder,
-                                options: orderOptions,
-                                onChange: (val) => {
-                                    updateQuery({ shurikenOrder: val });
-                                },
-                            })
-                            : null,
-                        !isInherited && shurikenRatingId
-                            ? createElement(
-                                'p',
-                                {
-                                    style: {
-                                        fontStyle: 'italic',
-                                        color: '#757575',
-                                        fontSize: '12px',
-                                        marginTop: '8px',
-                                    },
-                                },
-                                __('Note: the editor preview may not reflect rating sort order. Save and preview the page to see the correct order.', 'shuriken-reviews')
-                            )
-                            : null
-                    )
-                )
-            );
-        };
-    }, 'withShurikenQuerySortControls');
+		return createElement(
+			Fragment,
+			null,
+			createElement( BlockEdit, props ),
+			createElement(
+				InspectorControls,
+				null,
+				createElement(
+					PanelBody,
+					{
+						title: __( 'Shuriken Reviews', 'shuriken-reviews' ),
+						initialOpen: !! shurikenRatingId,
+					},
+					isInherited
+						? createElement(
+								'p',
+								{
+									style: {
+										fontStyle: 'italic',
+										color: '#757575',
+									},
+								},
+								__(
+									'This query inherits from the template. To sort inherited queries by rating, enable "Sort Archives by Rating" in Shuriken Reviews \u2192 Settings \u2192 General.',
+									'shuriken-reviews'
+								)
+						  )
+						: null,
+					! isInherited
+						? createElement( SelectControl, {
+								label: __(
+									'Sort by Rating',
+									'shuriken-reviews'
+								),
+								value: shurikenRatingId,
+								options: ratingOptions,
+								onChange: ( val ) => {
+									const id = parseInt( val, 10 ) || 0;
+									updateQuery( {
+										shurikenRatingId: id,
+										shurikenOrderBy: id
+											? shurikenOrderBy
+											: '',
+										shurikenOrder: id ? shurikenOrder : '',
+									} );
+								},
+								help: isLoadingParents
+									? __(
+											'Loading ratings…',
+											'shuriken-reviews'
+									  )
+									: __(
+											'Overrides the default post order. Unrated posts appear last.',
+											'shuriken-reviews'
+									  ),
+						  } )
+						: null,
+					! isInherited && shurikenRatingId
+						? createElement( SelectControl, {
+								label: __( 'Sort metric', 'shuriken-reviews' ),
+								value: shurikenOrderBy,
+								options: orderByOptions,
+								onChange: ( val ) => {
+									updateQuery( { shurikenOrderBy: val } );
+								},
+						  } )
+						: null,
+					! isInherited && shurikenRatingId
+						? createElement( SelectControl, {
+								label: __( 'Direction', 'shuriken-reviews' ),
+								value: shurikenOrder,
+								options: orderOptions,
+								onChange: ( val ) => {
+									updateQuery( { shurikenOrder: val } );
+								},
+						  } )
+						: null,
+					! isInherited && shurikenRatingId
+						? createElement(
+								'p',
+								{
+									style: {
+										fontStyle: 'italic',
+										color: '#757575',
+										fontSize: '12px',
+										marginTop: '8px',
+									},
+								},
+								__(
+									'Note: the editor preview may not reflect rating sort order. Save and preview the page to see the correct order.',
+									'shuriken-reviews'
+								)
+						  )
+						: null
+				)
+			)
+		);
+	}
 
-    addFilter(
-        'editor.BlockEdit',
-        'shuriken-reviews/query-sort-controls',
-        withShurikenQuerySortControls
-    );
+	return ShurikenQuerySortControls;
+}, 'withShurikenQuerySortControls' );
+
+addFilter(
+	'editor.BlockEdit',
+	'shuriken-reviews/query-sort-controls',
+	withShurikenQuerySortControls
+);

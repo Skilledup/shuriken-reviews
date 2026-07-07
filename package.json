@@ -11,6 +11,16 @@
         "package": "bash bin/package-plugin.sh"
     },
     "devDependencies": {
-        "@wordpress/scripts": "^27.9.0"
+        "@wordpress/api-fetch": "^7.50.0",
+        "@wordpress/block-editor": "^15.23.0",
+        "@wordpress/blocks": "^15.23.0",
+        "@wordpress/components": "^36.1.0",
+        "@wordpress/compose": "^8.3.0",
+        "@wordpress/data": "^10.50.0",
+        "@wordpress/element": "^8.2.0",
+        "@wordpress/hooks": "^4.50.0",
+        "@wordpress/i18n": "^6.23.0",
+        "@wordpress/plugins": "^7.50.0",
+        "@wordpress/scripts": "^32.6.0"
     }
 }
