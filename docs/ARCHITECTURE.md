@@ -326,7 +326,7 @@ Handles `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcode registrati
 **Responsibility:**
 - Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout, context_id, context_type) — `context_id` and `context_type` enable per-context (per-post) voting when provided.
 - Validate input: `id` is coerced to int; `context_id` is coerced to int; `context_type` is sanitized and validated against the `shuriken_allowed_context_types` filter (defaults: `post`, `page`, `product`).
-- When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and per-context stats overlay vote totals. Since v1.15.7, `render_rating_html()` reads from `Shuriken_Contextual_Stats_Collector` (batch pre-fetch) when active, falling back to `get_contextual_stats()` for isolated calls.
+- When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and per-context stats overlay vote totals. Since v1.15.6, `render_rating_html()` reads from `Shuriken_Contextual_Stats_Collector` (batch pre-fetch) when active, falling back to `get_contextual_stats()` for isolated calls.
 - For grouped ratings, the same context is applied to the parent and all children so vote tallies are scoped consistently.
 - Render single or grouped ratings with preset style classes and CSS custom properties
 - Return HTML
@@ -764,7 +764,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHURIKEN_REVIEWS_VERSION', '1.15.5');
+define('SHURIKEN_REVIEWS_VERSION', '1.15.6-rc');
 define('SHURIKEN_REVIEWS_DIR', plugin_dir_path(__FILE__));
 define('SHURIKEN_REVIEWS_URL', plugin_dir_url(__FILE__));
 
@@ -784,9 +784,9 @@ WordPress loads plugins
     ↓
 Plugin loads and initializes
     ↓
-Frontend module enqueues CSS/JS
+Shortcode or block renders (calls shuriken_enqueue_frontend_assets())
     ↓
-Shortcode or block renders
+Frontend module enqueues CSS/JS on demand
     ↓
 JavaScript in footer enables interactivity
     ↓

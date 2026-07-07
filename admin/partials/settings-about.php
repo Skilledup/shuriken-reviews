@@ -50,42 +50,42 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('Version 1.15.5 — Oboro, focuses on modernizing the plugin internals while also shipping practical editor and analytics improvements: better rating labels, more flexible block-theme sorting, safer Latest Comments fallbacks, and more accurate ranking logic.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Version 1.15.6-rc — Shingetsu, completes the v1.15 architecture roadmap with performance wins, full add-on extensibility, and a modernized block editor — while raising minimum requirements to WordPress 7.0 and PHP 8.3.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Modern PHP Service Layer', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The codebase now uses a backed rating-type enum, focused repositories for ratings/votes/schema work, split REST controllers, and more readonly constructor-promoted services. This keeps the public API stable while making the internals easier to maintain and extend.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Performance & Smarter Loading', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Frontend CSS and JS load only when a rating block or shortcode is present. Contextual stats are batch-fetched during server render via Shuriken_Contextual_Stats_Collector, cutting per-widget database queries on pages with many ratings.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Rating Descriptions + Hide Title', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Ratings can now carry an optional description beneath the name, and both blocks plus shortcodes can hide the title and description entirely. This is especially useful inside Query Loop layouts and dense review cards.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Complete Analytics Architecture', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Shuriken_Analytics is now a ~278-line coordinator delegating to five focused services: Formatter, Ranking, Context, Dashboard, and Rating_Stats. Admin charts were extracted into a shared admin-charts.js module.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Query Loop Sorting for Block Themes', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('A dedicated Query Loop Sort extension adds rating-based ordering controls for block themes, and archive sorting settings now let you choose the target rating and sort direction more explicitly.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Add-on Extensibility (Step 7)', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('New lifecycle hooks (shuriken_container_ready, shuriken_deactivate), REST and AJAX permission filters, frontend wp.hooks integration, and an opt-in Delete Data on Uninstall toggle give third-party add-ons clean extension points without forking core classes.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Analytics Accuracy + Ranking Fixes', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Ranking logic now handles like/dislike ratings more consistently, fixes low-performer and demoralize calculations, and keeps binary thresholds and inversion rules aligned with the intended scale behavior.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Block Editor Modernization', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Shared block modules now use ES module imports. Grouped-rating modals and inspector panels were split into dedicated components, and reusable hooks cover API error handling and rating-type scale fields.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Latest Comments Improvements', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('The Latest Comments block now has an optional Swiper slider mode, and its fallback handling was hardened for environments missing mbstring support, extension metadata, or expected block names.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Platform Requirements', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Minimum WordPress raised to 7.0 (native viewScript conditional loading) and minimum PHP raised to 8.3, aligning with WordPress 7.0 recommendations.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Admin Template + JS Cleanup', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Analytics pages now share reusable filter bars, pagination, and vote-history tables, while the JavaScript codebase was modernized to ES6+ syntax for easier maintenance and fewer duplicated behaviors.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Frontend Vote UX + Label Styles', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Star ratings sync immediately after a vote instead of polling on an interval. Rating label descriptions now have consistent typography across all style presets (card, minimal, dark, outlined, boxed).', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
             </ul>

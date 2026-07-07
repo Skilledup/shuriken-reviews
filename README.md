@@ -2,7 +2,7 @@
 
 A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.15.5-blue)
+![Version](https://img.shields.io/badge/version-1.15.6--rc-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-7.0%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.3%2B-purple)
@@ -338,9 +338,10 @@ add_filter( 'shuriken_rest_manage_capability', function( $cap ) {
 
 Shuriken Reviews is fully compatible with full-page caching and CDNs without any cache-rule configuration:
 
-1. On every page load, the plugin's JavaScript fetches fresh vote statistics and a valid nonce from the REST API.
-2. If a vote is submitted with a stale nonce (e.g. from a cached page), the plugin automatically fetches a fresh nonce and retries the request — the user sees no error.
-3. The `/nonce` endpoint can itself be served cached; the retry mechanism handles any edge cases.
+1. Frontend CSS and JS load only when a rating block or shortcode is present on the page (v1.15.6+).
+2. On every page load, the plugin's JavaScript fetches fresh vote statistics and a valid nonce from the REST API.
+3. If a vote is submitted with a stale nonce (e.g. from a cached page), the plugin automatically fetches a fresh nonce and retries the request — the user sees no error.
+4. The `/nonce` endpoint can itself be served cached; the retry mechanism handles any edge cases.
 
 ---
 
@@ -384,6 +385,9 @@ Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-lim
 | `shuriken_allowed_context_types` | Filter | Control which post types accept contextual votes |
 | `shuriken_rate_limit_exceeded` | Filter | Customise the rate-limit error response |
 | `shuriken_vote_created` | Action | Fires after a new vote is successfully recorded |
+| `shuriken_container_ready` | Action | Fires after the DI container is fully built — swap services before first use |
+| `shuriken_deactivate` | Action | Fires on plugin deactivation |
+| `shuriken_enqueue_frontend_assets` | Filter | Control conditional frontend CSS/JS enqueue |
 | `shuriken_after_rating_stats` | Action | Append content below the rating stats block |
 | `shuriken_settings_tabs` | Filter | Add or modify Settings page tabs |
 
@@ -398,6 +402,7 @@ shuriken_votes_repo()   // Returns Shuriken_Vote_Repository
 shuriken_schema_manager() // Returns Shuriken_Schema_Manager
 shuriken_analytics()  // Returns Shuriken_Analytics_Interface
 shuriken_container()  // Returns Shuriken_Container (DI service container)
+shuriken_enqueue_frontend_assets() // Idempotent on-demand frontend CSS/JS enqueue
 ```
 
 ### Service Interfaces

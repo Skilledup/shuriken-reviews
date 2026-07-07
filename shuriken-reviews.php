@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shuriken Reviews
  * Description: A powerful and flexible rating system for WordPress.
- * Version: 1.15.5
+ * Version: 1.15.6-rc
  * Requires at least: 7.0
  * Requires PHP: 8.3
  * Author: Skilledup
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Plugin constants
  */
 if (!defined('SHURIKEN_REVIEWS_VERSION')) {
-    define('SHURIKEN_REVIEWS_VERSION', '1.15.5');
+    define('SHURIKEN_REVIEWS_VERSION', '1.15.6-rc');
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {

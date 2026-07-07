@@ -50,9 +50,9 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 - `get_context_usage_counts()` / `get_ratings_for_context()` DB methods + interface additions
 - `GET /shuriken-reviews/v1/context-stats` REST endpoint (editor-only, `can_edit_posts` permission)
 
-### Modern PHP & Architecture (v1.15.5–1.15.6)
+### Modern PHP & Architecture (v1.15.5–1.15.6-rc)
 
-Steps 1–5 shipped in v1.15.5. Step 6 (6a–6f) and Step 7 completed in v1.15.6 (foundational Step 6 work — formatter, ranking, context, JS modernisation, block decomposition — began in v1.15.5).
+Steps 1–5 shipped in v1.15.5. Step 6 (6a–6f) and Step 7 completed in v1.15.6-rc **Shingetsu** (foundational Step 6 work — formatter, ranking, context, JS modernisation, block decomposition — began in v1.15.5).
 
 #### Step 1 — `RatingType` Backed Enum ✅
 
@@ -95,9 +95,9 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 #### Step 6 — Coding Standards & DRY Sweep ✅
 
-##### 6a — `Shuriken_Analytics` Decomposition ✅ (completed v1.15.6)
+##### 6a — `Shuriken_Analytics` Decomposition ✅ (completed v1.15.6-rc)
 
-Formatter, Ranking, and Context services shipped in v1.15.5; Dashboard and Rating_Stats extraction plus the final ~278-line coordinator shipped in v1.15.6.
+Formatter, Ranking, and Context services shipped in v1.15.5; Dashboard and Rating_Stats extraction plus the final ~278-line coordinator shipped in v1.15.6-rc.
 
 
 | Class                              | Lines | Responsibility                                                                                                                                              |
@@ -137,9 +137,9 @@ All 10 project JS files modernized: 135 `var` → `const`/`let`, arrow functions
 
 `SELECTORS`/`TIMEOUTS` constants, `setInterval` memory-leak fix via `wp-js-interactivity:navigated`, optional chaining in frontend JS, CSS class audit (no removals needed).
 
-#### Step 7 — Platform & Add-on Extensibility ✅ (v1.15.6)
+#### Step 7 — Platform & Add-on Extensibility ✅ (v1.15.6-rc)
 
-All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-party add-ons.
+All hook, filter, and action slots shipped in v1.15.6-rc for fully decoupled third-party add-ons.
 
 **Admin UI:** `shuriken_admin_submenu`, `shuriken_ratings_columns` (filter), `shuriken_after_ratings_list`, `shuriken_after_analytics_overview`, `shuriken_after_settings_card`, `shuriken_settings_sidebar_{tab}`, `shuriken_save_settings`
 

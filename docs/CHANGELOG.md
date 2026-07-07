@@ -6,75 +6,96 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [1.15.6] — Unreleased
+## [1.15.6-rc] — Shingetsu — 2026-07-07
 
 ### Added
+
 - **Conditional frontend asset loading (Step 8a)** — `shuriken-reviews.js` and CSS load only when a rating block or shortcode renders on the page. Blocks declare `viewScript: "shuriken-reviews"` in `block.json` (WP 7.0+); shortcodes call `shuriken_enqueue_frontend_assets()`. Filters: `shuriken_enqueue_frontend_assets`, `shuriken_force_enqueue_frontend_assets`.
-- **`shuriken_enqueue_frontend_assets()` helper** — idempotent on-demand enqueue used by block render callbacks and shortcodes.
+- `shuriken_enqueue_frontend_assets()` **helper** — idempotent on-demand enqueue used by block render callbacks and shortcodes.
 - **Uninstall cleanup configuration option** — introduced a `Delete Data on Uninstall` toggle in the General settings screen which allows users to decide whether custom tables and options should be permanently deleted upon uninstallation. Under [uninstall.php](uninstall.php), database cleanup is now opt-in to prevent accidental data loss.
 - **Deactivation hook and custom callbacks** — registered a plugin `deactivate` hook emitting a custom `shuriken_deactivate` event for add-ons.
-- **`shuriken_container_ready` action** — fires after the container is fully built and services are initialized, enabling complete third-party service overrides.
-- **`Shuriken_Analytics_Extension_Interface`** — provides a dedicated interface contract for third-party extensions to hook custom statistics directly into Shuriken's analytics queries.
-- **`useApiErrorHandling` block hook** — custom hook in `blocks/shared/block-helpers.js` that bundles the full per-block API error-handling lifecycle (`error`, `lastFailedAction`, `handleApiError`, `dismissError`, `retryLastAction`) into a single reusable hook, replacing the identical state pair and wiring duplicated in both block `edit()` functions.
-- **`renderRatingTypeScaleFields` block helper** — shared helper in `blocks/shared/block-helpers.js` that centralises the Rating Type selector and conditional Scale input (with clamp logic) used identically in both the single-rating and grouped-rating block editors.
+- `shuriken_container_ready` **action** — fires after the container is fully built and services are initialized, enabling complete third-party service overrides.
+- `Shuriken_Analytics_Extension_Interface` — provides a dedicated interface contract for third-party extensions to hook custom statistics directly into Shuriken's analytics queries.
+- `useApiErrorHandling` **block hook** — custom hook in `blocks/shared/block-helpers.js` that bundles the full per-block API error-handling lifecycle (`error`, `lastFailedAction`, `handleApiError`, `dismissError`, `retryLastAction`) into a single reusable hook, replacing the identical state pair and wiring duplicated in both block `edit()` functions.
+- `renderRatingTypeScaleFields` **block helper** — shared helper in `blocks/shared/block-helpers.js` that centralises the Rating Type selector and conditional Scale input (with clamp logic) used identically in both the single-rating and grouped-rating block editors.
 - **Grouped-rating block component split** — extracted three dedicated component files from the grouped-rating `edit()` render function: `blocks/shuriken-grouped-rating/components/create-parent-modal.js` (Create Parent / Mirror modal), `blocks/shuriken-grouped-rating/components/edit-parent-modal.js` (Edit Parent + mirror-management modal), and `blocks/shuriken-grouped-rating/components/inspector-panels.js` (Inspector sidebar panels). Each receives its required state and handlers through a single `ctx` object with no hidden coupling to the parent closure.
+- **Plugin packaging script** — `bin/package-plugin.sh` and `npm run package` build compiled block assets into an installable `build/shuriken-reviews.zip`; GitHub release workflow updated to use the same path.
+
+
 
 ### Changed
+
 - **SSR contextual stats batch pre-fetch (Step 8b)** — new `Shuriken_Contextual_Stats_Collector` service registers all contextual rating widgets during `the_content` (priority 1) and `pre_render_block`, then `render_rating_html()` serves stats from `get_contextual_stats_batch()` instead of per-widget `get_contextual_stats()` queries. Falls back to single query when collector is inactive (admin, REST, AJAX, isolated `do_shortcode()` calls). Cached vote totals are scale-independent; `display_average` is denormalized per widget from the requested scale so the same rating can render at different scales on one page.
 - **Minimum WordPress version raised to 7.0** — enables native `viewScript` conditional loading for dynamic blocks without backward-compat fallbacks.
 - **Minimum PHP version raised to 8.3** — aligns with WordPress 7.0's recommended PHP version; PHP 8.1 reached end-of-life in December 2025.
-- **Request-scoped rating memo** — `Shuriken_Rating_Repository::get_rating()` and `get_ratings_by_ids()` dedupe queries within a single request; returns clones to prevent contextual stat mutation leaking between widgets on the same page.
+- **Request-scoped rating memo** — `Shuriken_Rating_Repository::get_rating()` and `get_ratings_by_ids()` dedupe queries within a single request; returns clones to prevent contextual stat mutation leaking between widgets on the same page. `forget_request_cache()` clears memoized entries after rating mutations and vote writes.
 - **Grouped block batch fetch** — `render_grouped_block()` resolves parent, mirror, and child ratings via one `get_ratings_by_ids()` call instead of per-child `get_rating()` loops.
 - **Star display sync** — removed 4s `setInterval` star refresh; vote success now explicitly calls `updateStars()` and restores stars after the thank-you message.
-- **Decomposed `get_parent_rating_stats_breakdown()`** — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics_Rating_Stats` into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`).
-- **`Shuriken_Analytics_Dashboard` and `Shuriken_Analytics_Rating_Stats` classes** — extracted site-wide dashboard queries (~12 methods) and per-rating SQL/breakdown queries (~16 methods + private helpers) from the analytics coordinator. Coordinator is now a ~278-line delegate façade; `Shuriken_Analytics_Interface` extends two new sub-interfaces (`Shuriken_Analytics_Dashboard_Interface`, `Shuriken_Analytics_Rating_Stats_Interface`), completing the five-interface analytics contract (`Formatter`, `Ranking`, `Context`, `Dashboard`, `Rating_Stats`).
-- **Removed duplicate `is_binary_type()` from coordinator** — the private method shadowing `Shuriken_Analytics_Helpers` was deleted; rating-stats uses the trait implementation.
-- **Optional chaining in admin and block editor JS** — `admin-charts.js` and `admin-analytics.js` use `window.*` / `??` instead of `typeof x !== 'undefined'` guards; block editor `wp.hooks` guards use `typeof window.wp?.hooks?.applyFilters === 'function'`.
+- **Decomposed** `get_parent_rating_stats_breakdown()` — decomposed the monolithic method (was ~240 lines) in `Shuriken_Analytics_Rating_Stats` into four focused private methods (`get_direct_votes_breakdown()`, `calculate_sub_ratings_rating_totals()`, `get_sub_ratings_breakdown()`, `combine_votes_breakdown()`).
+- `Shuriken_Analytics_Dashboard` **and** `Shuriken_Analytics_Rating_Stats` **classes** — extracted site-wide dashboard queries (~~12 methods) and per-rating SQL/breakdown queries (~~16 methods + private helpers) from the analytics coordinator. Coordinator is now a ~278-line delegate façade; `Shuriken_Analytics_Interface` extends two new sub-interfaces (`Shuriken_Analytics_Dashboard_Interface`, `Shuriken_Analytics_Rating_Stats_Interface`), completing the five-interface analytics contract (`Formatter`, `Ranking`, `Context`, `Dashboard`, `Rating_Stats`).
+- **Removed duplicate** `is_binary_type()` **from coordinator** — the private method shadowing `Shuriken_Analytics_Helpers` was deleted; rating-stats uses the trait implementation.
+- **Optional chaining in admin and block editor JS** — `admin-charts.js` and `admin-analytics.js` use `window.`* / `??` instead of `typeof x !== 'undefined'` guards; block editor `wp.hooks` guards use `typeof window.wp?.hooks?.applyFilters === 'function'`.
 - **Core extensibility hooks** — integrated complete hook and filter slots for decoupled third-party add-ons across the admin tables, pages, REST API permissions, and AJAX submission actions.
 - **Frontend JS & block registration filters** — exposed block settings filters and frontend JSON submission hooks (`shurikenVoteRequest` / `shurikenVoteSuccess`) using native `wp.hooks` integration.
 - **Frontend JS selector/timeout constants** — extracted `SELECTORS` (`.shuriken-rating`, `.rating-stats`) and `TIMEOUTS` (`fade`, `buttonPulse`, `thankYou`, `feedback`) objects at module scope in `shuriken-reviews.js`, replacing the repeated hardcoded class strings and magic numbers across all call sites.
 - **Optional chaining in frontend JS** — replaced verbose `typeof x !== 'undefined'` and `a && a.b` existence guards with optional chaining (`window.wp?.hooks?.applyFilters`, `nonceResponse?.nonce`, `xhr.responseJSON?.data`) throughout `shuriken-reviews.js`.
-- **`admin-charts.js` chart extraction** — all Chart.js initialisation logic was extracted from inline `<script>` blocks in `context-stats.php`, `item-stats.php`, and `voter-activity.php` into a single shared `assets/js/admin-charts.js`. Each PHP page now emits only a small inline data object; all chart-construction code (approval ring, approval trend, cumulative, distribution, dual-axis, voter activity) is defined once in the shared module and reads shared utilities from `window.shurikenAnalyticsUtils`.
+- `admin-charts.js` **chart extraction** — all Chart.js initialisation logic was extracted from inline `<script>` blocks in `context-stats.php`, `item-stats.php`, and `voter-activity.php` into a single shared `assets/js/admin-charts.js`. Each PHP page now emits only a small inline data object; all chart-construction code (approval ring, approval trend, cumulative, distribution, dual-axis, voter activity) is defined once in the shared module and reads shared utilities from `window.shurikenAnalyticsUtils`.
 - **Block shared modules converted to ES modules** — `blocks/shared/block-helpers.js` and `blocks/shared/ratings-store.js` migrated from IIFE / `window.wp` global pattern to standard ES module imports (`@wordpress/element`, `@wordpress/components`, `@wordpress/i18n`, `@wordpress/data`, `@wordpress/api-fetch`).
+- **Rating description styles** — `.rating-description` rules added across card, minimal, dark, outlined, and boxed presets (single and grouped layouts) for consistent typography and contrast.
+
+
 
 ### Fixed
+
 - **Star vote display after thank-you** — vote success now syncs star visuals from the updated average instead of relying on a periodic refresh interval.
+- `shuriken_after_settings_card` **hook placement** — action now fires immediately before the Save Settings button inside each settings partial instead of after the partial include.
 
 ---
 
+
+
 ## [1.15.5] — 2026-05-03
 
+
+
 ### Added
+
 - **Rating label descriptions** — ratings now support a `label_description` field that is editable in admin, available in the block editor, rendered by shortcodes/frontend output, and exposed through the REST API.
 - **Hide title/description controls** — single and grouped rating blocks now support `hideTitle`, and shortcodes now support `hide_title`, so layouts such as Query Loops can suppress repeated rating labels.
 - **Query Loop Sort extension for block themes** — new block-theme sorting controls let Query Loop output and archive views order content by a chosen rating, sort metric, and direction.
 - **Latest Comments Swiper option** — the comments settings now expose an option to render the Latest Comments block as a Swiper-powered slider.
-- **`Shuriken_Rating_Type` backed enum** — PHP 8.1 backed enum in `includes/enum-shuriken-rating-type.php`. Cases: `Stars`, `LikeDislike`, `Numeric`, `Approval`. Methods: `isBinary()`, `maxScale()`, `constrainScale()`, `typeClass()`, `values()`. Adopted across 13 files — `get_type_class()` deleted from REST API, all `$allowed_types` arrays and binary guards replaced with enum calls.
-- **`Shuriken_Analytics_Formatter` class** — stateless formatting service extracted from `Shuriken_Analytics`. Handles `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, and `get_date_range_label()`. `Shuriken_Analytics` delegates via `$this->formatter`.
-- **`Shuriken_Analytics_Ranking` class** — ranking service extracted from `Shuriken_Analytics`. Consolidates `get_top_rated()`, `get_most_voted()`, and `get_low_performers()` into a single parametric `get_ranked()` engine (cached + date-filtered paths). Effect-type inversion SQL extracted to `get_inversion_sql()` static helper.
-- **`Shuriken_Analytics_Context` class** — contextual analytics service extracted from `Shuriken_Analytics`. Owns 12 per-post/contextual methods (~660 lines): `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, and more. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
-- **`Shuriken_Rating_Repository` class** — rating-focused repository split from `Shuriken_Database`. Handles rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, and export (~1,041 lines). Helper function `shuriken_ratings_repo()` added.
-- **`Shuriken_Vote_Repository` class** — vote-focused repository split from `Shuriken_Database`. Handles vote CRUD, rate-limit timestamp queries, and transactional vote+total updates (~326 lines). Helper function `shuriken_votes_repo()` added.
-- **`Shuriken_Schema_Manager` class** — schema management split from `Shuriken_Database`. Handles `create_tables()`, `tables_exist()`, and column migrations (~204 lines). Helper function `shuriken_schema_manager()` added.
-- **`Shuriken_REST_Ratings_Controller` class** — 11 rating endpoints (CRUD, hierarchy, mirrors, search, batch) with their arg schemas and permission callbacks (~689 lines), split from the monolithic `Shuriken_REST_API`.
-- **`Shuriken_REST_Votes_Controller` class** — 3 vote-related endpoints (stats, context-stats, nonce) split from the monolithic `Shuriken_REST_API` (~268 lines).
+- `Shuriken_Rating_Type` **backed enum** — PHP 8.1 backed enum in `includes/enum-shuriken-rating-type.php`. Cases: `Stars`, `LikeDislike`, `Numeric`, `Approval`. Methods: `isBinary()`, `maxScale()`, `constrainScale()`, `typeClass()`, `values()`. Adopted across 13 files — `get_type_class()` deleted from REST API, all `$allowed_types` arrays and binary guards replaced with enum calls.
+- `Shuriken_Analytics_Formatter` **class** — stateless formatting service extracted from `Shuriken_Analytics`. Handles `format_average_display()`, `format_vote_display()`, `format_time_ago()`, `format_date()`, and `get_date_range_label()`. `Shuriken_Analytics` delegates via `$this->formatter`.
+- `Shuriken_Analytics_Ranking` **class** — ranking service extracted from `Shuriken_Analytics`. Consolidates `get_top_rated()`, `get_most_voted()`, and `get_low_performers()` into a single parametric `get_ranked()` engine (cached + date-filtered paths). Effect-type inversion SQL extracted to `get_inversion_sql()` static helper.
+- `Shuriken_Analytics_Context` **class** — contextual analytics service extracted from `Shuriken_Analytics`. Owns 12 per-post/contextual methods (~660 lines): `has_contextual_votes()`, `get_rating_context_summary()`, `get_rating_contexts_paginated()`, `get_context_rating_stats()`, and more. `is_binary_type()` and `build_empty_distribution()` promoted to `Shuriken_Analytics_Helpers` trait.
+- `Shuriken_Rating_Repository` **class** — rating-focused repository split from `Shuriken_Database`. Handles rating CRUD, search, pagination, hierarchy, mirrors, contextual stats, and export (~1,041 lines). Helper function `shuriken_ratings_repo()` added.
+- `Shuriken_Vote_Repository` **class** — vote-focused repository split from `Shuriken_Database`. Handles vote CRUD, rate-limit timestamp queries, and transactional vote+total updates (~326 lines). Helper function `shuriken_votes_repo()` added.
+- `Shuriken_Schema_Manager` **class** — schema management split from `Shuriken_Database`. Handles `create_tables()`, `tables_exist()`, and column migrations (~204 lines). Helper function `shuriken_schema_manager()` added.
+- `Shuriken_REST_Ratings_Controller` **class** — 11 rating endpoints (CRUD, hierarchy, mirrors, search, batch) with their arg schemas and permission callbacks (~689 lines), split from the monolithic `Shuriken_REST_API`.
+- `Shuriken_REST_Votes_Controller` **class** — 3 vote-related endpoints (stats, context-stats, nonce) split from the monolithic `Shuriken_REST_API` (~268 lines).
 - **Admin template partials** — `partials/pagination.php` (reusable pagination block), `partials/date-filter-bar.php` (unified date-range filter form), `partials/votes-table.php` (reusable vote history table with voter display). Helper functions `shuriken_format_rating_value()` and `shuriken_render_voter_cell()` added to `class-shuriken-admin.php`.
-- **`Shuriken_REST_Permissions` trait** — shared permission logic extracted for the split REST controllers so ratings and vote endpoints stay aligned.
+- `Shuriken_REST_Permissions` **trait** — shared permission logic extracted for the split REST controllers so ratings and vote endpoints stay aligned.
+
+
 
 ### Changed
+
 - **Ratings terminology cleaned up** — rating description handling now consistently uses `name`/`label_description` terminology instead of older `title`-oriented wording across admin, blocks, REST docs, and related code paths.
 - **Archive sorting controls expanded** — admin settings and the Query Loop Sort integration now expose clearer rating-selection and direction options for archive ordering.
 - **Latest Comments block integration hardened** — the comments feature now tolerates missing extension metadata and missing block names more defensively when bootstrapping local assets or fallbacks.
 - **First-class callables for hooks** — all `array($this, 'method_name')` callback syntax replaced with `$this->method(...)` first-class callables across 6 classes: `Shuriken_Admin` (19), `Shuriken_REST_API` (30), `Shuriken_Block` (5), `Shuriken_AJAX` (2), `Shuriken_Shortcodes` (2), `Shuriken_Frontend` (2). Zero logic changes.
-- **`readonly` properties + Constructor Property Promotion** — CPP + `readonly` applied to `Shuriken_Admin` (2 promoted props), `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Shortcodes` (1 each), `Shuriken_Analytics` (1 promoted + 3 readonly derived). Constructor params made non-nullable throughout.
-- **`Shuriken_Database` refactored to delegation façade** — the class retains singleton, constants, static helpers, and implements `Shuriken_Database_Interface` for full backward compatibility, but delegates all 28 interface methods to the focused repository classes. `shuriken_db()` continues to work unchanged. All 10 callers now type-hint the specific repository they need.
-- **`Shuriken_REST_API` refactored to thin bootstrap** — singleton, controller wiring, `register_routes()` delegation, and cross-cutting REST filters (auth bypass, output buffer cleaning, CDN cache headers) remain; all route logic lives in the two controllers.
+- `readonly` **properties + Constructor Property Promotion** — CPP + `readonly` applied to `Shuriken_Admin` (2 promoted props), `Shuriken_Block`, `Shuriken_AJAX`, `Shuriken_Shortcodes` (1 each), `Shuriken_Analytics` (1 promoted + 3 readonly derived). Constructor params made non-nullable throughout.
+- `Shuriken_Database` **refactored to delegation façade** — the class retains singleton, constants, static helpers, and implements `Shuriken_Database_Interface` for full backward compatibility, but delegates all 28 interface methods to the focused repository classes. `shuriken_db()` continues to work unchanged. All 10 callers now type-hint the specific repository they need.
+- `Shuriken_REST_API` **refactored to thin bootstrap** — singleton, controller wiring, `register_routes()` delegation, and cross-cutting REST filters (auth bypass, output buffer cleaning, CDN cache headers) remain; all route logic lives in the two controllers.
 - **Scoped analytics methods merged** — 7 duplicate method pairs (`get_votes_over_time`, `get_rating_stats`, `get_rating_distribution`, `get_approval_trend`, `get_cumulative_approvals`, `get_votes_with_rolling_avg`, `get_rating_votes_paginated`) consolidated; base methods gained `?string $scope = null`. `_scoped()` delegates retained for backward compatibility.
 - **JS modernization across all 10 project files** — 135 `var` declarations converted to `const`/`let`, anonymous callbacks converted to arrow functions (except jQuery `this`-binding callbacks), string concatenation replaced with template literals, `e.which` replaced with `e.key`.
 - **Responsive analytics filter bar polish** — filter groups now wrap more gracefully on smaller screens and action buttons size more predictably.
-- **`@since` tags normalized** — all `@since 1.15.0` annotations corrected to `1.15.5` (33 occurrences) across the codebase.
+- `@since` **tags normalized** — all `@since 1.15.0` annotations corrected to `1.15.5` (33 occurrences) across the codebase.
+
+
 
 ### Fixed
+
 - **Date filter not working on contextual item-stats page** — the time period `<select>` change handler was only wired in the global view's script block; the contextual view was missing the jQuery bindings entirely. Fixed by centralizing into `admin-analytics.js`.
 - **Best Performing average wrong for binary types** — `get_rating_context_summary()` ran `denormalize_average()` on a like/dislike 0–1 ratio, showing `0.2` instead of `100%`. Fixed to compute percentage for binary types.
 - **Analytics ranking and demoralize regressions** — low-performer momentum filtering, binary threshold handling, inversion scoping, numeric icon rendering, and like/dislike normalization in ranked filters were corrected so ranking cards use consistent scale logic.
@@ -86,48 +107,78 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.15.4] — 2026-04-10
 
+
+
 ### Added
+
 - **Yozora release** — the next public release after 1.14.10, focused on contextual analytics depth, mixed-scope clarity, and modern block-theme navigation support.
 - **Scope-aware Item Stats views** — ratings with contextual votes now expose separate **Per-Post Votes** and **Global Votes** views, preventing mixed reporting when a rating receives both contextual and non-contextual votes. The Per-Post view adds overview cards, top-post charts, contextual average distribution, trending contexts, and a sortable paginated table of posts/pages/products.
 - **Context detail screen** — new admin page at `admin/context-stats.php` provides a drill-down for a single rating on a single post/context, including summary cards, type-aware charts, and paginated vote history.
 - **Client-side navigation support for blocks** — both block definitions now opt into `supports.interactivity.clientNavigation`, and the frontend script re-initialises ratings after `wp-js-interactivity:navigated` events so widgets keep working after router-based page transitions.
 - **Mixed-scope badges in Ratings admin** — ratings list rows now detect global vote counts in addition to contextual usage, showing badges such as `Global + 6 posts` for ratings that span both scopes.
 
+
+
 ### Changed
+
 - **Item Stats filter UX** — the date filter, scope toggle, and parent-view selector were refactored into a unified, more responsive filter bar that preserves state more reliably while switching modes.
 - **Parent breakdown analytics** — parent rating stats breakdown, vote history, distributions, rolling averages, and type-specific charts now respect the active scope and date range instead of always aggregating everything together.
 - **Ratings/admin display polish** — star, binary, and mixed-scope displays in analytics and the ratings list were refined for clearer icon usage and more readable at-a-glance stats.
 
+
+
 ### Fixed
+
 - **Frontend re-initialisation after client navigation** — ratings no longer become stale or non-interactive after block-theme client-side navigation events.
 - **Global-only reporting on mixed ratings** — global scope now uses properly filtered totals, vote history, approval trends, cumulative approvals, and rolling-average chart data.
 - **Version consistency** — plugin header and version constants were aligned to `1.15.4` for release packaging.
 
+
+
 ## [1.14.10] — 2026-04-07
 
+
+
 ### Added
+
 - **Button color for grouped rating block** — new `buttonColor` block attribute exposes a dedicated "Button Color" swatch in the Colors inspector panel; only shown when the parent or any child rating is of type `numeric`. The value is emitted as `--shuriken-button-color`, which all three presets (minimal, dark, outlined) now use for `.shuriken-slider-submit` fill, border, and hover background, falling back to `--shuriken-star-color` when unset. Applied to PHP server-side render (`class-shuriken-block.php`) and the shortcode layer (`class-shuriken-shortcodes.php`). Files: `blocks/shuriken-grouped-rating/block.json`, `blocks/shuriken-grouped-rating/index.js`, `blocks/shared/block-helpers.js`, `includes/class-shuriken-block.php`, `includes/class-shuriken-shortcodes.php`, `assets/css/shuriken-reviews.css`.
-- **`button_color` shortcode attribute** — `[shuriken_rating]` and `[shuriken_grouped_rating]` now accept `button_color` (hex), emitting `--shuriken-button-color` via `build_style_vars()`. Note: the attribute was registered in `build_style_vars()` in this release and is now correctly declared in `shortcode_atts` for both shortcodes. File: `includes/class-shuriken-shortcodes.php`.
+- `button_color` **shortcode attribute** — `[shuriken_rating]` and `[shuriken_grouped_rating]` now accept `button_color` (hex), emitting `--shuriken-button-color` via `build_style_vars()`. Note: the attribute was registered in `build_style_vars()` in this release and is now correctly declared in `shortcode_atts` for both shortcodes. File: `includes/class-shuriken-shortcodes.php`.
+
+
 
 ### Changed
+
 - **Searching spinner in grouped rating block** — the rating-search modal now shows a spinner and "Searching..." label while results are loading, replacing the silent wait. File: `blocks/shuriken-grouped-rating/index.js`.
 - **Grid child layout fills card width** — in grid (card) layout, child rating wrappers (`shuriken-rating-wrapper`) and numeric widgets (`shuriken-numeric`) now expand to 100% of the card. The slider takes its own full row (`flex: 1 1 100%`) and the value/button pair wraps beneath it, preventing content overflow on narrow cards. File: `assets/css/shuriken-reviews.css`.
 - **README and About tab updated** — README rewritten as a professional enterprise reference covering all changes since 1.11.4; the Settings → About "What's New" section updated to match. Files: `README.md`, `admin/partials/settings-about.php`.
 
+
+
 ### Fixed
+
 - **Margin reset in grouped layout** — `.shuriken-rating-group .shuriken-rating` had no margin reset, so individual rating margins accumulated alongside the `--shuriken-gap` spacing and doubled the gap in certain themes. Added `margin: 0` rule so gap alone controls spacing. File: `assets/css/shuriken-reviews.css`.
-- **`display_only` flag evaluated as strict integer** — `renderRatingPreview()` in `block-helpers.js` used `!!` coercion to test `rating.display_only` / `rating.is_display_only`, which evaluated strings like `"0"` as truthy. Changed to `== 1` comparison, matching the PHP layer's behaviour. File: `blocks/shared/block-helpers.js`.
+- `display_only` **flag evaluated as strict integer** — `renderRatingPreview()` in `block-helpers.js` used `!!` coercion to test `rating.display_only` / `rating.is_display_only`, which evaluated strings like `"0"` as truthy. Changed to `== 1` comparison, matching the PHP layer's behaviour. File: `blocks/shared/block-helpers.js`.
 
 ---
 
+
+
 ## [1.14.9] — 2026-04-06
 
+
+
 ### Added
+
 - **Gap setting for grouped rating block** — a new "Gap" text control in the Layout inspector panel sets the `--shuriken-gap` CSS variable (the vertical space between parent and child ratings). Accepts any CSS size value (e.g. `24px`, `2rem`). Previously the CSS variable existed in the stylesheet but had no block-level control; the only way to override the `24px` default was custom CSS. Files: `blocks/shuriken-grouped-rating/block.json`, `blocks/shuriken-grouped-rating/index.js`, `includes/class-shuriken-block.php`.
 
+
+
 ### Fixed
+
 - **Parent rating totals inflated when negative sub-ratings use a non-default scale** — `recalculate_parent_rating()` in `Shuriken_Database` was computing the inversion constant as `$sub->scale + 1` (the display scale, e.g. 101 for a scale-100 sub), but votes are stored on the internal normalized 1–5 scale. The constant is now always `RATING_SCALE_DEFAULT + 1` (= 6) for stars/numeric types, matching `Shuriken_Analytics::get_inversion_constant()` and the mock implementation. Previous symptom: a scale-100 negative sub with 2 votes at 100/100 would add `2 × 101 − total` ≈ 200 to the parent's `total_rating` instead of `2 × 6 − total` ≈ 2. File: `includes/class-shuriken-database.php`.
 - **FSE editor shows full slider + Rate button for display-only numeric parent ratings** — `renderRatingPreview()` always rendered the interactive slider widget for numeric type regardless of the `display_only` flag, while the PHP frontend renders a simplified `.shuriken-numeric-display` span. The editor preview now matches the frontend markup. File: `blocks/shared/block-helpers.js`.
 - **Numeric "Rate" button appears all black in grouped rating children** — the grouped rating preset CSS (minimal, dark, outlined) had no `.shuriken-slider-submit` overrides for child ratings, so the button fell through to raw browser defaults instead of the preset's ghost/outlined style. Per-preset button rules added to mirror the single-rating preset equivalents. File: `assets/css/shuriken-reviews.css`.
@@ -135,21 +186,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.14.8] — 2026-04-05
 
+
+
 ### Added
-- **`shuriken_rest_manage_capability` filter** — allows overriding the WordPress capability required for REST API write operations (POST, PUT, DELETE). Defaults to `manage_options`; set to `edit_posts` to allow authors and editors on multi-author sites.
+
+- `shuriken_rest_manage_capability` **filter** — allows overriding the WordPress capability required for REST API write operations (POST, PUT, DELETE). Defaults to `manage_options`; set to `edit_posts` to allow authors and editors on multi-author sites.
 - **REST API Write Capability setting** — Settings → General now includes a "REST API Access" card with a dropdown (Administrator / Editor / Author / Custom) that controls the minimum capability for write operations. The dropdown value is passed as the default to the `shuriken_rest_manage_capability` filter, so code-level filter callbacks always take precedence over the UI setting.
 - **Mirror transparency notice** — `POST /ratings` now includes a `mirror_notice` field in the response when the requested `rating_type` or `scale` was overridden by the source rating's values during mirror creation.
 
+
+
 ### Changed
+
 - Settings: add a dismissible rate-limit warning banner and contextual sidebar tips; the banner is dismissible via AJAX and the dismissed state is reset when rate limiting is enabled. Files: `admin/settings.php`, `admin/partials/settings-rate-limiting.php`, `assets/css/admin-settings.css`, `assets/js/admin-settings.js`.
 - Voter Activity: chart renamed to "Deviation from Average" and distribution label generation adjusted. File: `admin/voter-activity.php`.
 - Ratings admin: added `id` attributes to table headers and adjusted column-width behavior for more responsive layout. Files: `admin/ratings.php`, `assets/css/admin-ratings.css`.
 - Blocks: simplified client-side `calculateScaledAverage()` to prefer `rating.display_average` from the API (legacy fallback removed). File: `blocks/shared/block-helpers.js`.
 - UI iconography migrated from emoji/glyph characters to inline Lucide SVG icons across frontend ratings, analytics, ratings list, item stats, settings pages, and block editor previews for consistent rendering and CSS styling control. Files: `includes/class-shuriken-icons.php`, `assets/css/shuriken-reviews.css`, `assets/css/admin-analytics.css`, `assets/css/admin-ratings.css`, `assets/css/admin-settings.css`, `admin/settings.php`, `admin/ratings.php`, `admin/analytics.php`, `admin/item-stats.php`, `admin/partials/settings-about.php`, `admin/partials/settings-general.php`, `admin/partials/settings-rate-limiting.php`, `blocks/shared/block-helpers.js`, `blocks/shuriken-post-sidebar/index.js`, `includes/class-shuriken-analytics.php`.
 
+
+
 ### Fixed
+
 - Binary vote types (`like_dislike`, `approval`) were incorrectly denormalized to fractional values (e.g., `0.2` / `0`) in the Voter Activity admin page. They now display as their natural labels (`Like` / `Dislike`) without a numeric denormalized value.
 - Analytics averages for numeric ratings were losing precision after SQL `ROUND(..., 1)` on the internal 1–5 scale, which amplified rounding errors after denormalization (e.g., a 12/34 vote showing as `12.2/34`). All seven affected `ROUND` calls now use precision 4.
 - Voter Activity distribution chart was creating wrong bucket counts for ratings with a display scale other than 5 (e.g., 10-star ratings produced 10 buckets on an internal 1–5 scale, leaving buckets 6–10 permanently empty). Bucket count is now always `RATING_SCALE_DEFAULT` (5).
@@ -161,60 +223,98 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.14.7] — 2026-04-04
 
+
+
 ### Added
+
 - All rating and stats objects now carry a `display_average` field — the average denormalized to the rating's own display scale — alongside the existing `average` (internal 1–5 normalized value). This applies to every method that returns rating or stats objects: `get_rating()`, `get_ratings_by_ids()`, `get_all_ratings()`, `get_ratings_paginated()`, `get_sub_ratings()`, `get_mirrors()`, `get_child_ratings()`, `search_ratings()`, `get_contextual_stats()`, `get_contextual_stats_batch()`, and `get_ratings_for_context()`.
 - Analytics layer attaches display-scale variants to all computed aggregates: `display_daily_avg` on rolling-average rows, `display_delta` / `display_recent_avg` / `display_prev_avg` on momentum items, and `display_average` on all stats/breakdown objects.
 - `get_contextual_stats()` and `get_contextual_stats_batch()` accept a `$scale` / `$scales` parameter so callers can request the correct display scale without a second round-trip.
 - `get_votes_with_rolling_avg()` and `get_votes_with_rolling_avg_for_ids()` accept a `$scale` parameter for `display_daily_avg`.
 
+
+
 ### Changed
+
 - **Architectural (SRP fix):** Denormalization of the internal 1–5 average to display scale is now performed exclusively inside the data layer (`Shuriken_Database::attach_averages()`). All consumers (admin views, REST API, AJAX, shortcodes, FSE block helpers) read the pre-computed `display_average` instead of calling `denormalize_average()` inline.
 - FSE `calculateScaledAverage()` in `block-helpers.js` now prefers `rating.display_average` from the API response and falls back to client-side math only for legacy data that pre-dates this release.
 - Interface signatures for `get_contextual_stats`, `get_contextual_stats_batch`, `get_votes_with_rolling_avg`, and `get_votes_with_rolling_avg_for_ids` updated to reflect new optional parameters.
 
+
+
 ### Fixed
+
 - Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
- - Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
+- Sub-rating distribution SQL in `get_parent_rating_stats_breakdown()` was using `r.scale` (the sub-rating's display scale) as the normalization divisor instead of the internal `RATING_SCALE_DEFAULT`, producing incorrect bucket ranges for non-default scales.
 
 ---
 
+
+
 ## [1.14.6] — 2026-04-03
 
+
+
 ### Added
+
 - Numeric rating display with slider support — single-rating numeric type now renders a display-only slider, value readout, and compact submit control in the block and frontend; the Ratings admin list now shows a compact numeric progress bar with scaled average and vote counts. Files updated: `blocks/shared/block-helpers.js`, `assets/css/shuriken-reviews.css`, `assets/css/admin-ratings.css`, `admin/ratings.php`.
 - Database precision: migrated `rating_value` (votes) and `total_rating` (aggregates) from `INT` to `DECIMAL` to allow fractional values; corresponding schema changes and migration logic were added. Database version bumped to `1.7.0`.
 
+
+
 ### Changed
+
 - Slider and admin styling refinements (thumbs, buttons, and checkbox column width).
 
+
+
 ### Fixed
+
 - Migration scripts hardened with `SHOW COLUMNS` guards and safer index updates to handle partial migrations and include context-aware keys.
 
 ---
 
+
+
 ## [1.14.5] — 2026-03-31
 
+
+
 ### Added
+
 - Comments system settings page with conditional hook registration for comment filtering.
 - Participation tracking with user feedback messages and loading state indicators.
 - Analytics: rolling average calculations now support multiple rating IDs simultaneously.
 - **About tab** in Settings (`admin/partials/settings-about.php`) — consolidates What's New, Quick Start, Shortcode Reference, Developer Resources, and System Info into the existing settings UI; About tab styles added to `admin-settings.css`.
 - Shortcodes now support optional `context_id` and `context_type` attributes so contextual voting can be used outside the block editor.
 
+
+
 ### Removed
+
 - Standalone About admin page (`admin/about.php`) merged into Settings → About tab.
 - `assets/css/admin-about.css` — styles migrated into `admin-settings.css`.
 
+
+
 ### Fixed
+
 - SQL queries updated to use `COUNT(DISTINCT context_id)` for accurate post-count metrics.
 
 ---
 
+
+
 ## [1.14.4] — 2026-03-31
 
+
+
 ### Added
+
 - **Block editor sidebar panel** — `PluginDocumentSettingPanel` fetches per-post contextual vote stats while editing any post that has received contextual votes.
 - **Archive sorting** — `pre_get_posts` hook orders archive pages by contextual rating score; configurable via Settings → General (rating selector, sort by average or total votes).
 - **Ratings management indicators** — Type column shows a pin badge with the distinct-post count for ratings that have contextual votes.
@@ -226,9 +326,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.14.0] — 2026-03-31
 
+
+
 ### Added
+
 - **Contextual Voting (Per-Post Ratings)** — a single rating or grouped rating placed in a post template now records independent vote tallies per post without requiring duplicate rating configurations.
 - `context_id` (BIGINT) and `context_type` (VARCHAR 50) columns on `wp_shuriken_votes`; unique key updated via `COALESCE` for `NULL` safety. DB version bumped to **1.6.0**.
 - `get_contextual_stats()` / `get_contextual_stats_batch()` methods on the Database service.
@@ -238,18 +343,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Frontend JS batches stats requests per context group to reduce HTTP round-trips.
 - `shuriken_allowed_context_types` filter controls accepted post types (default: `post`, `page`, `product`).
 
+
+
 ### Changed
+
 - AJAX and shortcode submission handlers updated to forward context parameters.
 
+
+
 ### Removed
+
 - **Post Linked Ratings block** — superseded by the `postContext` block attribute.
 - Content-injection (post meta) defaults disabled — superseded by per-post contextual blocks.
 
 ---
 
+
+
 ## [1.13.0] — 2026-03-30
 
+
+
 ### Added
+
 - New rating **types** (Star, Numeric, Thumbs) and configurable **scales** with editor previews.
 - Type-aware rating display filters and shortcode handling.
 - **Type compatibility checks** — the UI warns when incompatible types are linked (mirrors, parent-child).
@@ -258,134 +374,220 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Custom blocked-message support on `Shuriken_Rate_Limit_Exception`.
 - `Shuriken_Voter_Analytics` service (DI-injected) extracted from `Shuriken_Analytics` for voter-specific data.
 
+
+
 ### Changed
+
 - Exception classes refactored to enforce strict type safety.
 - `should_bypass()` method signature enforced throughout rate-limiter hierarchy.
 - Rating effect options given descriptive labels and help text in the editor.
 
+
+
 ### Fixed
+
 - Ratings management form CSS fixes.
 - Various UI alignment and backend fixes.
 
+
+
 ### Internal
+
 - Hardcoded rating scales and limits replaced with named constants.
 - Removed BOM characters from PHP source files.
 - `var` replaced with `const`/`let` throughout `ratings-store.js`; input validation added.
 
 ---
 
+
+
 ## [1.12.x] — 2026-03-28 *(untagged)*
 
+
+
 ### Added
+
 - Post meta filters for content injection and JSON-LD structured data (see [Hooks Reference](guides/hooks-reference.md)).
 - Mirror management in the Grouped Rating block with cache invalidation.
 - Mirrors support in the REST API (`GET /ratings/{id}/mirrors`).
 
 ---
 
+
+
 ## [1.11.4] — 2026-03-27
 
+
+
 ### Added
+
 - REST API request **deduplication** — the client-side store de-dupes in-flight requests to prevent redundant calls on cached pages.
 - CDN compatibility — REST API nonce is fetchable from a dedicated endpoint, enabling cached-page delivery without stale nonces.
 - `[shuriken_grouped_rating]` shortcode with `style`, `accent_color`, `layout` parameters.
 - Enhanced shortcode reference section on the About page.
 
+
+
 ### Changed
+
 - `[shuriken_rating]` shortcode extended with `style`, `accent_color`, and `star_color` attributes.
 
 ---
 
+
+
 ## [1.11.1] — 2026-03-25
 
+
+
 ### Added
+
 - **Batch-fetching endpoint** — `POST /ratings/stats/batch` retrieves stats for multiple rating IDs in a single HTTP request.
 - Shared block helpers module (`blocks/shared/block-helpers.js`) used by both FSE blocks.
 - Mirror management UI in the Grouped Rating block (add/remove mirrors with automatic cache invalidation).
 
+
+
 ### Changed
+
 - Documentation updated to cover batch API, mirror management, and shared block helpers.
 
 ---
 
+
+
 ## [1.10.3] — 2026-02-23
 
+
+
 ### Added
+
 - FSE block style **presets** for the Grouped Rating block (`gradient`, `minimal`, `boxed`, `dark`, `outlined`).
 - Single Rating FSE block gains style and color settings (presets: `classic`, `card`, `minimal`, `dark`, `outlined`).
 - Child-layout support and simplified CSS variables for the rating block.
 
+
+
 ### Changed
+
 - Block editor UI redesigned for enhanced settings discoverability.
 - Branding: "Skilledup Hub" renamed to "Skilledup".
 
 ---
 
+
+
 ## [1.10.1] — 2026-02-22
 
+
+
 ### Added
+
 - GitHub Actions workflow for generating and uploading plugin release assets.
 - Revised admin toolbar layout with unified bulk-actions and search for the Ratings management page.
 
+
+
 ### Changed
+
 - License upgraded from **GPL v2** to **GPL v3**.
 - GitHub repository links updated to reflect new ownership.
 - Minimum requirements raised to **PHP 8.1** and **WordPress 6.2**.
 
+
+
 ### Fixed
+
 - RTL notification margin and `border-radius` corrections.
 
 ---
 
+
+
 ## [1.9.1] — 2026-01-29
 
+
+
 ### Added
+
 - **Voter Activity page** — admin page listing individual voter records with IP, user, rating, and timestamp.
 - Source column on Item Stats page distinguishing direct, sub-rating, and total vote contributions.
 
+
+
 ### Changed
+
 - Full dependency injection applied across all services (Database, Analytics, Rate Limiter, REST API, AJAX).
 
 ---
 
+
+
 ## [1.9.0] — 2026-01-29
 
+
+
 ### Added
+
 - Loading-state feedback (opacity transition + spinner) on the analytics data-refresh action.
 - Nonce bypass for public REST endpoints to support cached-page delivery.
 
+
+
 ### Changed
+
 - Major performance optimizations across database queries and frontend asset loading.
 
+
+
 ### Fixed
+
 - Date-range filter now applies correctly to Top Rated, Most Voted, and Low Performers queries on the Analytics page.
 - Vote-history bug on the Item Stats page.
 
 ---
 
+
+
 ## [1.7.5] — 2025-12-27
 
+
+
 ### Added
+
 - **Rate Limiting** — configurable cooldown, hourly limit, and daily limit for both members and guests. Settings page with JavaScript toggles.
 - Settings admin page (`admin/settings.php`) with General and Rate Limiting tabs.
 
+
+
 ### Changed
+
 - `Shuriken_Rate_Limiter` class introduced and integrated via DI container.
 
 ---
 
+
+
 ## [1.7.2] — 2025-12-26
 
+
+
 ### Added
+
 - **Developer Resources section** on the About page: Hooks & Filters, Interfaces & Testing, Dependency Injection, Exception System, REST API, and Helper Functions cards.
 - Popular Hooks quick-reference table on the About page.
 - New AJAX filters: `shuriken_allow_guest_vote` and `shuriken_before_rating_submit`.
 
 ---
 
+
+
 ## [1.7.0] — 2025-12-26
 
+
+
 ### Added
+
 - **Modular architecture** — plugin bootstrapped through a central `Shuriken_Reviews` class; REST API, shortcodes, blocks, AJAX, and frontend assets each live in dedicated classes.
 - **Hooks system** — 20+ filters and actions (see [Hooks Reference](guides/hooks-reference.md)).
 - **Dependency Injection container** (`Shuriken_Container`) for flexible service management and testability.
@@ -395,43 +597,69 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Shortcodes and Gutenberg blocks unified via a shared `render()` method.
 - REST nonce forwarded from frontend JS for authenticated API calls.
 
+
+
 ### Changed
+
 - Voter activity, analytics, and admin pages refactored to use injected service instances.
 
 ---
 
+
+
 ## [1.6.0] — 2025-12-16
 
+
+
 ### Added
+
 - REST API endpoints: `GET /ratings/{id}/stats` (live stats) and `GET /ratings/nonce` (fresh nonce).
 - Client-side data fetching refactored to always request fresh stats after page load (cache bypass).
 
 ---
 
+
+
 ## [1.5.8] — 2025-12-07
 
+
+
 ### Added
+
 - **About page** (`admin/about.php`) with hero banner, features grid, Quick Start Guide, and System Information.
 
 ---
 
+
+
 ## [1.5.x] — 2025-12-07 – 2025-12-16
 
+
+
 ### Added
+
 - Edit functionality for existing ratings via REST API (`GET /ratings/{id}`, `PUT /ratings/{id}`).
 - Parent and mirror rating selection in the create/edit form.
 - Delete rating functionality in the Grouped Rating block.
 - Front-end stylesheet registered for the Rating block.
 - FSE block editor placeholder styles.
 
+
+
 ### Fixed
+
 - Display-only value normalised in edit modal.
 
 ---
 
+
+
 ## [1.4.x] — 2025-12-05 – 2025-12-06
 
+
+
 ### Added
+
 - **Sub-ratings** — parent-child rating relationships with configurable effect types (`add`, `average`, `weight`) and display-only flag.
 - **Mirror ratings** — a rating can reference another rating's vote data without duplicating entries.
 - Hierarchical stats on the Item Stats page (direct, sub-rating, and total breakdowns).
@@ -440,18 +668,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.3.x] — 2025-12-04 – 2025-12-05
 
+
+
 ### Added
+
 - `Shuriken_Database` class encapsulating all CRUD operations.
 - `Shuriken_Analytics` class encapsulating statistics retrieval.
 - **Item Stats page** with date-range filtering and Chart.js visualisations.
 
 ---
 
+
+
 ## [1.2.x] — 2025-04-12 – 2025-11-29
 
+
+
 ### Added
+
 - **Full Site Editor (FSE) block** — `shuriken/shuriken-rating` Gutenberg block for the block editor.
 - **Guest voting** — unauthenticated users can cast votes (configurable).
 - Comments management: exclude author comments and/or reply comments from the Latest Comments block.
@@ -461,9 +699,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.1.x] — 2025-03-26 – 2025-03-29
 
+
+
 ### Added
+
 - Anchor tag linking (`anchor_tag` shortcode attribute).
 - Full **keyboard navigation** and **screen reader** accessibility for the star widget.
 - Login prompt for unauthenticated users attempting to vote.
@@ -473,12 +716,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
+
 ## [1.0.0] — 2025-03-25
 
+
+
 ### Added
+
 - Initial plugin release.
 - Star rating widget with AJAX vote submission and per-user vote tracking.
 - `[shuriken_rating]` shortcode.
 - Admin ratings management page (list, create, delete).
 - Latest Comments block with author-comment exclusion and Swiper slider.
 - Basic analytics dashboard.
+
