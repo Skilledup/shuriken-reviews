@@ -25,14 +25,16 @@ class Shuriken_Vote_Repository {
     /**
      * Constructor
      *
-     * @param \wpdb  $wpdb          WordPress database instance.
-     * @param string $ratings_table  Prefixed ratings table name.
-     * @param string $votes_table    Prefixed votes table name.
+     * @param \wpdb                       $wpdb          WordPress database instance.
+     * @param string                      $ratings_table Prefixed ratings table name.
+     * @param string                      $votes_table   Prefixed votes table name.
+     * @param Shuriken_Rating_Repository  $ratings       Rating repository (for cache invalidation).
      */
     public function __construct(
         private readonly \wpdb $wpdb,
         private readonly string $ratings_table,
         private readonly string $votes_table,
+        private readonly Shuriken_Rating_Repository $ratings,
     ) {}
 
     // =========================================================================
@@ -155,6 +157,7 @@ class Shuriken_Vote_Repository {
             }
 
             $this->wpdb->query('COMMIT');
+            $this->ratings->forget_request_cache($rating_id);
             return true;
 
         } catch (Shuriken_Database_Exception $e) {
@@ -218,6 +221,7 @@ class Shuriken_Vote_Repository {
             }
 
             $this->wpdb->query('COMMIT');
+            $this->ratings->forget_request_cache($rating_id);
             return true;
 
         } catch (Shuriken_Database_Exception $e) {

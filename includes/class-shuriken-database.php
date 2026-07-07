@@ -108,7 +108,7 @@ class Shuriken_Database implements Shuriken_Database_Interface {
         $this->votes_table = $wpdb->prefix . 'shuriken_votes';
 
         $this->ratings = new Shuriken_Rating_Repository($this->wpdb, $this->ratings_table, $this->votes_table);
-        $this->votes = new Shuriken_Vote_Repository($this->wpdb, $this->ratings_table, $this->votes_table);
+        $this->votes = new Shuriken_Vote_Repository($this->wpdb, $this->ratings_table, $this->votes_table, $this->ratings);
         $this->schema = new Shuriken_Schema_Manager($this->wpdb, $this->ratings_table, $this->votes_table);
     }
 

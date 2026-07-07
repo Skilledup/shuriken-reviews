@@ -149,6 +149,44 @@ class Shuriken_Rating_Repository {
     }
 
     /**
+     * Drop request-scoped cache entries for a rating after mutations.
+     *
+     * Clears the rating ID, its raw original row, and any mirror entries that
+     * copied vote totals from this source.
+     *
+     * @param int $rating_id Rating ID whose cache entries should be removed.
+     * @return void
+     * @since 1.15.7
+     */
+    public function forget_request_cache(int $rating_id): void {
+        if ($rating_id <= 0) {
+            return;
+        }
+
+        unset($this->request_cache[$rating_id], $this->request_cache['raw:' . $rating_id]);
+
+        $keys_to_forget = array();
+
+        foreach ($this->request_cache as $key => $cached) {
+            if (!is_object($cached)) {
+                continue;
+            }
+
+            $cached_id = is_int($key) ? $key : (is_numeric($key) ? (int) $key : 0);
+            $source_id = (int) ($cached->source_id ?? 0);
+            $mirror_of = (int) ($cached->mirror_of ?? 0);
+
+            if ($cached_id === $rating_id || $source_id === $rating_id || $mirror_of === $rating_id) {
+                $keys_to_forget[] = $key;
+            }
+        }
+
+        foreach ($keys_to_forget as $key) {
+            unset($this->request_cache[$key]);
+        }
+    }
+
+    /**
      * Get original rating without mirror resolution (to avoid infinite loops)
      *
      * @param int $rating_id Rating ID
@@ -466,6 +504,8 @@ class Shuriken_Rating_Repository {
          * @param array $update_data The updated data.
          */
         do_action('shuriken_rating_updated', $rating_id, $update_data);
+
+        $this->forget_request_cache($rating_id);
 
         return true;
     }
