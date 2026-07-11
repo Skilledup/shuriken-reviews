@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.15.6] — Unreleased
+
+### Added
+
+- **Smart client fetch** — frontend always refreshes vote nonce via `GET /nonce`; skips `GET /ratings/stats` when `ssr_rendered_at` is within the freshness window (default 30s) and trusts SSR `data-average` / `data-scaled-average`; batched stats refresh when the timestamp is stale or on bfcache restore (`pageshow` + `persisted`). Filter: `shuriken_ssr_fresh_threshold`.
+- **Block view data pipeline** — consolidated `shurikenBlockViewData` localize (keyed by rating ID) plus `shurikenBlockViewData` JS filter (`wp.hooks`) for frontend add-ons; `shuriken_register_block_view_data()` helper.
+- **[Add-on Development Guide](guides/add-on-development.md)** — third-party plugin skeleton, integration surfaces (PHP, REST, admin, block editor, frontend), caching notes, and service access patterns.
+
+### Changed
+
+- **Frontend init refactor** — `fetchFreshData()` replaced by `refreshClientData()` (nonce always, stats conditional); per-block `shurikenBlock_*` globals replaced by consolidated `shurikenBlockViewData` map output in footer.
+- **Documentation** — hooks reference updated for `ssr_rendered_at`, `ssr_fresh_threshold`, and block view data hooks; INDEX links to add-on guide.
+
+---
+
 ## [1.15.6-rc] — Shingetsu — 2026-07-07
 
 ### Added

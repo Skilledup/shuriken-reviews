@@ -259,6 +259,7 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 
 - [ ] Rate limiting defaults that fit common sites
 - [x] Best caching strategy for rating stats — resolved in Step 8d (server-side TTL cache via `wp_cache_*`; CDN pages keep client refresh, uncached pages trust SSR)
+- [ ] **Lazy nonce fetch on first interaction** — fetch `GET /nonce` when the user first engages a votable widget (click/focus) instead of on every page load; keep silent retry-on-failure as fallback. Saves one REST request per page for read-only visitors; trade-off: `logged_in` / `allow_guest_voting` stay stale until interaction unless always-fetch is retained for auth UI
 - [ ] Webhook retry guarantees and failure modes
 - [ ] Email template customization approach
 
