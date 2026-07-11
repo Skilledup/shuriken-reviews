@@ -309,18 +309,20 @@ class Shuriken_Block {
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
 
-        // Pass block-level config through a wp_localize_script call on the view script handle
-        $block_data = array(
-            'rating_id'    => $rating_id,
-            'title_tag'    => $title_tag,
-            'anchor_tag'   => $anchor_tag,
-            'context_id'   => $context_id,
-            'context_type' => $context_type,
-            'hide_title'   => $hide_title,
-            'attributes'   => $attributes,
+        // Pass block-level config to the frontend view script (add-on extensibility).
+        $this->register_block_view_data_for_render(
+            $rating_id,
+            array(
+                'rating_id'    => $rating_id,
+                'title_tag'    => $title_tag,
+                'anchor_tag'   => $anchor_tag,
+                'context_id'   => $context_id,
+                'context_type' => $context_type,
+                'hide_title'   => $hide_title,
+                'attributes'   => $attributes,
+            ),
+            $block
         );
-        $filtered_data = apply_filters('shuriken_block_view_data', $block_data, $block);
-        wp_localize_script('shuriken-reviews', 'shurikenBlock_' . $rating_id, $filtered_data);
 
         // Use the shared render method from Shortcodes class
         $html = shuriken_shortcodes()->render_rating_html($rating, $title_tag, $anchor_tag, $context_id, $context_type, $hide_title);
@@ -471,18 +473,20 @@ class Shuriken_Block {
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
 
-        // Pass block-level config through a wp_localize_script call on the view script handle
-        $block_data = array(
-            'rating_id'    => $rating_id,
-            'title_tag'    => $title_tag,
-            'anchor_tag'   => $anchor_tag,
-            'context_id'   => $context_id,
-            'context_type' => $context_type,
-            'hide_title'   => $hide_title,
-            'attributes'   => $attributes,
+        // Pass block-level config to the frontend view script (add-on extensibility).
+        $this->register_block_view_data_for_render(
+            $rating_id,
+            array(
+                'rating_id'    => $rating_id,
+                'title_tag'    => $title_tag,
+                'anchor_tag'   => $anchor_tag,
+                'context_id'   => $context_id,
+                'context_type' => $context_type,
+                'hide_title'   => $hide_title,
+                'attributes'   => $attributes,
+            ),
+            $block
         );
-        $filtered_data = apply_filters('shuriken_block_view_data', $block_data, $block);
-        wp_localize_script('shuriken-reviews', 'shurikenBlock_' . $rating_id, $filtered_data);
 
         // Render parent rating
         $html = '<div class="shuriken-rating-group' . esc_attr($layout_class) . '">';
@@ -626,6 +630,27 @@ class Shuriken_Block {
         return 'CASE WHEN COALESCE(shuriken_block_scores.shuriken_block_votes, 0) = 0 THEN 0
                      ELSE (shuriken_block_scores.shuriken_block_total / shuriken_block_scores.shuriken_block_votes)
                END ' . $order . ', ' . $orderby_clause;
+    }
+
+    /**
+     * Register block view data for frontend add-ons.
+     *
+     * @param int      $rating_id  Parent rating ID for this block instance.
+     * @param array    $block_data Raw block view payload.
+     * @param WP_Block $block      Block instance.
+     * @return void
+     * @since 1.15.7
+     */
+    private function register_block_view_data_for_render(int $rating_id, array $block_data, \WP_Block $block): void {
+        /**
+         * Filter per-block view data passed to the frontend script.
+         *
+         * @since 1.15.6
+         * @param array    $block_data Block view payload.
+         * @param WP_Block $block      Block instance.
+         */
+        $filtered_data = apply_filters('shuriken_block_view_data', $block_data, $block);
+        shuriken_register_block_view_data($rating_id, $filtered_data);
     }
 
     /**

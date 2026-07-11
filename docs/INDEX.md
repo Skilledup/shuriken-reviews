@@ -62,6 +62,14 @@ Learn how to test your code with mock implementations without requiring a databa
 - PHPUnit examples
 - WordPress test suite integration
 
+#### [Add-on Development](guides/add-on-development.md)
+Build third-party plugins that extend Shuriken without forking core.
+- Add-on plugin skeleton
+- PHP, REST, admin, block editor, and frontend integration surfaces
+- Block view data pipeline (`shuriken_block_view_data` → `shurikenBlockViewData`)
+- Caching considerations for full-page cache compatibility
+- Service access and container overrides
+
 #### [Error Handling in FSE Blocks](guides/error-handling-blocks.md)
 Comprehensive guide to error handling in Gutenberg blocks with retry functionality.
 - Error flow from backend to frontend
@@ -98,9 +106,10 @@ Full history of changes, features, and fixes organised by version.
 ### For Developers
 
 1. **Understand the Architecture** - Read [Architecture Overview](ARCHITECTURE.md)
-2. **Learn the Hooks System** - Check [Hooks Reference](guides/hooks-reference.md)
-3. **Explore Dependency Injection** - See [Dependency Injection Guide](guides/dependency-injection.md)
-4. **Set Up Testing** - Follow [Testing Guide](guides/testing.md)
+2. **Build an add-on** - Follow [Add-on Development Guide](guides/add-on-development.md)
+3. **Learn the Hooks System** - Check [Hooks Reference](guides/hooks-reference.md)
+4. **Explore Dependency Injection** - See [Dependency Injection Guide](guides/dependency-injection.md)
+5. **Set Up Testing** - Follow [Testing Guide](guides/testing.md)
 
 ---
 
@@ -143,7 +152,7 @@ The plugin uses a **modular architecture** with clear separation of concerns. Se
 
 ### I want to extend the plugin
 
-👉 Review [Hooks Reference](guides/hooks-reference.md) for integration points
+👉 Start with [Add-on Development Guide](guides/add-on-development.md), then [Hooks Reference](guides/hooks-reference.md) for the full catalog
 
 ### I want to write unit tests
 

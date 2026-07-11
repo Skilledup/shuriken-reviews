@@ -33,11 +33,19 @@ class Shuriken_Frontend {
     private static bool $assets_enqueued = false;
 
     /**
+     * Per-block view data accumulated during render (keyed by rating ID).
+     *
+     * @var array<string, array>
+     */
+    private static array $block_view_data = array();
+
+    /**
      * Constructor
      */
     private function __construct() {
         add_action('init', $this->register_assets(...), 5);
         add_action('wp_enqueue_scripts', $this->maybe_force_enqueue_assets(...), 10);
+        add_action('wp_print_footer_scripts', $this->localize_block_view_data(...), 9);
 
         // SSR contextual stats batch pre-fetch (Step 8b)
         if (!is_admin()) {
@@ -130,6 +138,38 @@ class Shuriken_Frontend {
     }
 
     /**
+     * Accumulate per-block view data for frontend add-ons.
+     *
+     * Called from block render callbacks; output once in the footer before scripts print.
+     *
+     * @param int   $rating_id Rating ID used as the map key.
+     * @param array $data      Filtered block view data.
+     * @return void
+     * @since 1.15.7
+     */
+    public static function register_block_view_data(int $rating_id, array $data): void {
+        if ($rating_id <= 0) {
+            return;
+        }
+
+        self::$block_view_data[(string) $rating_id] = $data;
+    }
+
+    /**
+     * Output consolidated block view data for the frontend script.
+     *
+     * @return void
+     * @since 1.15.7
+     */
+    public function localize_block_view_data(): void {
+        if (empty(self::$block_view_data) || !wp_script_is('shuriken-reviews', 'enqueued')) {
+            return;
+        }
+
+        wp_localize_script('shuriken-reviews', 'shurikenBlockViewData', self::$block_view_data);
+    }
+
+    /**
      * Optionally enqueue assets on every page when forced via filter.
      *
      * @return void
@@ -218,6 +258,14 @@ class Shuriken_Frontend {
      * @return array
      */
     private function get_localized_data(): array {
+        /**
+         * Seconds after SSR render during which client-side stats REST can be skipped.
+         *
+         * @since 1.15.7
+         * @param int $threshold Freshness window in seconds. Default 30.
+         */
+        $ssr_fresh_threshold = (int) apply_filters('shuriken_ssr_fresh_threshold', 30);
+
         $data = array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'rest_url' => esc_url_raw(rest_url()),
@@ -226,6 +274,8 @@ class Shuriken_Frontend {
             'logged_in' => is_user_logged_in(),
             'allow_guest_voting' => get_option('shuriken_allow_guest_voting', '0') === '1',
             'login_url' => wp_login_url(),
+            'ssr_rendered_at' => time(),
+            'ssr_fresh_threshold' => max(1, $ssr_fresh_threshold),
             'i18n' => $this->get_i18n_strings(),
         );
 
@@ -285,4 +335,16 @@ function shuriken_frontend(): Shuriken_Frontend {
  */
 function shuriken_enqueue_frontend_assets(): void {
     shuriken_frontend()->enqueue_frontend_assets();
+}
+
+/**
+ * Register per-block view data for the frontend script.
+ *
+ * @param int   $rating_id Rating ID.
+ * @param array $data      Block view data (after shuriken_block_view_data filter).
+ * @return void
+ * @since 1.15.7
+ */
+function shuriken_register_block_view_data(int $rating_id, array $data): void {
+    Shuriken_Frontend::register_block_view_data($rating_id, $data);
 }

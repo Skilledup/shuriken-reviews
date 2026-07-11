@@ -106,58 +106,210 @@ jQuery(document).ready(function($) {
     };
 
     /**
-     * Fetch fresh nonce and rating data from server (bypasses cache)
+     * SSR freshness window (seconds). Pages older than this trigger a stats REST refresh.
      */
-    const fetchFreshData = () => {
-        if (isFetchingFreshData) {
-            return;
+    const getSsrFreshThreshold = () => parseInt(shurikenReviews.ssr_fresh_threshold, 10) || 30;
+
+    /**
+     * Whether embedded SSR stats are still fresh (uncached / just-rendered page).
+     */
+    const isSsrFresh = () => {
+        const renderedAt = parseInt(shurikenReviews.ssr_rendered_at, 10);
+        if (!renderedAt) {
+            return false;
         }
-        
-        isFetchingFreshData = true;
-        
-        // Collect all rating IDs on the page
-        const ratingIds = [];
-        const $allRatings = $(SELECTORS.rating);
-        
-        // Group ratings by context for batched fetching
+        return (Date.now() / 1000 - renderedAt) < getSsrFreshThreshold();
+    };
+
+    /**
+     * Per-block view data for add-ons (PHP: shuriken_block_view_data filter).
+     */
+    const getBlockViewData = (ratingId, $rating) => {
+        const map = window.shurikenBlockViewData;
+        const data = map?.[String(ratingId)] ?? null;
+        return applyFilters('shurikenBlockViewData', data, ratingId, $rating);
+    };
+
+    /**
+     * Attach filtered block view data to a rating element for add-on scripts.
+     */
+    const initBlockViewData = ($rating) => {
+        const ratingId = $rating.data('id');
+        if (!ratingId) {
+            return null;
+        }
+        const data = getBlockViewData(ratingId, $rating);
+        if (data) {
+            $rating.data('shuriken-block-view', data);
+        }
+        return data;
+    };
+
+    /**
+     * Collect on-page ratings grouped by voting context for batched stats requests.
+     */
+    const collectContextGroups = () => {
         const contextGroups = {};
-        
-        $allRatings.each(function() {
+
+        $(SELECTORS.rating).each(function() {
             const id = $(this).data('id');
             const ctxId = $(this).data('context-id') || '';
             const ctxType = $(this).data('context-type') || '';
             const key = `${ctxId}:${ctxType}`;
-            
-            if (id) {
-                if (!contextGroups[key]) {
-                    contextGroups[key] = { ids: [], contextId: ctxId, contextType: ctxType };
-                }
-                if (contextGroups[key].ids.indexOf(id) === -1) {
-                    contextGroups[key].ids.push(id);
-                }
-                if (ratingIds.indexOf(id) === -1) {
-                    ratingIds.push(id);
-                }
+
+            if (!id) {
+                return;
+            }
+
+            if (!contextGroups[key]) {
+                contextGroups[key] = { ids: [], contextId: ctxId, contextType: ctxType };
+            }
+            if (contextGroups[key].ids.indexOf(id) === -1) {
+                contextGroups[key].ids.push(id);
             }
         });
-        
-        if (ratingIds.length === 0) {
+
+        return contextGroups;
+    };
+
+    /**
+     * Apply batched stats REST response to matching rating widgets.
+     */
+    const applyStats = (statsResponse, ctxId, ctxType) => {
+        $.each(statsResponse, function(ratingId, stats) {
+            let selector = `${SELECTORS.rating}[data-id="${ratingId}"]`;
+            if (ctxId) {
+                selector += `[data-context-id="${ctxId}"][data-context-type="${ctxType}"]`;
+            } else {
+                selector += ':not([data-context-id])';
+            }
+            const $ratings = $(selector);
+            $ratings.each(function() {
+                const $rating = $(this);
+                const ratingType = $rating.data('rating-type') || 'stars';
+                const $statsEl = $rating.find(SELECTORS.stats);
+                const maxStars = parseInt($rating.data('max-stars')) || 5;
+
+                if (ratingType === 'like_dislike') {
+                    const totalVotes = parseInt(stats.total_votes) || 0;
+                    const totalRating = parseInt(stats.total_rating) || 0;
+                    $rating.find('.shuriken-like-count').text(totalRating);
+                    $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
+                } else if (ratingType === 'approval') {
+                    $rating.find('.shuriken-upvote-count').text(stats.total_votes);
+                } else if (ratingType === 'numeric') {
+                    const scaledAverage = parseFloat(stats.display_average) || 0;
+
+                    $statsEl.data('scaled-average', scaledAverage);
+
+                    const text = shurikenReviews.i18n.averageRating
+                        .replace('%1$s', scaledAverage)
+                        .replace('%2$s', maxStars)
+                        .replace('%3$s', stats.total_votes);
+                    $statsEl.html(text);
+
+                    $rating.find('.shuriken-numeric-value').text(Math.round(scaledAverage * 10) / 10);
+                    $rating.find('.shuriken-slider-value').text(Math.max(1, Math.round(scaledAverage)));
+                } else {
+                    const scaledAverage = parseFloat(stats.display_average) || 0;
+
+                    $statsEl.data('scaled-average', scaledAverage);
+
+                    const text = shurikenReviews.i18n.averageRating
+                        .replace('%1$s', scaledAverage)
+                        .replace('%2$s', maxStars)
+                        .replace('%3$s', stats.total_votes);
+                    $statsEl.html(text);
+
+                    updateStars($rating, scaledAverage);
+                }
+
+                $rating.removeClass('shuriken-refreshing');
+            });
+        });
+    };
+
+    /**
+     * Fetch fresh rating stats from REST (batched per context group).
+     */
+    const fetchFreshStats = (contextGroups) => {
+        const groupKeys = Object.keys(contextGroups);
+        if (groupKeys.length === 0) {
             isFetchingFreshData = false;
             return;
         }
-        
-        // Add refreshing state to show loading feedback
-        $allRatings.addClass('shuriken-refreshing');
-        
-        // Fetch fresh nonce (don't send X-WP-Nonce header - this is a public endpoint)
-        $.ajax({
-            url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
-            type: 'GET',
-            cache: false, // Important: bypass browser cache
-            // Note: Don't send X-WP-Nonce header here - the nonce endpoint must work
-            // without authentication to handle cached pages with stale nonces
-            success: function(nonceResponse) {
-                // Update nonce in global object
+
+        let completedRequests = 0;
+        const totalRequests = groupKeys.length;
+
+        const onRequestComplete = () => {
+            completedRequests++;
+            if (completedRequests >= totalRequests) {
+                isFetchingFreshData = false;
+                $(SELECTORS.rating + '.shuriken-refreshing').removeClass('shuriken-refreshing');
+            }
+        };
+
+        $.each(contextGroups, function(key, group) {
+            const requestData = { ids: group.ids.join(',') };
+            if (group.contextId) {
+                requestData.context_id = group.contextId;
+                requestData.context_type = group.contextType;
+            }
+
+            $.ajax({
+                url: shurikenReviews.rest_url + 'shuriken-reviews/v1/ratings/stats',
+                type: 'GET',
+                cache: false,
+                data: requestData,
+                success: function(statsResponse) {
+                    applyStats(statsResponse, group.contextId, group.contextType);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to fetch fresh rating stats:', error);
+                    $(SELECTORS.rating).removeClass('shuriken-refreshing');
+                },
+                complete: onRequestComplete
+            });
+        });
+    };
+
+    /**
+     * Fetch a fresh nonce (always — required for CDN / full-page cache compatibility).
+     */
+    const fetchFreshNonce = () => $.ajax({
+        url: shurikenReviews.rest_url + 'shuriken-reviews/v1/nonce',
+        type: 'GET',
+        cache: false,
+    });
+
+    /**
+     * Smart client fetch: always refresh nonce; refresh stats only when SSR is stale.
+     *
+     * @param {Object} options
+     * @param {boolean} [options.forceStatsRefresh=false] Force stats REST (bfcache restore).
+     */
+    const refreshClientData = (options = {}) => {
+        if (isFetchingFreshData) {
+            return;
+        }
+
+        const contextGroups = collectContextGroups();
+        if (Object.keys(contextGroups).length === 0) {
+            return;
+        }
+
+        const forceStatsRefresh = options.forceStatsRefresh === true;
+        const shouldRefreshStats = forceStatsRefresh || !isSsrFresh();
+
+        isFetchingFreshData = true;
+
+        if (shouldRefreshStats) {
+            $(SELECTORS.rating).addClass('shuriken-refreshing');
+        }
+
+        fetchFreshNonce()
+            .done(function(nonceResponse) {
                 if (nonceResponse?.nonce) {
                     shurikenReviews.nonce = nonceResponse.nonce;
                     if (nonceResponse.logged_in !== undefined) {
@@ -167,106 +319,20 @@ jQuery(document).ready(function($) {
                         shurikenReviews.allow_guest_voting = nonceResponse.allow_guest_voting;
                     }
                 }
-                
-                // Build stats requests per context group
-                const groupKeys = Object.keys(contextGroups);
-                let completedRequests = 0;
-                const totalRequests = groupKeys.length;
-                
-                const applyStats = (statsResponse, ctxId, ctxType) => {
-                    $.each(statsResponse, function(ratingId, stats) {
-                        // Select only ratings matching this context
-                        let selector = `${SELECTORS.rating}[data-id="${ratingId}"]`;
-                        if (ctxId) {
-                            selector += `[data-context-id="${ctxId}"][data-context-type="${ctxType}"]`;
-                        } else {
-                            selector += ':not([data-context-id])';
-                        }
-                        const $ratings = $(selector);
-                        $ratings.each(function() {
-                            const $rating = $(this);
-                            const ratingType = $rating.data('rating-type') || 'stars';
-                            const $statsEl = $rating.find(SELECTORS.stats);
-                            const maxStars = parseInt($rating.data('max-stars')) || 5;
-                            
-                            if (ratingType === 'like_dislike') {
-                                const totalVotes = parseInt(stats.total_votes) || 0;
-                                const totalRating = parseInt(stats.total_rating) || 0;
-                                $rating.find('.shuriken-like-count').text(totalRating);
-                                $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
-                            } else if (ratingType === 'approval') {
-                                $rating.find('.shuriken-upvote-count').text(stats.total_votes);
-                            } else if (ratingType === 'numeric') {
-                                const scaledAverage = parseFloat(stats.display_average) || 0;
-                                
-                                $statsEl.data('scaled-average', scaledAverage);
-                                
-                                const text = shurikenReviews.i18n.averageRating
-                                    .replace('%1$s', scaledAverage)
-                                    .replace('%2$s', maxStars)
-                                    .replace('%3$s', stats.total_votes);
-                                $statsEl.html(text);
-                                
-                                $rating.find('.shuriken-numeric-value').text(Math.round(scaledAverage * 10) / 10);
-                                $rating.find('.shuriken-slider-value').text(Math.max(1, Math.round(scaledAverage)));
-                            } else {
-                                const scaledAverage = parseFloat(stats.display_average) || 0;
-                                
-                                $statsEl.data('scaled-average', scaledAverage);
-                                
-                                const text = shurikenReviews.i18n.averageRating
-                                    .replace('%1$s', scaledAverage)
-                                    .replace('%2$s', maxStars)
-                                    .replace('%3$s', stats.total_votes);
-                                $statsEl.html(text);
-                                
-                                updateStars($rating, scaledAverage);
-                            }
-                            
-                            $rating.removeClass('shuriken-refreshing');
-                        });
-                    });
-                };
-                
-                const onRequestComplete = () => {
-                    completedRequests++;
-                    if (completedRequests >= totalRequests) {
-                        isFetchingFreshData = false;
-                        $(SELECTORS.rating + '.shuriken-refreshing').removeClass('shuriken-refreshing');
-                    }
-                };
-                
-                $.each(contextGroups, function(key, group) {
-                    const requestData = { ids: group.ids.join(',') };
-                    if (group.contextId) {
-                        requestData.context_id = group.contextId;
-                        requestData.context_type = group.contextType;
-                    }
-                    
-                    $.ajax({
-                        url: shurikenReviews.rest_url + 'shuriken-reviews/v1/ratings/stats',
-                        type: 'GET',
-                        cache: false,
-                        data: requestData,
-                        success: function(statsResponse) {
-                            applyStats(statsResponse, group.contextId, group.contextType);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Failed to fetch fresh rating stats:', error);
-                            $(SELECTORS.rating).removeClass('shuriken-refreshing');
-                        },
-                        complete: onRequestComplete
-                    });
-                });
-            },
-            error: function(xhr, status, error) {
+
+                if (shouldRefreshStats) {
+                    fetchFreshStats(contextGroups);
+                } else {
+                    isFetchingFreshData = false;
+                }
+            })
+            .fail(function(xhr, status, error) {
                 console.error('Failed to fetch fresh nonce:', error);
                 isFetchingFreshData = false;
-                // Remove refreshing state on error
                 $(SELECTORS.rating).removeClass('shuriken-refreshing');
-            }
-        });
+            });
     };
+
     
     /**
      * Update the --fill-pct custom property on a range slider so the
@@ -283,13 +349,12 @@ jQuery(document).ready(function($) {
 
     // Run on initial page load and after WP Interactivity Router client-side navigation.
     // Uses data-shuriken-init to skip already-initialized elements so re-runs are safe.
-    const shurikenInit = () => {
-        fetchFreshData();
-
-        // Initialize stars (guard prevents duplicate setInterval on re-runs)
+    const shurikenInit = (options = {}) => {
         $(SELECTORS.rating + ':not([data-shuriken-init])').each(function() {
             const $rating = $(this);
             $rating.attr('data-shuriken-init', '1');
+
+            initBlockViewData($rating);
 
             const ratingType = $rating.data('rating-type') || 'stars';
             // Skip non-star types for star initialization
@@ -315,9 +380,18 @@ jQuery(document).ready(function($) {
             $(this).attr('data-shuriken-fill-init', '1');
             updateSliderFill($(this));
         });
+
+        refreshClientData(options);
     };
 
     shurikenInit();
+
+    // Re-fetch stats after bfcache restore (nonce and SSR stats may be stale).
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            shurikenInit({ forceStatsRefresh: true });
+        }
+    });
 
     // Only add hover effects to votable ratings (not display-only)
     $(document).on('mouseenter', '.shuriken-rating:not(.display-only) .star', function() {

@@ -730,7 +730,7 @@ Filters the JavaScript configuration object (`shurikenReviews`) that's passed to
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$data` | array | Contains: `ajaxurl`, `rest_url`, `nonce`, `logged_in`, `allow_guest_voting`, `login_url`, `i18n` |
+| `$data` | array | Contains: `ajaxurl`, `rest_url`, `nonce`, `logged_in`, `allow_guest_voting`, `login_url`, `ssr_rendered_at`, `ssr_fresh_threshold`, `i18n` |
 
 **Example 1: Add custom JavaScript settings**
 ```php
@@ -747,6 +747,24 @@ add_filter('shuriken_localized_data', function($data) {
     // Use a custom login page
     $data['login_url'] = home_url('/my-login-page/');
     return $data;
+});
+```
+
+---
+
+#### `shuriken_ssr_fresh_threshold`
+
+Filters how many seconds after PHP render the client may skip the stats REST round-trip. Cached HTML carries an older `ssr_rendered_at` timestamp and will exceed this threshold.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$threshold` | int | Freshness window in seconds. Default `30`. |
+
+**Example:**
+```php
+add_filter('shuriken_ssr_fresh_threshold', function () {
+    return 60;
 });
 ```
 
@@ -1406,7 +1424,7 @@ add_action('shuriken_vote_created', function($rating_id, $value, $normalized, $u
 
 ## Extensibility Hooks (v1.15.6+)
 
-Hooks added for third-party add-ons and platform integration. See also [ROADMAP.md](../ROADMAP.md) Step 7.
+Hooks added for third-party add-ons and platform integration. See also [Add-on Development Guide](add-on-development.md) and [ROADMAP.md](../ROADMAP.md) Step 7.
 
 ### Admin UI
 
@@ -1445,7 +1463,8 @@ Third-party stats decorators can implement `Shuriken_Analytics_Extension_Interfa
 |------|------|---------|
 | `shuriken_enqueue_frontend_assets` | Filter | Control on-demand frontend asset enqueue from block/shortcode render |
 | `shuriken_force_enqueue_frontend_assets` | Filter | Force frontend assets on every page (default false) |
-| `shuriken_block_view_data` | Filter | Modify localized block view data before `wp_localize_script` |
+| `shuriken_block_view_data` | Filter | Modify per-block view data before `shurikenBlockViewData` localize (PHP) |
+| `shurikenBlockViewData` | Filter | Modify per-block view data on init (JS, `wp.hooks`) |
 | `shurikenBlockSettings_rating` | Filter | Modify single-rating block settings registration (JS, `wp.hooks`) |
 | `shurikenBlockSettings_groupedRating` | Filter | Modify grouped-rating block settings registration (JS, `wp.hooks`) |
 | `shurikenVoteRequest` | Filter | Modify vote AJAX payload before submission (JS, `wp.hooks`) |

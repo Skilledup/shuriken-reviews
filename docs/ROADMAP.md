@@ -147,7 +147,7 @@ All hook, filter, and action slots shipped in v1.15.6-rc for fully decoupled thi
 
 **Analytics:** `shuriken_overall_stats`, `shuriken_top_rated`, `shuriken_most_voted`, `shuriken_low_performers` output filters; `Shuriken_Analytics_Extension_Interface` for third-party stats decorators.
 
-**Frontend / Blocks:** `shurikenVoteRequest` filter + `shurikenVoteSuccess` action (via `wp.hooks`); `shurikenBlockSettings_rating` + `shurikenBlockSettings_groupedRating` registration filters; `shuriken_block_view_data` filter + per-block `wp_localize_script`.
+**Frontend / Blocks:** `shurikenVoteRequest` filter + `shurikenVoteSuccess` action (via `wp.hooks`); `shurikenBlockSettings_rating` + `shurikenBlockSettings_groupedRating` registration filters; `shuriken_block_view_data` filter + consolidated `shurikenBlockViewData` localize + `shurikenBlockViewData` JS filter
 
 **Lifecycle / AJAX / DI:** `shuriken_deactivate`, `shuriken_container_ready`, `shuriken_uninstall`, `shuriken_ajax_register_handlers`; opt-in "Delete Data on Uninstall" toggle (Settings → General → Data Management).
 
@@ -179,7 +179,7 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 - [x] **Conditional asset enqueue** — `viewScript` in block.json + `shuriken_enqueue_frontend_assets()` from block/shortcode render callbacks (WP 7.0+)
 - [x] **Request-scoped rating memo** — dedupe `get_rating()` within a single request; clone-on-return prevents contextual stat leakage
 - [x] **Grouped block batch fetch** — `render_grouped_block()` uses one `get_ratings_by_ids()` call
-- [ ] **Remove dead `shurikenBlock_*` localize** — deferred to Step 8c (wire into smart client fetch)
+- [x] **Block view data wiring** — consolidated `shurikenBlockViewData` localize + `shurikenBlockViewData` JS filter for add-ons
 - [x] **Revisit star `setInterval`** — removed; vote success explicitly syncs stars
 
 #### 8b — SSR Batch Pre-fetch ✅
@@ -190,12 +190,12 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 
 > `get_contextual_stats_batch()` already exists and is used by REST — this step wires it into the PHP render path.
 
-#### 8c — Smart Client Fetch
+#### 8c — Smart Client Fetch ✅
 
-- [ ] **Always fetch nonce** — `GET /nonce` on every page load (required for full-page CDN cache compatibility)
-- [ ] **Skip stats REST on uncached pages** — when SSR stats are fresh (page not served from full-page cache), trust embedded `data-average` / `data-scaled-average` and skip `GET /ratings/stats`
-- [ ] **Always refresh after vote** — post-vote AJAX response already returns updated stats; no change needed
-- [ ] **Detect cached-page context** — use a localized flag or `document.wasDiscarded` / cache plugin hooks so cached pages still run the batched stats refresh
+- [x] **Always fetch nonce** — `GET /nonce` on every page load (required for full-page CDN cache compatibility)
+- [x] **Skip stats REST on uncached pages** — when `ssr_rendered_at` is within threshold, trust embedded `data-average` / `data-scaled-average` and skip `GET /ratings/stats`
+- [x] **Always refresh after vote** — post-vote AJAX response already returns updated stats; no change needed
+- [x] **Detect cached-page context** — stale `ssr_rendered_at` timestamp + bfcache (`pageshow` + `persisted`) trigger batched stats refresh
 
 #### 8d — Statistics Cache Service
 
