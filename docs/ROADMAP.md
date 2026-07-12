@@ -197,12 +197,12 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 - [x] **Always refresh after vote** — post-vote AJAX response already returns updated stats; no change needed
 - [x] **Detect cached-page context** — stale `ssr_rendered_at` timestamp + bfcache (`pageshow` + `persisted`) trigger batched stats refresh
 
-#### 8d — Statistics Cache Service
+#### 8d — Statistics Cache Service ✅
 
-- [ ] `**Shuriken_Cache` service** — TTL-based cache in the DI container; `get` / `set` / `delete` with configurable TTL (default ~60s for stats)
-- [ ] **Object cache compatible** — backed by `wp_cache_`* (automatically uses Redis/Memcached when an object cache drop-in is present; no bespoke Redis wiring)
-- [ ] **Invalidate on vote change** — hook `shuriken_vote_created` / `shuriken_vote_updated` to bust per-rating and per-context cache keys
-- [ ] **Integrate at REST + AJAX + archive sort** — cache `get_contextual_stats_batch()` results and denormalized global stats reads; `shuriken_rating_stats_response` filter remains the extension point for add-ons
+- [x] **`Shuriken_Cache` service** — TTL-based cache in the DI container; `get` / `set` / `delete` with configurable TTL (default ~60s for stats)
+- [x] **Object cache compatible** — backed by `wp_cache_*` (automatically uses Redis/Memcached when an object cache drop-in is present; no bespoke Redis wiring)
+- [x] **Invalidate on mutations** — hook vote create/update and rating update/delete paths to bust rating, parent, and per-context keys; mirrors remain request-scoped to avoid lookup queries during vote writes
+- [x] **Integrate at REST + AJAX + archive sort** — cache `get_contextual_stats_batch()` results and denormalized global stats reads; archive sorting uses WordPress's native `WP_Query` result cache with targeted vote-generation invalidation; `shuriken_rating_stats_response` remains the add-on extension point
 
 > Resolves backlog research item: *Best caching strategy for rating stats*.
 

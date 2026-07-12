@@ -65,9 +65,17 @@ class Shuriken_Container {
      * @return void
      */
     private function register_core_services(): void {
-        // Register database service (foundation - no dependencies)
+        // Statistics cache (wp_cache_* adapter + invalidation hooks)
+        $this->singleton('cache', function($container) {
+            $db = Shuriken_Database::get_instance();
+            return new Shuriken_Cache($db->get_wpdb(), $db->get_ratings_table());
+        });
+
+        // Register database service (foundation - wires cache into rating repository)
         $this->singleton('database', function($container) {
-            return Shuriken_Database::get_instance();
+            $db = Shuriken_Database::get_instance();
+            $db->get_rating_repository()->set_cache($container->get('cache'));
+            return $db;
         });
 
         // Register individual repositories (extracted from database façade)
@@ -325,5 +333,15 @@ function shuriken_schema_manager(): Shuriken_Schema_Manager {
  */
 function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collector {
     return shuriken_container()->get('contextual_stats_collector');
+}
+
+/**
+ * Get the statistics cache service.
+ *
+ * @return Shuriken_Cache_Interface
+ * @since 1.15.7
+ */
+function shuriken_cache(): Shuriken_Cache_Interface {
+    return shuriken_container()->get('cache');
 }
 

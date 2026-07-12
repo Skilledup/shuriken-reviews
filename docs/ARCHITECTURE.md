@@ -72,6 +72,7 @@ The `Shuriken_Database` class is a singleton façade that implements `Shuriken_D
 - `shuriken_ratings_repo()` — returns `Shuriken_Rating_Repository` directly
 - `shuriken_votes_repo()` — returns `Shuriken_Vote_Repository` directly
 - `shuriken_schema_manager()` — returns `Shuriken_Schema_Manager` directly
+- `shuriken_cache()` — returns the `Shuriken_Cache_Interface` object-cache adapter
 
 #### 3a. Rating Repository (`class-shuriken-rating-repository.php`)
 
@@ -97,6 +98,23 @@ The `Shuriken_Database` class is a singleton façade that implements `Shuriken_D
 - `create_tables()` — initial table creation and column migrations
 - `tables_exist()` — health check
 - DB version tracking
+
+#### 3d. Statistics Cache (`class-shuriken-cache.php`)
+
+`Shuriken_Cache` is a small TTL-aware adapter over WordPress `wp_cache_*`.
+`Shuriken_Rating_Repository` uses it for resolved global rating reads and
+scale-independent contextual totals. Persistent object-cache drop-ins such as
+Redis or Memcached make entries reusable across requests; without a drop-in,
+the persistent layer stays disabled because the repository and SSR collector
+already provide request-local memoization. Mirror objects also remain
+request-scoped so vote invalidation never adds mirror-lookup database queries.
+
+The default statistics TTL is 60 seconds and is filterable through
+`shuriken_stats_cache_ttl`; caching can be disabled through
+`shuriken_stats_cache_enabled`. Vote and rating mutation hooks invalidate
+rating, parent, and contextual keys. Archive sorting keeps its indexed
+SQL aggregate and uses WordPress's native `WP_Query` result cache with a
+Shuriken-specific generation invalidated by contextual vote changes.
 
 **Key Methods (on the façade / repositories):**
 - `get_rating($id)` - Retrieve rating

@@ -721,6 +721,39 @@ add_filter('shuriken_before_update_rating', function($data, $rating_id) {
 
 ---
 
+### Cache Filters
+
+#### `shuriken_stats_cache_ttl`
+
+Filters the lifetime of rating and contextual statistics entries stored through
+the WordPress object-cache API.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ttl` | int | Cache lifetime in seconds. Default `60`; values below `1` are clamped to `1`. |
+
+```php
+add_filter('shuriken_stats_cache_ttl', function () {
+    return 120;
+});
+```
+
+#### `shuriken_stats_cache_enabled`
+
+Filters whether statistics use the object cache. By default it is enabled only
+when WordPress reports an external persistent object cache. Developers may
+force it for testing, but request-local caching is already handled separately.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enabled` | bool | Whether cache reads and writes are enabled. Default `wp_using_ext_object_cache()`. |
+
+```php
+add_filter('shuriken_stats_cache_enabled', '__return_false');
+```
+
+---
+
 ### Frontend Filters
 
 #### `shuriken_localized_data`
@@ -1108,23 +1141,11 @@ Fires after any vote (new or update) is successfully processed. This is the best
 | `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
 | `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
 
-**Example 1: Clear cache after voting**
-```php
-add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars, $context_id, $context_type) {
-    // Clear any cached rating data
-    wp_cache_delete('shuriken_rating_' . $rating_id);
-    // Also clear per-context cache key if this was a contextual vote
-    if ($context_id) {
-        wp_cache_delete("ctx_stats_{$rating_id}_{$context_id}");
-    }
-    // If using a caching plugin, clear the page cache
-    if (function_exists('wp_cache_clear_cache')) {
-        wp_cache_clear_cache();
-    }
-}, 10, 9);
-```
+Shuriken invalidates its object-cache entries automatically before this action
+runs. Full-page/CDN caches are separate; use this action only when an external
+page-cache integration requires a targeted purge.
 
-**Example 2: Update a "trending" list**
+**Example: Update a "trending" list**
 ```php
 add_action('shuriken_after_submit_vote', function($rating_id, $value, $normalized, $user_id, $is_update, $rating, $max_stars, $context_id, $context_type) {
     // Get current trending list

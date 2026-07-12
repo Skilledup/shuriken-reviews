@@ -219,12 +219,20 @@ class Shuriken_Frontend {
         $votes_table = $wpdb->prefix . 'shuriken_votes';
         $post_type = $query->get('post_type') ?: 'post';
 
-        // Use a subquery to compute per-post scores for this rating
+        // WP_Query::generate_cache_key() hashes the *entire* query_vars array (plus
+        // the built SQL) to key its "post-queries" result cache. Setting this var is
+        // the invalidation: it never needs to be read back. Its value only changes
+        // when wp_cache_set_last_changed('shuriken_archive') runs (on contextual vote
+        // writes), which changes the hash and busts the cached post ID list — without
+        // touching the shared 'posts' last_changed group WP_Query also salts against.
+        $query->set('_shuriken_sort_cache_generation', wp_cache_get_last_changed('shuriken_archive'));
+
         add_filter('posts_join', function (string $join, \WP_Query $q) use ($votes_table, $rating_id, $post_type) {
             if (!$q->get('_shuriken_sort')) {
                 return $join;
             }
             global $wpdb;
+
             $join .= $wpdb->prepare(
                 " LEFT JOIN (
                     SELECT context_id,

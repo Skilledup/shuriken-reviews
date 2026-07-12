@@ -356,6 +356,18 @@ if (!defined('ABSPATH')) {
                 <span class="about-system-label"><?php esc_html_e('PHP', 'shuriken-reviews'); ?></span>
                 <span class="about-system-value"><?php echo esc_html(PHP_VERSION); ?></span>
             </div>
+            <div class="about-system-item">
+                <span class="about-system-label"><?php esc_html_e('Persistent Object Cache', 'shuriken-reviews'); ?></span>
+                <span class="about-system-value">
+                    <?php
+                    echo esc_html(
+                        wp_using_ext_object_cache()
+                            ? __('Active', 'shuriken-reviews')
+                            : __('Inactive', 'shuriken-reviews')
+                    );
+                    ?>
+                </span>
+            </div>
         </div>
     </div>
 </div>

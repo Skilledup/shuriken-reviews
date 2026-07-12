@@ -35,6 +35,11 @@ class Shuriken_Rating_Repository {
     private array $request_cache = array();
 
     /**
+     * @var Shuriken_Cache_Interface|null Persistent statistics cache.
+     */
+    private ?Shuriken_Cache_Interface $cache = null;
+
+    /**
      * Constructor
      *
      * @param \wpdb  $wpdb          WordPress database instance.
@@ -46,6 +51,17 @@ class Shuriken_Rating_Repository {
         private readonly string $ratings_table,
         private readonly string $votes_table,
     ) {}
+
+    /**
+     * Wire the statistics cache service (called from the DI container).
+     *
+     * @param Shuriken_Cache_Interface|null $cache Cache service.
+     * @return void
+     * @since 1.15.7
+     */
+    public function set_cache(?Shuriken_Cache_Interface $cache): void {
+        $this->cache = $cache;
+    }
 
     // =========================================================================
     // Accessors
@@ -112,6 +128,12 @@ class Shuriken_Rating_Repository {
             return $this->clone_rating($this->request_cache[$rating_id]);
         }
 
+        $cached = $this->get_persistent_rating($rating_id);
+        if ($cached !== null) {
+            $this->request_cache[$rating_id] = $cached;
+            return $this->clone_rating($cached);
+        }
+
         $fields = self::RATING_FIELDS;
         $rating = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id = %d",
@@ -133,6 +155,7 @@ class Shuriken_Rating_Repository {
 
             self::attach_averages($rating);
             $this->request_cache[$rating_id] = $rating;
+            $this->cache_rating_object($rating);
         }
 
         return $this->clone_rating($rating);
@@ -496,6 +519,8 @@ class Shuriken_Rating_Repository {
             throw Shuriken_Database_Exception::update_failed('ratings', $rating_id);
         }
 
+        $this->forget_request_cache($rating_id);
+
         /**
          * Fires after a rating is updated.
          *
@@ -504,8 +529,6 @@ class Shuriken_Rating_Repository {
          * @param array $update_data The updated data.
          */
         do_action('shuriken_rating_updated', $rating_id, $update_data);
-
-        $this->forget_request_cache($rating_id);
 
         return true;
     }
@@ -567,6 +590,7 @@ class Shuriken_Rating_Repository {
             }
 
             $this->wpdb->query('COMMIT');
+            $this->forget_request_cache($rating_id);
 
             /**
              * Fires after a rating is deleted.
@@ -602,6 +626,10 @@ class Shuriken_Rating_Repository {
         $ids = array_map('intval', $rating_ids);
         $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
 
+        foreach ($ids as $rating_id) {
+            do_action('shuriken_before_delete_rating', $rating_id);
+        }
+
         $this->wpdb->query('START TRANSACTION');
 
         try {
@@ -623,6 +651,12 @@ class Shuriken_Rating_Repository {
             }
 
             $this->wpdb->query('COMMIT');
+
+            foreach ($ids as $rating_id) {
+                $this->forget_request_cache($rating_id);
+                do_action('shuriken_rating_deleted', $rating_id);
+            }
+
             return $deleted;
 
         } catch (Shuriken_Database_Exception $e) {
@@ -825,15 +859,40 @@ class Shuriken_Rating_Repository {
             return array();
         }
 
-        $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
+        $result = array();
+        $miss_ids = array();
+
+        foreach ($ids as $id) {
+            if (isset($this->request_cache[$id])) {
+                $result[$id] = $this->request_cache[$id];
+                continue;
+            }
+
+            $cached = $this->get_persistent_rating($id);
+            if ($cached !== null) {
+                $result[$id] = $cached;
+                continue;
+            }
+
+            $miss_ids[] = $id;
+        }
+
+        if (empty($miss_ids)) {
+            $cloned = array();
+            foreach ($result as $id => $rating) {
+                $cloned[$id] = clone $rating;
+            }
+            return $cloned;
+        }
+
+        $ids_placeholder = implode(',', array_fill(0, count($miss_ids), '%d'));
         $fields = self::RATING_FIELDS;
 
         $ratings = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($ids_placeholder)",
-            ...$ids
+            ...$miss_ids
         ));
 
-        $result = array();
         foreach ($ratings as $rating) {
             $rating->source_id = $rating->id;
             self::attach_averages($rating);
@@ -877,6 +936,9 @@ class Shuriken_Rating_Repository {
 
         foreach ($result as $id => $rating) {
             $this->request_cache[(int) $id] = $rating;
+            if (in_array((int) $id, $miss_ids, true)) {
+                $this->cache_rating_object($rating);
+            }
         }
 
         $cloned = array();
@@ -997,6 +1059,13 @@ class Shuriken_Rating_Repository {
      * @return object Object with total_votes, total_rating, average, display_average properties.
      */
     public function get_contextual_stats(int $rating_id, int $context_id, string $context_type, int $scale = Shuriken_Database::RATING_SCALE_DEFAULT): object {
+        if ($this->is_stats_cache_enabled()) {
+            $cached = $this->cache->get($this->contextual_stats_cache_key($rating_id, $context_id, $context_type));
+            if ($cached !== false && is_array($cached)) {
+                return $this->contextual_stats_from_cache($cached, $scale);
+            }
+        }
+
         $row = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
              FROM {$this->votes_table}
@@ -1010,6 +1079,8 @@ class Shuriken_Rating_Repository {
         $stats->total_votes = $row ? (int) $row->total_votes : 0;
         $stats->total_rating = $row ? (float) $row->total_rating : 0.0;
         self::attach_averages($stats, $scale);
+
+        $this->cache_contextual_stats($rating_id, $context_id, $context_type, $stats);
 
         return $stats;
     }
@@ -1033,24 +1104,65 @@ class Shuriken_Rating_Repository {
             return array();
         }
 
-        $ids_placeholder = implode(',', array_fill(0, count($rating_ids), '%d'));
+        $result = array();
+        $to_query = array();
+
+        if ($this->is_stats_cache_enabled()) {
+            foreach ($rating_ids as $rating_id) {
+                $cached = $this->cache->get($this->contextual_stats_cache_key($rating_id, $context_id, $context_type));
+                if ($cached !== false && is_array($cached)) {
+                    $stats = $this->contextual_stats_from_cache(
+                        $cached,
+                        $scales[$rating_id] ?? Shuriken_Database::RATING_SCALE_DEFAULT
+                    );
+                    if ($stats->total_votes > 0) {
+                        $result[$rating_id] = $stats;
+                    }
+                    continue;
+                }
+
+                $to_query[] = $rating_id;
+            }
+        } else {
+            $to_query = $rating_ids;
+        }
+
+        if (empty($to_query)) {
+            return $result;
+        }
+
+        $ids_placeholder = implode(',', array_fill(0, count($to_query), '%d'));
 
         $rows = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT rating_id, COUNT(*) as total_votes, COALESCE(SUM(rating_value), 0) as total_rating
              FROM {$this->votes_table}
              WHERE rating_id IN ($ids_placeholder) AND context_id = %d AND context_type = %s
              GROUP BY rating_id",
-            ...array_merge($rating_ids, [$context_id, $context_type])
+            ...array_merge($to_query, [$context_id, $context_type])
         ));
 
-        $result = array();
+        $queried = array();
         foreach ($rows as $row) {
             $stats = new \stdClass();
             $stats->total_votes = (int) $row->total_votes;
             $stats->total_rating = (float) $row->total_rating;
             $rid = (int) $row->rating_id;
             self::attach_averages($stats, $scales[$rid] ?? Shuriken_Database::RATING_SCALE_DEFAULT);
-            $result[$rid] = $stats;
+            $this->cache_contextual_stats($rid, $context_id, $context_type, $stats);
+            $queried[$rid] = $stats;
+        }
+
+        foreach ($to_query as $rating_id) {
+            if (isset($queried[$rating_id])) {
+                $result[$rating_id] = $queried[$rating_id];
+                continue;
+            }
+
+            $empty = new \stdClass();
+            $empty->total_votes = 0;
+            $empty->total_rating = 0.0;
+            self::attach_averages($empty, $scales[$rating_id] ?? Shuriken_Database::RATING_SCALE_DEFAULT);
+            $this->cache_contextual_stats($rating_id, $context_id, $context_type, $empty);
         }
 
         return $result;
@@ -1169,5 +1281,150 @@ class Shuriken_Rating_Repository {
              ORDER BY v.date_created DESC",
             $rating_id
         ));
+    }
+
+    // =========================================================================
+    // Statistics Cache Helpers
+    // =========================================================================
+
+    /**
+     * Build a persistent rating cache key.
+     *
+     * @param int $rating_id Rating ID.
+     * @return string
+     */
+    private function rating_cache_key(int $rating_id): string {
+        return $this->cache->key('rating', (string) $rating_id);
+    }
+
+    /**
+     * Build a scale-independent contextual stats cache key.
+     *
+     * @param int    $rating_id    Rating ID.
+     * @param int    $context_id   Context ID.
+     * @param string $context_type Context type.
+     * @return string
+     */
+    private function contextual_stats_cache_key(int $rating_id, int $context_id, string $context_type): string {
+        return $this->cache->key('context', (string) $rating_id, (string) $context_id, $context_type);
+    }
+
+    /**
+     * Whether persistent statistics caching is active for this request.
+     *
+     * @return bool
+     */
+    private function is_stats_cache_enabled(): bool {
+        return $this->cache !== null && $this->cache->is_enabled();
+    }
+
+    /**
+     * Load a resolved rating from the persistent cache.
+     *
+     * @param int $rating_id Rating ID.
+     * @return object|null Rating object or null on miss.
+     */
+    private function get_persistent_rating(int $rating_id): ?object {
+        if (!$this->is_stats_cache_enabled()) {
+            return null;
+        }
+
+        $data = $this->cache->get($this->rating_cache_key($rating_id));
+        if ($data === false || !is_array($data)) {
+            return null;
+        }
+
+        return $this->hydrate_rating_from_cache($data);
+    }
+
+    /**
+     * Store a resolved rating in the persistent cache.
+     *
+     * @param object $rating Resolved rating object.
+     * @return void
+     */
+    private function cache_rating_object(object $rating): void {
+        // Mirrors copy mutable source totals; keeping them request-scoped avoids
+        // a mirror lookup query on every vote solely for cache invalidation.
+        if (!$this->is_stats_cache_enabled() || !empty($rating->mirror_of)) {
+            return;
+        }
+
+        $this->cache->set($this->rating_cache_key((int) $rating->id), $this->rating_to_cache_array($rating));
+    }
+
+    /**
+     * Serialize a rating object for object-cache storage.
+     *
+     * @param object $rating Rating object.
+     * @return array<string, mixed>
+     */
+    private function rating_to_cache_array(object $rating): array {
+        return array(
+            'id' => (int) $rating->id,
+            'name' => (string) $rating->name,
+            'total_votes' => (int) $rating->total_votes,
+            'total_rating' => (float) $rating->total_rating,
+            'parent_id' => isset($rating->parent_id) ? (int) $rating->parent_id : null,
+            'effect_type' => $rating->effect_type ?? null,
+            'display_only' => isset($rating->display_only) ? (int) $rating->display_only : 0,
+            'mirror_of' => isset($rating->mirror_of) ? (int) $rating->mirror_of : null,
+            'rating_type' => (string) ($rating->rating_type ?? 'stars'),
+            'scale' => (int) ($rating->scale ?? Shuriken_Database::RATING_SCALE_DEFAULT),
+            'label_description' => $rating->label_description ?? null,
+            'date_created' => $rating->date_created ?? null,
+            'source_id' => (int) ($rating->source_id ?? $rating->id),
+        );
+    }
+
+    /**
+     * Rehydrate a rating object from cached array data.
+     *
+     * @param array<string, mixed> $data Cached rating payload.
+     * @return object
+     */
+    private function hydrate_rating_from_cache(array $data): object {
+        $rating = (object) $data;
+        self::attach_averages($rating);
+
+        return $rating;
+    }
+
+    /**
+     * Store scale-independent contextual stats in the cache.
+     *
+     * @param int    $rating_id    Rating ID.
+     * @param int    $context_id   Context ID.
+     * @param string $context_type Context type.
+     * @param object $stats        Stats object with totals and normalized average.
+     * @return void
+     */
+    private function cache_contextual_stats(int $rating_id, int $context_id, string $context_type, object $stats): void {
+        if (!$this->is_stats_cache_enabled()) {
+            return;
+        }
+
+        $this->cache->set(
+            $this->contextual_stats_cache_key($rating_id, $context_id, $context_type),
+            array(
+                'total_votes' => (int) $stats->total_votes,
+                'total_rating' => (float) $stats->total_rating,
+                'average' => (float) $stats->average,
+            )
+        );
+    }
+
+    /**
+     * Build a contextual stats object from cached scale-independent data.
+     *
+     * @param array<string, mixed> $data  Cached stats payload.
+     * @param int                    $scale Display scale for denormalization.
+     * @return object
+     */
+    private function contextual_stats_from_cache(array $data, int $scale): object {
+        $stats = (object) $data;
+        self::attach_averages($stats, $scale);
+
+        return $stats;
     }
 }

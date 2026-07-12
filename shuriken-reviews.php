@@ -111,6 +111,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics-extension.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-voter-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-rate-limiter.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-cache.php';
         
         // Traits
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/traits/trait-shuriken-analytics-helpers.php';
@@ -135,6 +136,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-voter-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rate-limiter.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-cache.php';
         
         // Dependency injection container
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-container.php';
