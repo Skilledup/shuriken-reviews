@@ -73,12 +73,14 @@ interface Shuriken_Rate_Limiter_Interface {
     /**
      * Get remaining cooldown time for a specific rating
      *
-     * @param int         $user_id   User ID (0 for guests).
-     * @param string|null $user_ip   User IP address (required for guests).
-     * @param int         $rating_id Rating ID.
+     * @param int         $user_id      User ID (0 for guests).
+     * @param string|null $user_ip      User IP address (required for guests).
+     * @param int         $rating_id    Rating ID.
+     * @param int|null    $context_id   Optional post/entity ID for contextual votes.
+     * @param string|null $context_type Optional context type.
      * @return int Seconds remaining until user can vote again (0 if no cooldown).
      */
-    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id): int;
+    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): int;
 
     /**
      * Check if a user bypasses rate limiting

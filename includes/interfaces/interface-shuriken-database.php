@@ -193,6 +193,14 @@ interface Shuriken_Database_Interface {
     public function tables_exist(): bool;
 
     /**
+     * Run schema migrations from a stored database version.
+     *
+     * @param string $current_version Current database version.
+     * @return bool True on success, false on failure.
+     */
+    public function run_migrations(string $current_version): bool;
+
+    /**
      * Get the ratings table name
      *
      * @return string Table name.
@@ -227,7 +235,7 @@ interface Shuriken_Database_Interface {
      * @param int    $scale        Display scale for display_average.
      * @return object Object with total_votes, total_rating, average, display_average.
      */
-    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type, int $scale = self::RATING_SCALE_DEFAULT): object;
+    public function get_contextual_stats(int $rating_id, int $context_id, string $context_type, int $scale = 5): object;
 
     /**
      * Get contextual stats for multiple ratings in a single query

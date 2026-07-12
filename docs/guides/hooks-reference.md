@@ -587,6 +587,23 @@ add_filter('shuriken_rate_limit_settings', function($settings, $user_id, $is_gue
 
 ---
 
+#### `shuriken_rate_limit_cache_enabled`
+
+Controls the transient cache used for hourly/daily vote counters and per-rating
+cooldowns. It defaults to `true`; return `false` to use the indexed database
+queries for every rate-limit check.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enabled` | bool | Whether rate-limit transient caching is enabled |
+
+```php
+add_filter('shuriken_rate_limit_cache_enabled', '__return_false');
+```
+
+---
+
 #### `shuriken_bypass_rate_limit`
 
 Filters whether a user should bypass rate limiting entirely. By default, administrators bypass rate limits.
@@ -1102,10 +1119,11 @@ Fires after an existing vote is changed. This happens when a user changes their 
 | `$max_stars` | int | The maximum stars for this rating |
 | `$context_id` | int\|null | The context post/entity ID (`null` for global votes) |
 | `$context_type` | string\|null | The context type, e.g. `'post'`, `'product'` (`null` for global votes) |
+| `$user_ip` | string\|null | The guest IP address (`null` for logged-in users); appended in 1.15.6 |
 
 **Example: Track vote changes**
 ```php
-add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $new_value, $new_norm, $user_id, $rating, $max_stars, $context_id, $context_type) {
+add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $new_value, $new_norm, $user_id, $rating, $max_stars, $context_id, $context_type, $user_ip) {
     // Convert old normalized value to display scale for logging
     $old_display = ($old_norm / 5) * $max_stars;
     $context = $context_id ? " ($context_type #$context_id)" : '';
@@ -1119,7 +1137,7 @@ add_action('shuriken_vote_updated', function($vote_id, $rating_id, $old_norm, $n
         $max_stars
     );
     error_log($log);
-}, 10, 10);
+}, 10, 11);
 ```
 
 ---

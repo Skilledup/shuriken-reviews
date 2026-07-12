@@ -71,6 +71,12 @@ class Shuriken_Container {
             return new Shuriken_Cache($db->get_wpdb(), $db->get_ratings_table());
         });
 
+        // Rate-limit transients (portable options/object-cache adapter)
+        $this->singleton('rate_limit_cache', function($container) {
+            $db = Shuriken_Database::get_instance();
+            return new Shuriken_Rate_Limit_Cache($db->get_wpdb());
+        });
+
         // Register database service (foundation - wires cache into rating repository)
         $this->singleton('database', function($container) {
             $db = Shuriken_Database::get_instance();
@@ -125,9 +131,12 @@ class Shuriken_Container {
             );
         });
 
-        // Register rate limiter service (depends on vote repository)
+        // Register rate limiter service (depends on vote repository + transient cache)
         $this->singleton('rate_limiter', function($container) {
-            return new Shuriken_Rate_Limiter($container->get('vote_repository'));
+            return new Shuriken_Rate_Limiter(
+                $container->get('vote_repository'),
+                $container->get('rate_limit_cache')
+            );
         });
 
         // Register frontend service (no dependencies)
@@ -343,5 +352,15 @@ function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collec
  */
 function shuriken_cache(): Shuriken_Cache_Interface {
     return shuriken_container()->get('cache');
+}
+
+/**
+ * Get the rate-limit transient cache service.
+ *
+ * @return Shuriken_Rate_Limit_Cache_Interface
+ * @since 1.15.6
+ */
+function shuriken_rate_limit_cache(): Shuriken_Rate_Limit_Cache_Interface {
+    return shuriken_container()->get('rate_limit_cache');
 }
 

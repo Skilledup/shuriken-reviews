@@ -79,7 +79,9 @@ class Shuriken_Schema_Manager {
             date_modified datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY unique_vote (rating_id, user_id, user_ip, context_id, context_type),
-            KEY context_lookup (rating_id, context_id, context_type)
+            KEY context_lookup (rating_id, context_id, context_type),
+            KEY rate_limit_user (user_id, date_modified),
+            KEY rate_limit_guest (user_ip, user_id, date_modified)
         ) $charset_collate;";
 
         dbDelta($sql_votes);
@@ -208,6 +210,35 @@ class Shuriken_Schema_Manager {
 
             if (empty($col_exists)) {
                 $this->wpdb->query("ALTER TABLE {$this->ratings_table} ADD COLUMN label_description varchar(500) DEFAULT NULL AFTER scale");
+            }
+        }
+
+        // v1.9.0: Add rolling-window rate-limit indexes
+        if (version_compare($current_version, '1.9.0', '<')) {
+            $user_index_exists = $this->wpdb->get_results(
+                "SHOW INDEX FROM {$this->votes_table} WHERE Key_name = 'rate_limit_user'"
+            );
+            if (empty($user_index_exists)) {
+                $result = $this->wpdb->query(
+                    "ALTER TABLE {$this->votes_table}
+                     ADD KEY rate_limit_user (user_id, date_modified)"
+                );
+                if ($result === false) {
+                    return false;
+                }
+            }
+
+            $guest_index_exists = $this->wpdb->get_results(
+                "SHOW INDEX FROM {$this->votes_table} WHERE Key_name = 'rate_limit_guest'"
+            );
+            if (empty($guest_index_exists)) {
+                $result = $this->wpdb->query(
+                    "ALTER TABLE {$this->votes_table}
+                     ADD KEY rate_limit_guest (user_ip, user_id, date_modified)"
+                );
+                if ($result === false) {
+                    return false;
+                }
             }
         }
 

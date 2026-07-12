@@ -25,7 +25,7 @@ if (!defined('SHURIKEN_REVIEWS_VERSION')) {
 }
 
 if (!defined('SHURIKEN_REVIEWS_DB_VERSION')) {
-    define('SHURIKEN_REVIEWS_DB_VERSION', '1.8.0');
+    define('SHURIKEN_REVIEWS_DB_VERSION', '1.9.0');
 }
 
 if (!defined('SHURIKEN_REVIEWS_PLUGIN_FILE')) {
@@ -111,6 +111,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-analytics-extension.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-voter-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-rate-limiter.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-rate-limit-cache.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/interfaces/interface-shuriken-cache.php';
         
         // Traits
@@ -135,6 +136,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics-rating-stats.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-analytics.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-voter-analytics.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rate-limit-cache.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-rate-limiter.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-cache.php';
         
@@ -213,7 +215,9 @@ final class Shuriken_Reviews {
         }
         
         // Run migrations
-        $db->run_migrations($current_version);
+        if (!$db->run_migrations($current_version)) {
+            return;
+        }
         
         // Add the new option if it doesn't exist
         add_option('shuriken_allow_guest_voting', '0');
@@ -239,6 +243,7 @@ final class Shuriken_Reviews {
         $container->get('shortcodes');
         $container->get('block');
         $container->get('ajax');
+        $container->get('rate_limiter');
         $container->get('frontend');
         
         // Initialize admin (only in admin context)

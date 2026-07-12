@@ -91,8 +91,8 @@ class Mock_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @return bool
      * @throws Shuriken_Rate_Limit_Exception If configured to throw.
      */
-    public function can_vote($user_id, $user_ip, $rating_id) {
-        $this->log_call('can_vote', compact('user_id', 'user_ip', 'rating_id'));
+    public function can_vote(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): bool {
+        $this->log_call('can_vote', compact('user_id', 'user_ip', 'rating_id', 'context_id', 'context_type'));
 
         if ($this->exception_to_throw !== null) {
             throw $this->exception_to_throw;
@@ -107,7 +107,7 @@ class Mock_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param int $user_id User ID.
      * @return array
      */
-    public function get_limits($user_id) {
+    public function get_limits(int $user_id): array {
         $this->log_call('get_limits', compact('user_id'));
         return $this->limits;
     }
@@ -119,7 +119,7 @@ class Mock_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP.
      * @return array
      */
-    public function get_usage($user_id, $user_ip) {
+    public function get_usage(int $user_id, ?string $user_ip): array {
         $this->log_call('get_usage', compact('user_id', 'user_ip'));
         return $this->usage;
     }
@@ -132,8 +132,8 @@ class Mock_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param int         $rating_id Rating ID.
      * @return int
      */
-    public function get_cooldown_remaining($user_id, $user_ip, $rating_id) {
-        $this->log_call('get_cooldown_remaining', compact('user_id', 'user_ip', 'rating_id'));
+    public function get_cooldown_remaining(int $user_id, ?string $user_ip, int $rating_id, ?int $context_id = null, ?string $context_type = null): int {
+        $this->log_call('get_cooldown_remaining', compact('user_id', 'user_ip', 'rating_id', 'context_id', 'context_type'));
         return $this->cooldown_remaining;
     }
 
@@ -144,7 +144,7 @@ class Mock_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @param string|null $user_ip User IP.
      * @return bool
      */
-    public function should_bypass($user_id, $user_ip) {
+    public function should_bypass(int $user_id, ?string $user_ip): bool {
         $this->log_call('should_bypass', compact('user_id', 'user_ip'));
         return $this->should_bypass_result;
     }

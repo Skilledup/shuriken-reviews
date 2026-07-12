@@ -48,6 +48,8 @@ database        → Shuriken_Database (implements Shuriken_Database_Interface; f
 ratings_repo    → Shuriken_Rating_Repository
 votes_repo      → Shuriken_Vote_Repository
 schema_manager  → Shuriken_Schema_Manager
+cache           → Shuriken_Cache (implements Shuriken_Cache_Interface)
+rate_limit_cache → Shuriken_Rate_Limit_Cache (implements Shuriken_Rate_Limit_Cache_Interface)
 analytics       → Shuriken_Analytics (implements Shuriken_Analytics_Interface; delegates to formatter, ranking, dashboard, rating_stats, context)
 voter_analytics → Shuriken_Voter_Analytics (implements Shuriken_Voter_Analytics_Interface)
 rate_limiter    → Shuriken_Rate_Limiter (implements Shuriken_Rate_Limiter_Interface)
@@ -73,6 +75,7 @@ The `Shuriken_Database` class is a singleton façade that implements `Shuriken_D
 - `shuriken_votes_repo()` — returns `Shuriken_Vote_Repository` directly
 - `shuriken_schema_manager()` — returns `Shuriken_Schema_Manager` directly
 - `shuriken_cache()` — returns the `Shuriken_Cache_Interface` object-cache adapter
+- `shuriken_rate_limit_cache()` — returns the transient-backed `Shuriken_Rate_Limit_Cache_Interface`
 
 #### 3a. Rating Repository (`class-shuriken-rating-repository.php`)
 
@@ -115,6 +118,17 @@ The default statistics TTL is 60 seconds and is filterable through
 rating, parent, and contextual keys. Archive sorting keeps its indexed
 SQL aggregate and uses WordPress's native `WP_Query` result cache with a
 Shuriken-specific generation invalidated by contextual vote changes.
+
+#### 3e. Rate-Limit Cache (`class-shuriken-rate-limit-cache.php`)
+
+`Shuriken_Rate_Limit_Cache` stores rolling hourly/daily counts and contextual
+cooldown timestamps through the WordPress Transients API. Standard installs use
+non-autoloaded options; Redis/Memcached-backed installs use the object-cache
+drop-in automatically. Counter TTLs end when the oldest cached vote leaves its
+window. New votes increment an existing counter, while vote updates invalidate
+both windows because `date_modified` moves. Guest IPs are represented only by
+salted hashes in transient names. The database remains the source of truth on
+cache misses, backed by the DB v1.9.0 rate-limit indexes.
 
 **Key Methods (on the façade / repositories):**
 - `get_rating($id)` - Retrieve rating

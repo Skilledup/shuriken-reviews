@@ -267,8 +267,9 @@ class Shuriken_AJAX {
                  * @param int         $max_stars        The maximum stars for this rating.
                  * @param int|null    $context_id       The context post/entity ID (null for global votes).
                  * @param string|null $context_type     The context type, e.g. 'post', 'product' (null for global votes).
+                 * @param string|null $user_ip          The guest IP address (null for logged-in users).
                  */
-                do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars, $context_id, $context_type);
+                do_action('shuriken_vote_updated', $existing_vote->id, $rating_id, $existing_vote->rating_value, $rating_value, $normalized_value, $user_id, $rating, $max_stars, $context_id, $context_type, $user_ip);
             } else {
                 // Insert a new vote (use normalized value for storage)
                 $this->votes->create_vote($rating_id, $normalized_value, $user_id, $user_ip, $context_id, $context_type);

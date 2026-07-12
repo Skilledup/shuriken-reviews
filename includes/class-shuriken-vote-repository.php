@@ -297,6 +297,42 @@ class Shuriken_Vote_Repository {
     }
 
     /**
+     * Get a vote count and the oldest timestamp in one rolling-window query.
+     *
+     * The oldest timestamp defines the cache lifetime: once that vote leaves
+     * the window the cached count must be recalculated.
+     *
+     * @param int         $user_id User ID (0 for guests).
+     * @param string|null $user_ip User IP address (for guests).
+     * @param string      $since   Datetime string (Y-m-d H:i:s format).
+     * @return array{count: int, oldest_vote: string|null}
+     */
+    public function get_vote_usage_since(int $user_id, ?string $user_ip, string $since): array {
+        if ($user_id > 0) {
+            $row = $this->wpdb->get_row($this->wpdb->prepare(
+                "SELECT COUNT(*) AS vote_count, MIN(date_modified) AS oldest_vote
+                 FROM {$this->votes_table}
+                 WHERE user_id = %d AND date_modified >= %s",
+                $user_id,
+                $since
+            ));
+        } else {
+            $row = $this->wpdb->get_row($this->wpdb->prepare(
+                "SELECT COUNT(*) AS vote_count, MIN(date_modified) AS oldest_vote
+                 FROM {$this->votes_table}
+                 WHERE user_ip = %s AND user_id = 0 AND date_modified >= %s",
+                $user_ip,
+                $since
+            ));
+        }
+
+        return array(
+            'count'       => (int) ($row->vote_count ?? 0),
+            'oldest_vote' => isset($row->oldest_vote) ? (string) $row->oldest_vote : null,
+        );
+    }
+
+    /**
      * Get the oldest vote datetime within a time window
      *
      * Used to calculate when rate limits will reset.

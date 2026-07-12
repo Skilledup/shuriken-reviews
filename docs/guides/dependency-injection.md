@@ -77,6 +77,7 @@ The following services are automatically registered:
 | `votes_repo` | `Shuriken_Vote_Repository` | — |
 | `schema_manager` | `Shuriken_Schema_Manager` | — |
 | `cache` | `Shuriken_Cache` | `Shuriken_Cache_Interface` |
+| `rate_limit_cache` | `Shuriken_Rate_Limit_Cache` | `Shuriken_Rate_Limit_Cache_Interface` |
 | `analytics` | `Shuriken_Analytics` | `Shuriken_Analytics_Interface` |
 | `voter_analytics` | `Shuriken_Voter_Analytics` | `Shuriken_Voter_Analytics_Interface` |
 | `rest_api` | `Shuriken_REST_API` | - |
@@ -112,6 +113,7 @@ $ratings = shuriken_ratings_repo();
 $votes = shuriken_votes_repo();
 $schema = shuriken_schema_manager();
 $cache = shuriken_cache();
+$rate_limit_cache = shuriken_rate_limit_cache();
 $analytics = shuriken_analytics();
 $voter_analytics = shuriken_voter_analytics();
 
@@ -120,6 +122,7 @@ $db = shuriken_container()->get('database');
 $analytics = shuriken_container()->get('analytics');
 $voter_analytics = shuriken_container()->get('voter_analytics');
 $cache = shuriken_container()->get('cache');
+$rate_limit_cache = shuriken_container()->get('rate_limit_cache');
 ```
 
 ## Registering Custom Services

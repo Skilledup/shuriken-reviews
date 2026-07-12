@@ -206,13 +206,13 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 
 > Resolves backlog research item: *Best caching strategy for rating stats*.
 
-#### 8e — Rate Limit Performance
+#### 8e — Rate Limit Performance ✅
 
-- [ ] **Transient vote counters** — cache hourly/daily counts per user/IP with TTL = window remainder; increment on vote write; invalidate on vote update
-- [ ] **DB indexes** — add `(user_id, date_modified)` and `(user_ip, user_id, date_modified)` indexes on `wp_shuriken_votes` for COUNT queries
-- [ ] **Cooldown cache** — cache `get_last_vote_time()` per `(rating_id, user_id|ip, context)` with TTL = cooldown duration
+- [x] **Transient vote counters** — cache hourly/daily counts per user/IP with TTL = window remainder; atomically increment existing counters on vote creation and invalidate on vote update
+- [x] **DB indexes** — added `(user_id, date_modified)` and `(user_ip, user_id, date_modified)` indexes on `wp_shuriken_votes` for rolling-window queries (DB v1.9.0)
+- [x] **Cooldown cache** — cache `get_last_vote_time()` per `(rating_id, user_id|ip, context)` with TTL = cooldown duration
 
-> Lower priority — rate limiting is off by default. Indexes alone may be sufficient before adding transient counters.
+Transient storage works through the options table on standard installs and automatically uses Redis/Memcached through WordPress when a persistent object-cache drop-in is present. Guest IPs are hashed in transient names; `shuriken_rate_limit_cache_enabled` can disable this layer and retain the indexed database fallback.
 
 ### Known bugs and Gaps
 

@@ -10,6 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Rate-limit performance cache** — hourly/daily vote counts and per-rating cooldown timestamps now use a dedicated WordPress Transients cache (`Shuriken_Rate_Limit_Cache`). Counter entries expire when the oldest vote leaves each rolling window, increment after new votes, and invalidate after vote updates; guest identities are hashed in transient names. The cache works through `wp_options` by default and persistent object caches when available. Filter: `shuriken_rate_limit_cache_enabled`.
+- **Rate-limit database indexes (DB v1.9.0)** — added `(user_id, date_modified)` and `(user_ip, user_id, date_modified)` indexes to accelerate member and guest rolling-window queries.
 - **Statistics cache service** — `Shuriken_Cache` provides TTL-aware `wp_cache_*` access through the DI container and `shuriken_cache()` helper. When an external object-cache drop-in is active, contextual batches and resolved non-mirror global rating reads are cached for 60 seconds by default (`shuriken_stats_cache_ttl`); `shuriken_stats_cache_enabled` is the operational override. Vote, rating update, and delete paths invalidate affected keys; mirrors stay request-scoped. Persistent object-cache status is visible under Settings → About → System Information.
 - **Smart client fetch** — frontend always refreshes vote nonce via `GET /nonce`; skips `GET /ratings/stats` when `ssr_rendered_at` is within the freshness window (default 30s) and trusts SSR `data-average` / `data-scaled-average`; batched stats refresh when the timestamp is stale or on bfcache restore (`pageshow` + `persisted`). Filter: `shuriken_ssr_fresh_threshold`.
 - **Block view data pipeline** — consolidated `shurikenBlockViewData` localize (keyed by rating ID) plus `shurikenBlockViewData` JS filter (`wp.hooks`) for frontend add-ons; `shuriken_register_block_view_data()` helper.
@@ -17,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Vote update hook context** — `shuriken_vote_updated` now appends `$user_ip` as its eleventh argument so guest rate-limit counters and cooldowns can be invalidated without exposing or changing the existing ten arguments.
 - **Archive sort cache integration** — archive sorting keeps the database aggregate JOIN and reuses WordPress's native `WP_Query` result cache. A Shuriken-specific cache generation is changed after contextual votes so unrelated post-query caches remain valid.
 - **Frontend init refactor** — `fetchFreshData()` replaced by `refreshClientData()` (nonce always, stats conditional); per-block `shurikenBlock_*` globals replaced by consolidated `shurikenBlockViewData` map output in footer.
 - **Documentation** — hooks reference updated for `ssr_rendered_at`, `ssr_fresh_threshold`, and block view data hooks; INDEX links to add-on guide.

@@ -23,6 +23,9 @@ if (!defined('ABSPATH')) {
  */
 class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
 
+    private const HOURLY_WINDOW = 'hourly';
+    private const DAILY_WINDOW = 'daily';
+
     /**
      * Default cooldown in seconds between votes on the same rating.
      */
@@ -49,17 +52,24 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
     public const MEMBER_DAILY_LIMIT_DEFAULT = 100;
 
     /**
-     * @var Shuriken_Vote_Repository Vote repository
+     * Site-local reset timestamps populated while usage is resolved.
+     *
+     * @var array<string, int>
      */
-    private Shuriken_Vote_Repository $db;
+    private array $usage_resets = array();
 
     /**
      * Constructor
      *
-     * @param Shuriken_Vote_Repository $db Vote repository.
+     * @param Shuriken_Vote_Repository          $db    Vote repository.
+     * @param Shuriken_Rate_Limit_Cache_Interface $cache Rate-limit transient cache.
      */
-    public function __construct(Shuriken_Vote_Repository $db) {
-        $this->db = $db;
+    public function __construct(
+        private readonly Shuriken_Vote_Repository $db,
+        private readonly Shuriken_Rate_Limit_Cache_Interface $cache,
+    ) {
+        add_action('shuriken_vote_created', $this->handle_vote_created(...), 5, 9);
+        add_action('shuriken_vote_updated', $this->handle_vote_updated(...), 5, 11);
     }
 
     /**
@@ -197,13 +207,19 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @return array Current usage statistics.
      */
     public function get_usage(int $user_id, ?string $user_ip): array {
-        $now = current_time('mysql');
-        $hour_ago = gmdate('Y-m-d H:i:s', strtotime($now) - HOUR_IN_SECONDS);
-        $day_ago = gmdate('Y-m-d H:i:s', strtotime($now) - DAY_IN_SECONDS);
-
         return array(
-            'hourly_votes' => $this->db->count_votes_since($user_id, $user_ip, $hour_ago),
-            'daily_votes'  => $this->db->count_votes_since($user_id, $user_ip, $day_ago),
+            'hourly_votes' => $this->get_window_usage(
+                $user_id,
+                $user_ip,
+                self::HOURLY_WINDOW,
+                HOUR_IN_SECONDS
+            ),
+            'daily_votes'  => $this->get_window_usage(
+                $user_id,
+                $user_ip,
+                self::DAILY_WINDOW,
+                DAY_IN_SECONDS
+            ),
         );
     }
 
@@ -224,9 +240,34 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
             return 0;
         }
 
-        $last_vote_time = $this->db->get_last_vote_time($rating_id, $user_id, $user_ip, $context_id, $context_type);
+        $last_vote_time = $this->cache->get_cooldown(
+            $rating_id,
+            $user_id,
+            $user_ip,
+            $context_id,
+            $context_type
+        );
+
+        if ($last_vote_time === false) {
+            $last_vote_time = $this->db->get_last_vote_time(
+                $rating_id,
+                $user_id,
+                $user_ip,
+                $context_id,
+                $context_type
+            );
+        }
         
         if (!$last_vote_time) {
+            $this->cache->set_cooldown(
+                $rating_id,
+                $user_id,
+                $user_ip,
+                $context_id,
+                $context_type,
+                null,
+                $limits['cooldown']
+            );
             return 0;
         }
 
@@ -235,10 +276,106 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
         $now = strtotime(current_time('mysql'));
 
         if ($now >= $cooldown_ends) {
+            $this->cache->set_cooldown(
+                $rating_id,
+                $user_id,
+                $user_ip,
+                $context_id,
+                $context_type,
+                null,
+                $limits['cooldown']
+            );
             return 0;
         }
 
-        return $cooldown_ends - $now;
+        $remaining = $cooldown_ends - $now;
+        $this->cache->set_cooldown(
+            $rating_id,
+            $user_id,
+            $user_ip,
+            $context_id,
+            $context_type,
+            $last_vote_time,
+            $remaining
+        );
+
+        return $remaining;
+    }
+
+    /**
+     * Update transient counters and cooldown after a new vote.
+     *
+     * @param int         $rating_id    Rating ID.
+     * @param float       $rating_value Display-scale value.
+     * @param float       $normalized_value Normalized value.
+     * @param int         $user_id      User ID.
+     * @param string|null $user_ip      Guest IP.
+     * @param object      $rating       Rating object.
+     * @param int         $max_stars    Display scale.
+     * @param int|null    $context_id   Context ID.
+     * @param string|null $context_type Context type.
+     * @return void
+     */
+    public function handle_vote_created(int $rating_id, float $rating_value, float $normalized_value, int $user_id, ?string $user_ip, object $rating, int $max_stars, ?int $context_id, ?string $context_type): void {
+        $limits = $this->get_limits($user_id);
+        if (!$limits['enabled']) {
+            return;
+        }
+
+        if ($limits['hourly_limit'] > 0) {
+            $this->cache->increment_counter($user_id, $user_ip, self::HOURLY_WINDOW);
+        }
+        if ($limits['daily_limit'] > 0) {
+            $this->cache->increment_counter($user_id, $user_ip, self::DAILY_WINDOW);
+        }
+        if ($limits['cooldown'] > 0) {
+            $this->cache->set_cooldown(
+                $rating_id,
+                $user_id,
+                $user_ip,
+                $context_id,
+                $context_type,
+                current_time('mysql'),
+                $limits['cooldown']
+            );
+        }
+    }
+
+    /**
+     * Invalidate rolling counters and refresh cooldown after a vote update.
+     *
+     * @param int         $vote_id          Vote ID.
+     * @param int         $rating_id        Rating ID.
+     * @param float       $old_value        Previous normalized value.
+     * @param float       $new_value        New display-scale value.
+     * @param float       $normalized_value New normalized value.
+     * @param int         $user_id          User ID.
+     * @param object      $rating           Rating object.
+     * @param int         $max_stars        Display scale.
+     * @param int|null    $context_id       Context ID.
+     * @param string|null $context_type     Context type.
+     * @param string|null $user_ip          Guest IP.
+     * @return void
+     */
+    public function handle_vote_updated(int $vote_id, int $rating_id, float $old_value, float $new_value, float $normalized_value, int $user_id, object $rating, int $max_stars, ?int $context_id, ?string $context_type, ?string $user_ip): void {
+        $limits = $this->get_limits($user_id);
+        if (!$limits['enabled']) {
+            return;
+        }
+
+        $this->cache->delete_counters($user_id, $user_ip);
+
+        if ($limits['cooldown'] > 0) {
+            $this->cache->set_cooldown(
+                $rating_id,
+                $user_id,
+                $user_ip,
+                $context_id,
+                $context_type,
+                current_time('mysql'),
+                $limits['cooldown']
+            );
+        }
     }
 
     /**
@@ -300,6 +437,13 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @return int Seconds until reset.
      */
     private function get_time_until_hourly_reset(int $user_id, ?string $user_ip): int {
+        if (isset($this->usage_resets[self::HOURLY_WINDOW])) {
+            return max(
+                0,
+                $this->usage_resets[self::HOURLY_WINDOW] - strtotime(current_time('mysql'))
+            );
+        }
+
         $oldest_vote_in_window = $this->db->get_oldest_vote_in_window($user_id, $user_ip, HOUR_IN_SECONDS);
         
         if (!$oldest_vote_in_window) {
@@ -321,6 +465,13 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
      * @return int Seconds until reset.
      */
     private function get_time_until_daily_reset(int $user_id, ?string $user_ip): int {
+        if (isset($this->usage_resets[self::DAILY_WINDOW])) {
+            return max(
+                0,
+                $this->usage_resets[self::DAILY_WINDOW] - strtotime(current_time('mysql'))
+            );
+        }
+
         $oldest_vote_in_window = $this->db->get_oldest_vote_in_window($user_id, $user_ip, DAY_IN_SECONDS);
         
         if (!$oldest_vote_in_window) {
@@ -332,6 +483,42 @@ class Shuriken_Rate_Limiter implements Shuriken_Rate_Limiter_Interface {
         $now = strtotime(current_time('mysql'));
 
         return max(0, $reset_time - $now);
+    }
+
+    /**
+     * Resolve one cached rolling-window usage count.
+     *
+     * @param int         $user_id       User ID.
+     * @param string|null $user_ip       Guest IP.
+     * @param string      $window        Window name.
+     * @param int         $window_seconds Window duration.
+     * @return int
+     */
+    private function get_window_usage(int $user_id, ?string $user_ip, string $window, int $window_seconds): int {
+        $cached = $this->cache->get_counter($user_id, $user_ip, $window);
+
+        if ($cached !== false) {
+            $this->usage_resets[$window] = $cached['resets_at'];
+            return $cached['count'];
+        }
+
+        $now = strtotime(current_time('mysql'));
+        $since = gmdate('Y-m-d H:i:s', $now - $window_seconds);
+        $usage = $this->db->get_vote_usage_since($user_id, $user_ip, $since);
+        $resets_at = $usage['oldest_vote']
+            ? strtotime($usage['oldest_vote']) + $window_seconds
+            : $now + $window_seconds;
+
+        $this->usage_resets[$window] = $resets_at;
+        $this->cache->set_counter(
+            $user_id,
+            $user_ip,
+            $window,
+            $usage['count'],
+            $resets_at
+        );
+
+        return $usage['count'];
     }
 }
 

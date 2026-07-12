@@ -34,6 +34,7 @@ $options = array(
     'shuriken_exclude_author_comments',
     'shuriken_exclude_reply_comments',
     'shuriken_rate_limiting_enabled',
+    'shuriken_rate_limit_cache_generation',
     'shuriken_rate_limit_warning_dismissed',
     'shuriken_vote_cooldown',
     'shuriken_hourly_vote_limit',
