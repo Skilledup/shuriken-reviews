@@ -5,7 +5,7 @@
  * Request-scoped batch pre-fetch for contextual rating stats during SSR.
  *
  * @package Shuriken_Reviews
- * @since 1.15.7
+ * @since 1.15.6
  */
 
 // Exit if accessed directly
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  * Gathers source IDs per context group during render, batch-fetches vote totals once,
  * then denormalizes display_average per widget scale in get().
  *
- * @since 1.15.7
+ * @since 1.15.6
  */
 class Shuriken_Contextual_Stats_Collector {
 

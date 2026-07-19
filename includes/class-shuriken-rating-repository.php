@@ -57,7 +57,7 @@ class Shuriken_Rating_Repository {
      *
      * @param Shuriken_Cache_Interface|null $cache Cache service.
      * @return void
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public function set_cache(?Shuriken_Cache_Interface $cache): void {
         $this->cache = $cache;
@@ -179,7 +179,7 @@ class Shuriken_Rating_Repository {
      *
      * @param int $rating_id Rating ID whose cache entries should be removed.
      * @return void
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public function forget_request_cache(int $rating_id): void {
         if ($rating_id <= 0) {

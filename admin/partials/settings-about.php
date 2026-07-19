@@ -50,12 +50,18 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('Version 1.15.6-rc — Shingetsu, completes the v1.15 architecture roadmap with performance wins, full add-on extensibility, and a modernized block editor — while raising minimum requirements to WordPress 7.0 and PHP 8.3.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Version 1.15.6 — Shingetsu completes the v1.15 architecture roadmap with comment-level contextual ratings, server-side caching, smart client fetch, full add-on extensibility, and a modernized block editor — while raising minimum requirements to WordPress 7.0 and PHP 8.3.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Performance & Smarter Loading', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Frontend CSS and JS load only when a rating block or shortcode is present. Contextual stats are batch-fetched during server render via Shuriken_Contextual_Stats_Collector, cutting per-widget database queries on pages with many ratings.', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Comment Contextual Ratings', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Rate individual WordPress comments with Per-comment voting inside the Comment Template, or attach a rating to the comment form so the vote is saved when the comment posts. Shortcodes and the shuriken_comment_rating_id filter are supported.', 'shuriken-reviews'); ?></span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong><?php esc_html_e('Performance & Caching', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Frontend CSS and JS load only when a rating is present. Contextual stats are batch-fetched during server render, trusted on fresh pages via smart client fetch, and optionally cached through wp_cache_* / Redis. Rate-limit counters use a dedicated transient cache with new rolling-window indexes (DB v1.9.0).', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>
@@ -67,7 +73,7 @@ if (!defined('ABSPATH')) {
                 <li>
                     <div>
                         <strong><?php esc_html_e('Add-on Extensibility', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('New lifecycle hooks (shuriken_container_ready, shuriken_deactivate), REST and AJAX permission filters, frontend wp.hooks integration, and an opt-in Delete Data on Uninstall toggle give third-party add-ons clean extension points without forking core classes.', 'shuriken-reviews'); ?></span>
+                        <span><?php esc_html_e('Lifecycle hooks (shuriken_container_ready, shuriken_deactivate), REST and AJAX permission filters, consolidated shurikenBlockViewData for frontend add-ons, and an opt-in Delete Data on Uninstall toggle give third-party plugins clean extension points without forking core classes.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>

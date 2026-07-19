@@ -3,7 +3,7 @@
  * Shuriken Reviews Cache Interface
  *
  * @package Shuriken_Reviews
- * @since 1.15.7
+ * @since 1.15.6
  */
 
 // Exit if accessed directly
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  *
  * TTL-based object cache backed by wp_cache_*.
  *
- * @since 1.15.7
+ * @since 1.15.6
  */
 interface Shuriken_Cache_Interface {
 

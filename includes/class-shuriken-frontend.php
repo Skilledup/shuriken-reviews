@@ -145,7 +145,7 @@ class Shuriken_Frontend {
      * @param int   $rating_id Rating ID used as the map key.
      * @param array $data      Filtered block view data.
      * @return void
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public static function register_block_view_data(int $rating_id, array $data): void {
         if ($rating_id <= 0) {
@@ -159,7 +159,7 @@ class Shuriken_Frontend {
      * Output consolidated block view data for the frontend script.
      *
      * @return void
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public function localize_block_view_data(): void {
         if (empty(self::$block_view_data) || !wp_script_is('shuriken-reviews', 'enqueued')) {
@@ -269,7 +269,7 @@ class Shuriken_Frontend {
         /**
          * Seconds after SSR render during which client-side stats REST can be skipped.
          *
-         * @since 1.15.7
+         * @since 1.15.6
          * @param int $threshold Freshness window in seconds. Default 30.
          */
         $ssr_fresh_threshold = (int) apply_filters('shuriken_ssr_fresh_threshold', 30);
@@ -351,7 +351,7 @@ function shuriken_enqueue_frontend_assets(): void {
  * @param int   $rating_id Rating ID.
  * @param array $data      Block view data (after shuriken_block_view_data filter).
  * @return void
- * @since 1.15.7
+ * @since 1.15.6
  */
 function shuriken_register_block_view_data(int $rating_id, array $data): void {
     Shuriken_Frontend::register_block_view_data($rating_id, $data);

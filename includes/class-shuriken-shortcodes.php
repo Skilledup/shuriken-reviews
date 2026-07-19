@@ -178,7 +178,7 @@ class Shuriken_Shortcodes {
      *
      * @param object $rating Rating object.
      * @return string Rating type slug.
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public static function resolve_render_rating_type(object $rating): string {
         $rating_type = isset($rating->rating_type) ? $rating->rating_type : 'stars';
@@ -201,7 +201,7 @@ class Shuriken_Shortcodes {
      * @param object      $rating      Rating object.
      * @param string|null $rating_type Optional pre-resolved rating type.
      * @return int Display scale (max stars / slider max).
-     * @since 1.15.7
+     * @since 1.15.6
      */
     public static function resolve_render_scale(object $rating, ?string $rating_type = null): int {
         $rating_type = $rating_type ?? self::resolve_render_rating_type($rating);

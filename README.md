@@ -1,8 +1,8 @@
 # Shuriken Reviews
 
-A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
+A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post and per-comment contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.15.6--rc-blue)
+![Version](https://img.shields.io/badge/version-1.15.6-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-7.0%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.3%2B-purple)
@@ -19,7 +19,7 @@ A professional WordPress rating plugin built for flexibility, performance, and e
 - [Rating Structure](#rating-structure)
 - [Block Editor Integration](#block-editor-integration)
 - [Shortcodes](#shortcodes)
-- [Contextual (Per-Post) Voting](#contextual-per-post-voting)
+- [Contextual Voting](#contextual-voting)
 - [Rate Limiting](#rate-limiting)
 - [Analytics Dashboard](#analytics-dashboard)
 - [REST API](#rest-api)
@@ -160,6 +160,8 @@ Displays a single interactive rating for user voting.
 - Searchable rating selector — pick an existing rating or create one without leaving the editor
 - Title tag (h1–h6, div, p, span) and Anchor ID
 - **Per-post voting** toggle for contextual mode
+- **Per-comment voting** toggle (nest inside Comment Template)
+- **Attach to comment form** — deferred vote saved when the comment posts
 - Visual preset (Classic, Card, Minimal, Dark, Outlined)
 - Per-block accent colour and star colour override
 
@@ -171,6 +173,7 @@ Displays a parent rating with all its child sub-ratings in a unified section.
 - Unified searchable dropdown for parent ratings and mirrors
 - Title tag and Anchor ID
 - **Per-post voting** toggle
+- **Per-comment voting** toggle (nest inside Comment Template)
 - Visual preset (Gradient, Minimal, Boxed, Dark, Outlined)
 - Grid or List layout for child ratings
 - Gap control (`--shuriken-gap`) — accepts any CSS size value (e.g. `24px`, `2rem`)
@@ -204,8 +207,8 @@ For block themes, Shuriken Reviews also provides a Query Loop sorting extension 
 | `star_color` | string | — | Hex colour override |
 | `button_color` | string | — | Hex colour override for numeric submit buttons |
 | `hide_title` | int/bool | — | Hide the rating title and description output |
-| `context_id` | int | — | Post ID for contextual voting |
-| `context_type` | string | — | Post type for contextual voting |
+| `context_id` | int | — | Post or comment ID for contextual voting |
+| `context_type` | string | — | Context type: `post`, `page`, `product`, `comment`, … |
 
 ```
 [shuriken_rating id="1"]
@@ -214,6 +217,7 @@ For block themes, Shuriken Reviews also provides a Query Loop sorting extension 
 [shuriken_rating id="8" style="minimal" star_color="#0f766e" button_color="#155e75"]
 [shuriken_rating id="8" hide_title="1"]
 [shuriken_rating id="1" context_id="42" context_type="post"]
+[shuriken_rating id="12" context_id="789" context_type="comment"]
 ```
 
 ### `[shuriken_grouped_rating]`
@@ -229,8 +233,8 @@ For block themes, Shuriken Reviews also provides a Query Loop sorting extension 
 | `button_color` | string | — | Hex colour override for numeric submit buttons |
 | `layout` | string | `grid` | Child layout: `grid` or `list` |
 | `hide_title` | int/bool | — | Hide the rating title and description output |
-| `context_id` | int | — | Post ID for contextual voting |
-| `context_type` | string | — | Post type for contextual voting |
+| `context_id` | int | — | Post or comment ID for contextual voting |
+| `context_type` | string | — | Context type: `post`, `page`, `product`, `comment`, … |
 
 ```
 [shuriken_grouped_rating id="1"]
@@ -241,22 +245,24 @@ For block themes, Shuriken Reviews also provides a Query Loop sorting extension 
 
 ---
 
-## Contextual (Per-Post) Voting
+## Contextual Voting
 
-A rating placed in a post template collects **independent vote tallies per post** without requiring separate rating configurations for each post.
+A rating placed in a template collects **independent vote tallies per context** (post, page, product, or comment) without requiring separate rating configurations for each entity.
 
 **How to enable:**
-- Block: toggle **Per-post voting** in the block inspector.
+- Block (posts): toggle **Per-post voting** in the block inspector.
+- Block (comments): toggle **Per-comment voting** inside a Comment Template, or **Attach to comment form** on the single rating block (sibling of the comments form).
 - Shortcode: pass `context_id` and `context_type` attributes.
 
 **Additional integration:**
 - **Block editor sidebar panel** — while editing a post, a Document Settings panel displays live contextual vote stats for that post.
 - **Archive sorting** — configure **Settings → General → Archive Sorting** to order archive pages by contextual rating average or total votes using a `pre_get_posts` hook.
-- **Analytics** — the Recent Activity table links contextual votes to the originating post; an overview card counts posts with contextual votes.
-- **Item Stats scope views** — ratings with contextual votes gain a **Per-Post Votes** view, a **Global Votes** comparison view, top-post and trending tables, and dedicated drill-down pages for each post context.
-- **REST endpoint** — `GET /context-stats` (requires `edit_posts`) returns per-post stats programmatically.
+- **Analytics** — the Recent Activity table links contextual votes to the originating post or comment; an overview card counts posts with contextual votes.
+- **Item Stats scope views** — ratings with contextual votes gain a **Per-Post Votes** view, a **Global Votes** comparison view, top-post and trending tables, and dedicated drill-down pages for each context.
+- **REST endpoint** — `GET /context-stats` (requires `edit_posts`) returns per-context stats programmatically.
+- **Comment rating ID filter** — `shuriken_comment_rating_id` can supply a rating ID when the block/shortcode leaves it unset.
 
-Accepted post types default to `post`, `page`, and `product`. Extend with the `shuriken_allowed_context_types` filter.
+Accepted context types default to `post`, `page`, `product`, and `comment`. Extend with the `shuriken_allowed_context_types` filter.
 
 ---
 
@@ -382,7 +388,7 @@ Enable rate limiting and configure all thresholds. See [Rate Limiting](#rate-lim
 | `shuriken_can_submit_vote` | Filter | Control vote eligibility per user/rating |
 | `shuriken_rating_star_symbol` | Filter | Override the rating symbol (★, ❤, etc.) |
 | `shuriken_rest_manage_capability` | Filter | Override write capability for REST write operations |
-| `shuriken_allowed_context_types` | Filter | Control which post types accept contextual votes |
+| `shuriken_allowed_context_types` | Filter | Control which context types accept contextual votes (`post`, `page`, `product`, `comment`, …) |
 | `shuriken_rate_limit_exceeded` | Filter | Customise the rate-limit error response |
 | `shuriken_vote_created` | Action | Fires after a new vote is successfully recorded |
 | `shuriken_container_ready` | Action | Fires after the DI container is fully built — swap services before first use |

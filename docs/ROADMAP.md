@@ -51,9 +51,9 @@ Per-post voting visibility — admin pages and the block editor now surface cont
 - `get_context_usage_counts()` / `get_ratings_for_context()` DB methods + interface additions
 - `GET /shuriken-reviews/v1/context-stats` REST endpoint (editor-only, `can_edit_posts` permission)
 
-### Modern PHP & Architecture (v1.15.5–1.15.6-rc)
+### Modern PHP & Architecture (v1.15.5–1.15.6)
 
-Steps 1–5 shipped in v1.15.5. Step 6 (6a–6f) and Step 7 completed in v1.15.6-rc **Shingetsu** (foundational Step 6 work — formatter, ranking, context, JS modernisation, block decomposition — began in v1.15.5).
+Steps 1–5 shipped in v1.15.5. Step 6 (6a–6f) and Step 7 completed in v1.15.6 **Shingetsu** (foundational Step 6 work — formatter, ranking, context, JS modernisation, block decomposition — began in v1.15.5).
 
 #### Step 1 — `RatingType` Backed Enum ✅
 
@@ -96,9 +96,9 @@ Split the ~1,046-line monolithic `Shuriken_REST_API` class into two focused cont
 
 #### Step 6 — Coding Standards & DRY Sweep ✅
 
-##### 6a — `Shuriken_Analytics` Decomposition ✅ (completed v1.15.6-rc)
+##### 6a — `Shuriken_Analytics` Decomposition ✅ (completed v1.15.6)
 
-Formatter, Ranking, and Context services shipped in v1.15.5; Dashboard and Rating_Stats extraction plus the final ~278-line coordinator shipped in v1.15.6-rc.
+Formatter, Ranking, and Context services shipped in v1.15.5; Dashboard and Rating_Stats extraction plus the final ~278-line coordinator shipped in v1.15.6.
 
 
 | Class                              | Lines | Responsibility                                                                                                                                              |
@@ -138,9 +138,9 @@ All 10 project JS files modernized: 135 `var` → `const`/`let`, arrow functions
 
 `SELECTORS`/`TIMEOUTS` constants, `setInterval` memory-leak fix via `wp-js-interactivity:navigated`, optional chaining in frontend JS, CSS class audit (no removals needed).
 
-#### Step 7 — Platform & Add-on Extensibility ✅ (v1.15.6-rc)
+#### Step 7 — Platform & Add-on Extensibility ✅ (v1.15.6)
 
-All hook, filter, and action slots shipped in v1.15.6-rc for fully decoupled third-party add-ons.
+All hook, filter, and action slots shipped in v1.15.6 for fully decoupled third-party add-ons.
 
 **Admin UI:** `shuriken_admin_submenu`, `shuriken_ratings_columns` (filter), `shuriken_after_ratings_list`, `shuriken_after_analytics_overview`, `shuriken_after_settings_card`, `shuriken_settings_sidebar_{tab}`, `shuriken_save_settings`
 
@@ -163,19 +163,13 @@ All hook, filter, and action slots shipped in v1.15.6-rc for fully decoupled thi
 - **Best Performing avg wrong for binary types** — `get_rating_context_summary()` now computes percentage for like/dislike instead of denormalising the 0–1 ratio
 - **Admin analytics JS DRY cleanup** — shared date-range filters, `formatDate()`, clickable-row handlers, and chart colours consolidated into `admin-analytics.js`; `shuriken_sort_link()` moved to `class-shuriken-admin.php`
 
----
+### Performance (v1.15.6) — Step 8 ✅
 
-## Up Next
-
-### Step 8 — Performance (v1.15.x)
-
-Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grouped `/ratings/stats` JS) but SSR still runs per-block queries, the client always re-fetches stats on load, and rate limiting hits the DB on every vote. Step 8 closes those gaps in priority order — quick wins first, then prefetch, then caching.
-
-> **Why eighth:** Stable service boundaries from Steps 4–5 and clean code from Step 6 make a cache service cleanly injectable without coupling it to bloated classes.
+Batch infrastructure already existed for REST (`get_contextual_stats_batch`, grouped `/ratings/stats` JS). Step 8 closed the remaining gaps: SSR still ran per-block queries, the client always re-fetched stats on load, and rate limiting hit the DB on every vote.
 
 > **Cache compatibility:** Server-side caching (transients / object cache) is separate from edge/CDN caching. Cached pages still need a fresh nonce and stats refresh; uncached pages can trust SSR stats and skip the REST stats round-trip. REST responses keep `Cache-Control: no-store` for CDN safety.
 
-#### 8a — Quick Wins (low risk, high ROI) ✅
+#### 8a — Quick Wins ✅
 
 - [x] **Conditional asset enqueue** — `viewScript` in block.json + `shuriken_enqueue_frontend_assets()` from block/shortcode render callbacks (WP 7.0+)
 - [x] **Request-scoped rating memo** — dedupe `get_rating()` within a single request; clone-on-return prevents contextual stat leakage
@@ -188,8 +182,6 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 - [x] **Contextual stats collector** — `Shuriken_Contextual_Stats_Collector` gathers `(source_id, context_id, context_type, scale)` tuples during block/shortcode render, then calls `get_contextual_stats_batch()` once per context group instead of `get_contextual_stats()` per widget in `render_rating_html()`
 - [x] **Serve from in-request map** — `render_rating_html()` reads pre-fetched stats from the collector; falls back to single query if collector not active (e.g. direct shortcode call outside normal render flow)
 - [x] **Early content registration** — `the_content` priority 1 scans parsed blocks and shortcodes; `pre_render_block` supplements Query Loop dynamic context and mirror/sub-rating IDs
-
-> `get_contextual_stats_batch()` already exists and is used by REST — this step wires it into the PHP render path.
 
 #### 8c — Smart Client Fetch ✅
 
@@ -214,6 +206,10 @@ Batch infrastructure already exists for REST (`get_contextual_stats_batch`, grou
 - [x] **Cooldown cache** — cache `get_last_vote_time()` per `(rating_id, user_id|ip, context)` with TTL = cooldown duration
 
 Transient storage works through the options table on standard installs and automatically uses Redis/Memcached through WordPress when a persistent object-cache drop-in is present. Guest IPs are hashed in transient names; `shuriken_rate_limit_cache_enabled` can disable this layer and retain the indexed database fallback.
+
+---
+
+## Up Next
 
 ### Known bugs and Gaps
 

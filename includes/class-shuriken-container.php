@@ -338,7 +338,7 @@ function shuriken_schema_manager(): Shuriken_Schema_Manager {
  * Get the contextual stats collector for SSR batch pre-fetch.
  *
  * @return Shuriken_Contextual_Stats_Collector
- * @since 1.15.7
+ * @since 1.15.6
  */
 function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collector {
     return shuriken_container()->get('contextual_stats_collector');
@@ -348,7 +348,7 @@ function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collec
  * Get the statistics cache service.
  *
  * @return Shuriken_Cache_Interface
- * @since 1.15.7
+ * @since 1.15.6
  */
 function shuriken_cache(): Shuriken_Cache_Interface {
     return shuriken_container()->get('cache');

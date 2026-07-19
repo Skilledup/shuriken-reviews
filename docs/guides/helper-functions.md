@@ -287,6 +287,86 @@ Idempotent — safe to call from every render path. Use when injecting rating HT
 
 ---
 
+### `shuriken_register_block_view_data()`
+
+Register per-block view data for the consolidated `shurikenBlockViewData` frontend localize map.
+
+```php
+function shuriken_register_block_view_data(int $rating_id, array $data): void
+```
+
+**File:** [class-shuriken-frontend.php](../../includes/class-shuriken-frontend.php)
+
+---
+
+### `shuriken_cache()`
+
+Get the statistics cache service (`wp_cache_*` backed).
+
+```php
+function shuriken_cache(): Shuriken_Cache_Interface
+```
+
+**Returns:** `Shuriken_Cache_Interface`
+
+**File:** [class-shuriken-container.php](../../includes/class-shuriken-container.php)
+
+---
+
+### `shuriken_rate_limit_cache()`
+
+Get the rate-limit transient cache service.
+
+```php
+function shuriken_rate_limit_cache(): Shuriken_Rate_Limit_Cache_Interface
+```
+
+**Returns:** `Shuriken_Rate_Limit_Cache_Interface`
+
+**File:** [class-shuriken-container.php](../../includes/class-shuriken-container.php)
+
+---
+
+### `shuriken_contextual_stats_collector()`
+
+Get the SSR contextual stats batch collector.
+
+```php
+function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collector
+```
+
+**Returns:** `Shuriken_Contextual_Stats_Collector`
+
+**File:** [class-shuriken-container.php](../../includes/class-shuriken-container.php)
+
+---
+
+### `shuriken_comment_form_ratings()`
+
+Get the comment-form ratings registry (deferred votes on `comment_post`).
+
+```php
+function shuriken_comment_form_ratings(): Shuriken_Comment_Form_Ratings
+```
+
+**Returns:** `Shuriken_Comment_Form_Ratings`
+
+**File:** [class-shuriken-comment-form-ratings.php](../../includes/class-shuriken-comment-form-ratings.php)
+
+---
+
+### `shuriken_resolve_comment_rating_id()`
+
+Resolve a comment-context rating ID, applying `shuriken_comment_rating_id` when unset.
+
+```php
+function shuriken_resolve_comment_rating_id(int $rating_id, ?\WP_Comment $comment = null, $post = null): int
+```
+
+**File:** [class-shuriken-comment-form-ratings.php](../../includes/class-shuriken-comment-form-ratings.php)
+
+---
+
 ### `shuriken_shortcodes()`
 
 Get the shortcodes component instance.
@@ -464,6 +544,12 @@ $rating = $db->get_rating(1); // Returns mock data
 | `shuriken_ajax()` | 1.0.0 |
 | `shuriken_frontend()` | 1.0.0 |
 | `shuriken_enqueue_frontend_assets()` | 1.15.6 |
+| `shuriken_register_block_view_data()` | 1.15.6 |
+| `shuriken_cache()` | 1.15.6 |
+| `shuriken_rate_limit_cache()` | 1.15.6 |
+| `shuriken_contextual_stats_collector()` | 1.15.6 |
+| `shuriken_comment_form_ratings()` | 1.15.6 |
+| `shuriken_resolve_comment_rating_id()` | 1.15.6 |
 | `shuriken_shortcodes()` | 1.0.0 |
 | `shuriken_container()` | 1.7.5 |
 | `shuriken_analytics()` | 1.7.5 |

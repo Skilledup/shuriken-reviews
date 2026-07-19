@@ -5,7 +5,7 @@
  * TTL-based statistics cache backed by wp_cache_* (Redis/Memcached when available).
  *
  * @package Shuriken_Reviews
- * @since 1.15.7
+ * @since 1.15.6
  */
 
 // Exit if accessed directly
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class Shuriken_Cache
  *
- * @since 1.15.7
+ * @since 1.15.6
  */
 class Shuriken_Cache implements Shuriken_Cache_Interface {
 
@@ -78,7 +78,7 @@ class Shuriken_Cache implements Shuriken_Cache_Interface {
         /**
          * Filter the default TTL for statistics cache entries.
          *
-         * @since 1.15.7
+         * @since 1.15.6
          * @param int $ttl TTL in seconds. Default 60.
          */
         return max(1, (int) apply_filters('shuriken_stats_cache_ttl', 60));

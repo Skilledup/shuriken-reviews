@@ -685,7 +685,7 @@ class Shuriken_Block {
      * @param array    $block_data Raw block view payload.
      * @param WP_Block $block      Block instance.
      * @return void
-     * @since 1.15.7
+     * @since 1.15.6
      */
     private function register_block_view_data_for_render(int $rating_id, array $block_data, \WP_Block $block): void {
         /**

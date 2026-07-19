@@ -1,6 +1,6 @@
 {
     "name": "shuriken-reviews",
-    "version": "1.15.6-rc",
+    "version": "1.15.6",
     "description": "Block editor build toolchain for the Shuriken Reviews plugin.",
     "license": "GPL-3.0-or-later",
     "private": true,
