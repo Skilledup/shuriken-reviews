@@ -273,6 +273,26 @@ class Shuriken_Block {
             $title_tag = 'h2';
         }
 
+        // Comment-form mode: register for form injection; do not render an in-place widget.
+        if (!empty($attributes['commentFormContext'])) {
+            $comment = null;
+            $post    = get_post();
+            $rating_id = shuriken_resolve_comment_rating_id($rating_id, $comment, $post);
+            if (!$rating_id) {
+                return '';
+            }
+            shuriken_comment_form_ratings()->register($rating_id, $attributes);
+            return '';
+        }
+
+        // Resolve rating ID via comment filter when unset (comment-context blocks).
+        if (!$rating_id && !empty($attributes['commentContext'])) {
+            $comment_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
+            $comment    = $comment_id ? get_comment($comment_id) : null;
+            $post       = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+            $rating_id  = shuriken_resolve_comment_rating_id(0, $comment instanceof \WP_Comment ? $comment : null, $post);
+        }
+
         if (!$rating_id) {
             return '';
         }
@@ -298,13 +318,7 @@ class Shuriken_Block {
         }
 
         // Determine context for contextual voting
-        $context_id = null;
-        $context_type = null;
-        $post_context = !empty($attributes['postContext']);
-        if ($post_context) {
-            $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
-            $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
-        }
+        [$context_id, $context_type] = $this->resolve_render_context($attributes, $block);
 
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
@@ -356,6 +370,13 @@ class Shuriken_Block {
         // Validate title tag
         if (!in_array($title_tag, self::ALLOWED_TITLE_TAGS, true)) {
             $title_tag = 'h2';
+        }
+
+        if (!$rating_id && !empty($attributes['commentContext'])) {
+            $comment_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
+            $comment    = $comment_id ? get_comment($comment_id) : null;
+            $post       = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+            $rating_id  = shuriken_resolve_comment_rating_id(0, $comment instanceof \WP_Comment ? $comment : null, $post);
         }
 
         if (!$rating_id) {
@@ -462,13 +483,7 @@ class Shuriken_Block {
         $layout_class = ($child_layout === 'list') ? ' is-layout-list' : '';
 
         // Determine context for contextual voting
-        $context_id = null;
-        $context_type = null;
-        $post_context = !empty($attributes['postContext']);
-        if ($post_context) {
-            $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
-            $context_type = isset($block->context['postType']) ? sanitize_key($block->context['postType']) : get_post_type($context_id);
-        }
+        [$context_id, $context_type] = $this->resolve_render_context($attributes, $block);
 
         // Determine whether to hide the title and description
         $hide_title = !empty($attributes['hideTitle']);
@@ -630,6 +645,37 @@ class Shuriken_Block {
         return 'CASE WHEN COALESCE(shuriken_block_scores.shuriken_block_votes, 0) = 0 THEN 0
                      ELSE (shuriken_block_scores.shuriken_block_total / shuriken_block_scores.shuriken_block_votes)
                END ' . $order . ', ' . $orderby_clause;
+    }
+
+    /**
+     * Resolve contextual voting scope from block attributes and FSE context.
+     *
+     * commentContext takes precedence over postContext when both are set.
+     *
+     * @param array    $attributes Block attributes.
+     * @param WP_Block $block      Block instance.
+     * @return array{0: int|null, 1: string|null}
+     */
+    private function resolve_render_context(array $attributes, \WP_Block $block): array {
+        if (!empty($attributes['commentContext'])) {
+            $context_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
+            if ($context_id > 0) {
+                return array($context_id, 'comment');
+            }
+            return array(null, null);
+        }
+
+        if (!empty($attributes['postContext'])) {
+            $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
+            $context_type = isset($block->context['postType'])
+                ? sanitize_key($block->context['postType'])
+                : (string) get_post_type($context_id);
+            if ($context_id > 0 && $context_type !== '') {
+                return array($context_id, $context_type);
+            }
+        }
+
+        return array(null, null);
     }
 
     /**

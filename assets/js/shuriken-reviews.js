@@ -606,6 +606,39 @@ jQuery(document).ready(function($) {
         });
     };
 
+    /**
+     * Store a selected value on a comment-form deferred rating (no AJAX).
+     *
+     * @param {jQuery} $rating Rating widget root.
+     * @param {number|string} value Selected rating value.
+     */
+    const setCommentFormRatingValue = ($rating, value) => {
+        const ratingId = $rating.data('id');
+        const $wrap = $rating.closest('.shuriken-comment-form-rating-wrap');
+        const $input = $wrap.find('.shuriken-form-rating-value').filter(function() {
+            return String($(this).data('rating-id')) === String(ratingId);
+        });
+        if ($input.length) {
+            $input.val(value);
+        }
+
+        const $feedback = $rating.find(SELECTORS.stats);
+        if ($feedback.length && shurikenReviews.i18n && shurikenReviews.i18n.thankYou) {
+            // Light confirmation — vote is deferred until the comment is posted.
+            $feedback.data('form-pending', '1');
+        }
+    };
+
+    /**
+     * Whether this widget is deferred onto the comment form.
+     *
+     * @param {jQuery} $rating Rating widget root.
+     * @return {boolean}
+     */
+    const isCommentFormRating = ($rating) => {
+        return $rating.data('comment-form') === 1 || $rating.data('comment-form') === '1' || $rating.hasClass('shuriken-comment-form-rating');
+    };
+
     // Only allow clicking on votable ratings (not display-only)
     $(document).on('click', '.shuriken-rating:not(.display-only) .star', function(e) {
         e.preventDefault();
@@ -632,9 +665,6 @@ jQuery(document).ready(function($) {
 
             return;
         }
-        
-        // Disable stars while processing
-        $stars.css('pointer-events', 'none');
 
         // Display user's vote on stars
         $stars.find('.star').each(function() {
@@ -644,6 +674,15 @@ jQuery(document).ready(function($) {
                 $(this).removeClass('active');
             }
         });
+
+        // Comment form mode: store value locally; submit with the comment.
+        if (isCommentFormRating($rating)) {
+            setCommentFormRatingValue($rating, value);
+            return;
+        }
+        
+        // Disable stars while processing
+        $stars.css('pointer-events', 'none');
 
         // Submit the rating
         submitRating($rating, value, 0);
@@ -853,6 +892,13 @@ jQuery(document).ready(function($) {
             $rating.find('.login-message').show();
             return;
         }
+
+        if (isCommentFormRating($rating)) {
+            $rating.find('.shuriken-btn').removeClass('active');
+            $(this).addClass('active');
+            setCommentFormRatingValue($rating, value);
+            return;
+        }
         
         // Disable buttons while processing
         $rating.find('.shuriken-btn').css('pointer-events', 'none');
@@ -888,6 +934,11 @@ jQuery(document).ready(function($) {
             $rating.find('.login-message').show();
             return;
         }
+
+        if (isCommentFormRating($rating)) {
+            setCommentFormRatingValue($rating, value);
+            return;
+        }
         
         // Disable slider and button while processing
         $slider.prop('disabled', true);
@@ -920,6 +971,12 @@ jQuery(document).ready(function($) {
                 );
             }
             $rating.find('.login-message').show();
+            return;
+        }
+
+        if (isCommentFormRating($rating)) {
+            $(this).addClass('active');
+            setCommentFormRatingValue($rating, 1);
             return;
         }
         

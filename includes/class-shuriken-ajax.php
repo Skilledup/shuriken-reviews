@@ -135,13 +135,24 @@ class Shuriken_AJAX {
         }
 
         // Validate context_type against allowed values
-        $allowed_context_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+        $allowed_context_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
         if ($context_type && !in_array($context_type, $allowed_context_types, true)) {
             $context_id = null;
             $context_type = null;
         }
 
         try {
+            // Soft-validate comment context: fail closed if the comment does not exist
+            if ($context_type === 'comment' && $context_id) {
+                if (!get_comment($context_id)) {
+                    throw Shuriken_Validation_Exception::invalid_value(
+                        'context_id',
+                        $context_id,
+                        __('an existing comment ID', 'shuriken-reviews')
+                    );
+                }
+            }
+
             // Get the rating first to apply the filter
             $rating = $this->ratings->get_rating($rating_id);
             if (!$rating) {

@@ -357,9 +357,10 @@ Handles `[shuriken_rating]` and `[shuriken_grouped_rating]` shortcode registrati
 
 **Responsibility:**
 - Parse shortcode attributes (id, tag, anchor_tag, style, accent_color, star_color, layout, context_id, context_type) — `context_id` and `context_type` enable per-context (per-post) voting when provided.
-- Validate input: `id` is coerced to int; `context_id` is coerced to int; `context_type` is sanitized and validated against the `shuriken_allowed_context_types` filter (defaults: `post`, `page`, `product`).
+- Validate input: `id` is coerced to int; `context_id` is coerced to int; `context_type` is sanitized and validated against the `shuriken_allowed_context_types` filter (defaults: `post`, `page`, `product`, `comment`).
 - When contextual parameters are present, the shortcodes pass them to `render_rating_html()` so the returned HTML includes `data-context-id` / `data-context-type` and per-context stats overlay vote totals. Since v1.15.6, `render_rating_html()` reads from `Shuriken_Contextual_Stats_Collector` (batch pre-fetch) when active, falling back to `get_contextual_stats()` for isolated calls.
 - For grouped ratings, the same context is applied to the parent and all children so vote tallies are scoped consistently.
+- When `id` is `0` and `context_type` is `comment`, `shuriken_comment_rating_id` may supply the rating ID.
 - Render single or grouped ratings with preset style classes and CSS custom properties
 - Return HTML
 
@@ -370,12 +371,14 @@ Shortcode (in post content):
 ```
 [shuriken_rating id="5" context_id="42" context_type="post"]
 [shuriken_grouped_rating id="3" context_id="42" context_type="post"]
+[shuriken_rating id="12" context_id="789" context_type="comment"]
 ```
 
 PHP (in theme templates):
 
 ```
 echo do_shortcode( '[shuriken_rating id="5" context_id="' . get_the_ID() . '" context_type="post"]' );
+echo do_shortcode( '[shuriken_rating id="12" context_id="' . get_comment_ID() . '" context_type="comment"]' );
 ```
 
 ### Contextual Stats Collector (`class-shuriken-contextual-stats-collector.php`)
@@ -406,8 +409,8 @@ Registers and renders Gutenberg blocks.
 - Shared data store registration
 
 **Blocks:**
-- `shuriken-reviews/rating` - Single rating display (supports `postContext` for per-post voting)
-- `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` for per-post voting; `gap` attribute controls `--shuriken-gap` vertical spacing)
+- `shuriken-reviews/rating` - Single rating display (supports `postContext`, `commentContext`, `commentFormContext`)
+- `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` / `commentContext`; `gap` attribute controls `--shuriken-gap` vertical spacing)
 
 ### Shared Data Store (`blocks/shared/ratings-store.js`)
 
@@ -568,34 +571,45 @@ Return success response
 
 ## Contextual Voting
 
-Ratings are **standalone entities** — not tied to any specific post. Contextual voting (DB v1.6.0) lets votes be scoped per post/page/product without duplicating the rating configuration.
+Ratings are **standalone entities** — not tied to any specific post. Contextual voting (DB v1.6.0) lets votes be scoped per post/page/product/**comment** without duplicating the rating configuration.
 
 ### How it works
 
-The votes table has two extra columns: `context_id` (BIGINT) and `context_type` (VARCHAR 50). When a vote is cast without context it behaves exactly as before. When cast with context the vote is tagged to that post, and per-post independent tallies are computed on demand.
+The votes table has two extra columns: `context_id` (BIGINT) and `context_type` (VARCHAR 50). When a vote is cast without context it behaves exactly as before. When cast with context the vote is tagged to that entity, and independent tallies are computed on demand.
 
 | Column | Purpose |
 |--------|---------|
-| `context_id` | The post/page/product ID (NULL = global) |
-| `context_type` | The post type slug: `post`, `page`, `product`, … |
+| `context_id` | The post/page/product/comment ID (NULL = global) |
+| `context_type` | The context slug: `post`, `page`, `product`, `comment`, … |
 
-**Unique key:** `(rating_id, user_id, user_ip, context_id, context_type)` — each user can vote once per rating per context. NULLs are accounted for via `COALESCE`.
+**Unique key:** `(rating_id, user_id, user_ip, context_id, context_type)` — each user can vote once per rating per context. NULLs are accounted for via `COALESCE`. Post-scoped and comment-scoped votes never collide.
 
 ### Global vs contextual aggregates
 
-`total_votes` / `total_rating` on the ratings table remain **global** aggregates (backward compatible). Per-context totals and averages are computed from the votes table via `get_contextual_stats()` or batched via `get_contextual_stats_batch()` through the request-scoped `Shuriken_Contextual_Stats_Collector` during SSR.
+`total_votes` / `total_rating` on the ratings table remain **global** aggregates (backward compatible). Per-context totals and averages are computed from the votes table via `get_contextual_stats()` or batched via `get_contextual_stats_batch()` through the request-scoped `Shuriken_Contextual_Stats_Collector` during SSR. Comment loops batch by `(comment_id, comment)` groups — many contexts per page is expected.
 
 ### Block integration
 
-Both `shuriken-reviews/rating` and `shuriken-reviews/grouped-rating` expose a **"Per-post voting"** toggle (`postContext` attribute). When enabled, the PHP render callback reads the `postId` / `postType` from the block's FSE context and passes them through the entire render → AJAX → DB chain. The rendered HTML carries `data-context-id` and `data-context-type` attributes which the frontend JS reads when submitting votes and refreshing stats.
+Both `shuriken-reviews/rating` and `shuriken-reviews/grouped-rating` expose a **"Per-post voting"** toggle (`postContext`) and a **"Per-comment voting"** toggle (`commentContext`, mutually exclusive). When `commentContext` is enabled, nest the block inside `core/comment-template`; Core injects `commentId` via `render_block_context`, and votes use `context_type=comment`.
+
+The single rating block also supports **`commentFormContext`**: place it as a sibling of `core/post-comments-form` (cannot nest inside it). The widget is injected via `comment_form_after_fields`; the vote is created on `comment_post` with the new comment ID. Frontend selects a value locally and does not AJAX-submit until the comment succeeds.
+
+### Comment rating ID filter
+
+When block/shortcode `ratingId`/`id` is `0`, `shuriken_comment_rating_id` can supply a rating ID based on post type or category (no Settings mapping UI in this release).
 
 ### Allowed context types
 
 ```php
-// Default: post, page, product
-apply_filters('shuriken_allowed_context_types', ['post', 'page', 'product']);
+// Default: post, page, product, comment
+apply_filters('shuriken_allowed_context_types', ['post', 'page', 'product', 'comment']);
 ```
 
+### Future-feature guardrails
+
+- **Votes & notes management** stays separate from WordPress comments — `context_type=comment` is only a vote scope key.
+- **Emoji reactions** stay separate from rating types — do not reuse comment-context ratings as reactions.
+- Latest Comments Swiper (`includes/comments.php`) stays separate from comment-context ratings.
 ---
 
 ## Design Patterns

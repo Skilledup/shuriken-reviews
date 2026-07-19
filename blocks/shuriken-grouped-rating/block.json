@@ -86,6 +86,10 @@
             "type": "boolean",
             "default": false
         },
+        "commentContext": {
+            "type": "boolean",
+            "default": false
+        },
         "hideTitle": {
             "type": "boolean",
             "default": false
@@ -99,7 +103,7 @@
             "default": ""
         }
     },
-    "usesContext": ["postId", "postType"],
+    "usesContext": ["postId", "postType", "commentId"],
     "editorScript": "shuriken-grouped-rating-editor",
     "viewScript": "shuriken-reviews",
     "style": "shuriken-reviews-frontend",

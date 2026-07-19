@@ -127,7 +127,7 @@ class Shuriken_REST_Votes_Controller {
 
             // Validate context_type against allowed values
             if ($has_context) {
-                $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+                $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
                 if (!in_array($context_type, $allowed_types, true)) {
                     $has_context = false;
                 }
@@ -209,7 +209,7 @@ class Shuriken_REST_Votes_Controller {
                 throw Shuriken_Validation_Exception::required_field('context_id and context_type');
             }
 
-            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
             if (!in_array($context_type, $allowed_types, true)) {
                 throw Shuriken_Validation_Exception::out_of_range('context_type', $context_type, 0, 0);
             }

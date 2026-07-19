@@ -571,13 +571,38 @@ class Shuriken_Analytics_Context implements Shuriken_Analytics_Context_Interface
     }
 
     /**
-     * Get the human-readable title for a context (post/page/product)
+     * Get the human-readable title for a context (post/page/product/comment)
      *
-     * @param int    $context_id   Post ID
+     * @param int    $context_id   Post or comment ID
      * @param string $context_type Context type
-     * @return string Post title or fallback string
+     * @return string Context title or fallback string
      */
     private function get_context_title(int $context_id, string $context_type): string {
+        if ($context_type === 'comment') {
+            $comment = get_comment($context_id);
+            if (!$comment) {
+                return sprintf(__('#%d (%s)', 'shuriken-reviews'), $context_id, $context_type);
+            }
+
+            $snippet = wp_trim_words(wp_strip_all_tags($comment->comment_content), 8, '…');
+            $author  = $comment->comment_author ?: __('Anonymous', 'shuriken-reviews');
+
+            if ($snippet !== '') {
+                return sprintf(
+                    /* translators: 1: comment author, 2: truncated comment content */
+                    __('Comment by %1$s: %2$s', 'shuriken-reviews'),
+                    $author,
+                    $snippet
+                );
+            }
+
+            return sprintf(
+                /* translators: %s: comment author */
+                __('Comment by %s', 'shuriken-reviews'),
+                $author
+            );
+        }
+
         $title = get_the_title($context_id);
         if (empty($title)) {
             return sprintf(__('#%d (%s)', 'shuriken-reviews'), $context_id, $context_type);

@@ -862,14 +862,14 @@ add_filter('shuriken_i18n_strings', function($strings) {
 
 #### `shuriken_allowed_context_types`
 
-Filters the list of allowed `context_type` values for per-post voting. Any vote or stats request whose `context_type` is not in this list is treated as a global (context-free) vote.
+Filters the list of allowed `context_type` values for contextual voting (posts, products, comments, etc.). Any vote or stats request whose `context_type` is not in this list is treated as a global (context-free) vote.
 
 This also applies to shortcode-driven contextual voting via `[shuriken_rating context_id="..." context_type="..."]` and `[shuriken_grouped_rating context_id="..." context_type="..."]`.
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$allowed_types` | array | Allowed context type strings (default: `['post', 'page', 'product']`) |
+| `$allowed_types` | array | Allowed context type strings (default: `['post', 'page', 'product', 'comment']`) |
 
 **Example 1: Add a custom post type**
 ```php
@@ -892,6 +892,52 @@ add_filter('shuriken_allowed_context_types', function($types) {
 echo do_shortcode(
     '[shuriken_rating id="5" context_id="' . get_the_ID() . '" context_type="post"]'
 );
+```
+
+**Example 4: Rate a WordPress comment**
+```php
+echo do_shortcode(
+    '[shuriken_rating id="12" context_id="' . get_comment_ID() . '" context_type="comment"]'
+);
+```
+
+---
+
+#### `shuriken_comment_rating_id`
+
+Chooses which rating to use for comment-context widgets when the block/shortcode rating ID is `0` (unset). Use this for per–post-type or category mapping without a Settings UI.
+
+**Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$rating_id` | int | Current rating ID (`0` when unset) |
+| `$comment` | `\WP_Comment\|null` | The comment being rated, or `null` on the comment form |
+| `$post` | `\WP_Post\|null` | The related post, or `null` |
+
+**Example 1: Different rating for products vs posts**
+```php
+add_filter('shuriken_comment_rating_id', function($rating_id, $comment, $post) {
+    if ($rating_id || !$post) {
+        return $rating_id;
+    }
+    if ($post->post_type === 'product') {
+        return 12;
+    }
+    return 5;
+}, 10, 3);
+```
+
+**Example 2: Category-based mapping**
+```php
+add_filter('shuriken_comment_rating_id', function($rating_id, $comment, $post) {
+    if ($rating_id || !$post) {
+        return $rating_id;
+    }
+    if (has_category('debate', $post)) {
+        return 15;
+    }
+    return $rating_id;
+}, 10, 3);
 ```
 
 ---
@@ -1503,6 +1549,7 @@ Third-party stats decorators can implement `Shuriken_Analytics_Extension_Interfa
 | `shuriken_enqueue_frontend_assets` | Filter | Control on-demand frontend asset enqueue from block/shortcode render |
 | `shuriken_force_enqueue_frontend_assets` | Filter | Force frontend assets on every page (default false) |
 | `shuriken_block_view_data` | Filter | Modify per-block view data before `shurikenBlockViewData` localize (PHP) |
+| `shuriken_comment_rating_id` | Filter | Choose rating ID for comment-context widgets when unset (`$rating_id`, `$comment`, `$post`) |
 | `shurikenBlockViewData` | Filter | Modify per-block view data on init (JS, `wp.hooks`) |
 | `shurikenBlockSettings_rating` | Filter | Modify single-rating block settings registration (JS, `wp.hooks`) |
 | `shurikenBlockSettings_groupedRating` | Filter | Modify grouped-rating block settings registration (JS, `wp.hooks`) |

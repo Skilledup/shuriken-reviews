@@ -33,9 +33,10 @@ Ratings are created once and reused across any number of posts. Votes are scoped
 - Both single and grouped rating blocks expose a **"Per-post voting"** toggle (`postContext` attribute)
 - Block `usesContext: ["postId", "postType"]` — PHP render reads FSE context and passes it through the entire stack
 - Frontend JS groups on-page ratings by context and makes batched stats requests per group
-- `shuriken_allowed_context_types` filter controls which post types are accepted (default: `post`, `page`, `product`)
+- `shuriken_allowed_context_types` filter controls which context types are accepted (default: `post`, `page`, `product`, `comment`)
 - Shortcodes support `context_id` and `context_type` attributes for contextual voting outside the block editor (v1.14.5)
 - Post Linked Ratings block removed — superseded by `postContext` mode
+- Comment-level context via `commentContext` / `commentFormContext` blocks and `shuriken_comment_rating_id` filter (v1.15.6)
 - Content injection disabled by default — superseded by per-post contextual blocks
 
 ### Admin & Editor Enhancements (v1.14.4)
@@ -217,7 +218,7 @@ Transient storage works through the options table on standard installs and autom
 ### Known bugs and Gaps
 
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
-- [ ] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
+- [x] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
 - [ ] **Star rating with multiple icons** — the current star rating type only supports a single icon for all stars. We want to support multiple icons (e.g. 1 star = 😡, 2 stars = 🙁, 3 stars = 😐, 4 stars = 🙂, 5 stars = 😍) with a mapping of icon per rating value. This is a separate system from Emoji reactions system.
 
 ---
@@ -232,7 +233,7 @@ Transient storage works through the options table on standard installs and autom
 ### Content Features
 
 - [ ] Rating notes/comments — notes table + CRUD; frontend UI; admin moderation; REST endpoints
-- [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users
+- [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users — separate system from WordPress comments
 - [ ] Emoji reactions — separate system from rating types
 - [ ] **HTML embed code** — `GET /ratings/{id}/embed` REST endpoint returns a self-contained `<iframe>` snippet (similar to Google Maps embed); block editor and admin ratings page surface a "Get embed code" button with a copy-to-clipboard UI
 

@@ -150,6 +150,7 @@ final class Shuriken_Reviews {
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-shortcodes.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-contextual-stats-collector.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-block.php';
+        require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-comment-form-ratings.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-ajax.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-frontend.php';
         require_once SHURIKEN_REVIEWS_PLUGIN_DIR . 'includes/class-shuriken-admin.php';
@@ -245,6 +246,7 @@ final class Shuriken_Reviews {
         $container->get('ajax');
         $container->get('rate_limiter');
         $container->get('frontend');
+        Shuriken_Comment_Form_Ratings::init();
         
         // Initialize admin (only in admin context)
         if (is_admin()) {

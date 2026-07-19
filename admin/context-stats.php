@@ -27,7 +27,7 @@ if (!$rating_id || !$context_id || !$context_type) {
 }
 
 // Validate context type
-$allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+$allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
 if (!in_array($context_type, $allowed_types, true)) {
     wp_die(__('Invalid context type.', 'shuriken-reviews'));
 }
@@ -38,12 +38,35 @@ if (!$rating) {
     wp_die(__('Rating not found', 'shuriken-reviews'));
 }
 
-// Get post info
-$context_post = get_post($context_id);
-$context_title = $context_post ? get_the_title($context_post) : sprintf(__('#%d (%s)', 'shuriken-reviews'), $context_id, $context_type);
-$context_edit_url = $context_post ? get_edit_post_link($context_id, 'raw') : '';
-$context_view_url = $context_post ? get_permalink($context_id) : '';
-$context_status = $context_post ? get_post_status_object($context_post->post_status) : null;
+// Resolve context title / links (posts vs comments)
+$context_status = null;
+$context_view_label = __('View Post', 'shuriken-reviews');
+$context_edit_label = __('Edit Post', 'shuriken-reviews');
+
+if ($context_type === 'comment') {
+    $context_comment = get_comment($context_id);
+    if ($context_comment) {
+        $snippet = wp_trim_words(wp_strip_all_tags($context_comment->comment_content), 8, '…');
+        $author  = $context_comment->comment_author ?: __('Anonymous', 'shuriken-reviews');
+        $context_title = $snippet
+            ? sprintf(__('Comment by %1$s: %2$s', 'shuriken-reviews'), $author, $snippet)
+            : sprintf(__('Comment by %s', 'shuriken-reviews'), $author);
+        $context_view_url = get_comment_link($context_comment);
+        $context_edit_url = admin_url('comment.php?action=editcomment&c=' . $context_id);
+        $context_view_label = __('View Comment', 'shuriken-reviews');
+        $context_edit_label = __('Edit Comment', 'shuriken-reviews');
+    } else {
+        $context_title = sprintf(__('#%d (%s)', 'shuriken-reviews'), $context_id, $context_type);
+        $context_view_url = '';
+        $context_edit_url = '';
+    }
+} else {
+    $context_post = get_post($context_id);
+    $context_title = $context_post ? get_the_title($context_post) : sprintf(__('#%d (%s)', 'shuriken-reviews'), $context_id, $context_type);
+    $context_edit_url = $context_post ? get_edit_post_link($context_id, 'raw') : '';
+    $context_view_url = $context_post ? get_permalink($context_id) : '';
+    $context_status = $context_post ? get_post_status_object($context_post->post_status) : null;
+}
 
 // Parse date range
 $date_range = $analytics->parse_date_range_params($_GET);
@@ -123,11 +146,11 @@ if ($rating_type === 'like_dislike') {
         <?php endif; ?>
         <?php if ($context_view_url) : ?>
             &nbsp;|&nbsp;
-            <a href="<?php echo esc_url($context_view_url); ?>" target="_blank"><?php esc_html_e('View Post', 'shuriken-reviews'); ?> ↗</a>
+            <a href="<?php echo esc_url($context_view_url); ?>" target="_blank"><?php echo esc_html($context_view_label); ?> ↗</a>
         <?php endif; ?>
         <?php if ($context_edit_url) : ?>
             &nbsp;|&nbsp;
-            <a href="<?php echo esc_url($context_edit_url); ?>"><?php esc_html_e('Edit Post', 'shuriken-reviews'); ?></a>
+            <a href="<?php echo esc_url($context_edit_url); ?>"><?php echo esc_html($context_edit_label); ?></a>
         <?php endif; ?>
     </p>
     

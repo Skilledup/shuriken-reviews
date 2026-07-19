@@ -167,6 +167,12 @@ if (!defined('ABSPATH')) {
                 <p class="about-shortcode-desc"><?php esc_html_e('Presets: classic, card, minimal, dark, outlined. Use button_color for numeric submit buttons.', 'shuriken-reviews'); ?></p>
             </div>
 
+            <div class="about-shortcode-box">
+                <h4><?php esc_html_e('Per-comment Voting', 'shuriken-reviews'); ?></h4>
+                <code>[shuriken_rating id="12" context_id="789" context_type="comment"]</code>
+                <p class="about-shortcode-desc"><?php esc_html_e('Scope votes to a WordPress comment ID. Also available via Per-comment voting on FSE blocks inside Comment Template.', 'shuriken-reviews'); ?></p>
+            </div>
+
             <p class="about-shortcode-group-title"><?php esc_html_e('Grouped Rating — [shuriken_grouped_rating]', 'shuriken-reviews'); ?></p>
 
             <div class="about-shortcode-box">

@@ -90,7 +90,7 @@ class Shuriken_Shortcodes {
      *     @type string $accent_color Optional. Hex color for accent elements. Default empty.
      *     @type string $star_color   Optional. Hex color for active stars. Default empty.
      *     @type int    $context_id   Optional. Post/entity ID for per-context voting. Default 0 (global).
-     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product'). Default empty.
+     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product', 'comment'). Default empty.
      * }
      * @return string HTML content for the rating interface.
      * @since 1.1.0
@@ -98,6 +98,7 @@ class Shuriken_Shortcodes {
      * @example [shuriken_rating id="1" tag="h2" anchor_tag="rating-1"]
      * @example [shuriken_rating id="1" style="card" accent_color="#e74c3c" star_color="#f39c12"]
      * @example [shuriken_rating id="1" context_id="42" context_type="post"]
+     * @example [shuriken_rating id="12" context_id="789" context_type="comment"]
      */
     public function render_rating(array|string $atts): string {
         // Validate and sanitize attributes with proper defaults and parsing
@@ -116,6 +117,28 @@ class Shuriken_Shortcodes {
 
         // Validate ID is numeric and positive
         $id = absint($atts['id']);
+
+        // Resolve optional contextual voting parameters early so the comment
+        // rating filter can run when id is unset for comment contexts.
+        $context_id   = absint($atts['context_id']);
+        $context_type = sanitize_key($atts['context_type']);
+        if ($context_id && $context_type) {
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
+            if (!in_array($context_type, $allowed_types, true)) {
+                $context_id   = 0;
+                $context_type = '';
+            }
+        } else {
+            $context_id   = 0;
+            $context_type = '';
+        }
+
+        if (!$id && $context_type === 'comment') {
+            $comment = $context_id ? get_comment($context_id) : null;
+            $post    = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+            $id      = shuriken_resolve_comment_rating_id(0, $comment instanceof \WP_Comment ? $comment : null, $post);
+        }
+
         if (!$id) {
             return '';
         }
@@ -127,20 +150,6 @@ class Shuriken_Shortcodes {
 
         // Sanitize anchor tag
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
-
-        // Resolve optional contextual voting parameters
-        $context_id   = absint($atts['context_id']);
-        $context_type = sanitize_key($atts['context_type']);
-        if ($context_id && $context_type) {
-            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
-            if (!in_array($context_type, $allowed_types, true)) {
-                $context_id   = 0;
-                $context_type = '';
-            }
-        } else {
-            $context_id   = 0;
-            $context_type = '';
-        }
 
         // Get rating data
         $rating = $this->db->get_rating($id);
@@ -514,7 +523,7 @@ class Shuriken_Shortcodes {
      *     @type string $star_color   Optional. Hex color for active stars. Default empty.
      *     @type string $layout       Optional. Child layout: 'grid' or 'list'. Default 'grid'.
      *     @type int    $context_id   Optional. Post/entity ID for per-context voting. Default 0 (global).
-     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product'). Default empty.
+     *     @type string $context_type Optional. Context type for per-context voting (e.g. 'post', 'page', 'product', 'comment'). Default empty.
      * }
      * @return string HTML content for the grouped rating interface.
      *
@@ -539,6 +548,27 @@ class Shuriken_Shortcodes {
         ), $atts, 'shuriken_grouped_rating');
 
         $id = absint($atts['id']);
+
+        // Resolve optional contextual voting parameters
+        $context_id   = absint($atts['context_id']);
+        $context_type = sanitize_key($atts['context_type']);
+        if ($context_id && $context_type) {
+            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
+            if (!in_array($context_type, $allowed_types, true)) {
+                $context_id   = 0;
+                $context_type = '';
+            }
+        } else {
+            $context_id   = 0;
+            $context_type = '';
+        }
+
+        if (!$id && $context_type === 'comment') {
+            $comment = $context_id ? get_comment($context_id) : null;
+            $post    = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+            $id      = shuriken_resolve_comment_rating_id(0, $comment instanceof \WP_Comment ? $comment : null, $post);
+        }
+
         if (!$id) {
             return '';
         }
@@ -549,19 +579,6 @@ class Shuriken_Shortcodes {
         $anchor_id = !empty($atts['anchor_tag']) ? sanitize_html_class($atts['anchor_tag']) : '';
         $layout = ($atts['layout'] === 'list') ? 'list' : 'grid';
 
-        // Resolve optional contextual voting parameters
-        $context_id   = absint($atts['context_id']);
-        $context_type = sanitize_key($atts['context_type']);
-        if ($context_id && $context_type) {
-            $allowed_types = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
-            if (!in_array($context_type, $allowed_types, true)) {
-                $context_id   = 0;
-                $context_type = '';
-            }
-        } else {
-            $context_id   = 0;
-            $context_type = '';
-        }
         $ctx_id   = $context_id   ?: null;
         $ctx_type = $context_type ?: null;
 

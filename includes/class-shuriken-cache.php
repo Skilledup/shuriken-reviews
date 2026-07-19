@@ -98,7 +98,7 @@ class Shuriken_Cache implements Shuriken_Cache_Interface {
      * @param string|null $context_type     Context type.
      * @return void
      */
-    public function handle_vote_created(int $rating_id, float $rating_value, float $normalized_value, int $user_id, string $user_ip, object $rating, int $max_stars, ?int $context_id, ?string $context_type): void {
+    public function handle_vote_created(int $rating_id, float $rating_value, float $normalized_value, int $user_id, ?string $user_ip, object $rating, int $max_stars, ?int $context_id, ?string $context_type): void {
         $this->invalidate_vote($rating_id, $rating, $context_id, $context_type);
     }
 

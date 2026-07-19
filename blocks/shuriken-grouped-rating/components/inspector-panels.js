@@ -44,6 +44,7 @@ export default function InspectorPanels( ctx ) {
 		titleTagOptions,
 		anchorTag,
 		postContext,
+		commentContext,
 		hideTitle,
 		subRatings,
 		childMirrorsMap,
@@ -233,11 +234,30 @@ export default function InspectorPanels( ctx ) {
 			wp.element.createElement( CheckboxControl, {
 				label: __( 'Per-post voting', 'shuriken-reviews' ),
 				checked: postContext,
+				disabled: commentContext,
 				onChange: ( value ) => {
-					setAttributes( { postContext: value } );
+					setAttributes( {
+						postContext: value,
+						commentContext: value ? false : commentContext,
+					} );
 				},
 				help: __(
 					'When enabled, votes are counted separately for each post/page this block appears on.',
+					'shuriken-reviews'
+				),
+			} ),
+			wp.element.createElement( CheckboxControl, {
+				label: __( 'Per-comment voting', 'shuriken-reviews' ),
+				checked: commentContext,
+				disabled: postContext,
+				onChange: ( value ) => {
+					setAttributes( {
+						commentContext: value,
+						postContext: value ? false : postContext,
+					} );
+				},
+				help: __(
+					'Place inside a Comment Template. Votes are scoped to each displayed comment.',
 					'shuriken-reviews'
 				),
 			} ),

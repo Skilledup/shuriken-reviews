@@ -184,6 +184,12 @@ class Shuriken_Contextual_Stats_Collector {
 
         if ($block_name === 'shuriken-reviews/rating') {
             $rating_id = isset($attributes['ratingId']) ? absint($attributes['ratingId']) : 0;
+            if (!$rating_id && !empty($attributes['commentContext'])) {
+                $comment_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
+                $comment    = $comment_id ? get_comment($comment_id) : null;
+                $post       = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+                $rating_id  = shuriken_resolve_comment_rating_id(0, $comment instanceof \WP_Comment ? $comment : null, $post);
+            }
             if ($rating_id > 0) {
                 $this->register_rating_ids(array($rating_id), $context_id, $context_type);
             }
@@ -381,6 +387,15 @@ class Shuriken_Contextual_Stats_Collector {
      */
     private function register_grouped_block_ids(array $attributes, int $context_id, string $context_type): void {
         $rating_id = isset($attributes['ratingId']) ? absint($attributes['ratingId']) : 0;
+        if (!$rating_id && $context_type === 'comment') {
+            $comment = get_comment($context_id);
+            $post    = $comment ? get_post((int) $comment->comment_post_ID) : get_post();
+            $rating_id = shuriken_resolve_comment_rating_id(
+                0,
+                $comment instanceof \WP_Comment ? $comment : null,
+                $post
+            );
+        }
         $mirror_id = isset($attributes['mirrorId']) ? absint($attributes['mirrorId']) : 0;
         $sub_ratings = isset($attributes['subRatings']) && is_array($attributes['subRatings'])
             ? $attributes['subRatings']
@@ -446,6 +461,14 @@ class Shuriken_Contextual_Stats_Collector {
      * @return array{0: int, 1: string}|null [context_id, context_type] or null.
      */
     private function resolve_block_context(array $attributes, \WP_Block $block): ?array {
+        if (!empty($attributes['commentContext'])) {
+            $context_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
+            if ($context_id > 0 && $this->is_allowed_context_type('comment')) {
+                return array($context_id, 'comment');
+            }
+            return null;
+        }
+
         if (!empty($attributes['postContext'])) {
             $context_id = isset($block->context['postId']) ? absint($block->context['postId']) : get_the_ID();
             $context_type = isset($block->context['postType'])
@@ -467,6 +490,11 @@ class Shuriken_Contextual_Stats_Collector {
      * @return array{0: int, 1: string}|null
      */
     private function resolve_static_context(array $attributes): ?array {
+        // commentContext cannot be resolved without a live commentId from Comment Template.
+        if (!empty($attributes['commentContext'])) {
+            return null;
+        }
+
         if (!empty($attributes['postContext'])) {
             $context_id = get_the_ID();
             $context_type = $context_id ? (string) get_post_type($context_id) : '';
@@ -486,7 +514,7 @@ class Shuriken_Contextual_Stats_Collector {
      * @return bool
      */
     private function is_allowed_context_type(string $context_type): bool {
-        $allowed = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product'));
+        $allowed = apply_filters('shuriken_allowed_context_types', array('post', 'page', 'product', 'comment'));
         return in_array($context_type, $allowed, true);
     }
 }
