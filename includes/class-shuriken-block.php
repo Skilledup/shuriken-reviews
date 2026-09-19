@@ -273,18 +273,6 @@ class Shuriken_Block {
             $title_tag = 'h2';
         }
 
-        // Comment-form mode: register for form injection; do not render an in-place widget.
-        if (!empty($attributes['commentFormContext'])) {
-            $comment = null;
-            $post    = get_post();
-            $rating_id = shuriken_resolve_comment_rating_id($rating_id, $comment, $post);
-            if (!$rating_id) {
-                return '';
-            }
-            shuriken_comment_form_ratings()->register($rating_id, $attributes);
-            return '';
-        }
-
         // Resolve rating ID via comment filter when unset (comment-context blocks).
         if (!$rating_id && !empty($attributes['commentContext'])) {
             $comment_id = isset($block->context['commentId']) ? absint($block->context['commentId']) : 0;
@@ -760,5 +748,38 @@ class Shuriken_Block {
  */
 function shuriken_block(): Shuriken_Block {
     return Shuriken_Block::get_instance();
+}
+
+/**
+ * Resolve a comment-context rating ID, applying the filter when unset.
+ *
+ * @param int              $rating_id Rating ID from block/shortcode (0 = unset).
+ * @param \WP_Comment|null $comment   Comment object when available.
+ * @param \WP_Post|null    $post      Post the comment belongs to (or current post).
+ * @return int Resolved rating ID (0 if still unset).
+ */
+function shuriken_resolve_comment_rating_id(int $rating_id, ?\WP_Comment $comment = null, $post = null): int {
+    if ($rating_id > 0) {
+        return $rating_id;
+    }
+
+    if ($post !== null && !($post instanceof \WP_Post)) {
+        $post = get_post($post);
+    }
+    if ($post === null) {
+        $post = get_post();
+    }
+
+    /**
+     * Filter the rating ID used for comment-context widgets when none is set.
+     *
+     * Return a positive rating ID based on post type, category, or other rules.
+     *
+     * @since 1.15.6
+     * @param int              $rating_id Current rating ID (0 when unset).
+     * @param \WP_Comment|null $comment   Comment being rated, or null when unresolved.
+     * @param \WP_Post|null    $post      Related post object, or null.
+     */
+    return absint(apply_filters('shuriken_comment_rating_id', 0, $comment, $post));
 }
 

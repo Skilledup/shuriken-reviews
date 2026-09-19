@@ -6,11 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [1.15.6] — Shingetsu — 2026-07-20
+## [Unreleased] — 1.15.6 Shingetsu
 
 ### Added
 
-- **Comment contextual ratings** — first-class `context_type=comment` support across voting, analytics, blocks, and shortcodes. Single and grouped blocks gain **Per-comment voting** (`commentContext`; nest inside Comment Template). The single rating block also supports **Attach to comment form** (`commentFormContext`): `Shuriken_Comment_Form_Ratings` injects the widget via `comment_form_after_fields` and creates the vote on `comment_post`. Filter: `shuriken_comment_rating_id`. AJAX soft-validates that the comment exists.
+- **Comment contextual ratings** — first-class `context_type=comment` support across voting, analytics, blocks, and shortcodes. Single and grouped blocks gain **Per-comment voting** (`commentContext`; nest inside Comment Template). Filter: `shuriken_comment_rating_id`. AJAX soft-validates that the comment exists.
 - **Rate-limit performance cache** — hourly/daily vote counts and per-rating cooldown timestamps now use a dedicated WordPress Transients cache (`Shuriken_Rate_Limit_Cache`). Counter entries expire when the oldest vote leaves each rolling window, increment after new votes, and invalidate after vote updates; guest identities are hashed in transient names. The cache works through `wp_options` by default and persistent object caches when available. Filter: `shuriken_rate_limit_cache_enabled`.
 - **Rate-limit database indexes (DB v1.9.0)** — added `(user_id, date_modified)` and `(user_ip, user_id, date_modified)` indexes to accelerate member and guest rolling-window queries.
 - **Statistics cache service** — `Shuriken_Cache` provides TTL-aware `wp_cache_*` access through the DI container and `shuriken_cache()` helper. When an external object-cache drop-in is active, contextual batches and resolved non-mirror global rating reads are cached for 60 seconds by default (`shuriken_stats_cache_ttl`); `shuriken_stats_cache_enabled` is the operational override. Vote, rating update, and delete paths invalidate affected keys; mirrors stay request-scoped. Persistent object-cache status is visible under Settings → About → System Information.

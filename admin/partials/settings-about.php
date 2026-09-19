@@ -55,7 +55,7 @@ if (!defined('ABSPATH')) {
                 <li>
                     <div>
                         <strong><?php esc_html_e('Comment Contextual Ratings', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Rate individual WordPress comments with Per-comment voting inside the Comment Template, or attach a rating to the comment form so the vote is saved when the comment posts. Shortcodes and the shuriken_comment_rating_id filter are supported.', 'shuriken-reviews'); ?></span>
+                        <span><?php esc_html_e('Rate individual WordPress comments with Per-comment voting inside the Comment Template. Shortcodes and the shuriken_comment_rating_id filter are supported.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
                 <li>

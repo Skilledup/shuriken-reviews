@@ -911,7 +911,7 @@ Chooses which rating to use for comment-context widgets when the block/shortcode
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$rating_id` | int | Current rating ID (`0` when unset) |
-| `$comment` | `\WP_Comment\|null` | The comment being rated, or `null` on the comment form |
+| `$comment` | `\WP_Comment\|null` | The comment being rated, or `null` when no comment is in context |
 | `$post` | `\WP_Post\|null` | The related post, or `null` |
 
 **Example 1: Different rating for products vs posts**

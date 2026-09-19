@@ -161,7 +161,6 @@ Displays a single interactive rating for user voting.
 - Title tag (h1–h6, div, p, span) and Anchor ID
 - **Per-post voting** toggle for contextual mode
 - **Per-comment voting** toggle (nest inside Comment Template)
-- **Attach to comment form** — deferred vote saved when the comment posts
 - Visual preset (Classic, Card, Minimal, Dark, Outlined)
 - Per-block accent colour and star colour override
 
@@ -251,7 +250,7 @@ A rating placed in a template collects **independent vote tallies per context** 
 
 **How to enable:**
 - Block (posts): toggle **Per-post voting** in the block inspector.
-- Block (comments): toggle **Per-comment voting** inside a Comment Template, or **Attach to comment form** on the single rating block (sibling of the comments form).
+- Block (comments): toggle **Per-comment voting** inside a Comment Template.
 - Shortcode: pass `context_id` and `context_type` attributes.
 
 **Additional integration:**

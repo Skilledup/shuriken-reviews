@@ -36,7 +36,7 @@ Ratings are created once and reused across any number of posts. Votes are scoped
 - `shuriken_allowed_context_types` filter controls which context types are accepted (default: `post`, `page`, `product`, `comment`)
 - Shortcodes support `context_id` and `context_type` attributes for contextual voting outside the block editor (v1.14.5)
 - Post Linked Ratings block removed — superseded by `postContext` mode
-- Comment-level context via `commentContext` / `commentFormContext` blocks and `shuriken_comment_rating_id` filter (v1.15.6)
+- Comment-level context via `commentContext` blocks and `shuriken_comment_rating_id` filter (v1.15.6)
 - Content injection disabled by default — superseded by per-post contextual blocks
 
 ### Admin & Editor Enhancements (v1.14.4)
@@ -232,6 +232,7 @@ Transient storage works through the options table on standard installs and autom
 - [ ] Votes & notes management — admin listing/search; bulk operations; exports; "my activity" view for users — separate system from WordPress comments
 - [ ] Emoji reactions — separate system from rating types
 - [ ] **HTML embed code** — `GET /ratings/{id}/embed` REST endpoint returns a self-contained `<iframe>` snippet (similar to Google Maps embed); block editor and admin ratings page surface a "Get embed code" button with a copy-to-clipboard UI
+- [ ] **Comment-form review ratings** — author submits a score with the comment form; that score is stored per comment and shown read-only on the posted comment (not a live visitor-votable widget). Distinct from Per-comment voting (`commentContext`).
 
 ### Internationalization
 

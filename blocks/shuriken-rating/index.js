@@ -109,7 +109,6 @@ function Edit( props ) {
 		starColor,
 		postContext,
 		commentContext,
-		commentFormContext,
 		hideTitle,
 		buttonColor,
 	} = attributes;
@@ -509,14 +508,11 @@ function Edit( props ) {
 				wp.element.createElement( CheckboxControl, {
 					label: __( 'Per-post voting', 'shuriken-reviews' ),
 					checked: postContext,
-					disabled: commentContext || commentFormContext,
+					disabled: commentContext,
 					onChange: ( value ) => {
 						setAttributes( {
 							postContext: value,
 							commentContext: value ? false : commentContext,
-							commentFormContext: value
-								? false
-								: commentFormContext,
 						} );
 					},
 					help: __(
@@ -527,34 +523,15 @@ function Edit( props ) {
 				wp.element.createElement( CheckboxControl, {
 					label: __( 'Per-comment voting', 'shuriken-reviews' ),
 					checked: commentContext,
-					disabled: postContext || commentFormContext,
+					disabled: postContext,
 					onChange: ( value ) => {
 						setAttributes( {
 							commentContext: value,
 							postContext: value ? false : postContext,
-							commentFormContext: value
-								? false
-								: commentFormContext,
 						} );
 					},
 					help: __(
 						'Place inside a Comment Template. Votes are scoped to each displayed comment.',
-						'shuriken-reviews'
-					),
-				} ),
-				wp.element.createElement( CheckboxControl, {
-					label: __( 'Attach to comment form', 'shuriken-reviews' ),
-					checked: commentFormContext,
-					disabled: postContext || commentContext,
-					onChange: ( value ) => {
-						setAttributes( {
-							commentFormContext: value,
-							postContext: value ? false : postContext,
-							commentContext: value ? false : commentContext,
-						} );
-					},
-					help: __(
-						'Place next to Comments Form (cannot nest inside it). The rating is submitted with the new comment.',
 						'shuriken-reviews'
 					),
 				} ),

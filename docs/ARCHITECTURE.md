@@ -409,7 +409,7 @@ Registers and renders Gutenberg blocks.
 - Shared data store registration
 
 **Blocks:**
-- `shuriken-reviews/rating` - Single rating display (supports `postContext`, `commentContext`, `commentFormContext`)
+- `shuriken-reviews/rating` - Single rating display (supports `postContext`, `commentContext`)
 - `shuriken-reviews/grouped-rating` - Parent with child ratings (supports `postContext` / `commentContext`; `gap` attribute controls `--shuriken-gap` vertical spacing)
 
 ### Shared Data Store (`blocks/shared/ratings-store.js`)
@@ -592,8 +592,6 @@ The votes table has two extra columns: `context_id` (BIGINT) and `context_type` 
 
 Both `shuriken-reviews/rating` and `shuriken-reviews/grouped-rating` expose a **"Per-post voting"** toggle (`postContext`) and a **"Per-comment voting"** toggle (`commentContext`, mutually exclusive). When `commentContext` is enabled, nest the block inside `core/comment-template`; Core injects `commentId` via `render_block_context`, and votes use `context_type=comment`.
 
-The single rating block also supports **`commentFormContext`**: place it as a sibling of `core/post-comments-form` (cannot nest inside it). The widget is injected via `comment_form_after_fields`; the vote is created on `comment_post` with the new comment ID. Frontend selects a value locally and does not AJAX-submit until the comment succeeds.
-
 ### Comment rating ID filter
 
 When block/shortcode `ratingId`/`id` is `0`, `shuriken_comment_rating_id` can supply a rating ID based on post type or category (no Settings mapping UI in this release).
@@ -610,6 +608,7 @@ apply_filters('shuriken_allowed_context_types', ['post', 'page', 'product', 'com
 - **Votes & notes management** stays separate from WordPress comments — `context_type=comment` is only a vote scope key.
 - **Emoji reactions** stay separate from rating types — do not reuse comment-context ratings as reactions.
 - Latest Comments Swiper (`includes/comments.php`) stays separate from comment-context ratings.
+- **Comment-form review ratings** stay separate from Per-comment voting — do not reuse `commentContext` live widgets as the author's submitted score.
 ---
 
 ## Design Patterns

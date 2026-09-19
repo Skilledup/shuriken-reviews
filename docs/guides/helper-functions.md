@@ -341,20 +341,6 @@ function shuriken_contextual_stats_collector(): Shuriken_Contextual_Stats_Collec
 
 ---
 
-### `shuriken_comment_form_ratings()`
-
-Get the comment-form ratings registry (deferred votes on `comment_post`).
-
-```php
-function shuriken_comment_form_ratings(): Shuriken_Comment_Form_Ratings
-```
-
-**Returns:** `Shuriken_Comment_Form_Ratings`
-
-**File:** [class-shuriken-comment-form-ratings.php](../../includes/class-shuriken-comment-form-ratings.php)
-
----
-
 ### `shuriken_resolve_comment_rating_id()`
 
 Resolve a comment-context rating ID, applying `shuriken_comment_rating_id` when unset.
@@ -363,7 +349,7 @@ Resolve a comment-context rating ID, applying `shuriken_comment_rating_id` when 
 function shuriken_resolve_comment_rating_id(int $rating_id, ?\WP_Comment $comment = null, $post = null): int
 ```
 
-**File:** [class-shuriken-comment-form-ratings.php](../../includes/class-shuriken-comment-form-ratings.php)
+**File:** [class-shuriken-block.php](../../includes/class-shuriken-block.php)
 
 ---
 
@@ -548,7 +534,6 @@ $rating = $db->get_rating(1); // Returns mock data
 | `shuriken_cache()` | 1.15.6 |
 | `shuriken_rate_limit_cache()` | 1.15.6 |
 | `shuriken_contextual_stats_collector()` | 1.15.6 |
-| `shuriken_comment_form_ratings()` | 1.15.6 |
 | `shuriken_resolve_comment_rating_id()` | 1.15.6 |
 | `shuriken_shortcodes()` | 1.0.0 |
 | `shuriken_container()` | 1.7.5 |
