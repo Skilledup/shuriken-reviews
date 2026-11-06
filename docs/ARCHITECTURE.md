@@ -809,7 +809,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHURIKEN_REVIEWS_VERSION', '1.15.6');
+define('SHURIKEN_REVIEWS_VERSION', '1.15.7');
 define('SHURIKEN_REVIEWS_DIR', plugin_dir_path(__FILE__));
 define('SHURIKEN_REVIEWS_URL', plugin_dir_url(__FILE__));
 

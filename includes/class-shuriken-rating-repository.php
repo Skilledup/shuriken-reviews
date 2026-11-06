@@ -852,8 +852,7 @@ class Shuriken_Rating_Repository {
             return array();
         }
 
-        $ids = array_map('intval', $ids);
-        $ids = array_filter($ids);
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
 
         if (empty($ids)) {
             return array();
@@ -877,62 +876,27 @@ class Shuriken_Rating_Repository {
             $miss_ids[] = $id;
         }
 
-        if (empty($miss_ids)) {
-            $cloned = array();
-            foreach ($result as $id => $rating) {
-                $cloned[$id] = clone $rating;
-            }
-            return $cloned;
-        }
+        if (!empty($miss_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($miss_ids), '%d'));
+            $fields = self::RATING_FIELDS;
 
-        $ids_placeholder = implode(',', array_fill(0, count($miss_ids), '%d'));
-        $fields = self::RATING_FIELDS;
-
-        $ratings = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($ids_placeholder)",
-            ...$miss_ids
-        ));
-
-        foreach ($ratings as $rating) {
-            $rating->source_id = $rating->id;
-            self::attach_averages($rating);
-            $result[$rating->id] = $rating;
-        }
-
-        // Handle mirrors - collect mirror_of IDs that need resolution
-        $mirror_ids = array();
-        foreach ($result as $rating) {
-            if (!empty($rating->mirror_of) && !isset($result[$rating->mirror_of])) {
-                $mirror_ids[] = $rating->mirror_of;
-            }
-        }
-
-        if (!empty($mirror_ids)) {
-            $mirror_ids = array_unique($mirror_ids);
-            $mirror_placeholder = implode(',', array_fill(0, count($mirror_ids), '%d'));
-            $originals = $this->wpdb->get_results($this->wpdb->prepare(
-                "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($mirror_placeholder)",
-                ...$mirror_ids
+            $ratings = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($ids_placeholder)",
+                ...$miss_ids
             ));
 
-            $originals_map = array();
-            foreach ($originals as $orig) {
-                self::attach_averages($orig);
-                $originals_map[$orig->id] = $orig;
-            }
-
-            foreach ($result as $id => $rating) {
-                if (!empty($rating->mirror_of) && isset($originals_map[$rating->mirror_of])) {
-                    $original = $originals_map[$rating->mirror_of];
-                    $result[$id]->total_votes = $original->total_votes;
-                    $result[$id]->total_rating = $original->total_rating;
-                    $result[$id]->display_only = $original->display_only;
-                    $result[$id]->average = $original->average;
-                    $result[$id]->display_average = Shuriken_Database::denormalize_average((float) $original->average, (int) $result[$id]->scale);
-                    $result[$id]->source_id = $original->id;
+            if (is_array($ratings)) {
+                foreach ($ratings as $rating) {
+                    $rating->source_id = (int) $rating->id;
+                    self::attach_averages($rating);
+                    $result[(int) $rating->id] = $rating;
                 }
             }
         }
+
+        // Grouped blocks request a mirror and its source together. Resolve those
+        // mirrors too; skipping in-batch sources leaves the mirror on its own totals.
+        $this->resolve_batched_mirrors($result);
 
         foreach ($result as $id => $rating) {
             $this->request_cache[(int) $id] = $rating;
@@ -947,6 +911,108 @@ class Shuriken_Rating_Repository {
         }
 
         return $cloned;
+    }
+
+    /**
+     * Copy source vote totals onto mirrors in a fetched batch.
+     *
+     * Totals are snapshotted first so resolving one mirror cannot change the
+     * source row that another mirror in the same batch still needs to read.
+     * An already resolved mirror whose source is not in this batch keeps its
+     * copied totals and does not cause another lookup.
+     *
+     * @param array<int, object> $result Ratings keyed by ID. Updated in place.
+     * @return void
+     */
+    private function resolve_batched_mirrors(array &$result): void {
+        if (empty($result)) {
+            return;
+        }
+
+        $snapshots = array();
+        foreach ($result as $id => $rating) {
+            $snapshots[(int) $id] = $this->vote_snapshot($rating);
+        }
+
+        $missing_source_ids = array();
+        foreach ($result as $rating) {
+            if (empty($rating->mirror_of)) {
+                continue;
+            }
+
+            $source_id = (int) $rating->mirror_of;
+            if ($source_id <= 0 || isset($snapshots[$source_id]) || isset($this->request_cache[$source_id])) {
+                continue;
+            }
+
+            // source_id already points at the original, and that row is not in this batch.
+            if ((int) ($rating->source_id ?? 0) !== (int) $rating->id) {
+                continue;
+            }
+
+            $persistent = $this->get_persistent_rating($source_id);
+            if ($persistent !== null) {
+                $this->request_cache[$source_id] = $persistent;
+                continue;
+            }
+
+            $missing_source_ids[$source_id] = true;
+        }
+
+        if (!empty($missing_source_ids)) {
+            $source_ids = array_keys($missing_source_ids);
+            $placeholder = implode(',', array_fill(0, count($source_ids), '%d'));
+            $fields = self::RATING_FIELDS;
+            $rows = $this->wpdb->get_results($this->wpdb->prepare(
+                "SELECT {$fields} FROM {$this->ratings_table} WHERE id IN ($placeholder)",
+                ...$source_ids
+            ));
+
+            if (is_array($rows)) {
+                foreach ($rows as $row) {
+                    $row->source_id = (int) $row->id;
+                    self::attach_averages($row);
+                    $this->request_cache[(int) $row->id] = $row;
+                    $this->cache_rating_object($row);
+                }
+            }
+        }
+
+        foreach ($result as $rating) {
+            if (empty($rating->mirror_of)) {
+                continue;
+            }
+
+            $source_id = (int) $rating->mirror_of;
+            $original = $snapshots[$source_id] ?? null;
+            if ($original === null && isset($this->request_cache[$source_id])) {
+                $original = $this->vote_snapshot($this->request_cache[$source_id]);
+            }
+            if ($original === null) {
+                continue;
+            }
+
+            $rating->total_votes = $original->total_votes;
+            $rating->total_rating = $original->total_rating;
+            $rating->display_only = $original->display_only;
+            $rating->source_id = (int) $original->id;
+            self::attach_averages($rating);
+        }
+    }
+
+    /**
+     * Capture the vote fields needed to resolve a mirror.
+     *
+     * @param object $rating Rating row.
+     * @return object Snapshot with id, totals, and display_only.
+     */
+    private function vote_snapshot(object $rating): object {
+        return (object) array(
+            'id' => (int) $rating->id,
+            'total_votes' => $rating->total_votes,
+            'total_rating' => $rating->total_rating,
+            'display_only' => $rating->display_only ?? 0,
+        );
     }
 
     /**

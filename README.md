@@ -2,7 +2,7 @@
 
 A professional WordPress rating plugin built for flexibility, performance, and extensibility. Supports multiple rating types, per-post and per-comment contextual voting, full Site Editor integration, a built-in analytics dashboard, and a rich developer API — all fully compatible with aggressive page caching and CDN delivery.
 
-![Version](https://img.shields.io/badge/version-1.15.6-blue)
+![Version](https://img.shields.io/badge/version-1.15.7-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0%2B-green)
 ![WordPress](https://img.shields.io/badge/WordPress-7.0%2B-blue)
 ![PHP](https://img.shields.io/badge/PHP-8.3%2B-purple)

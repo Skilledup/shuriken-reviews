@@ -213,6 +213,8 @@ Transient storage works through the options table on standard installs and autom
 
 ### Known bugs and Gaps
 
+- [ ] **Cross-context live totals** — after a vote, only widgets in the same voting context update. A global copy of the same rating, or a copy scoped to a different post or comment, keeps its current totals until the next page load. Decide whether a vote should also refresh those other copies, and how to avoid writing one context's totals onto another.
+- [ ] **Contextual parent aggregate** — on a post- or comment-scoped grouped block, the parent shows votes cast on the parent itself. Sub-rating votes update the sub-rating and its mirrors, and they roll up into the parent only on the default global grouped block. Decide whether a contextual parent should add up its sub-ratings for that context.
 - [ ] FSE blocks Preview only shows the state of block where no Rating is selected
 - [x] **Contextual ratings for WordPress comments** — add first-class support for comment-level context (e.g. `context_type=comment`, `context_id=<comment_id>`) across validation defaults, editor/shortcode UX, and analytics surfaces
 - [ ] **Star rating with multiple icons** — the current star rating type only supports a single icon for all stars. We want to support multiple icons (e.g. 1 star = 😡, 2 stars = 🙁, 3 stars = 😐, 4 stars = 🙂, 5 stars = 😍) with a mapping of icon per rating value. This is a separate system from Emoji reactions system.

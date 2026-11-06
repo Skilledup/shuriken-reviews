@@ -50,48 +50,12 @@ if (!defined('ABSPATH')) {
     </div>
     <div class="settings-card-body">
         <div class="about-new-highlight">
-            <p class="about-new-intro"><?php esc_html_e('Version 1.15.6 — Shingetsu completes the v1.15 architecture roadmap with comment-level contextual ratings, server-side caching, smart client fetch, full add-on extensibility, and a modernized block editor — while raising minimum requirements to WordPress 7.0 and PHP 8.3.', 'shuriken-reviews'); ?></p>
+            <p class="about-new-intro"><?php esc_html_e('Version 1.15.7 — Shingetsu fixes grouped mirror ratings that stayed on old totals after a vote.', 'shuriken-reviews'); ?></p>
             <ul class="about-features-list">
                 <li>
                     <div>
-                        <strong><?php esc_html_e('Comment Contextual Ratings', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Rate individual WordPress comments with Per-comment voting inside the Comment Template. Shortcodes and the shuriken_comment_rating_id filter are supported.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Performance & Caching', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Frontend CSS and JS load only when a rating is present. Contextual stats are batch-fetched during server render, trusted on fresh pages via smart client fetch, and optionally cached through wp_cache_* / Redis. Rate-limit counters use a dedicated transient cache with new rolling-window indexes (DB v1.9.0).', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Complete Analytics Architecture', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Shuriken_Analytics is now a ~278-line coordinator delegating to five focused services: Formatter, Ranking, Context, Dashboard, and Rating_Stats. Admin charts were extracted into a shared admin-charts.js module.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Add-on Extensibility', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Lifecycle hooks (shuriken_container_ready, shuriken_deactivate), REST and AJAX permission filters, consolidated shurikenBlockViewData for frontend add-ons, and an opt-in Delete Data on Uninstall toggle give third-party plugins clean extension points without forking core classes.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Block Editor Modernization', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Shared block modules now use ES module imports. Grouped-rating modals and inspector panels were split into dedicated components, and reusable hooks cover API error handling and rating-type scale fields.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Platform Requirements', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Minimum WordPress raised to 7.0 (native viewScript conditional loading) and minimum PHP raised to 8.3, aligning with WordPress 7.0 recommendations.', 'shuriken-reviews'); ?></span>
-                    </div>
-                </li>
-                <li>
-                    <div>
-                        <strong><?php esc_html_e('Frontend Vote UX + Label Styles', 'shuriken-reviews'); ?></strong>
-                        <span><?php esc_html_e('Star ratings sync immediately after a vote instead of polling on an interval. Rating label descriptions now have consistent typography across all style presets (card, minimal, dark, outlined, boxed).', 'shuriken-reviews'); ?></span>
+                        <strong><?php esc_html_e('Grouped mirrors stay current', 'shuriken-reviews'); ?></strong>
+                        <span><?php esc_html_e('Voting on a sub-rating updates the parent and every mirror of that rating in the same voting context. Grouped blocks resolve mirror totals from the source even when both ratings are loaded together.', 'shuriken-reviews'); ?></span>
                     </div>
                 </li>
             </ul>
