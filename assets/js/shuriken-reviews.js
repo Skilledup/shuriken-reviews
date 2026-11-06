@@ -173,58 +173,146 @@ jQuery(document).ready(function($) {
     };
 
     /**
+     * Widgets for one rating inside one voting context.
+     * Mirrors share the source rating's data-id, so every copy in the context is included.
+     */
+    const widgetsForRating = (ratingId, contextId, contextType) => {
+        const id = parseInt(ratingId, 10);
+        if (!id) {
+            return $();
+        }
+
+        let selector = `${SELECTORS.rating}[data-id="${id}"]`;
+        if (contextId) {
+            selector += `[data-context-id="${contextId}"][data-context-type="${contextType}"]`;
+        } else {
+            selector += ':not([data-context-id])';
+        }
+        return $(selector);
+    };
+
+    /**
+     * Average line used by star and numeric widgets.
+     */
+    const formatAverage = (scaledAverage, maxStars, totalVotes) => {
+        return shurikenReviews.i18n.averageRating
+            .replace('%1$s', scaledAverage)
+            .replace('%2$s', maxStars)
+            .replace('%3$s', totalVotes);
+    };
+
+    /**
+     * Paint one widget from a stats payload.
+     *
+     * @param {jQuery} $rating Widget root.
+     * @param {Object} stats   average, display_average, total_votes, total_rating.
+     * @param {string} textMode `html`, `smooth`, or `skip` for the stats sentence.
+     */
+    const paintRating = ($rating, stats, textMode) => {
+        const ratingType = $rating.data('rating-type') || 'stars';
+        const $statsEl = $rating.find(SELECTORS.stats);
+        const maxStars = parseInt($rating.data('max-stars'), 10) || 5;
+        const totalVotes = parseInt(stats.total_votes, 10) || 0;
+        let totalRating = parseFloat(stats.total_rating);
+        if (Number.isNaN(totalRating)) {
+            totalRating = Math.round(totalVotes * (parseFloat(stats.average) || 0));
+        }
+        const likeCount = Math.round(totalRating);
+        const scaledAverage = parseFloat(stats.display_average);
+        const displayAverage = Number.isNaN(scaledAverage) ? (parseFloat(stats.average) || 0) : scaledAverage;
+
+        if ($statsEl.length) {
+            if (stats.average !== undefined && stats.average !== null) {
+                $statsEl.data('average', stats.average);
+            }
+            $statsEl.data('scaled-average', displayAverage);
+        }
+
+        if (ratingType === 'like_dislike') {
+            const pct = totalVotes > 0 ? Math.round((likeCount / totalVotes) * 100) : 0;
+            $rating.find('.shuriken-like-count').text(likeCount);
+            $rating.find('.shuriken-dislike-count').text(totalVotes - likeCount);
+            $rating.find('.shuriken-approval-pct').text(`${pct}%`);
+            const $voteSummary = $rating.find('.shuriken-vote-summary');
+            if ($voteSummary.length) {
+                $voteSummary.text(`(${totalVotes} ${shurikenReviews.i18n.votes})`);
+            }
+        } else if (ratingType === 'approval') {
+            $rating.find('.shuriken-upvote-count').text(totalVotes);
+        } else if (ratingType === 'numeric') {
+            const text = formatAverage(displayAverage, maxStars, totalVotes);
+            if (textMode === 'smooth') {
+                $statsEl.smoothHtml(text);
+            } else if (textMode !== 'skip') {
+                $statsEl.html(text);
+            }
+            $rating.find('.shuriken-numeric-value').text(Math.round(displayAverage * 10) / 10);
+            $rating.find('.shuriken-slider-value').text(Math.max(1, Math.round(displayAverage)));
+        } else {
+            const text = formatAverage(displayAverage, maxStars, totalVotes);
+            if (textMode === 'smooth') {
+                $statsEl.smoothHtml(text);
+            } else if (textMode !== 'skip') {
+                $statsEl.html(text);
+            }
+            updateStars($rating, displayAverage);
+        }
+
+        $rating.removeClass('shuriken-refreshing');
+    };
+
+    /**
+     * Map a vote response onto the stats shape used by paintRating.
+     */
+    const voteStats = (data, isParent) => {
+        if (isParent) {
+            return {
+                average: data.parent_average,
+                display_average: data.parent_scaled_average ?? data.parent_average,
+                total_votes: data.parent_total_votes,
+                total_rating: data.parent_total_rating,
+            };
+        }
+        return {
+            average: data.new_average,
+            display_average: data.new_scaled_average ?? data.new_average,
+            total_votes: data.new_total_votes,
+            total_rating: data.new_total_rating,
+        };
+    };
+
+    /**
+     * Update every same-context copy of the voted rating and its parent.
+     * The clicked star/numeric widget keeps its thank-you sentence.
+     */
+    const syncVoteWidgets = ($clicked, data) => {
+        const contextId = $clicked.data('context-id') || '';
+        const contextType = $clicked.data('context-type') || '';
+        const ratingType = $clicked.data('rating-type') || 'stars';
+        const keepsThankYou = ratingType !== 'like_dislike' && ratingType !== 'approval';
+
+        widgetsForRating($clicked.data('id'), contextId, contextType).each(function() {
+            const $match = $(this);
+            const skipText = keepsThankYou && $match.is($clicked);
+            paintRating($match, voteStats(data, false), skipText ? 'skip' : 'smooth');
+        });
+
+        if (!data.parent_id) {
+            return;
+        }
+
+        widgetsForRating(data.parent_id, contextId, contextType).each(function() {
+            paintRating($(this), voteStats(data, true), 'smooth');
+        });
+    };
+
+    /**
      * Apply batched stats REST response to matching rating widgets.
      */
     const applyStats = (statsResponse, ctxId, ctxType) => {
         $.each(statsResponse, function(ratingId, stats) {
-            let selector = `${SELECTORS.rating}[data-id="${ratingId}"]`;
-            if (ctxId) {
-                selector += `[data-context-id="${ctxId}"][data-context-type="${ctxType}"]`;
-            } else {
-                selector += ':not([data-context-id])';
-            }
-            const $ratings = $(selector);
-            $ratings.each(function() {
-                const $rating = $(this);
-                const ratingType = $rating.data('rating-type') || 'stars';
-                const $statsEl = $rating.find(SELECTORS.stats);
-                const maxStars = parseInt($rating.data('max-stars')) || 5;
-
-                if (ratingType === 'like_dislike') {
-                    const totalVotes = parseInt(stats.total_votes) || 0;
-                    const totalRating = parseInt(stats.total_rating) || 0;
-                    $rating.find('.shuriken-like-count').text(totalRating);
-                    $rating.find('.shuriken-dislike-count').text(totalVotes - totalRating);
-                } else if (ratingType === 'approval') {
-                    $rating.find('.shuriken-upvote-count').text(stats.total_votes);
-                } else if (ratingType === 'numeric') {
-                    const scaledAverage = parseFloat(stats.display_average) || 0;
-
-                    $statsEl.data('scaled-average', scaledAverage);
-
-                    const text = shurikenReviews.i18n.averageRating
-                        .replace('%1$s', scaledAverage)
-                        .replace('%2$s', maxStars)
-                        .replace('%3$s', stats.total_votes);
-                    $statsEl.html(text);
-
-                    $rating.find('.shuriken-numeric-value').text(Math.round(scaledAverage * 10) / 10);
-                    $rating.find('.shuriken-slider-value').text(Math.max(1, Math.round(scaledAverage)));
-                } else {
-                    const scaledAverage = parseFloat(stats.display_average) || 0;
-
-                    $statsEl.data('scaled-average', scaledAverage);
-
-                    const text = shurikenReviews.i18n.averageRating
-                        .replace('%1$s', scaledAverage)
-                        .replace('%2$s', maxStars)
-                        .replace('%3$s', stats.total_votes);
-                    $statsEl.html(text);
-
-                    updateStars($rating, scaledAverage);
-                }
-
-                $rating.removeClass('shuriken-refreshing');
+            widgetsForRating(ratingId, ctxId, ctxType).each(function() {
+                paintRating($(this), stats, 'html');
             });
         });
     };
@@ -458,37 +546,11 @@ jQuery(document).ready(function($) {
                             $(this).removeClass('active');
                         }
                     });
-                    
-                    // Use scaled average and max_stars from response for display
-                    const displayAverage = response.data.new_scaled_average || response.data.new_average;
-                    const displayMaxStars = response.data.max_stars || 5;
-                    
-                    // Update text with translated string using numbered placeholders
-                    originalText = shurikenReviews.i18n.averageRating
-                        .replace('%1$s', displayAverage)
-                        .replace('%2$s', displayMaxStars)
-                        .replace('%3$s', response.data.new_total_votes);
-                    $rating.find(SELECTORS.stats).data('average', response.data.new_average);
-                    $rating.find(SELECTORS.stats).data('scaled-average', displayAverage);
-                    updateStars($rating, displayAverage);
-                    
-                    // If there's a parent rating on the page, update it too
-                    if (response.data.parent_id) {
-                        const $parentRating = $(`${SELECTORS.rating}[data-id="${response.data.parent_id}"]`);
-                        if ($parentRating.length) {
-                            const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
-                            const parentMaxStars = response.data.parent_max_stars || 5;
-                            const parentText = shurikenReviews.i18n.averageRating
-                                .replace('%1$s', parentDisplayAverage)
-                                .replace('%2$s', parentMaxStars)
-                                .replace('%3$s', response.data.parent_total_votes);
-                            $parentRating.find(SELECTORS.stats).data('average', response.data.parent_average);
-                            $parentRating.find(SELECTORS.stats).data('scaled-average', parentDisplayAverage);
-                            $parentRating.find(SELECTORS.stats).smoothHtml(parentText);
-                            // Update stars based on normalized average (1-5 scale)
-                            updateStars($parentRating, response.data.parent_average);
-                        }
-                    }
+
+                    const displayAverage = response.data.new_scaled_average ?? response.data.new_average;
+                    const displayMaxStars = response.data.max_stars || parseInt($rating.data('max-stars'), 10) || 5;
+                    originalText = formatAverage(displayAverage, displayMaxStars, response.data.new_total_votes);
+                    syncVoteWidgets($rating, response.data);
                 } else {
                     // Check if it's a nonce error and we haven't retried yet
                     if (response.data && typeof response.data === 'string' && 
@@ -712,60 +774,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     doAction('shurikenVoteSuccess', response, $rating, value);
-                    if (ratingType === 'like_dislike') {
-                        // new_scaled_average is likes/(likes+dislikes)*100
-                        const totalVotes = response.data.new_total_votes;
-                        const approvalPct = response.data.new_scaled_average;
-                        const likeCount = Math.round(totalVotes * approvalPct / 100);
-                        const dislikeCount = totalVotes - likeCount;
-                        $rating.find('.shuriken-like-count').text(likeCount);
-                        $rating.find('.shuriken-dislike-count').text(dislikeCount);
-                    } else if (ratingType === 'approval') {
-                        $rating.find('.shuriken-upvote-count').text(response.data.new_total_votes);
-                    }
-
-                    // Update parent rating if applicable (display-only parents)
-                    if (response.data.parent_id) {
-                        const $parentRating = $(`${SELECTORS.rating}[data-id="${response.data.parent_id}"]`);
-                        if ($parentRating.length) {
-                            const parentType = $parentRating.data('rating-type');
-                            if (parentType === 'like_dislike') {
-                                // For binary: parent_average = total_rating / total_votes (0-1 range)
-                                const pParentPct = response.data.parent_total_votes > 0
-                                    ? Math.round(response.data.parent_average * 100)
-                                    : 0;
-                                const $approvalPct = $parentRating.find('.shuriken-approval-pct');
-                                if ($approvalPct.length) {
-                                    // Display-only parents show approval percentage summary
-                                    $approvalPct.text(`${pParentPct}%`);
-                                } else {
-                                    // Non-display-only parents: update like/dislike counts
-                                    const pTotalVotes = response.data.parent_total_votes;
-                                    const pLikeCount = Math.round(pTotalVotes * pParentPct / 100);
-                                    const pDislikeCount = pTotalVotes - pLikeCount;
-                                    $parentRating.find('.shuriken-like-count').text(pLikeCount);
-                                    $parentRating.find('.shuriken-dislike-count').text(pDislikeCount);
-                                }
-                                // Update vote summary text
-                                const $voteSummary = $parentRating.find('.shuriken-vote-summary');
-                                if ($voteSummary.length) {
-                                    $voteSummary.text(`(${response.data.parent_total_votes} ${shurikenReviews.i18n.votes})`);
-                                }
-                            } else if (parentType === 'approval') {
-                                $parentRating.find('.shuriken-upvote-count').text(response.data.parent_total_votes);
-                            } else {
-                                // Stars/numeric parent — update stars display
-                                updateStars($parentRating, response.data.parent_average);
-                                const parentDisplayAverage = response.data.parent_scaled_average || response.data.parent_average;
-                                const parentMaxStars = response.data.parent_max_stars || 5;
-                                const parentText = shurikenReviews.i18n.averageRating
-                                    .replace('%1$s', parentDisplayAverage)
-                                    .replace('%2$s', parentMaxStars)
-                                    .replace('%3$s', response.data.parent_total_votes);
-                                $parentRating.find(SELECTORS.stats).smoothHtml(parentText);
-                            }
-                        }
-                    }
+                    syncVoteWidgets($rating, response.data);
 
                     // Brief visual feedback on the button
                     $rating.find('.shuriken-btn').addClass('shuriken-voted');

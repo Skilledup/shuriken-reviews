@@ -6,7 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — 1.15.6 Shingetsu
+## — 1.15.7 Shingetsu — 2026-11-06
+
+### Fixed
+
+- **Grouped mirror totals after a vote** — `get_ratings_by_ids()` resolves a mirror when its source is already in the same batch, so grouped blocks copy the source totals, display-only flag, and `source_id`. The vote response now includes `new_total_rating` and `parent_total_rating`, and `parent_id` is the source id. After a vote, every same-context copy of the voted rating and its parent is repainted, including mirrors, for stars, numeric, like/dislike, and approval.
+
+## — 1.15.6 Shingetsu — 2026-09-19
 
 ### Added
 

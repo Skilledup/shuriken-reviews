@@ -346,11 +346,13 @@ class Shuriken_AJAX {
             'new_average' => $ctx_average,                       // Normalized (1-5 scale)
             'new_scaled_average' => $scaled_average,             // Scaled to max_stars
             'new_total_votes' => $ctx_total_votes,
+            'new_total_rating' => $ctx_total_rating,
             'max_stars' => $max_stars,
             'rating_type' => $rating_type,
         );
 
-        // Also send parent data if applicable
+        // Also send parent data if applicable. parent_id is the source id so it
+        // matches the data-id rendered for both the original and its mirrors.
         if (!empty($rating->parent_id)) {
             $parent_rating = $this->ratings->get_rating($rating->parent_id);
             if ($parent_rating) {
@@ -368,19 +370,17 @@ class Shuriken_AJAX {
 
                 // Use contextual stats for parent too if in context mode
                 if ($context_id !== null && $context_type !== null) {
-                    $parent_ctx = $this->ratings->get_contextual_stats($parent_rating->source_id, $context_id, $context_type, $parent_max_stars);
-                    $response_data['parent_id'] = $parent_rating->id;
-                    $response_data['parent_average'] = $parent_ctx->average;
-                    $response_data['parent_scaled_average'] = $parent_ctx->display_average;
-                    $response_data['parent_total_votes'] = $parent_ctx->total_votes;
-                    $response_data['parent_max_stars'] = $parent_max_stars;
+                    $parent_stats = $this->ratings->get_contextual_stats($parent_rating->source_id, $context_id, $context_type, $parent_max_stars);
                 } else {
-                    $response_data['parent_id'] = $parent_rating->id;
-                    $response_data['parent_average'] = $parent_rating->average;
-                    $response_data['parent_scaled_average'] = $parent_rating->display_average;
-                    $response_data['parent_total_votes'] = $parent_rating->total_votes;
-                    $response_data['parent_max_stars'] = $parent_max_stars;
+                    $parent_stats = $parent_rating;
                 }
+
+                $response_data['parent_id'] = (int) $parent_rating->source_id;
+                $response_data['parent_average'] = $parent_stats->average;
+                $response_data['parent_scaled_average'] = $parent_stats->display_average;
+                $response_data['parent_total_votes'] = $parent_stats->total_votes;
+                $response_data['parent_total_rating'] = $parent_stats->total_rating;
+                $response_data['parent_max_stars'] = $parent_max_stars;
             }
         }
 
