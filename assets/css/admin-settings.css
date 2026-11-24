@@ -753,9 +753,6 @@
 
 .about-hero-strip {
     background-color: #0f172a;
-    background-size: cover;
-    background-position: right;
-    background-repeat: no-repeat;
     border-radius: 12px;
     padding: 28px 32px;
     margin-bottom: 20px;
@@ -768,15 +765,41 @@
     overflow: hidden;
 }
 
+.about-hero-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: right;
+    background-repeat: no-repeat;
+}
+
 @media (min-width: 600px) and (max-width: 1200px) {
-    .about-hero-strip {
+    .about-hero-background {
         background-position: right center;
     }
 }
 
 @media (min-width: 1200px) {
-    .about-hero-strip {
+    .about-hero-background {
         background-position: right -95px;
+    }
+}
+
+html[dir="rtl"] .about-hero-background {
+    background-position: left;
+    transform: scaleX(-1);
+}
+
+@media (min-width: 600px) and (max-width: 1200px) {
+    html[dir="rtl"] .about-hero-background {
+        background-position: left center;
+    }
+}
+
+@media (min-width: 1200px) {
+    html[dir="rtl"] .about-hero-background {
+        background-position: left -95px;
     }
 }
 
@@ -784,6 +807,7 @@
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
     background: linear-gradient(
         to right,
         rgba(10, 8, 35, 0.92) 0%,
@@ -793,10 +817,14 @@
     pointer-events: none;
 }
 
+html[dir="rtl"] .about-hero-strip::before {
+    transform: scaleX(-1);
+}
+
 .about-hero-content,
 .about-hero-aside {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .about-hero-eyebrow {

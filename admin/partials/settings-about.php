@@ -15,7 +15,8 @@ if (!defined('ABSPATH')) {
 ?>
 
 <!-- Hero Strip -->
-<div class="about-hero-strip" style="background-image: url('<?php echo esc_url(plugins_url('assets/images/mascot.avif', SHURIKEN_REVIEWS_PLUGIN_FILE)); ?>')">
+<div class="about-hero-strip">
+    <div class="about-hero-background" aria-hidden="true" style="background-image: url('<?php echo esc_url(plugins_url('assets/images/mascot.avif', SHURIKEN_REVIEWS_PLUGIN_FILE)); ?>')"></div>
     <div class="about-hero-content">
         <span class="about-hero-eyebrow">
             <?php Shuriken_Icons::render('star', array('width' => 13, 'height' => 13)); ?>
