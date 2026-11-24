@@ -691,23 +691,78 @@ tr.mirror-rating .column-name {
     color: #667eea;
 }
 
-/* Add New Rating Form */
+/* Add New Rating Modal */
+.shuriken-rating-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.shuriken-rating-modal[hidden] {
+    display: none !important;
+}
+
+body.shuriken-rating-modal-open {
+    overflow: hidden;
+}
+
 .shuriken-ratings-form-wrap {
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 28px;
-    margin-top: 25px;
+    margin: 0;
+    width: 100%;
     max-width: 850px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    box-sizing: border-box;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.shuriken-rating-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .shuriken-ratings-form-wrap h2 {
     margin-top: 0;
+    flex: 1;
     padding-bottom: 14px;
     border-bottom: 2px solid #f1f5f9;
     font-size: 18px;
     font-weight: 600;
+    color: #1e293b;
+}
+
+.shuriken-rating-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-top: -6px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.shuriken-rating-modal-close:hover,
+.shuriken-rating-modal-close:focus {
+    background: #f1f5f9;
     color: #1e293b;
 }
 
@@ -1217,11 +1272,15 @@ html[dir=rtl] .shuriken-copy-notification {
         margin: 10px auto 0;
     }
     
-    /* Add New Rating Form - Mobile */
+    /* Add New Rating Modal - Mobile */
+    .shuriken-rating-modal {
+        align-items: flex-start;
+        padding: 16px;
+    }
+
     .shuriken-ratings-form-wrap {
-        margin: 20px 0;
         padding: 20px;
-        max-width: none;
+        max-height: calc(100vh - 32px);
     }
     
     .shuriken-ratings-form-wrap h2 {

@@ -107,9 +107,9 @@ $col_class = function($col) use ($hidden_columns) {
 
 <div class="wrap">
     <h1 class="wp-heading-inline"><?php esc_html_e('Ratings', 'shuriken-reviews'); ?></h1>
-    <a href="#add-new-rating" class="page-title-action" onclick="document.getElementById('rating_name').focus(); return false;">
+    <button type="button" class="page-title-action" data-open-rating-modal aria-haspopup="dialog" aria-controls="add-new-rating">
         <?php esc_html_e('Add New', 'shuriken-reviews'); ?>
-    </a>
+    </button>
     
     <?php if (!empty($search)): ?>
         <span class="subtitle">
@@ -714,10 +714,14 @@ $col_class = function($col) use ($hidden_columns) {
     </form>
     <?php endif; ?>
 
-    <!-- Add New Rating Form -->
-    <div id="add-new-rating" class="shuriken-ratings-form-wrap">
-        <h2><?php esc_html_e('Add New Rating', 'shuriken-reviews'); ?></h2>
-        <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>">
+    <!-- Add New Rating Modal -->
+    <div id="add-new-rating" class="shuriken-rating-modal" hidden>
+        <section class="shuriken-ratings-form-wrap" role="dialog" aria-modal="true" aria-labelledby="add-new-rating-title" tabindex="-1">
+            <div class="shuriken-rating-modal-header">
+                <h2 id="add-new-rating-title"><?php esc_html_e('Add New Rating', 'shuriken-reviews'); ?></h2>
+                <button type="button" class="shuriken-rating-modal-close" data-close-rating-modal aria-label="<?php esc_attr_e('Close dialog', 'shuriken-reviews'); ?>">&times;</button>
+            </div>
+            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=shuriken-reviews')); ?>">
             <?php wp_nonce_field('shuriken_create_rating', 'shuriken_rating_nonce'); ?>
             <table class="form-table" role="presentation">
                 <tbody>
@@ -867,7 +871,8 @@ $col_class = function($col) use ($hidden_columns) {
                        class="button button-primary" 
                        value="<?php esc_attr_e('Add New Rating', 'shuriken-reviews'); ?>">
             </p>
-        </form>
+            </form>
+        </section>
     </div>
 
     <?php do_action('shuriken_after_ratings_list', $ratings); ?>

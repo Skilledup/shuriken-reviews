@@ -10,6 +10,60 @@
     'use strict';
 
     $(document).ready(function() {
+
+        const $ratingModal = $('#add-new-rating');
+        let lastFocusedElement = null;
+
+        const closeRatingModal = () => {
+            if ($ratingModal.prop('hidden')) {
+                return;
+            }
+
+            $ratingModal.prop('hidden', true);
+            $('body').removeClass('shuriken-rating-modal-open');
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+            }
+        };
+
+        $(document).on('click', '[data-open-rating-modal]', function() {
+            lastFocusedElement = this;
+            $ratingModal.prop('hidden', false);
+            $('body').addClass('shuriken-rating-modal-open');
+            $('#rating_name').trigger('focus');
+        });
+
+        $(document).on('click', '[data-close-rating-modal]', closeRatingModal);
+
+        $ratingModal.on('click', function(event) {
+            if (event.target === this) {
+                closeRatingModal();
+            }
+        });
+
+        $ratingModal.on('keydown', function(event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeRatingModal();
+                return;
+            }
+
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            const $focusable = $ratingModal.find('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])').filter(':visible');
+            const firstFocusable = $focusable.get(0);
+            const lastFocusable = $focusable.get($focusable.length - 1);
+
+            if (event.shiftKey && document.activeElement === firstFocusable) {
+                event.preventDefault();
+                lastFocusable.focus();
+            } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+                event.preventDefault();
+                firstFocusable.focus();
+            }
+        });
         
         /**
          * Inline Edit functionality
