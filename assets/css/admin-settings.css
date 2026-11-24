@@ -193,6 +193,158 @@
     line-height: 1.5;
 }
 
+.shuriken-icon-choice-field {
+    padding: 0;
+    border: 0;
+}
+
+.shuriken-icon-choice-field legend {
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.shuriken-icon-picker {
+    max-width: 100%;
+}
+
+.shuriken-icon-picker-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 190px;
+    padding: 7px 10px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.shuriken-icon-picker-summary svg {
+    width: 22px;
+    height: 22px;
+}
+
+.shuriken-icon-picker-panel {
+    max-width: 620px;
+    max-height: 340px;
+    margin-top: 8px;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.shuriken-icon-search {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.shuriken-icon-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.shuriken-icon-choice {
+    cursor: pointer;
+}
+
+.shuriken-icon-choice input {
+    position: absolute;
+    opacity: 0;
+}
+
+.shuriken-icon-choice-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #475569;
+    background: #fff;
+    font-size: 13px;
+}
+
+.shuriken-icon-choice input:checked + .shuriken-icon-choice-preview {
+    border-color: #2271b1;
+    color: #135e96;
+    background: #f0f6fc;
+}
+
+.shuriken-icon-choice input:focus-visible + .shuriken-icon-choice-preview {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.shuriken-icon-choice-preview .shuriken-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.shuriken-icon-choice-preview svg {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+}
+
+.shuriken-custom-icon-controls {
+    margin-top: 14px;
+}
+
+.shuriken-custom-icon-form:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr);
+    gap: 8px;
+    max-width: 520px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #f6f7f7;
+}
+
+.shuriken-custom-icon-form label {
+    font-weight: 600;
+}
+
+.shuriken-custom-icon-placeholder {
+    display: inline-flex;
+    min-width: 22px;
+    min-height: 22px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.shuriken-saved-icon-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.shuriken-saved-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.shuriken-saved-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
 /* Input Groups */
 .settings-input-group {
     display: flex;

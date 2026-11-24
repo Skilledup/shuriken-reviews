@@ -57,6 +57,12 @@
     filter: drop-shadow(0 1px 1px rgba(0,0,0,0.08));
 }
 
+.stars .star > svg {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+}
+
 .stars .star:hover,
 .stars .star.active {
     color: #ffd700;
@@ -1284,6 +1290,12 @@ button.shuriken-btn:hover {
     height: 18px;
 }
 
+.shuriken-thumb > svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
 .shuriken-count {
     font-weight: 600;
     font-size: 13px;
@@ -1336,6 +1348,12 @@ button.shuriken-upvote-btn:hover,
 .shuriken-upvote-btn .shuriken-thumb .shuriken-icon {
     width: 14px;
     height: 14px;
+}
+
+.shuriken-upvote-btn .shuriken-thumb > svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
 }
 
 /* =====================================================

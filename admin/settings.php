@@ -20,6 +20,11 @@ $tabs = array(
         'icon'  => 'settings',
         'file'  => 'settings-general.php',
     ),
+    'look-feel' => array(
+        'label' => __('Look & Feel', 'shuriken-reviews'),
+        'icon'  => 'sparkles',
+        'file'  => 'settings-look-feel.php',
+    ),
     'rate-limiting' => array(
         'label' => __('Rate Limiting', 'shuriken-reviews'),
         'icon'  => 'shield',

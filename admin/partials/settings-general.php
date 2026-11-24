@@ -99,7 +99,7 @@ if (isset($_POST['save_general_settings'])) {
             </div>
         </div>
     </div>
-    
+
     <div class="shuriken-settings-card">
         <div class="settings-card-header">
             <span class="settings-card-icon"><?php Shuriken_Icons::render('bar-chart-2'); ?></span>

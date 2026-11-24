@@ -48,6 +48,7 @@ class Shuriken_Icons {
         'star'           => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
         // star-solid: same shape but with fill="currentColor" — override parent SVG fill:none so it renders solid
         'star-solid'     => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="currentColor"/>',
+        'heart'          => '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/>',
         'star-off'       => '<path d="M8.34 8.34 2 9.27l5 4.87L5.82 21 12 17.77 18.18 21l-.59-3.43"/><path d="M18.42 12.76 22 9.27l-6.91-1L12 2l-1.44 2.91"/><line x1="2" x2="22" y1="2" y2="22"/>',
         'thumbs-up'      => '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>',
         'thumbs-down'    => '<path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>',
@@ -170,6 +171,58 @@ class Shuriken_Icons {
     }
 
     /**
+     * Get every built-in and saved custom icon available in rating settings.
+     *
+     * @return array<string, string>
+     */
+    public static function rating_icon_options(): array {
+        $options = array();
+        foreach (array_keys(self::$icons) as $name) {
+            $options[$name] = ucwords(str_replace('-', ' ', $name));
+        }
+
+        $custom_icons = get_option('shuriken_custom_rating_icons', array());
+        if (is_array($custom_icons)) {
+            foreach ($custom_icons as $name => $icon) {
+                if (is_array($icon) && isset($icon['label']) && is_string($icon['label'])) {
+                    $options[$name] = $icon['label'];
+                }
+            }
+        }
+
+        return $options;
+    }
+
+    /**
+     * Render a built-in or saved custom rating icon.
+     *
+     * @param string $name Icon name.
+     * @param int    $size Icon size in pixels.
+     * @return string
+     */
+    public static function render_rating_icon(string $name, int $size = 16): string {
+        if (isset(self::$icons[$name])) {
+            return self::render($name, array('width' => $size, 'height' => $size, 'class' => 'shuriken-rating-symbol'), false);
+        }
+
+        $custom_icons = get_option('shuriken_custom_rating_icons', array());
+        if (!is_array($custom_icons) || !isset($custom_icons[$name]) || !is_array($custom_icons[$name]) || !isset($custom_icons[$name]['type'], $custom_icons[$name]['markup']) || !is_string($custom_icons[$name]['type']) || !is_string($custom_icons[$name]['markup'])) {
+            return '';
+        }
+
+        if ($custom_icons[$name]['type'] === 'svg') {
+            $svg = shuriken_sanitize_rating_svg($custom_icons[$name]['markup']);
+            $size = max(1, absint($size));
+            return preg_replace_callback('/^<svg\b([^>]*)>/i', static function ($matches) use ($size) {
+                $attributes = preg_replace('/\s(?:width|height)\s*=\s*(?:"[^"]*"|\'[^\']*\')/i', '', $matches[1]);
+                return '<svg' . $attributes . ' width="' . $size . '" height="' . $size . '">';
+            }, $svg, 1) ?? '';
+        }
+
+        return esc_html($custom_icons[$name]['markup']);
+    }
+
+    /**
      * Get the default rating symbol SVGs used when no user/filter override is set.
      *
      * Returns an associative array keyed by rating type with sub-keys for each symbol.
@@ -221,11 +274,30 @@ function shuriken_svg_allowed_tags(): array {
             'aria-hidden'      => true,
             'focusable'        => true,
         ),
-        'path'     => array('d' => true, 'fill' => true),
-        'circle'   => array('cx' => true, 'cy' => true, 'r' => true, 'fill' => true),
-        'line'     => array('x1' => true, 'y1' => true, 'x2' => true, 'y2' => true),
-        'polyline' => array('points' => true),
-        'polygon'  => array('points' => true),
-        'rect'     => array('x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true, 'fill' => true),
+        'path'     => array('d' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true, 'fill-rule' => true, 'clip-rule' => true),
+        'circle'   => array('cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true),
+        'line'     => array('x1' => true, 'y1' => true, 'x2' => true, 'y2' => true, 'stroke' => true, 'stroke-width' => true),
+        'polyline' => array('points' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true),
+        'polygon'  => array('points' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true),
+        'rect'     => array('x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true),
     );
+}
+
+/**
+ * Sanitize a custom rating SVG and remove external paint-server references.
+ *
+ * @param string $svg Untrusted SVG markup.
+ * @return string
+ */
+function shuriken_sanitize_rating_svg(string $svg): string {
+    $svg = wp_kses($svg, shuriken_svg_allowed_tags());
+    $sanitized = preg_replace_callback('/\s(fill|stroke)\s*=\s*(["\'])(.*?)\2/is', static function ($matches) {
+        $paint = html_entity_decode($matches[3], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (preg_match('/url\s*\(/i', $paint) || strpos($paint, '\\') !== false) {
+            return '';
+        }
+        return $matches[0];
+    }, $svg);
+
+    return is_string($sanitized) ? $sanitized : '';
 }
